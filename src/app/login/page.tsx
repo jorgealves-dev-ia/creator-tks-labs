@@ -4,8 +4,9 @@ import { t } from "@/lib/i18n/pt-BR";
 
 import { LoginForm } from "./login-form";
 
+// The root layout already appends "· Creator TKS Labs" via its title template.
 export const metadata: Metadata = {
-  title: `Entrar · ${t.app.name}`,
+  title: "Entrar",
 };
 
 export default async function LoginPage(props: PageProps<"/login">) {
