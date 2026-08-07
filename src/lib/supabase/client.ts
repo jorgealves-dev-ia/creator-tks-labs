@@ -1,6 +1,7 @@
 import { createBrowserClient } from "@supabase/ssr";
 
 import { publicEnv } from "@/lib/env";
+import type { Database } from "./database.types";
 
 /**
  * Supabase client for browser (Client Component) code.
@@ -10,7 +11,7 @@ import { publicEnv } from "@/lib/env";
  * `createBrowserClient` returns a singleton per browser session.
  */
 export function createSupabaseBrowserClient() {
-  return createBrowserClient(
+  return createBrowserClient<Database>(
     publicEnv.NEXT_PUBLIC_SUPABASE_URL,
     publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   );

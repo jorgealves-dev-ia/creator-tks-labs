@@ -91,11 +91,23 @@ O Claude Code opera com autonomia guiada através de:
 - `ledger_transactions` — append-only: depósitos e débitos (`amount_cents`, `cost_real_cents`, `cost_charged_cents`, `generation_id`, `kind`)
 - `projects` — as "abas": nome, status agregado, ordenação
 - `workflows` — grafo do canvas por projeto (`graph jsonb` no formato React Flow: nodes + edges + viewport), com versão
-- `entities` — entidades mencionáveis por `@`: `kind` (character | product | scene | outfit | accessory), `handle` (ex.: `julia`), `sheet jsonb` (character sheet estruturado: identidade, dados físicos, paleta, expressões, voz), `version` (entidades são versionadas, não travadas), imagens canônicas referenciando `assets`
+- `entities` — entidades mencionáveis por `@`: `kind` (character | product | scene | outfit | accessory), `handle` (ex.: `julia`, único por usuário), `sheet jsonb` (character sheet estruturado: identidade, dados físicos, paleta, expressões, voz), `version` (entidades são versionadas, não travadas), `project_id` nulo = disponível em todos os projetos do usuário
+- `entity_images` — join entre `entities` e `assets`: as imagens canônicas de uma entidade (turnaround, expressões), com `role` e ordenação
 - `assets` — arquivos no Storage: tipo, mime, dimensões/duração, origem (upload | generation)
-- `generations` — cada execução: workflow/node de origem, provedor, modelo, `params jsonb`, `prompt_user_pt`, `prompt_compiled jsonb`, status (queued | running | succeeded | failed), custos, `result_asset_id`, erro
+- `generations` — cada execução: workflow/node de origem, provedor, modelo, `params jsonb`, `prompt_user_pt`, `prompt_compiled jsonb`, status (queued | running | succeeded | failed | canceled), custos, `result_asset_id`, erro
+
+Invariantes garantidas pelo banco, não pelo código do app:
+
+- Cadastro cria automaticamente `profiles` + `wallets` (trigger em `auth.users`)
+- Criar um projeto cria automaticamente seu `workflows` (1 projeto = 1 workflow)
+- `ledger_transactions` recusa UPDATE e DELETE por trigger — vale inclusive para a service role; correção é sempre nova transação de estorno
+- `wallets.balance_cents` é projeção do ledger: só muda por trigger de INSERT no ledger, e saldo negativo é bloqueado por constraint
+- `generations` e `ledger_transactions` são somente-leitura para o usuário autenticado; escrita apenas por código de servidor com service role
+- Storage: bucket privado `assets`, caminho `<user_id>/…`, políticas casam a primeira pasta com o dono
+- Realtime habilitado em `projects` e `generations` (respeita RLS)
 
 Migrations sempre em `supabase/migrations/` — nunca alterar schema manualmente pelo dashboard.
+Após aplicar migrations, regerar `src/lib/supabase/database.types.ts`.
 
 ## Glossário do domínio
 
