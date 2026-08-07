@@ -1,26 +1,74 @@
 @import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Studio theme. The product is a dark, focused canvas tool, so there is one
+ * committed palette rather than a light/dark pair.
+ */
+@theme {
+  --color-canvas: #0a0a0e;
+  --color-surface: #121218;
+  --color-surface-raised: #1a1a22;
+  --color-surface-hover: #22222c;
+  --color-line: #2a2a35;
+  --color-line-strong: #3a3a48;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-ink: #edecf2;
+  --color-ink-muted: #9795a6;
+  --color-ink-faint: #6b6979;
+
+  --color-accent: #7b5cfa;
+  --color-accent-hover: #8f74ff;
+  --color-accent-soft: #1e1735;
+
+  --color-positive: #37c98b;
+  --color-warning: #f2b544;
+  --color-negative: #f0605f;
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background-color: color-mix(in oklab, var(--color-accent) 40%, transparent);
+}
+
+/* Keyboard focus stays visible everywhere; pointer clicks stay quiet. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* React Flow: match the canvas palette instead of its default light theme. */
+.react-flow {
+  --xy-background-color: var(--color-canvas);
+  --xy-edge-stroke: var(--color-line-strong);
+  --xy-edge-stroke-selected: var(--color-accent);
+  --xy-attribution-background-color: transparent;
+}
+
+/* React Flow's attribution is kept (MIT allows removing it — your call). */
+.react-flow__attribution a {
+  color: var(--color-ink-faint);
+  font-size: 10px;
 }
