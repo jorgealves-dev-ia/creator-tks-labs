@@ -30,6 +30,7 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
   const onNodesChange = useCanvasStore((state) => state.onNodesChange);
   const onEdgesChange = useCanvasStore((state) => state.onEdgesChange);
   const onConnect = useCanvasStore((state) => state.onConnect);
+  const markDirty = useCanvasStore((state) => state.markDirty);
   const loadedProjectId = useCanvasStore((state) => state.projectId);
 
   const initial = useRef({ projectId, graph, version });
@@ -60,6 +61,11 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onMoveEnd={(event) => {
+          // React Flow passes a null event for programmatic viewport changes
+          // such as fitView on load. Only a real pan or zoom is an edit.
+          if (event) markDirty();
+        }}
         defaultViewport={graph.viewport}
         fitView={!graph.viewport}
         minZoom={0.2}
@@ -79,10 +85,12 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
           className="!bottom-4 !right-4"
         />
         <MiniMap
-          position="bottom-left"
+          // Sits beside the zoom controls on the right: the sidebar expands
+          // over the bottom-left corner on hover and would cover it there.
+          position="bottom-right"
           pannable
           zoomable
-          className="!bottom-4 !left-20 !rounded-lg !border !border-line !bg-surface"
+          className="!bottom-4 !right-16 !rounded-lg !border !border-line !bg-surface"
           maskColor="rgba(10, 10, 14, 0.7)"
           nodeColor="#3a3a48"
         />

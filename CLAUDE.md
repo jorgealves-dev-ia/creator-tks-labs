@@ -190,8 +190,8 @@ Em produção, os mesmos nomes vivem nas Environment Variables da Vercel (marcad
 
 ## Roadmap de fases
 
-- **Fase 0 (atual)**: fundação — auth, projetos/abas, canvas React Flow com salvar/carregar workflow, carteira e ledger de Sparks
-- **Fase 1**: geração de imagem — nodes de input tipados, node de geração (Nano Banana + 1 modelo via fal), sistema de `@`, ingestão de assets, débito de Sparks, prompt duplo
+- **Fase 0 (concluída)**: fundação — auth, projetos/abas, canvas React Flow com salvar/carregar workflow, carteira e ledger de Sparks. Schema completo aplicado e verificado; o débito de Sparks só entra em uso quando existir geração (Fase 1)
+- **Fase 1 (atual)**: geração de imagem — nodes de input tipados, node de geração (Nano Banana + 1 modelo via fal), sistema de `@`, ingestão de assets, débito de Sparks, prompt duplo
 - **Fase 2**: entidades — character sheet completo (preenchimento manual + extração automática por imagem de referência), versionamento, imagens canônicas, consistência entre gerações
 - **Fase 3**: vídeo e voz — image-to-video, Motion Control (Kling), lipsync, continuação a partir do último frame (extração via ffmpeg), voz com ElevenLabs, storyboard cena a cena
 - **Fase 4**: presets por canal, criativos de anúncio (estáticos e UGC), preparação multiusuário (margem sobre custo, cobrança)

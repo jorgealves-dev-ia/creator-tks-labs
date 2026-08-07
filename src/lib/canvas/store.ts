@@ -38,6 +38,8 @@ type CanvasState = {
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
+  /** For edits React Flow reports outside node/edge changes, such as panning. */
+  markDirty: () => void;
   setSaveStatus: (status: SaveStatus) => void;
   markSaved: (input: { version: number; revision: number }) => void;
 };
@@ -87,6 +89,12 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   onConnect: (connection) =>
     set((state) => ({
       edges: addEdge(connection, state.edges),
+      revision: state.revision + 1,
+      saveStatus: "dirty",
+    })),
+
+  markDirty: () =>
+    set((state) => ({
       revision: state.revision + 1,
       saveStatus: "dirty",
     })),
