@@ -239,7 +239,7 @@ A camada de UI (formulário do sheet, seletor de versões, diff visual entre ver
 
 Depois de aplicar, **regerar** `src/lib/supabase/database.types.ts` a partir do banco real — não escrever esse arquivo à mão.
 
-As 10 migrations existentes, em ordem de dependência:
+As 11 migrations existentes, em ordem de dependência:
 
 ```
 20260807140000_core_foundation.sql             helper updated_at, profiles, wallets, trigger de cadastro
@@ -252,6 +252,7 @@ As 10 migrations existentes, em ordem de dependência:
 20260807150000_revoke_trigger_function_execute.sql   tira EXECUTE das funções de gatilho
 20260807160000_index_foreign_keys.sql          índices de cobertura nas FKs
 20260807170000_entity_versions.sql             versões de entidade, ponteiro ativo e travas
+20260807180000_index_active_version_fk.sql     índice de cobertura da FK composta do ponteiro
 ```
 
 > **Nota de ambiente.** O `supabase link` está com bug nesta máquina, então a connection string vai explícita na linha de comando. O Jorge aplica manualmente:
