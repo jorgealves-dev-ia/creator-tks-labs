@@ -285,3 +285,25 @@ A seção 5.16 do [`character-sheet.md`](./character-sheet.md) define lista femi
 | Motor de extração por foto — a UX já está especificada e o passo 2 do wizard já existe marcado "em breve" | próxima sessão | seção 7 de [`tela-character-sheet.md`](./tela-character-sheet.md) |
 | Geração assistida das imagens canônicas (turnaround e folha de expressões) | sessão seguinte | seção 9 de [`tela-character-sheet.md`](./tela-character-sheet.md) |
 | Diff visual entre versões ("o que mudou da v1 para a v2?") — trivial de calcular, já que os snapshots são completos | melhoria futura | seção 6 de [`versionamento-entidades.md`](./versionamento-entidades.md) |
+
+---
+
+### 08/08/2026 — Estado da pausa: tela do character sheet concluída
+
+**Commits:** `bb179d7` (dicionário, cartão, editor) · `c538fb7` (selos, amarelos, versões) · `7d70a42` (wizard, imagens canônicas, docs)
+
+Ponto de parada com a tela inteira entregue, em três etapas, cada uma verificada no navegador pelo Jorge antes do commit — não só compilada.
+
+**Entregue e provado em uso real:**
+
+- Dicionário das listas fechadas como fonte única para a tela (PT) e para o futuro compilador (EN), com as chaves declaradas imutáveis
+- Cartão no canvas com selo da versão ativa e indicador de rascunho sujo; Arsenal listando as personagens
+- Editor em overlay com as três camadas em abas e autosave do rascunho
+- Selos de estado por campo e revisão dos inferidos um a um, com contador e navegação de um clique
+- Versões: salvar (atômico, `save_entity_version`), ver congelada em somente-leitura, ativar antiga e carregar no rascunho
+- Wizard de criação de ponta a ponta pelo caminho manual
+- Imagens canônicas por upload, com a diferença provada entre remover imagem citada por versão (preservada, com aviso) e imagem só do rascunho (deletada de vez)
+
+**Próximo passo combinado:** o **motor de extração por foto** — o passo 2 do wizard, hoje marcado "em breve". A UX já está especificada na seção 7 de [`tela-character-sheet.md`](./tela-character-sheet.md) e o lugar dele no fluxo já existe, então o motor encaixa sem retrabalho de tela. Ele é o que finalmente produz campos `inferido` de verdade: até aqui o fluxo dos amarelos só pôde ser exercitado marcando um campo à mão no banco.
+
+**Estado do repositório na pausa:** árvore limpa, `master` sincronizada com o remoto, 12 migrations aplicadas e verificadas, `database.types.ts` regerado do banco.
