@@ -45,6 +45,20 @@ const estadoSchema = z.enum(ESTADOS).catch("vazio");
 const origemSchema = z.enum(ORIGENS).catch("manual");
 
 /**
+ * Decision E3 of docs/motor-extracao.md: an inferred field carries a short
+ * sentence saying why the extraction hesitated ("luz amarelada, cor dos olhos
+ * incerta"), shown in the tooltip while the user reviews the yellow ones.
+ *
+ * Optional and defaulted so every sheet written before the extraction engine
+ * existed still parses — an absent `motivo` simply means no reason was given.
+ * Only `inferido` ever carries one: the moment a human confirms or edits the
+ * field, the doubt stops being true and the reason is cleared.
+ */
+const MOTIVO_MAX_LENGTH = 160;
+
+const motivoSchema = z.string().max(MOTIVO_MAX_LENGTH).catch("").default("");
+
+/**
  * §3 · The field envelope of the visual DNA. `valor` holds an option key, or a
  * number for altura_cm. `detalhes` complements the option and never replaces it.
  */
@@ -53,6 +67,7 @@ const fieldSchema = z.object({
   detalhes: z.string().default(""),
   estado: estadoSchema.default("vazio"),
   origem: origemSchema.default("manual"),
+  motivo: motivoSchema,
 });
 
 export type SheetField = z.infer<typeof fieldSchema>;
@@ -62,6 +77,7 @@ const emptyField = (): SheetField => ({
   detalhes: "",
   estado: "vazio",
   origem: "manual",
+  motivo: "",
 });
 
 /** A field the user filled in by hand is confirmed on the spot — §4.1, regra viva. */
@@ -70,6 +86,7 @@ export const confirmedField = (valor: string | number): SheetField => ({
   detalhes: "",
   estado: "confirmado",
   origem: "manual",
+  motivo: "",
 });
 
 /**
@@ -82,19 +99,23 @@ export const confirmedField = (valor: string | number): SheetField => ({
  */
 export function withValue(field: SheetField, valor: string | number | null): SheetField {
   if (valor === null || valor === "") {
-    return { ...field, valor: null, estado: "vazio", origem: "manual" };
+    return { ...field, valor: null, estado: "vazio", origem: "manual", motivo: "" };
   }
 
-  return { ...field, valor, estado: "confirmado", origem: "manual" };
+  return { ...field, valor, estado: "confirmado", origem: "manual", motivo: "" };
 }
 
 /**
  * Confirming an inferred field keeps its value and its origin: the extraction is
  * still what proposed it — what changed is that a human said yes. That is
  * exactly why `confirmado` exists as a state separate from `observado`.
+ *
+ * The reason for the doubt is dropped, though: it described a hesitation that no
+ * longer exists. Keeping it would leave a confirmed field explaining why it was
+ * once uncertain.
  */
-export function confirmField<T extends { estado: Estado }>(field: T): T {
-  return { ...field, estado: "confirmado" };
+export function confirmField<T extends { estado: Estado; motivo: string }>(field: T): T {
+  return { ...field, estado: "confirmado", motivo: "" };
 }
 
 /**
@@ -108,7 +129,7 @@ export function withDetails(field: SheetField, detalhes: string): SheetField {
     return { ...field, detalhes };
   }
 
-  return { ...field, detalhes, estado: "confirmado", origem: "manual" };
+  return { ...field, detalhes, estado: "confirmado", origem: "manual", motivo: "" };
 }
 
 /** Layers 2 and 3 carry no state: extraction never touches them. */
@@ -133,6 +154,7 @@ const tatuagemSchema = z.object({
   descricao: z.string().default(""),
   estado: estadoSchema.default("confirmado"),
   origem: origemSchema.default("manual"),
+  motivo: motivoSchema,
 });
 
 const piercingSchema = z.object({
@@ -141,6 +163,7 @@ const piercingSchema = z.object({
   detalhes: z.string().default(""),
   estado: estadoSchema.default("confirmado"),
   origem: origemSchema.default("manual"),
+  motivo: motivoSchema,
 });
 
 const outraMarcaSchema = z.object({
@@ -149,6 +172,7 @@ const outraMarcaSchema = z.object({
   descricao: z.string().default(""),
   estado: estadoSchema.default("confirmado"),
   origem: origemSchema.default("manual"),
+  motivo: motivoSchema,
 });
 
 export type Tatuagem = z.infer<typeof tatuagemSchema>;

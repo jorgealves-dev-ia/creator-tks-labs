@@ -49,6 +49,7 @@ export function MarksEditor({ sheet, update, onConfirm }: MarksEditorProps) {
               descricao: "",
               estado: "confirmado",
               origem: "manual",
+              motivo: "",
             });
           })
         }
@@ -140,6 +141,7 @@ export function MarksEditor({ sheet, update, onConfirm }: MarksEditorProps) {
               detalhes: "",
               estado: "confirmado",
               origem: "manual",
+              motivo: "",
             });
           })
         }
@@ -216,6 +218,7 @@ export function MarksEditor({ sheet, update, onConfirm }: MarksEditorProps) {
               descricao: "",
               estado: "confirmado",
               origem: "manual",
+              motivo: "",
             });
           })
         }
