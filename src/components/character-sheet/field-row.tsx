@@ -1,12 +1,13 @@
 "use client";
 
-import { useId, useState, type ReactNode } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 
 import { OptionSelect } from "@/components/character-sheet/option-select";
 import { SkinTonePicker } from "@/components/character-sheet/skin-tone-picker";
+import { PendingActions, StateBadge } from "@/components/character-sheet/state-badge";
 import type { DnaField, PadraoField } from "@/lib/character-sheet/fields";
 import type { CharacterSheet } from "@/lib/character-sheet/schema";
-import { withDetails, withValue } from "@/lib/character-sheet/schema";
+import { needsConfirmation, withDetails, withValue } from "@/lib/character-sheet/schema";
 import { t } from "@/lib/i18n/pt-BR";
 
 /** Applies an edit to the draft. The store hands the mutator a private copy. */
@@ -14,6 +15,8 @@ export type SheetUpdater = (mutate: (sheet: CharacterSheet) => void) => void;
 
 type FieldShellProps = {
   controlId: string;
+  /** Matches the pending-field id, so the header counter can scroll here. */
+  fieldId?: string;
   label: string;
   detalhes: string;
   onDetailsChange: (value: string) => void;
@@ -28,6 +31,7 @@ type FieldShellProps = {
  */
 function FieldShell({
   controlId,
+  fieldId,
   label,
   detalhes,
   onDetailsChange,
@@ -39,7 +43,7 @@ function FieldShell({
   const detailsId = `${controlId}-detalhes`;
 
   return (
-    <div className="py-2.5">
+    <div data-field-id={fieldId} className="scroll-mt-6 py-2.5">
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <label htmlFor={controlId} className="text-xs font-medium text-ink-muted">
           {label}
@@ -83,13 +87,15 @@ type DnaFieldRowProps = {
   field: DnaField;
   sheet: CharacterSheet;
   update: SheetUpdater;
-  badge?: ReactNode;
+  /** Confirms this field and moves on to the next pending one (U3). */
+  onConfirm?: (fieldId: string) => void;
 };
 
 /** A field of layer 1 — the one that carries the state envelope. */
-export function DnaFieldRow({ field, sheet, update, badge }: DnaFieldRowProps) {
+export function DnaFieldRow({ field, sheet, update, onConfirm }: DnaFieldRowProps) {
   const reactId = useId();
   const controlId = `${reactId}-${field.id}`;
+  const rowRef = useRef<HTMLDivElement>(null);
   const value = field.read(sheet);
 
   const setValue = (next: string | number | null) =>
@@ -98,59 +104,76 @@ export function DnaFieldRow({ field, sheet, update, badge }: DnaFieldRowProps) {
   const setDetails = (detalhes: string) =>
     update((draft) => field.write(draft, withDetails(field.read(draft), detalhes)));
 
+  const focusControl = () => {
+    // The first focusable inside the row is always the control itself: the
+    // select, the first swatch, or the number input.
+    rowRef.current?.querySelector<HTMLElement>("select, input, button")?.focus();
+  };
+
+  const isPending = needsConfirmation(value.estado);
+
   return (
-    <FieldShell
-      controlId={controlId}
-      label={field.label}
-      detalhes={value.detalhes}
-      onDetailsChange={setDetails}
-      badge={badge}
-    >
-      {field.kind === "swatch" ? (
-        <SkinTonePicker id={controlId} value={value.valor} onChange={setValue} />
-      ) : field.kind === "number" ? (
-        <div className="flex items-center gap-2">
-          <input
+    <div ref={rowRef}>
+      <FieldShell
+        controlId={controlId}
+        fieldId={field.id}
+        label={field.label}
+        detalhes={value.detalhes}
+        onDetailsChange={setDetails}
+        badge={
+          isPending && onConfirm ? (
+            <PendingActions onConfirm={() => onConfirm(field.id)} onEdit={focusControl} />
+          ) : (
+            <StateBadge estado={value.estado} />
+          )
+        }
+      >
+        {field.kind === "swatch" ? (
+          <SkinTonePicker id={controlId} value={value.valor} onChange={setValue} />
+        ) : field.kind === "number" ? (
+          <div className="flex items-center gap-2">
+            <input
+              id={controlId}
+              type="number"
+              inputMode="numeric"
+              min={field.min}
+              max={field.max}
+              placeholder={field.placeholder}
+              value={typeof value.valor === "number" ? value.valor : ""}
+              onChange={(event) => {
+                const raw = event.target.value;
+                if (raw === "") return setValue(null);
+
+                const parsed = Number(raw);
+                if (Number.isFinite(parsed)) setValue(parsed);
+              }}
+              onBlur={(event) => {
+                // Clamped only when the user is done typing: clamping mid-keystroke
+                // would turn "1" into "140" before the "68" arrived.
+                const raw = Number(event.target.value);
+                if (!Number.isFinite(raw) || event.target.value === "") return;
+
+                const min = field.min ?? raw;
+                const max = field.max ?? raw;
+                const clamped = Math.min(Math.max(Math.round(raw), min), max);
+
+                if (clamped !== value.valor) setValue(clamped);
+              }}
+              className="w-28 rounded-lg border border-line bg-surface-raised px-3 py-2 text-sm
+                         text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
+            />
+            {field.suffix ? <span className="text-xs text-ink-faint">{field.suffix}</span> : null}
+          </div>
+        ) : (
+          <OptionSelect
             id={controlId}
-            type="number"
-            inputMode="numeric"
-            min={field.min}
-            max={field.max}
-            placeholder={field.placeholder}
-            value={typeof value.valor === "number" ? value.valor : ""}
-            onChange={(event) => {
-              const raw = event.target.value;
-              if (raw === "") return setValue(null);
-
-              const parsed = Number(raw);
-              if (Number.isFinite(parsed)) setValue(parsed);
-            }}
-            onBlur={(event) => {
-              // Clamped only when the user is done typing: clamping mid-keystroke
-              // would turn "1" into "140" before the "68" arrived.
-              const raw = Number(event.target.value);
-              if (!Number.isFinite(raw) || event.target.value === "") return;
-
-              const min = field.min ?? raw;
-              const max = field.max ?? raw;
-              const clamped = Math.min(Math.max(Math.round(raw), min), max);
-
-              if (clamped !== value.valor) setValue(clamped);
-            }}
-            className="w-28 rounded-lg border border-line bg-surface-raised px-3 py-2 text-sm
-                       text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
+            value={value.valor}
+            groups={field.groups(sheet)}
+            onChange={setValue}
           />
-          {field.suffix ? <span className="text-xs text-ink-faint">{field.suffix}</span> : null}
-        </div>
-      ) : (
-        <OptionSelect
-          id={controlId}
-          value={value.valor}
-          groups={field.groups(sheet)}
-          onChange={setValue}
-        />
-      )}
-    </FieldShell>
+        )}
+      </FieldShell>
+    </div>
   );
 }
 
@@ -182,7 +205,9 @@ export function PadraoFieldRow({ field, sheet, update }: PadraoFieldRowProps) {
         id={controlId}
         value={value.valor}
         groups={field.groups(sheet)}
-        onChange={(next) => update((draft) => field.write(draft, { ...field.read(draft), valor: next }))}
+        onChange={(next) =>
+          update((draft) => field.write(draft, { ...field.read(draft), valor: next }))
+        }
       />
     </FieldShell>
   );

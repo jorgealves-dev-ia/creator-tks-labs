@@ -478,7 +478,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      save_entity_version: {
+        Args: { p_entity_id: string; p_label?: string }
+        Returns: {
+          created_at: string
+          entity_id: string
+          id: string
+          label: string | null
+          sheet: Json
+          user_id: string
+          version_number: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "entity_versions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       asset_kind: "image" | "video" | "audio"

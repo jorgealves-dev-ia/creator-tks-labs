@@ -150,6 +150,76 @@ export const t = {
       },
     },
 
+    /** Spec §4.1 — the badges are the heart of the system's honesty. */
+    estados: {
+      observado: {
+        label: "Observado",
+        tooltip: "A extração viu isto com clareza na foto. Entra nas gerações.",
+      },
+      inferido: {
+        label: "Inferido",
+        tooltip:
+          "A extração deduziu sem certeza. Não entra nas gerações até você confirmar.",
+      },
+      confirmado: {
+        label: "Confirmado",
+        tooltip: "Validado por você. Entra nas gerações.",
+      },
+      vazio: {
+        label: "Em branco",
+        tooltip: "Em branco. Simplesmente não entra nas gerações.",
+      },
+      confirm: "Confirmar",
+      edit: "Editar",
+    },
+
+    pending: {
+      one: "1 campo aguardando confirmação",
+      manyPrefix: "",
+      manySuffix: " campos aguardando confirmação",
+      jump: "Ir para o próximo",
+    },
+
+    versions: {
+      selectorLabel: "Versão",
+      draft: "Rascunho",
+      activeMark: "●",
+      readOnlyBannerPrefix: "Você está vendo a ",
+      readOnlyBannerSuffix: " (congelada). Para evoluir a partir dela, carregue-a no rascunho.",
+      activate: "Ativar esta versão",
+      loadIntoDraft: "Carregar no rascunho",
+      loadConfirm:
+        "Isto substitui o rascunho atual, que tem alterações não salvas em versão. Continuar?",
+      activating: "Ativando…",
+      loading: "Carregando…",
+      backToDraft: "Voltar ao rascunho",
+      save: "Salvar como nova versão",
+      saveDisabledPrefix: "Nada mudou desde a ",
+      saveDisabledNoChange: "Nada mudou desde a versão ativa",
+      saveModal: {
+        title: "Salvar como nova versão",
+        numberPrefix: "Esta será a ",
+        numberSuffix: " — quem numera é o banco.",
+        labelField: "Etiqueta (opcional)",
+        labelPlaceholder: "cabelo mais curto",
+        permanent: "Uma versão salva é permanente: não pode ser editada nem apagada.",
+        pendingWarningPrefix: "",
+        pendingWarningSuffix:
+          " inferidos não entram nas gerações enquanto não forem confirmados. Salvar mesmo assim?",
+        confirm: "Salvar versão",
+        saving: "Salvando…",
+        cancel: "Cancelar",
+      },
+      errors: {
+        unchanged: "Nada mudou desde a versão ativa.",
+        archived: "Esta personagem está arquivada.",
+        notFound: "Personagem não encontrada.",
+        failed: "Não foi possível salvar a versão.",
+        activateFailed: "Não foi possível ativar esta versão.",
+        loadFailed: "Não foi possível carregar esta versão.",
+      },
+    },
+
     groups: {
       identidadeVisual: "Identidade visual",
       rosto: "Rosto",

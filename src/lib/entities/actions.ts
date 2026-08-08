@@ -8,9 +8,10 @@ import {
   createEmptySheet,
   parseSheet,
   sheetToJson,
+  type CharacterSheet,
 } from "@/lib/character-sheet/schema";
 import { HANDLE_PATTERN } from "@/lib/entities/handle";
-import type { CharacterEntity } from "@/lib/entities/types";
+import type { ActiveVersion, CharacterEntity, VersionSummary } from "@/lib/entities/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
@@ -140,6 +141,195 @@ export async function saveCharacterDraft(input: unknown): Promise<SaveDraftResul
   }
 
   return { ok: true };
+}
+
+/**
+ * The custom error codes raised by public.save_entity_version. PostgREST passes
+ * the SQLSTATE straight through, which is what lets the interface say "nothing
+ * changed since v3" instead of "something went wrong".
+ * See supabase/migrations/20260807190000_save_entity_version.sql.
+ */
+const VERSION_ERROR_CODES: Record<string, SaveVersionFailure> = {
+  CT001: "unchanged",
+  CT002: "archived",
+  CT003: "not_found",
+};
+
+type SaveVersionFailure = "unchanged" | "archived" | "not_found" | "invalid" | "error";
+
+const saveVersionSchema = z.object({
+  entityId: z.uuid(),
+  label: z.string().trim().max(120).optional(),
+});
+
+export type SavedVersion = {
+  id: string;
+  number: number;
+  label: string | null;
+  createdAt: string;
+  sheet: CharacterSheet;
+};
+
+export type SaveVersionResult =
+  | { ok: true; version: SavedVersion }
+  | { ok: false; reason: SaveVersionFailure };
+
+/**
+ * Freezes the draft into a new version and moves the active pointer onto it.
+ *
+ * Both writes happen inside public.save_entity_version, in one transaction. The
+ * two of them must be all-or-nothing: a version written without the pointer
+ * moving — or a pointer moved to a version that was never written — would leave
+ * @handle resolving to the wrong snapshot, which is the one thing this whole
+ * mechanism exists to prevent.
+ *
+ * The snapshot is read from entities.sheet by the function itself; the caller
+ * flushes its pending autosave first so that what gets framed is exactly what
+ * the notebook holds.
+ */
+export async function saveCharacterVersion(input: unknown): Promise<SaveVersionResult> {
+  const parsed = saveVersionSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return { ok: false, reason: "invalid" };
+  }
+
+  const { supabase } = await requireSession();
+
+  const { data, error } = await supabase.rpc("save_entity_version", {
+    p_entity_id: parsed.data.entityId,
+    p_label: parsed.data.label === "" ? undefined : parsed.data.label,
+  });
+
+  if (error) {
+    return { ok: false, reason: VERSION_ERROR_CODES[error.code ?? ""] ?? "error" };
+  }
+
+  if (!data) {
+    return { ok: false, reason: "error" };
+  }
+
+  return {
+    ok: true,
+    version: {
+      id: data.id,
+      number: data.version_number,
+      label: data.label,
+      createdAt: data.created_at,
+      sheet: parseSheet(data.sheet),
+    },
+  };
+}
+
+/**
+ * The saved versions of a character, newest first. Summaries only: the frozen
+ * sheets are fetched one at a time, when a version is actually opened.
+ */
+export async function listCharacterVersions(input: unknown): Promise<VersionSummary[]> {
+  const parsed = z.uuid().safeParse(input);
+
+  if (!parsed.success) return [];
+
+  const { supabase } = await requireSession();
+
+  const { data } = await supabase
+    .from("entity_versions")
+    .select("id, version_number, label, created_at")
+    .eq("entity_id", parsed.data)
+    .order("version_number", { ascending: false });
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    number: row.version_number,
+    label: row.label,
+    createdAt: row.created_at,
+  }));
+}
+
+export type VersionSheetResult =
+  | { ok: true; sheet: CharacterSheet }
+  | { ok: false; reason: "invalid" | "error" };
+
+/** The frozen snapshot of one version — for viewing it, or loading it into the draft. */
+export async function getCharacterVersionSheet(input: unknown): Promise<VersionSheetResult> {
+  const parsed = z.uuid().safeParse(input);
+
+  if (!parsed.success) {
+    return { ok: false, reason: "invalid" };
+  }
+
+  const { supabase } = await requireSession();
+
+  const { data, error } = await supabase
+    .from("entity_versions")
+    .select("sheet")
+    .eq("id", parsed.data)
+    .maybeSingle();
+
+  if (error || !data) {
+    return { ok: false, reason: "error" };
+  }
+
+  return { ok: true, sheet: parseSheet(data.sheet) };
+}
+
+const activateVersionSchema = z.object({
+  entityId: z.uuid(),
+  versionId: z.uuid(),
+});
+
+export type ActivateVersionResult =
+  | { ok: true; version: ActiveVersion }
+  | { ok: false; reason: "invalid" | "error" };
+
+/**
+ * Rollback (rule 5.3): activating an older version moves the pointer and
+ * nothing else. Nothing is erased and nothing is rewritten.
+ *
+ * A plain UPDATE is safe here without a transaction — the composite foreign key
+ * on (active_version_id, id) makes the database itself refuse a pointer to
+ * another character's version, so there is no cross-entity mistake to guard
+ * against in code.
+ */
+export async function activateCharacterVersion(input: unknown): Promise<ActivateVersionResult> {
+  const parsed = activateVersionSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return { ok: false, reason: "invalid" };
+  }
+
+  const { supabase } = await requireSession();
+
+  const { data: version, error: versionError } = await supabase
+    .from("entity_versions")
+    .select("id, version_number, sheet")
+    .eq("id", parsed.data.versionId)
+    .eq("entity_id", parsed.data.entityId)
+    .maybeSingle();
+
+  if (versionError || !version) {
+    return { ok: false, reason: "error" };
+  }
+
+  const { data, error } = await supabase
+    .from("entities")
+    .update({ active_version_id: parsed.data.versionId })
+    .eq("id", parsed.data.entityId)
+    .select("id")
+    .maybeSingle();
+
+  if (error || !data) {
+    return { ok: false, reason: "error" };
+  }
+
+  return {
+    ok: true,
+    version: {
+      id: version.id,
+      number: version.version_number,
+      sheet: parseSheet(version.sheet),
+    },
+  };
 }
 
 /**

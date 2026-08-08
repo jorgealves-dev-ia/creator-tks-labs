@@ -1,9 +1,10 @@
 "use client";
 
-import { useId, type ReactNode } from "react";
+import { useId, useRef, type ReactNode } from "react";
 
 import type { SheetUpdater } from "@/components/character-sheet/field-row";
 import { OptionSelect } from "@/components/character-sheet/option-select";
+import { PendingActions, StateBadge } from "@/components/character-sheet/state-badge";
 import {
   MARCA_TIPO,
   PIERCING_JOIA,
@@ -13,7 +14,9 @@ import {
   TATUAGEM_POSICAO,
   TATUAGEM_TAMANHO,
 } from "@/lib/character-sheet/dictionary";
-import type { CharacterSheet } from "@/lib/character-sheet/schema";
+import { markFieldId } from "@/lib/character-sheet/pending";
+import type { CharacterSheet, Estado } from "@/lib/character-sheet/schema";
+import { needsConfirmation } from "@/lib/character-sheet/schema";
 import { t } from "@/lib/i18n/pt-BR";
 
 /**
@@ -25,9 +28,10 @@ import { t } from "@/lib/i18n/pt-BR";
 type MarksEditorProps = {
   sheet: CharacterSheet;
   update: SheetUpdater;
+  onConfirm?: (fieldId: string) => void;
 };
 
-export function MarksEditor({ sheet, update }: MarksEditorProps) {
+export function MarksEditor({ sheet, update, onConfirm }: MarksEditorProps) {
   const marcas = sheet.dna_visual.marcas;
 
   return (
@@ -52,6 +56,9 @@ export function MarksEditor({ sheet, update }: MarksEditorProps) {
         {marcas.tatuagens.map((tatuagem, index) => (
           <MarkCard
             key={`tatuagem-${index}`}
+            fieldId={markFieldId("tatuagens", index)}
+            estado={tatuagem.estado}
+            onConfirm={onConfirm}
             onRemove={() =>
               update((draft) => {
                 draft.dna_visual.marcas.tatuagens.splice(index, 1);
@@ -140,6 +147,9 @@ export function MarksEditor({ sheet, update }: MarksEditorProps) {
         {marcas.piercings.map((piercing, index) => (
           <MarkCard
             key={`piercing-${index}`}
+            fieldId={markFieldId("piercings", index)}
+            estado={piercing.estado}
+            onConfirm={onConfirm}
             onRemove={() =>
               update((draft) => {
                 draft.dna_visual.marcas.piercings.splice(index, 1);
@@ -213,6 +223,9 @@ export function MarksEditor({ sheet, update }: MarksEditorProps) {
         {marcas.outras.map((outra, index) => (
           <MarkCard
             key={`outra-${index}`}
+            fieldId={markFieldId("outras", index)}
+            estado={outra.estado}
+            onConfirm={onConfirm}
             onRemove={() =>
               update((draft) => {
                 draft.dna_visual.marcas.outras.splice(index, 1);
@@ -302,9 +315,45 @@ function MarkList({ title, addLabel, isEmpty, onAdd, children }: MarkListProps) 
   );
 }
 
-function MarkCard({ onRemove, children }: { onRemove: () => void; children: ReactNode }) {
+/**
+ * One mark. The state envelope sits here, on the whole item, which is why the
+ * badge lives on the card and not on each of its four little fields.
+ */
+function MarkCard({
+  fieldId,
+  estado,
+  onConfirm,
+  onRemove,
+  children,
+}: {
+  fieldId: string;
+  estado: Estado;
+  onConfirm?: (fieldId: string) => void;
+  onRemove: () => void;
+  children: ReactNode;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const isPending = needsConfirmation(estado);
+
   return (
-    <div className="rounded-xl border border-line bg-surface p-3">
+    <div
+      ref={cardRef}
+      data-field-id={fieldId}
+      className="scroll-mt-6 rounded-xl border border-line bg-surface p-3"
+    >
+      <div className="mb-2 flex justify-end">
+        {isPending && onConfirm ? (
+          <PendingActions
+            onConfirm={() => onConfirm(fieldId)}
+            onEdit={() =>
+              cardRef.current?.querySelector<HTMLElement>("select, input, button")?.focus()
+            }
+          />
+        ) : (
+          <StateBadge estado={estado} />
+        )}
+      </div>
+
       <div className="grid grid-cols-2 gap-2">{children}</div>
 
       <button

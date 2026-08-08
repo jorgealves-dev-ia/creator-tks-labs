@@ -17,6 +17,19 @@ export type ActiveVersion = {
   sheet: CharacterSheet;
 };
 
+/**
+ * A row in the version dropdown. The sheet is deliberately absent: the list is
+ * loaded whenever the editor opens, and dragging every frozen snapshot along
+ * would grow with the character's history for no benefit. The sheet of one
+ * version is fetched when that version is actually opened.
+ */
+export type VersionSummary = {
+  id: string;
+  number: number;
+  label: string | null;
+  createdAt: string;
+};
+
 export type CharacterEntity = {
   id: string;
   handle: string;

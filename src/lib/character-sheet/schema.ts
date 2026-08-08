@@ -89,6 +89,15 @@ export function withValue(field: SheetField, valor: string | number | null): She
 }
 
 /**
+ * Confirming an inferred field keeps its value and its origin: the extraction is
+ * still what proposed it — what changed is that a human said yes. That is
+ * exactly why `confirmado` exists as a state separate from `observado`.
+ */
+export function confirmField<T extends { estado: Estado }>(field: T): T {
+  return { ...field, estado: "confirmado" };
+}
+
+/**
  * `detalhes` complements the chosen option and never replaces it, so writing a
  * detail only confirms a field that already has a value. Detail on an empty
  * field stays empty — that is what stops a subjective adjective from sneaking

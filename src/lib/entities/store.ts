@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 import type { CharacterSheet } from "@/lib/character-sheet/schema";
-import type { CharacterEntity } from "@/lib/entities/types";
+import type { ActiveVersion, CharacterEntity, VersionSummary } from "@/lib/entities/types";
 
 /** Same vocabulary the canvas uses for its own autosave. */
 export type DraftStatus = "saved" | "dirty" | "saving" | "failed";
@@ -28,6 +28,13 @@ type EntitiesState = {
    */
   seeded: boolean;
 
+  /** The saved versions of each character, loaded when its editor opens. */
+  versions: Record<string, VersionSummary[]>;
+  /** The frozen version being looked at, or null while editing the draft. */
+  viewingVersionId: string | null;
+  /** The snapshot of that frozen version, shown read-only. */
+  viewingSheet: CharacterSheet | null;
+
   seed: (characters: CharacterEntity[]) => void;
   addCharacter: (character: CharacterEntity) => void;
   /** Applies an edit to the draft. The mutator receives a private copy. */
@@ -37,6 +44,16 @@ type EntitiesState = {
   markDraftSaved: (id: string, revision: number) => void;
   openEditor: (id: string) => void;
   closeEditor: () => void;
+
+  setVersions: (id: string, versions: VersionSummary[]) => void;
+  /** After saving: the new snapshot is added to the list and becomes active. */
+  addVersion: (id: string, summary: VersionSummary, sheet: CharacterSheet) => void;
+  /** Rollback: the pointer moves, nothing is rewritten. */
+  setActiveVersion: (id: string, version: ActiveVersion) => void;
+  /** Replaces the draft with a frozen snapshot, which autosave then persists. */
+  loadIntoDraft: (id: string, sheet: CharacterSheet) => void;
+  viewVersion: (versionId: string, sheet: CharacterSheet) => void;
+  viewDraft: () => void;
 };
 
 function toRecord(character: CharacterEntity): CharacterRecord {
@@ -48,6 +65,9 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
   order: [],
   editingId: null,
   seeded: false,
+  versions: {},
+  viewingVersionId: null,
+  viewingSheet: null,
 
   seed: (characters) =>
     set({
@@ -132,6 +152,62 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
       };
     }),
 
-  openEditor: (editingId) => set({ editingId }),
-  closeEditor: () => set({ editingId: null }),
+  // Opening an editor always starts on the draft — the notebook, not a frame on
+  // the wall (spec §5).
+  openEditor: (editingId) => set({ editingId, viewingVersionId: null, viewingSheet: null }),
+  closeEditor: () => set({ editingId: null, viewingVersionId: null, viewingSheet: null }),
+
+  setVersions: (id, list) =>
+    set((state) => ({ versions: { ...state.versions, [id]: list } })),
+
+  addVersion: (id, summary, sheet) =>
+    set((state) => {
+      const character = state.characters[id];
+      if (!character) return state;
+
+      return {
+        // Newest first, matching how the dropdown reads.
+        versions: { ...state.versions, [id]: [summary, ...(state.versions[id] ?? [])] },
+        characters: {
+          ...state.characters,
+          [id]: {
+            ...character,
+            activeVersion: { id: summary.id, number: summary.number, sheet },
+          },
+        },
+      };
+    }),
+
+  setActiveVersion: (id, version) =>
+    set((state) => {
+      const character = state.characters[id];
+      if (!character) return state;
+
+      return {
+        characters: { ...state.characters, [id]: { ...character, activeVersion: version } },
+      };
+    }),
+
+  loadIntoDraft: (id, sheet) =>
+    set((state) => {
+      const character = state.characters[id];
+      if (!character) return state;
+
+      return {
+        characters: {
+          ...state.characters,
+          [id]: {
+            ...character,
+            sheet: structuredClone(sheet),
+            revision: character.revision + 1,
+            draftStatus: "dirty",
+          },
+        },
+        viewingVersionId: null,
+        viewingSheet: null,
+      };
+    }),
+
+  viewVersion: (viewingVersionId, viewingSheet) => set({ viewingVersionId, viewingSheet }),
+  viewDraft: () => set({ viewingVersionId: null, viewingSheet: null }),
 }));
