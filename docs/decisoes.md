@@ -147,8 +147,56 @@ Agregadores são aceitáveis porque chamam os mesmos modelos oficiais. O princí
 
 ---
 
-## Pendências abertas
+## Versionamento de entidades
+
+> Especificação completa: [`versionamento-entidades.md`](./versionamento-entidades.md). As três primeiras entradas são as decisões D1, D2 e D3 da seção 2 daquele documento.
+
+### 07/08/2026 — Especificação do versionamento de entidades fechada (v1)
+**Documento:** [`versionamento-entidades.md`](./versionamento-entidades.md)
+
+O `character-sheet.md` fechou **o quê** se guarda numa personagem; faltava fechar **como esse conteúdo evolui no tempo**. A especificação separa identidade, retratos congelados e rascunho vivo, e define a tabela `entity_versions`, o ponteiro de versão ativa, as quatro travas de banco e as regras de resolução do `@`. Fecha uma pendência que estava aberta desde a estruturação da documentação, quando o versionamento constava como "definido na especificação, implementação pendente".
+
+---
+
+### 07/08/2026 — D1: versão nasce de intenção, não de clique
+
+Só o botão explícito "Salvar como nova versão" cria versão. Sem versionamento automático a cada edição: o histórico é o diário de evolução da personagem, não um log de teclas. Versionar cada tecla encheria o histórico de ruído e tornaria inútil justamente a pergunta que ele existe para responder — "o que mudou da v1 para a v2?".
+
+---
+
+### 07/08/2026 — D2: o rascunho pode gerar imagem, com honestidade
+
+Gerações a partir do rascunho são permitidas — essencial para testar a personagem antes de existir uma v1 —, mas ficam marcadas no histórico como `origem: rascunho — não reproduzível` (`generations.sheet_source = 'draft'`). Menções `@` em outros nodes resolvem **sempre** para versão congelada, nunca para o rascunho, porque o rascunho muda debaixo dos pés e destruiria a reprodutibilidade. Entidade sem nenhuma versão salva não pode ser mencionada — a interface orienta: "salve a v1 primeiro".
+
+---
+
+### 07/08/2026 — D3: versões têm cadeado no banco
+
+Nenhuma versão pode ser editada ou apagada — trava por trigger no Postgres, no mesmo espírito do ledger financeiro ("trava no banco, não no código"). O máximo permitido é arquivar a entidade inteira. Regra garantida por trigger não depende de o código lembrar de cumpri-la, e vale inclusive para a service role.
+
+---
+
+### 07/08/2026 — As travas de versões e imagens seguem o padrão do ledger
+
+O cadeado protege contra reescrita de história, **não contra o direito de apagar a própria conta (LGPD)**. Os triggers de DELETE em `entity_versions` e `entity_images` liberam a operação quando a linha correspondente em `auth.users` já não existe — sinal inequívoco de cascata legítima de exclusão de conta. Mesmo precedente da `reject_ledger_delete` (migration `20260807140400_ledger.sql`).
+
+Sem essa exceção, apagar uma conta se tornaria impossível: a cascata `auth.users → entities → entity_versions` e `auth.users → assets → entity_images` abortaria a transação inteira. A especificação dizia "incondicionalmente" e foi corrigida (seções 4.1 e 4.3) para descrever a regra real.
+
+Consequência técnica: a `entity_versions` carrega a coluna `user_id`, desnormalizada como já acontece na `entity_images`. Sem ela o trigger não distingue os dois casos — quando a cascata chega na versão, a linha da `entities` já foi removida e não pode mais ser consultada.
+
+---
+
+### 07/08/2026 — Migration de versionamento aplicada e verificada (7/7)
+**Migration:** `20260807170000_entity_versions.sql`
+
+Aplicada pelo Jorge e verificada com um roteiro de teste que exercita cada trava: numeração sequencial pelo banco, UPDATE e DELETE de versão bloqueados, imagem citada por versão protegida, imagem só do rascunho ainda deletável, e a FK composta recusando um ponteiro cruzado entre entidades. Sete de sete.
+
+**Duas descobertas de ambiente que valem mais que a migration em si**, porque vão se repetir em toda migration futura:
+
+1. **O `db push` só funciona com a connection string do *Session pooler* (IPv4).** A *Direct connection* do painel é IPv6 e falha nesta rede. Registrado na seção de comandos do `CLAUDE.md` e na nota de ambiente do [`arquitetura.md`](./arquitetura.md).
+2. **O SQL Editor do painel não mantém transação nem tabela temporária entre statements** (erro `42P01`). Roteiros de verificação passam a ser escritos como **bloco `DO` único que termina em `raise exception` proposital** — a exceção é o relatório e é também o que desfaz os dados de teste. Esse formato roda igual no painel e no psql.
 
 | Pendência | Responsável | Origem |
 |---|---|---|
+| Remover a coluna obsoleta `entities.version` numa migration futura — hoje só tem `COMMENT` de deprecação, e nenhum código a lê | próxima sessão de banco | entrada de 07/08/2026 (versionamento) |
 | Definir a margem sobre o custo real (preço de negócio dos Sparks) | Jorge, na fase de monetização | Fase 4 do roadmap |

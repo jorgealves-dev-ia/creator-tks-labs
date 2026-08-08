@@ -13,6 +13,7 @@
 | [`docs/produto.md`](docs/produto.md) | Antes de decidir **o que** construir, para quem, ou como uma funcionalidade deve se comportar para o usuário. Contém visão, público-alvo, princípio de UX, funcionalidades e o roadmap das 4 fases. |
 | [`docs/arquitetura.md`](docs/arquitetura.md) | Antes de qualquer mudança estrutural — novo provedor, mudança de schema, novo fluxo. Contém as 7 decisões **com o porquê de cada uma**, o modelo de dados, a stack, a estratégia de providers, a estrutura de pastas e as variáveis de ambiente. |
 | [`docs/character-sheet.md`](docs/character-sheet.md) | Ao trabalhar com entidades `@`, consistência de personagem ou compilação de prompt. É a especificação v1 **final e aprovada**: estrutura JSON, listas fechadas com tradução fixa em inglês e as regras de compilação. |
+| [`docs/versionamento-entidades.md`](docs/versionamento-entidades.md) | Ao mexer em versões de entidade, no ponteiro de versão ativa, na resolução de `@` ou nas travas de banco da `entity_versions`. Especificação v1 aprovada: o que é rascunho, o que é retrato congelado e o que o banco impede. |
 | [`docs/decisoes.md`](docs/decisoes.md) | Quando quiser saber **por que** algo é do jeito que é, ou antes de reverter uma escolha que parece estranha. Diário cronológico de decisões. |
 
 ---
@@ -37,8 +38,9 @@ Versão curta. O porquê de cada uma está em [`docs/arquitetura.md`](docs/arqui
 6. **Presets data-driven.** Proporções e resoluções por canal em `config/format-presets.json`; catálogo de modelos e preços em `config/models.json`. Nunca hardcoded em componentes.
 7. **Conteúdo.** Personagens 100% sintéticos — não implementar face swap de pessoas reais. Recusa de política do provedor é erro **esperado**: mensagem clara e fallback configurável.
 8. **Regras de compilação do character sheet.** As 10 regras da seção 6 de [`docs/character-sheet.md`](docs/character-sheet.md) têm **o mesmo status das 7 decisões acima** e nunca podem ser violadas pelo código sem decisão explícita registrada.
+9. **Versões de entidade são append-only com trava no banco; menções `@` resolvem sempre para versão congelada, nunca para rascunho.** Entidade sem versão salva não pode ser mencionada. Geração a partir do rascunho é permitida, mas marcada como não reproduzível (`generations.sheet_source = 'draft'`). → [`docs/versionamento-entidades.md`](docs/versionamento-entidades.md)
 
-**No banco, não no app.** Estas invariantes são garantidas por trigger e constraint, não por código que precisa lembrar de cumpri-las: cadastro cria `profiles` + `wallets`; projeto cria seu `workflows` (1 para 1); ledger recusa UPDATE/DELETE; `wallets.balance_cents` é projeção do ledger com saldo negativo bloqueado; `generations` e `ledger_transactions` são somente-leitura para o usuário; RLS default-deny nas 9 tabelas. → [`docs/arquitetura.md`](docs/arquitetura.md#4-modelo-de-dados)
+**No banco, não no app.** Estas invariantes são garantidas por trigger e constraint, não por código que precisa lembrar de cumpri-las: cadastro cria `profiles` + `wallets`; projeto cria seu `workflows` (1 para 1); ledger recusa UPDATE/DELETE; `wallets.balance_cents` é projeção do ledger com saldo negativo bloqueado; `generations` e `ledger_transactions` são somente-leitura para o usuário; `entity_versions` recusa UPDATE/DELETE e numera as versões sob bloqueio; imagem citada por uma versão não pode ser deletada; RLS default-deny nas 10 tabelas. Todas as travas de apagamento abrem exceção para a cascata de exclusão de conta (LGPD). → [`docs/arquitetura.md`](docs/arquitetura.md#4-modelo-de-dados)
 
 ---
 
@@ -103,7 +105,11 @@ Versão curta. O porquê de cada uma está em [`docs/arquitetura.md`](docs/arqui
 - `npm run lint` — lint
 - `npm run typecheck` — checagem de tipos
 - `supabase migration new <nome>` — criar migration (livre)
-- `supabase db push` — aplicar migrations (requer confirmação do Jorge)
+- **Aplicar migrations — sempre o Jorge, manualmente:**
+  ```bash
+  npx supabase db push --db-url "<connection string do Session pooler>"
+  ```
+  O `supabase link` está com bug nesta máquina, por isso a connection string vai explícita. Use a do **Session pooler (IPv4)** do painel do Supabase — a *Direct connection* é IPv6 e **falha nesta rede**. O Claude Code nunca aplica migrations: escreve o arquivo e avisa.
 
 ---
 

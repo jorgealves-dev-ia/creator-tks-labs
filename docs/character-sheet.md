@@ -22,7 +22,7 @@ A estrutura completa do character sheet em JSON, as listas fechadas campo por ca
 O sheet inteiro é **um único JSON** guardado na coluna `sheet` (tipo `jsonb`) da tabela `entities`. Cada **versão** é um snapshot completo desse JSON — nada de guardar só "o que mudou", porque snapshot completo é mais simples de ler, comparar e restaurar.
 
 - O **handle** (`julia`), o **número da versão**, as **datas** e qual versão está **ativa** ficam em colunas da tabela, fora do JSON. Motivo: são coisas que o banco precisa consultar e indexar; o JSON é o conteúdo criativo.
-- As **imagens canônicas** ficam na tabela `entity_images`. O JSON só guarda os **IDs** delas. Quando você cria a versão 2 sem trocar o turnaround, a v2 simplesmente aponta para os mesmos IDs da v1 — é assim que "versões compartilham imagens que não mudaram" funciona na prática.
+- As **imagens canônicas** ficam na tabela `entity_images`. O JSON só guarda os **IDs** delas — especificamente os **`asset_id`** (a coluna `entity_images.asset_id`, que aponta para `assets.id`). A `entity_images` tem chave primária composta `(entity_id, asset_id)` e nenhuma coluna `id` própria, então não há outra leitura possível. Quando você cria a versão 2 sem trocar o turnaround, a v2 simplesmente aponta para os mesmos IDs da v1 — é assim que "versões compartilham imagens que não mudaram" funciona na prática.
 - O campo `schema_version` dentro do JSON existe para o futuro: se um dia mudarmos a estrutura do sheet, o sistema sabe ler sheets antigos sem quebrar.
 
 ---

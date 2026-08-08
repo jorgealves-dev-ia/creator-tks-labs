@@ -166,15 +166,15 @@ A única exceção prevista: a exclusão da conta. Durante o cascade, a linha em
 
 ## 4. Modelo de dados
 
-**Postgres no Supabase, RLS habilitado em todas as 9 tabelas, com política default-deny.**
+**Postgres no Supabase, RLS habilitado em todas as 10 tabelas, com política default-deny.**
 
 ### O que "default-deny" significa aqui
 
 Com RLS ligado e nenhuma política que case, o Postgres **nega** a operação. Não existe política permissiva de fallback. Cada política abre exatamente uma operação, para exatamente o usuário dono da linha. Além disso, os privilégios são revogados de `anon` em todas as tabelas: **nada neste produto é público**. A `service_role` ignora RLS e é usada apenas por código de servidor.
 
-Verificado na Fase 0: sem sessão, as 9 tabelas respondem `42501 permission denied`.
+Verificado na Fase 0: sem sessão, as 9 tabelas de então respondiam `42501 permission denied`. A décima (`entity_versions`) segue o mesmo padrão e é verificada junto com a migration que a cria.
 
-### As 9 tabelas
+### As 10 tabelas
 
 | Tabela | O que guarda |
 |---|---|
@@ -183,12 +183,15 @@ Verificado na Fase 0: sem sessão, as 9 tabelas respondem `42501 permission deni
 | `ledger_transactions` | append-only: depósitos, débitos, estornos e ajustes (`amount_cents`, `cost_real_cents`, `cost_charged_cents`, `generation_id`, `kind`) |
 | `projects` | as "abas": nome, status agregado (`idle`/`generating`/`generated`/`error`), ordenação |
 | `workflows` | o grafo do canvas por projeto — `graph jsonb` no formato React Flow (nodes + edges + viewport), com `version` |
-| `entities` | entidades mencionáveis por `@`: `kind` (character/product/scene/outfit/accessory), `handle` (único por usuário), `sheet jsonb`, `version`, `cover_asset_id` |
+| `entities` | a **identidade** mencionável por `@`: `kind` (character/product/scene/outfit/accessory), `handle` (único por usuário), `sheet jsonb` (o **rascunho vivo**), `active_version_id` (o ponteiro da versão ativa), `archived_at`, `cover_asset_id` |
+| `entity_versions` | os **snapshots congelados** do sheet: `entity_id`, `user_id`, `version_number` (sequencial por entidade), `sheet jsonb` (cópia integral, nunca um diff), `label` |
 | `entity_images` | join entre `entities` e `assets`: as imagens canônicas de uma entidade (turnaround, expressões), com `role` e ordenação |
 | `assets` | arquivos no Storage: `kind` (image/video/audio), `source` (upload/generation), mime, dimensões, duração |
-| `generations` | cada execução: workflow/node de origem, provedor, modelo, `params jsonb`, `prompt_user_pt`, `prompt_compiled jsonb`, status, custos, `result_asset_id`, erro |
+| `generations` | cada execução: workflow/node de origem, provedor, modelo, `params jsonb`, `prompt_user_pt`, `prompt_compiled jsonb`, status, custos, `result_asset_id`, `entity_version_id`, `sheet_source`, erro |
 
 Sobre `entities.project_id`: **nulo = a entidade vale em todos os projetos do usuário**; preenchido = escopo daquele projeto. O `handle` é um slug minúsculo, único por usuário, validado por constraint no formato `^[a-z0-9][a-z0-9_-]{0,47}$`.
+
+A coluna `entities.version` (Fase 0) está **obsoleta**: foi substituída por `entity_versions.version_number` + `entities.active_version_id`. Ficou no schema com um `COMMENT` de deprecação, para remoção numa migration futura.
 
 ### Invariantes garantidas pelo banco, não pelo código do app
 
@@ -201,6 +204,12 @@ Esta é a linha divisória mais importante da arquitetura: as regras abaixo **n�
 - `generations` e `ledger_transactions` são **somente-leitura** para o usuário autenticado; escrita apenas por código de servidor com service role
 - Storage: bucket privado `assets`, caminho `<user_id>/…`, políticas casam a primeira pasta com o dono
 - Realtime habilitado em `projects` e `generations` — e o Realtime respeita RLS, então um inscrito só recebe as próprias linhas
+- `entity_versions` recusa UPDATE e DELETE por trigger — uma versão salva é um retrato congelado. Como consequência, apagar fisicamente uma entidade que tenha versões também falha: entidade se arquiva (`archived_at`), nunca se deleta
+- `entity_versions.version_number` é atribuído **pelo banco**, sob bloqueio da linha da entidade, com `UNIQUE (entity_id, version_number)` de rede de segurança — dois salvamentos simultâneos jamais produzem dois "v3"
+- `entities.active_version_id` usa **FK composta** `(active_version_id, id) → entity_versions (id, entity_id)`: é o banco que impede o `@julia` de apontar, por bug, para uma versão da `@carla`
+- Imagem citada no bloco `imagens_canonicas` de qualquer versão **não pode ser deletada** (trigger em `entity_images`) — deletá-la quebraria um retrato congelado. Imagem referenciada só pelo rascunho continua deletável
+
+**A exceção comum a todas as travas de apagamento**: quando a linha correspondente em `auth.users` já não existe, o delete passa. É o sinal de que se trata da cascata de exclusão de conta, e não de reescrita de história. O cadeado protege o passado; não impede o usuário de apagar a própria conta (LGPD). O padrão nasceu na `reject_ledger_delete` e vale hoje para o ledger, para `entity_versions` e para `entity_images`.
 
 ### Concorrência do canvas
 
@@ -208,11 +217,21 @@ Esta é a linha divisória mais importante da arquitetura: as regras abaixo **n�
 
 O grafo é validado com Zod **nas duas direções**: do browser para a server action, e do `jsonb` de volta para a aplicação. O banco guarda `jsonb` — o Zod é quem garante que aquilo tem o formato que o React Flow espera.
 
-### Versionamento de entidades — pendente
+### Versionamento de entidades
 
-O modelo de versionamento está **definido na especificação** ([`character-sheet.md`](./character-sheet.md), seções 2 e 9): snapshots completos do JSON, coluna indicando a versão ativa, acesso a versão específica por `@handle@vN` e reaproveitamento dos IDs de imagens que não mudaram entre versões.
+Especificação completa: [`versionamento-entidades.md`](./versionamento-entidades.md). O resumo:
 
-**A implementação no banco está pendente**, planejada para a fase do character sheet (Fase 2). O schema atual tem apenas uma coluna `entities.version integer` — não existe ainda tabela de versões nem coluna de versão ativa. Isso é intencional, não uma divergência: a seção 9 do `character-sheet.md` coloca a mecânica de versionamento explicitamente fora do escopo daquele documento.
+Três coisas que não moram juntas — a **identidade** (`entities`: o handle, o nome, o dono), os **retratos congelados** (`entity_versions`: v1, v2, v3…, que nunca mudam) e o **rascunho vivo** (`entities.sheet`, editado à vontade). "Salvar como nova versão" é fotografar o rascunho e emoldurar o quadro; o quadro ninguém mais altera, o caderno segue aberto.
+
+`@julia` resolve para a versão ativa através de `entities.active_version_id`. `@julia@v2` busca o quadro específico. Rollback é mover o ponteiro — nada se apaga, nada se reescreve; evoluir a partir de uma versão antiga gera uma versão **nova**, nunca uma reescrita.
+
+Três regras de comportamento que o banco não consegue garantir sozinho, e que a aplicação deve cumprir:
+
+- **Versão nasce de intenção, não de clique** — só o botão explícito "Salvar como nova versão" cria versão. O histórico é o diário de evolução da personagem, não um log de teclas
+- **Menção `@` nunca resolve para o rascunho** — sempre para versão congelada. Entidade sem nenhuma versão salva não pode ser mencionada
+- **Geração a partir do rascunho é permitida, mas marcada** — `generations.sheet_source = 'draft'`, exibida no histórico como não reproduzível
+
+A camada de UI (formulário do sheet, seletor de versões, diff visual entre versões) fica para uma sessão futura, conforme a seção 6 da especificação.
 
 ### Regra de mudança de schema
 
@@ -220,7 +239,7 @@ O modelo de versionamento está **definido na especificação** ([`character-she
 
 Depois de aplicar, **regerar** `src/lib/supabase/database.types.ts` a partir do banco real — não escrever esse arquivo à mão.
 
-As 9 migrations existentes, em ordem de dependência:
+As 10 migrations existentes, em ordem de dependência:
 
 ```
 20260807140000_core_foundation.sql             helper updated_at, profiles, wallets, trigger de cadastro
@@ -232,7 +251,16 @@ As 9 migrations existentes, em ordem de dependência:
 20260807140600_enable_realtime.sql             publicação de projects e generations
 20260807150000_revoke_trigger_function_execute.sql   tira EXECUTE das funções de gatilho
 20260807160000_index_foreign_keys.sql          índices de cobertura nas FKs
+20260807170000_entity_versions.sql             versões de entidade, ponteiro ativo e travas
 ```
+
+> **Nota de ambiente.** O `supabase link` está com bug nesta máquina, então a connection string vai explícita na linha de comando. O Jorge aplica manualmente:
+>
+> ```bash
+> npx supabase db push --db-url "<connection string do Session pooler>"
+> ```
+>
+> Use a string do **Session pooler (IPv4)** do painel. A *Direct connection* é IPv6 e falha nesta rede — é o erro mais provável se o push não conectar.
 
 ---
 
