@@ -6,13 +6,21 @@ import {
   Controls,
   MiniMap,
   ReactFlow,
+  type NodeTypes,
 } from "@xyflow/react";
 import { useEffect, useRef } from "react";
 
+import { CharacterNode } from "@/components/nodes/character-node";
 import type { CanvasGraph } from "@/lib/canvas/graph";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { useWorkflowAutosave } from "@/lib/canvas/use-autosave";
 import { t } from "@/lib/i18n/pt-BR";
+
+/**
+ * Defined at module scope: a fresh object on every render would make React Flow
+ * remount every node.
+ */
+const nodeTypes: NodeTypes = { character: CharacterNode };
 
 type FlowCanvasProps = {
   projectId: string;
@@ -58,6 +66,7 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}

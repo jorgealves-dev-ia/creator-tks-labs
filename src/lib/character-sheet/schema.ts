@@ -1,0 +1,344 @@
+import { z } from "zod";
+
+import {
+  IMAGENS_CANONICAS_SLOTS,
+  TRAJE_PADRAO_POR_GENERO,
+  type GeneroApresentacao,
+} from "@/lib/character-sheet/dictionary";
+import type { Json } from "@/lib/supabase/database.types";
+
+/**
+ * The character sheet as stored in entities.sheet and in every entity_versions
+ * row. Specification: docs/character-sheet.md §3 and §4.
+ *
+ * The schema validates *shape*, never taste. Option values are accepted as plain
+ * strings instead of being checked against the dictionary, on purpose: a frozen
+ * version must always parse, years later, whatever happened to the lists since.
+ * The interface only ever offers valid options, and the compiler skips a value
+ * it cannot find. See the immutability warning in dictionary.ts.
+ *
+ * Every field carries a default, so an entity whose sheet is still `{}` — the
+ * column default — parses into a complete empty sheet.
+ */
+
+export const SHEET_SCHEMA_VERSION = 1;
+
+/** §3 · The four states a DNA field can be in. Only two reach the prompt. */
+export const ESTADOS = ["observado", "inferido", "confirmado", "vazio"] as const;
+export type Estado = (typeof ESTADOS)[number];
+
+/** Who filled the field in. */
+export const ORIGENS = ["manual", "extracao"] as const;
+export type Origem = (typeof ORIGENS)[number];
+
+/** Compilation rule 2: only these two states enter a prompt. */
+export function entersPrompt(estado: Estado): boolean {
+  return estado === "observado" || estado === "confirmado";
+}
+
+/** The yellow ones — inferred by extraction, waiting for the user's eyes. */
+export function needsConfirmation(estado: Estado): boolean {
+  return estado === "inferido";
+}
+
+const estadoSchema = z.enum(ESTADOS).catch("vazio");
+const origemSchema = z.enum(ORIGENS).catch("manual");
+
+/**
+ * §3 · The field envelope of the visual DNA. `valor` holds an option key, or a
+ * number for altura_cm. `detalhes` complements the option and never replaces it.
+ */
+const fieldSchema = z.object({
+  valor: z.union([z.string(), z.number()]).nullable().default(null),
+  detalhes: z.string().default(""),
+  estado: estadoSchema.default("vazio"),
+  origem: origemSchema.default("manual"),
+});
+
+export type SheetField = z.infer<typeof fieldSchema>;
+
+const emptyField = (): SheetField => ({
+  valor: null,
+  detalhes: "",
+  estado: "vazio",
+  origem: "manual",
+});
+
+/** A field the user filled in by hand is confirmed on the spot — §4.1, regra viva. */
+export const confirmedField = (valor: string | number): SheetField => ({
+  valor,
+  detalhes: "",
+  estado: "confirmado",
+  origem: "manual",
+});
+
+/**
+ * The living rule of §4.1: editing a field by hand turns it `confirmado` on the
+ * spot, with no question asked. Clearing it turns it `vazio` — nobody decided
+ * anything, so nothing should reach the prompt.
+ *
+ * Both editors go through here so the rule cannot be forgotten in one component
+ * and remembered in another.
+ */
+export function withValue(field: SheetField, valor: string | number | null): SheetField {
+  if (valor === null || valor === "") {
+    return { ...field, valor: null, estado: "vazio", origem: "manual" };
+  }
+
+  return { ...field, valor, estado: "confirmado", origem: "manual" };
+}
+
+/**
+ * `detalhes` complements the chosen option and never replaces it, so writing a
+ * detail only confirms a field that already has a value. Detail on an empty
+ * field stays empty — that is what stops a subjective adjective from sneaking
+ * back in through the side door.
+ */
+export function withDetails(field: SheetField, detalhes: string): SheetField {
+  if (field.valor === null) {
+    return { ...field, detalhes };
+  }
+
+  return { ...field, detalhes, estado: "confirmado", origem: "manual" };
+}
+
+/** Layers 2 and 3 carry no state: extraction never touches them. */
+const plainChoiceSchema = z.object({
+  valor: z.string().nullable().default(null),
+  detalhes: z.string().default(""),
+});
+
+export type PlainChoice = z.infer<typeof plainChoiceSchema>;
+
+const choice = (valor: string | null = null): PlainChoice => ({ valor, detalhes: "" });
+
+// ---------------------------------------------------------------------------
+// Layer 1 — visual DNA
+// ---------------------------------------------------------------------------
+
+/** §3 · Marks carry the envelope on the whole item: a tattoo is seen, or it is not. */
+const tatuagemSchema = z.object({
+  posicao: z.string().nullable().default(null),
+  tamanho: z.string().nullable().default(null),
+  estilo: z.string().nullable().default(null),
+  descricao: z.string().default(""),
+  estado: estadoSchema.default("confirmado"),
+  origem: origemSchema.default("manual"),
+});
+
+const piercingSchema = z.object({
+  local: z.string().nullable().default(null),
+  joia: z.string().nullable().default(null),
+  detalhes: z.string().default(""),
+  estado: estadoSchema.default("confirmado"),
+  origem: origemSchema.default("manual"),
+});
+
+const outraMarcaSchema = z.object({
+  tipo: z.string().nullable().default(null),
+  posicao: z.string().default(""),
+  descricao: z.string().default(""),
+  estado: estadoSchema.default("confirmado"),
+  origem: origemSchema.default("manual"),
+});
+
+export type Tatuagem = z.infer<typeof tatuagemSchema>;
+export type Piercing = z.infer<typeof piercingSchema>;
+export type OutraMarca = z.infer<typeof outraMarcaSchema>;
+
+const dnaVisualSchema = z.object({
+  genero_apresentacao: fieldSchema.default(emptyField),
+  idade_aparente: fieldSchema.default(emptyField),
+  formato_rosto: fieldSchema.default(emptyField),
+
+  olhos: z
+    .object({
+      cor: fieldSchema.default(emptyField),
+      formato: fieldSchema.default(emptyField),
+      espacamento: fieldSchema.default(emptyField),
+    })
+    .prefault({}),
+
+  sobrancelhas: z
+    .object({
+      formato: fieldSchema.default(emptyField),
+      espessura: fieldSchema.default(emptyField),
+    })
+    .prefault({}),
+
+  nariz: fieldSchema.default(emptyField),
+  labios: fieldSchema.default(emptyField),
+
+  pele: z
+    .object({
+      tom: fieldSchema.default(emptyField),
+      subtom: fieldSchema.default(emptyField),
+      sardas: fieldSchema.default(emptyField),
+    })
+    .prefault({}),
+
+  cabelo: z
+    .object({
+      cor: fieldSchema.default(emptyField),
+      textura: fieldSchema.default(emptyField),
+      comprimento: fieldSchema.default(emptyField),
+      reparticao: fieldSchema.default(emptyField),
+      franja: fieldSchema.default(emptyField),
+      acabamento: fieldSchema.default(emptyField),
+    })
+    .prefault({}),
+
+  corpo: z
+    .object({
+      altura_cm: fieldSchema.default(emptyField),
+      silhueta: fieldSchema.default(emptyField),
+      proporcoes: z
+        .object({
+          busto: fieldSchema.default(emptyField),
+          cintura: fieldSchema.default(emptyField),
+          quadril: fieldSchema.default(emptyField),
+        })
+        .prefault({}),
+    })
+    .prefault({}),
+
+  marcas: z
+    .object({
+      tatuagens: z.array(tatuagemSchema).default([]),
+      piercings: z.array(piercingSchema).default([]),
+      outras: z.array(outraMarcaSchema).default([]),
+    })
+    .prefault({}),
+
+  notas_gerais: z.string().default(""),
+});
+
+// ---------------------------------------------------------------------------
+// Layer 2 — variable defaults
+// ---------------------------------------------------------------------------
+
+const restricaoSchema = z.object({
+  tipo: z.string().default("nunca"),
+  regra: z.string().default(""),
+});
+
+export type Restricao = z.infer<typeof restricaoSchema>;
+
+const padroesVariaveisSchema = z.object({
+  expressao: plainChoiceSchema.prefault({}),
+  pose: plainChoiceSchema.prefault({}),
+  traje_canonico: plainChoiceSchema.prefault({}),
+  fundo_canonico: plainChoiceSchema.prefault({}),
+  iluminacao: plainChoiceSchema.prefault({}),
+  enquadramento: plainChoiceSchema.prefault({}),
+  restricoes: z.array(restricaoSchema).default([]),
+});
+
+// ---------------------------------------------------------------------------
+// Layer 3 — narrative. Never enters an image prompt (compilation rule 6).
+// ---------------------------------------------------------------------------
+
+const vozSchema = z.object({
+  // provider and voice_id are configured in Phase 3 (video and speech); they are
+  // kept in the shape so a sheet saved today stays readable then.
+  provider: z.string().nullable().default(null),
+  voice_id: z.string().nullable().default(null),
+  idioma: z.string().default("pt-BR"),
+  descricao: z.string().default(""),
+});
+
+const narrativaSchema = z.object({
+  nome_completo: z.string().default(""),
+  apelidos: z.array(z.string()).default([]),
+  idade: z.number().nullable().default(null),
+  data_nascimento: z.string().nullable().default(null),
+  ocupacao: z.string().default(""),
+  personalidade: z
+    .object({
+      qualidades: z.array(z.string()).default([]),
+      defeitos: z.array(z.string()).default([]),
+      tracos_marcantes: z.array(z.string()).default([]),
+    })
+    .prefault({}),
+  objetivos: z.array(z.string()).default([]),
+  medos: z.array(z.string()).default([]),
+  relacoes: z.array(z.string()).default([]),
+  estilo_de_fala: z.string().default(""),
+  voz: vozSchema.prefault({}),
+});
+
+// ---------------------------------------------------------------------------
+// Canonical images — asset ids only; the files live in entity_images
+// ---------------------------------------------------------------------------
+
+const imagensCanonicasSchema = z.object({
+  turnaround_frente: z.string().nullable().default(null),
+  turnaround_tres_quartos: z.string().nullable().default(null),
+  turnaround_perfil: z.string().nullable().default(null),
+  turnaround_costas: z.string().nullable().default(null),
+  folha_expressoes: z.string().nullable().default(null),
+  paleta_cores: z.string().nullable().default(null),
+});
+
+// ---------------------------------------------------------------------------
+// The whole sheet
+// ---------------------------------------------------------------------------
+
+export const characterSheetSchema = z.object({
+  schema_version: z.int().positive().default(SHEET_SCHEMA_VERSION),
+  dna_visual: dnaVisualSchema.prefault({}),
+  padroes_variaveis: padroesVariaveisSchema.prefault({}),
+  narrativa: narrativaSchema.prefault({}),
+  imagens_canonicas: imagensCanonicasSchema.prefault({}),
+});
+
+export type CharacterSheet = z.infer<typeof characterSheetSchema>;
+export type DnaVisual = CharacterSheet["dna_visual"];
+export type PadroesVariaveis = CharacterSheet["padroes_variaveis"];
+export type Narrativa = CharacterSheet["narrativa"];
+export type ImagensCanonicas = CharacterSheet["imagens_canonicas"];
+
+/**
+ * A brand new sheet. Layer 2 arrives with sensible defaults already ticked —
+ * §7 step 4 of the screen specification calls that step a "check and carry on",
+ * not a form to fill. The DNA arrives honestly empty.
+ */
+export function createEmptySheet(genero?: GeneroApresentacao): CharacterSheet {
+  const sheet = characterSheetSchema.parse({});
+
+  sheet.padroes_variaveis.expressao = choice("sorriso_suave");
+  sheet.padroes_variaveis.pose = choice("em_pe_frontal");
+  sheet.padroes_variaveis.fundo_canonico = choice("cinza_claro");
+  sheet.padroes_variaveis.iluminacao = choice("estudio_difusa");
+  sheet.padroes_variaveis.enquadramento = choice("corpo_inteiro");
+  sheet.padroes_variaveis.traje_canonico = choice(
+    genero ? TRAJE_PADRAO_POR_GENERO[genero] : TRAJE_PADRAO_POR_GENERO.feminino,
+  );
+
+  if (genero) {
+    sheet.dna_visual.genero_apresentacao = confirmedField(genero);
+  }
+
+  return sheet;
+}
+
+/**
+ * Reads a sheet out of jsonb. Unreadable input yields an empty sheet rather than
+ * throwing: the editor must always open, even on a sheet written by a future
+ * version of the app.
+ */
+export function parseSheet(value: unknown): CharacterSheet {
+  const parsed = characterSheetSchema.safeParse(value ?? {});
+  return parsed.success ? parsed.data : createEmptySheet();
+}
+
+/**
+ * Narrows a sheet to the plain JSON the column accepts. The schema already
+ * proved every leaf is a JSON primitive; this only restates it for the types.
+ */
+export function sheetToJson(sheet: CharacterSheet): Json {
+  return JSON.parse(JSON.stringify(sheet)) as Json;
+}
+
+/** The canonical image slots, in the order the interface shows them. */
+export const CANONICAL_SLOT_KEYS = IMAGENS_CANONICAS_SLOTS.map((slot) => slot.key);

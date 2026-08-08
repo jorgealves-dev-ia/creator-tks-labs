@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { Studio } from "@/components/canvas/studio";
 import { parseGraph, type CanvasGraph } from "@/lib/canvas/graph";
+import { loadCharacters } from "@/lib/entities/queries";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const EMPTY_GRAPH: CanvasGraph = { nodes: [], edges: [] };
@@ -20,7 +21,7 @@ export default async function StudioPage(props: PageProps<"/">) {
 
   const userId = claims.claims.sub;
 
-  const [projectsResult, walletResult] = await Promise.all([
+  const [projectsResult, walletResult, characters] = await Promise.all([
     supabase
       .from("projects")
       .select("id, name, status")
@@ -33,6 +34,9 @@ export default async function StudioPage(props: PageProps<"/">) {
       .select("balance_cents")
       .eq("user_id", userId)
       .maybeSingle(),
+    // Characters are not scoped to a project: the same influencer can be placed
+    // on the canvas of any of them.
+    loadCharacters(userId),
   ]);
 
   const projects = projectsResult.data ?? [];
@@ -67,6 +71,7 @@ export default async function StudioPage(props: PageProps<"/">) {
       graph={graph}
       version={version}
       balanceCents={walletResult.data?.balance_cents ?? 0}
+      characters={characters}
     />
   );
 }

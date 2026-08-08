@@ -61,6 +61,8 @@ export type Database = {
       }
       entities: {
         Row: {
+          active_version_id: string | null
+          archived_at: string | null
           cover_asset_id: string | null
           created_at: string
           display_name: string
@@ -74,6 +76,8 @@ export type Database = {
           version: number
         }
         Insert: {
+          active_version_id?: string | null
+          archived_at?: string | null
           cover_asset_id?: string | null
           created_at?: string
           display_name: string
@@ -87,6 +91,8 @@ export type Database = {
           version?: number
         }
         Update: {
+          active_version_id?: string | null
+          archived_at?: string | null
           cover_asset_id?: string | null
           created_at?: string
           display_name?: string
@@ -100,6 +106,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "entities_active_version_belongs_to_entity"
+            columns: ["active_version_id", "id"]
+            isOneToOne: false
+            referencedRelation: "entity_versions"
+            referencedColumns: ["id", "entity_id"]
+          },
           {
             foreignKeyName: "entities_cover_asset_id_fkey"
             columns: ["cover_asset_id"]
@@ -158,12 +171,51 @@ export type Database = {
           },
         ]
       }
+      entity_versions: {
+        Row: {
+          created_at: string
+          entity_id: string
+          id: string
+          label: string | null
+          sheet: Json
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          id?: string
+          label?: string | null
+          sheet: Json
+          user_id: string
+          version_number: number
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          id?: string
+          label?: string | null
+          sheet?: Json
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_versions_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       generations: {
         Row: {
           completed_at: string | null
           cost_charged_cents: number
           cost_real_cents: number
           created_at: string
+          entity_version_id: string | null
           error: string | null
           id: string
           model: string
@@ -175,6 +227,7 @@ export type Database = {
           provider: string
           provider_job_id: string | null
           result_asset_id: string | null
+          sheet_source: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["generation_status"]
           updated_at: string
@@ -186,6 +239,7 @@ export type Database = {
           cost_charged_cents?: number
           cost_real_cents?: number
           created_at?: string
+          entity_version_id?: string | null
           error?: string | null
           id?: string
           model: string
@@ -197,6 +251,7 @@ export type Database = {
           provider: string
           provider_job_id?: string | null
           result_asset_id?: string | null
+          sheet_source?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["generation_status"]
           updated_at?: string
@@ -208,6 +263,7 @@ export type Database = {
           cost_charged_cents?: number
           cost_real_cents?: number
           created_at?: string
+          entity_version_id?: string | null
           error?: string | null
           id?: string
           model?: string
@@ -219,6 +275,7 @@ export type Database = {
           provider?: string
           provider_job_id?: string | null
           result_asset_id?: string | null
+          sheet_source?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["generation_status"]
           updated_at?: string
@@ -226,6 +283,13 @@ export type Database = {
           workflow_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "generations_entity_version_id_fkey"
+            columns: ["entity_version_id"]
+            isOneToOne: false
+            referencedRelation: "entity_versions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "generations_project_id_fkey"
             columns: ["project_id"]
