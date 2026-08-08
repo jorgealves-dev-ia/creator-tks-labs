@@ -208,6 +208,7 @@ Esta é a linha divisória mais importante da arquitetura: as regras abaixo **n�
 - `entity_versions.version_number` é atribuído **pelo banco**, sob bloqueio da linha da entidade, com `UNIQUE (entity_id, version_number)` de rede de segurança — dois salvamentos simultâneos jamais produzem dois "v3"
 - `entities.active_version_id` usa **FK composta** `(active_version_id, id) → entity_versions (id, entity_id)`: é o banco que impede o `@julia` de apontar, por bug, para uma versão da `@carla`
 - Imagem citada no bloco `imagens_canonicas` de qualquer versão **não pode ser deletada** (trigger em `entity_images`) — deletá-la quebraria um retrato congelado. Imagem referenciada só pelo rascunho continua deletável
+- Salvar versão é **atômico**: a função `public.save_entity_version(entity_id, label)` faz o INSERT do retrato e o UPDATE do ponteiro ativo na mesma transação. Ou as duas escritas acontecem, ou nenhuma — nunca um `@julia` apontando para o retrato errado
 
 **A exceção comum a todas as travas de apagamento**: quando a linha correspondente em `auth.users` já não existe, o delete passa. É o sinal de que se trata da cascata de exclusão de conta, e não de reescrita de história. O cadeado protege o passado; não impede o usuário de apagar a própria conta (LGPD). O padrão nasceu na `reject_ledger_delete` e vale hoje para o ledger, para `entity_versions` e para `entity_images`.
 
@@ -231,7 +232,13 @@ Três regras de comportamento que o banco não consegue garantir sozinho, e que 
 - **Menção `@` nunca resolve para o rascunho** — sempre para versão congelada. Entidade sem nenhuma versão salva não pode ser mencionada
 - **Geração a partir do rascunho é permitida, mas marcada** — `generations.sheet_source = 'draft'`, exibida no histórico como não reproduzível
 
-A camada de UI (formulário do sheet, seletor de versões, diff visual entre versões) fica para uma sessão futura, conforme a seção 6 da especificação.
+**Salvar versão é uma função no banco, não uma rota de API.** `public.save_entity_version(p_entity_id, p_label)` insere o retrato congelado e move o ponteiro ativo na mesma transação. O cliente do Supabase não abre transação: uma rota faria duas idas ao servidor, e uma falha entre elas deixaria uma versão órfã ou o ponteiro no lugar errado. A função é `security invoker` (o RLS continua valendo), tira o retrato do próprio `entities.sheet` e recusa com código próprio nos três casos que a interface precisa distinguir — `CT001` rascunho idêntico à versão ativa, `CT002` personagem arquivada, `CT003` personagem inexistente. Ativar versão antiga **não** precisa de função: a FK composta já garante que o ponteiro só aceita versão da própria entidade, então um UPDATE simples é seguro por construção.
+
+**Imagens canônicas.** O arquivo vai do browser direto para o Storage — mandá-lo por este servidor dobraria o tráfego sem ganho, e as políticas do bucket já prendem cada usuário à própria pasta. Caminho: `<user_id>/entities/<entity_id>/<slot>-<uuid>.<ext>`. Só a escrituração (linha em `assets`, vínculo em `entity_images` com `role` = o slot, e a URL assinada de curta duração) passa por server action. O id gravado no sheet é o `asset_id`.
+
+Remover uma imagem **tenta** o delete em vez de prever se alguma versão depende dela: o trigger de 4.3 é a autoridade sobre essa pergunta, e perguntar direto a ele nunca diverge do que ele de fato impede. Recusa não é falha — significa que o arquivo sustenta um retrato congelado, e a interface diz isso em português claro.
+
+A tela está especificada em [`tela-character-sheet.md`](./tela-character-sheet.md) e implementada. O diff visual entre versões continua fora de escopo, conforme a seção 6 da especificação.
 
 ### Regra de mudança de schema
 
@@ -239,7 +246,7 @@ A camada de UI (formulário do sheet, seletor de versões, diff visual entre ver
 
 Depois de aplicar, **regerar** `src/lib/supabase/database.types.ts` a partir do banco real — não escrever esse arquivo à mão.
 
-As 11 migrations existentes, em ordem de dependência:
+As 12 migrations existentes, em ordem de dependência:
 
 ```
 20260807140000_core_foundation.sql             helper updated_at, profiles, wallets, trigger de cadastro
@@ -253,6 +260,7 @@ As 11 migrations existentes, em ordem de dependência:
 20260807160000_index_foreign_keys.sql          índices de cobertura nas FKs
 20260807170000_entity_versions.sql             versões de entidade, ponteiro ativo e travas
 20260807180000_index_active_version_fk.sql     índice de cobertura da FK composta do ponteiro
+20260807190000_save_entity_version.sql         salvar versão + mover ponteiro numa transação só
 ```
 
 > **Nota de ambiente.** O `supabase link` está com bug nesta máquina, então a connection string vai explícita na linha de comando. O Jorge aplica manualmente:
@@ -275,9 +283,12 @@ src/
       webhooks/           # callbacks dos provedores (validação de segredo obrigatória)
   components/
     canvas/               # canvas, header de abas, sidebar, minimapa
+    character-sheet/      # editor em overlay, wizard, selos, versões, imagens
     nodes/                # um componente por tipo de node
     ui/                   # primitivas de UI
   lib/
+    character-sheet/      # dicionário PT↔EN, schema Zod do sheet, campos, diff
+    entities/             # personagens: actions, store, autosave do rascunho
     providers/            # adapters (interface GenerationProvider)
     supabase/             # clients (server/browser) e helpers
     prompt/               # compilação PT → JSON EN, resolução de @

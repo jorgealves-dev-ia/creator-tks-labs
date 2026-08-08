@@ -14,6 +14,7 @@
 | [`docs/arquitetura.md`](docs/arquitetura.md) | Antes de qualquer mudança estrutural — novo provedor, mudança de schema, novo fluxo. Contém as 7 decisões **com o porquê de cada uma**, o modelo de dados, a stack, a estratégia de providers, a estrutura de pastas e as variáveis de ambiente. |
 | [`docs/character-sheet.md`](docs/character-sheet.md) | Ao trabalhar com entidades `@`, consistência de personagem ou compilação de prompt. É a especificação v1 **final e aprovada**: estrutura JSON, listas fechadas com tradução fixa em inglês e as regras de compilação. |
 | [`docs/versionamento-entidades.md`](docs/versionamento-entidades.md) | Ao mexer em versões de entidade, no ponteiro de versão ativa, na resolução de `@` ou nas travas de banco da `entity_versions`. Especificação v1 aprovada: o que é rascunho, o que é retrato congelado e o que o banco impede. |
+| [`docs/tela-character-sheet.md`](docs/tela-character-sheet.md) | Ao mexer na tela da personagem — cartão no canvas, editor em overlay, selos de estado, contador de amarelos, seletor de versões, coluna de imagens canônicas ou wizard de criação. Especificação v1 aprovada com as decisões U1–U4. |
 | [`docs/decisoes.md`](docs/decisoes.md) | Quando quiser saber **por que** algo é do jeito que é, ou antes de reverter uma escolha que parece estranha. Diário cronológico de decisões. |
 
 ---

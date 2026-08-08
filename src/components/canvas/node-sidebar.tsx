@@ -3,8 +3,8 @@
 import { useReactFlow } from "@xyflow/react";
 import { useState } from "react";
 
+import { CharacterWizard } from "@/components/character-sheet/character-wizard";
 import { Portrait, VersionBadge } from "@/components/character-sheet/identity";
-import { NewCharacterDialog } from "@/components/character-sheet/new-character-dialog";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { useEntitiesStore } from "@/lib/entities/store";
 import { t } from "@/lib/i18n/pt-BR";
@@ -178,13 +178,12 @@ export function NodeSidebar() {
       </aside>
 
       {creating ? (
-        <NewCharacterDialog
+        <CharacterWizard
           onClose={() => setCreating(false)}
-          onCreated={(character) => {
-            setCreating(false);
-            addToCanvas(character.id);
-            openEditor(character.id);
-          }}
+          // The card appears as soon as the character exists, not only at the
+          // end: the wizard can be abandoned, and a draft character is a
+          // legitimate state that must not be invisible.
+          onCreated={(character) => addToCanvas(character.id)}
         />
       ) : null}
     </>

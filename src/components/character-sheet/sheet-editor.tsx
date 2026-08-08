@@ -378,7 +378,12 @@ function SheetEditorDialog({ entityId }: { entityId: string }) {
               </div>
             </div>
 
-            <CanonicalImagesColumn sheet={shownSheet} />
+            <CanonicalImagesColumn
+              entityId={entityId}
+              sheet={shownSheet}
+              update={update}
+              readOnly={isViewingVersion}
+            />
           </div>
         </div>
       </dialog>

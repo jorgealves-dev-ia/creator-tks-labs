@@ -114,6 +114,49 @@ export const t = {
       handleInvalid: "só minúsculas, números, hífen e sublinhado",
     },
 
+    /** U2 — the first time is a guided flow; after that, the free editor. */
+    wizard: {
+      stepLabel: "Passo",
+      of: "de",
+      back: "Voltar",
+      next: "Continuar",
+      skip: "Pular",
+      close: "Fechar",
+      steps: {
+        identidade: "Identidade",
+        foto: "Foto de referência",
+        dna: "DNA visual",
+        padroes: "Padrões",
+        narrativa: "Narrativa",
+        resumo: "Resumo",
+      },
+      foto: {
+        soon: "Em breve",
+        body:
+          "Em breve você vai poder enviar uma foto e o sistema preenche o DNA sozinho — marcando em verde o que viu com clareza e em amarelo o que só deduziu, para você confirmar. Ainda não está pronto.",
+        manual: "Preencher manualmente",
+      },
+      dnaHint:
+        "Preencha o que já souber. O que ficar em branco simplesmente não entra nas gerações — nada de chute.",
+      padroesHint: "Já vêm marcados com escolhas sensatas. Confira e siga.",
+      narrativaHint:
+        "Opcional, e pode pular. Alimenta roteiro e voz; nunca entra em prompt de imagem.",
+      resumo: {
+        title: "Tudo pronto",
+        dnaFilledSuffix: " campos do DNA preenchidos",
+        dnaEmpty: "Nenhum campo do DNA preenchido ainda",
+        narrativeFilled: "Narrativa começada",
+        narrativeEmpty: "Narrativa em branco",
+        imagesEmpty: "Nenhuma imagem canônica ainda",
+        saveV1: "Salvar como v1",
+        saving: "Salvando…",
+        keepDraft: "Deixar como rascunho",
+        keepDraftHint:
+          "Sem nenhuma versão salva, a personagem ainda não pode ser mencionada por @.",
+        saveFailed: "Não foi possível salvar a v1.",
+      },
+    },
+
     editor: {
       title: "Personagem",
       close: "Fechar",
@@ -145,8 +188,19 @@ export const t = {
       images: {
         title: "Imagens canônicas",
         subtitle: "A âncora real da identidade.",
-        comingSoon: "O envio de imagens chega na próxima etapa.",
         emptySlot: "vazio",
+        upload: "Enviar",
+        replace: "Trocar",
+        remove: "Remover",
+        uploading: "Enviando…",
+        removing: "Removendo…",
+        readOnly: "Versão congelada — as imagens dela não mudam.",
+        keptByVersion:
+          "Esta imagem faz parte de uma versão salva e continua guardada. O slot ficou vazio.",
+        tooLarge: "Imagem muito grande. O limite é 10 MB.",
+        notAnImage: "Envie um arquivo de imagem.",
+        uploadFailed: "Não foi possível enviar a imagem.",
+        removeFailed: "Não foi possível remover a imagem.",
       },
     },
 

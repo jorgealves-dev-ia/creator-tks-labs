@@ -200,3 +200,88 @@ Aplicada pelo Jorge e verificada com um roteiro de teste que exercita cada trava
 |---|---|---|
 | Remover a coluna obsoleta `entities.version` numa migration futura — hoje só tem `COMMENT` de deprecação, e nenhum código a lê | próxima sessão de banco | entrada de 07/08/2026 (versionamento) |
 | Definir a margem sobre o custo real (preço de negócio dos Sparks) | Jorge, na fase de monetização | Fase 4 do roadmap |
+
+---
+
+## Tela do character sheet
+
+> As quatro decisões de UX abaixo estão registradas na seção 1 de [`tela-character-sheet.md`](./tela-character-sheet.md). Foram tomadas em 07/08/2026 e implementadas em 08/08/2026.
+
+### 07/08/2026 — U1: cartão no canvas, editor em overlay ✅ aprovado
+
+O node da personagem mostra só um cartão compacto — retrato, nome, `@handle`, selo da versão ativa e o pontinho de rascunho sujo. A edição acontece num overlay de quase tela cheia. Vinte e cinco campos dentro de um retângulo de node seriam ilegíveis no canvas e transformariam cada personagem num obstáculo visual ao fluxo, que é justamente o que o canvas existe para mostrar.
+
+---
+
+### 07/08/2026 — U2: criação guiada, edição livre ✅ aprovado
+
+A primeira vez é um fluxo em passos; depois de criada, a personagem abre direto no editor com abas. Quem cria a primeira personagem não sabe ainda o que é DNA visual, padrão variável ou narrativa — o wizard ensina a estrutura enquanto preenche. Quem já criou cinco não quer ser guiado de novo.
+
+**Como ficou na implementação:** a personagem é criada de verdade ao fim do passo 1, e os passos seguintes editam o rascunho pelo mesmo store e mesmo autosave do editor. Isso faz o wizard reaproveitar as abas do editor em vez de criar um segundo conjunto de formulários que poderia divergir delas — e significa que fechar o wizard no meio não perde nada: sobra uma personagem em rascunho, que é um estado legítimo previsto na seção 7 da spec.
+
+---
+
+### 07/08/2026 — U3: amarelos confirmados um a um ✅ aprovado
+
+Sem botão "confirmar todos". Contador visível no cabeçalho e navegação de um clique entre os campos pendentes. Um botão de confirmar tudo transformaria a honestidade do sistema em burocracia a ser dispensada com um clique — e o estado `confirmado` passaria a significar "o Jorge clicou em algo", não "o Jorge olhou". Revisar oito campos leva segundos; o que importa é que cada um passou pelos olhos de alguém.
+
+---
+
+### 07/08/2026 — U4: seletores simples na v1, com uma exceção visual ✅ aprovado
+
+Listas fechadas como seletores bem escritos; tom de pele como amostras de cor clicáveis desde já. Cor é a única coisa da ficha que texto descreve mal — "morena-clara" não significa a mesma coisa para duas pessoas, e uma amostra significa. Pickers ilustrados de rosto, cabelo e corpo ficam para evolução futura e **não mudam nada na estrutura de dados**: o valor gravado é sempre a chave da opção, nunca o hex.
+
+---
+
+### 08/08/2026 — Personagem é global do usuário, não do projeto (`project_id` nulo)
+
+**Decisão de produto.** Um influencer de IA é um **ativo reusável**; um projeto é uma **bancada de trabalho**. A mesma Julia pode aparecer no canvas de qualquer projeto, e o handle já é único por usuário — o que confirma essa leitura no próprio schema. Prender a personagem a um projeto obrigaria a duplicá-la para usá-la em outro, e duplicata é exatamente o que destrói consistência de personagem.
+
+Consequência na interface: o Arsenal lista as personagens do usuário, e tirar o cartão do canvas **não apaga a personagem** — ela continua no Arsenal, pronta para voltar.
+
+---
+
+### 08/08/2026 — Salvar versão é função no Postgres, não rota de API
+
+**Detalhe:** migration `20260807190000_save_entity_version.sql`
+
+Salvar uma versão são duas escritas que precisam ser uma: o INSERT do retrato congelado e o UPDATE do ponteiro de versão ativa. O cliente do Supabase não abre transação, então uma rota de API faria duas idas ao servidor — e uma falha entre elas deixaria ou uma versão órfã, ou (pior) o `@julia` apontando para o retrato errado. Transação de verdade em Node exigiria conexão Postgres direta, com connection string no servidor: mais superfície de risco do que a tela merece.
+
+A função é `security invoker`, então o RLS continua mandando, e tira o retrato do próprio `entities.sheet` — versão é a fotografia do rascunho, então o rascunho é a única coisa que ela pode fotografar. Mesmo espírito das demais travas: **no banco, não no app**.
+
+Três recusas com código próprio, para a tela poder explicar cada caso em vez de dizer "erro": `CT001` rascunho idêntico à versão ativa, `CT002` personagem arquivada, `CT003` personagem inexistente para quem chamou.
+
+---
+
+### 08/08/2026 — "A tela é o manual" vira princípio permanente de produto
+**Detalhe:** [`produto.md`](./produto.md) §3
+
+Toda funcionalidade nasce com tooltips, avisos e mensagens de erro explicativas. **Se um recurso precisa de manual externo para ser usado, o defeito é do recurso.** O princípio nasceu observando o que já tinha sido construído: os selos de estado com tooltip próprio, o botão desabilitado que diz *"nada mudou desde a v1"* em vez de ficar mudo, e os códigos `CT001`–`CT003` que dão mensagem por situação. Esses três são os exemplos fundadores.
+
+Consequência para quem implementa: controle novo sem tooltip, estado novo sem explicação e erro novo sem mensagem própria são trabalho **incompleto**, não trabalho a polir depois.
+
+---
+
+### 08/08/2026 — Chaves das opções do dicionário são imutáveis
+
+O `dictionary.ts` carrega um aviso permanente no topo. A chave gravada no sheet (`morena_clara`, `arqueadas_suaves`…) é citada por toda versão congelada que a usar, e versão não pode ser reescrita — nem pela service role. Renomear uma chave quebraria esses retratos para sempre: a versão antiga passaria a apontar para uma opção que não existe mais.
+
+Para mudar o texto que o usuário lê, muda-se **só o rótulo PT**. Acrescentar opção é sempre seguro; remover, não. Chaves vieram do exemplo da seção 7 do [`character-sheet.md`](./character-sheet.md), e as demais foram derivadas do rótulo PT em snake_case.
+
+---
+
+### 08/08/2026 — Silhueta para gênero andrógino: as duas listas, agrupadas
+
+A seção 5.16 do [`character-sheet.md`](./character-sheet.md) define lista feminina e masculina, e não diz nada sobre andrógino. Em vez de escolher uma pelo usuário, a tela mostra as duas sob subtítulos próprios. As frases fixas em inglês são genuinamente diferentes (`slim, slender build` não é `lean build`), então nenhuma lista contém a outra — e escolher uma seria chute embutido no código.
+
+---
+
+### 08/08/2026 — Pendências registradas da tela do character sheet
+
+| Pendência | Quando | Origem |
+|---|---|---|
+| **Tour de primeira vez** — apresentação guiada do estúdio para quem entra pela primeira vez, no espírito de "a tela é o manual" | Fase 1 madura, quando o fluxo completo existir e houver o que apresentar | decidido em 08/08/2026 |
+| **Testes automatizados de navegador (Playwright)** — hoje toda verificação é manual, com roteiro escrito a cada etapa | quando a base crescer o bastante para o teste manual ficar caro ou pouco confiável | decidido em 08/08/2026 |
+| Motor de extração por foto — a UX já está especificada e o passo 2 do wizard já existe marcado "em breve" | próxima sessão | seção 7 de [`tela-character-sheet.md`](./tela-character-sheet.md) |
+| Geração assistida das imagens canônicas (turnaround e folha de expressões) | sessão seguinte | seção 9 de [`tela-character-sheet.md`](./tela-character-sheet.md) |
+| Diff visual entre versões ("o que mudou da v1 para a v2?") — trivial de calcular, já que os snapshots são completos | melhoria futura | seção 6 de [`versionamento-entidades.md`](./versionamento-entidades.md) |

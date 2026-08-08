@@ -52,6 +52,20 @@ Isso não significa tirar poder do usuário — significa que o poder aparece em
 
 A pergunta que decide o nome é: *"o que o usuário quer fazer aqui?"* — e não *"que tecnologia roda aqui dentro?"*. A mesma regra vale para rótulos de campo, mensagens de erro e textos de ajuda. Todos os textos de UI ficam centralizados em `lib/i18n/pt-BR.ts`.
 
+### A tela é o manual
+
+> **Toda funcionalidade nasce com tooltips, avisos e mensagens de erro explicativas. Se um recurso precisa de manual externo para ser usado, o defeito é do recurso.**
+
+Princípio permanente, decidido em 08/08/2026, com o mesmo status do princípio de UX acima. Não é sobre encher a tela de texto: é sobre a explicação estar **onde a dúvida nasce**, no momento em que ela nasce, na linguagem de quem está usando.
+
+Os exemplos fundadores vieram da tela do character sheet:
+
+- **Os selos de estado.** Cada campo mostra se entra ou não na geração, com um tooltip que diz o porquê — "a extração deduziu sem certeza; não entra nas gerações até você confirmar". O usuário nunca precisa perguntar a ninguém o que o amarelo significa.
+- **O botão que diz o motivo.** "Salvar como nova versão" desabilitado não fica mudo: a dica explica *"nada mudou desde a v1"*. Um controle desabilitado sem motivo visível é um enigma, não uma interface.
+- **Os códigos `CT001`–`CT003`.** Até as recusas do banco têm mensagem própria por situação — rascunho igual à versão ativa, personagem arquivada, personagem inexistente — para a tela poder explicar cada caso em vez de dizer "erro".
+
+Consequência prática para quem implementa: um controle novo sem tooltip, um estado novo sem explicação e um erro novo sem mensagem própria são trabalho **incompleto**, não trabalho a polir depois.
+
 ---
 
 ## 4. Funcionalidades-chave
@@ -112,9 +126,22 @@ O débito de Sparks está construído mas ainda não é exercitado — ele só e
 
 Nodes de input tipados, node de geração (Nano Banana + 1 modelo via fal), sistema de `@`, ingestão de assets, débito de Sparks e prompt duplo PT → EN/JSON.
 
-### Fase 2 — Entidades
+### Fase 2 — Entidades 🔨 começou antes da hora, de propósito
 
-Character sheet completo: preenchimento manual e extração automática a partir de imagem de referência, versionamento, imagens canônicas e consistência entre gerações. A especificação já está fechada em [`character-sheet.md`](./character-sheet.md).
+A tela do character sheet foi construída em 08/08/2026, **antes** da geração de imagem. O motivo: consistência de personagem é o diferencial do produto, e o sheet é a fundação dela — construir a geração primeiro significaria construí-la duas vezes, uma sem entidades e outra com.
+
+Entregue e verificado no navegador:
+
+- Cartão da personagem no canvas, com selo da versão ativa e indicador de rascunho com alterações não salvas
+- Editor em overlay com as três camadas em abas, autosave do rascunho e selos de estado por campo
+- Revisão dos campos inferidos um a um, com contador e navegação de um clique
+- Versões: salvar (atômico no banco), ver versão congelada em somente-leitura, ativar versão antiga e carregar uma versão no rascunho
+- Wizard de criação pelo caminho manual
+- Imagens canônicas por upload manual
+
+O que falta desta fase: **o motor de extração por foto** (a UX já está pronta e marcada "em breve" no passo 2 do wizard), a **geração assistida das imagens canônicas** (turnaround e folha de expressões) e o **consumo do `@`** pelos nodes de geração, que depende da Fase 1.
+
+Especificações: [`character-sheet.md`](./character-sheet.md), [`versionamento-entidades.md`](./versionamento-entidades.md) e [`tela-character-sheet.md`](./tela-character-sheet.md).
 
 ### Fase 3 — Vídeo e voz
 
