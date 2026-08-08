@@ -128,7 +128,7 @@ O modelo está definido (snapshots completos, coluna de versão ativa, acesso po
 
 O `CLAUDE.md` dizia `main`, mas a branch que existe — local e no remoto — é `master`. Toda a documentação passa a dizer `master`, pelo mesmo princípio da entrada sobre `entities.sheet`: o documento acompanha a realidade.
 
-> ⏳ **Pendência (Jorge, via painel):** verificar na Vercel se a *Production Branch* está configurada como `master` e ajustar se necessário.
+> **Pendência levantada e resolvida no mesmo dia.** A dúvida era se a *Production Branch* da Vercel apontava para `main` ou `master`. ✅ **Verificado: já estava em `master`** — o deploy do commit `b8ac866` saiu como `target: production` a partir de `githubCommitRef: master`, com estado `READY`. Nada a ajustar no painel.
 
 ---
 
@@ -151,5 +151,4 @@ Agregadores são aceitáveis porque chamam os mesmos modelos oficiais. O princí
 
 | Pendência | Responsável | Origem |
 |---|---|---|
-| Verificar se a *Production Branch* na Vercel está como `master` | Jorge (painel da Vercel) | entrada de 07/08/2026 |
 | Definir a margem sobre o custo real (preço de negócio dos Sparks) | Jorge, na fase de monetização | Fase 4 do roadmap |
