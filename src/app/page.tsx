@@ -7,6 +7,22 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const EMPTY_GRAPH: CanvasGraph = { nodes: [], edges: [] };
 
+/**
+ * Reading a photo takes a provider tens of seconds, and the extraction engine is
+ * a Server Action of this page. Route segment config set on a page changes the
+ * timeout of every Server Action used on it, so this is where the engine's budget
+ * lives — the default ten seconds would cut a perfectly good analysis in half.
+ *
+ * Sixty seconds is the ceiling of the Vercel plan this project is on. The adapter
+ * gives up at fifty (see lib/providers/anthropic.ts) so the failure is our own
+ * clear message rather than the platform killing the request mid-flight.
+ *
+ * If generation later needs longer than this, the answer is not a bigger number:
+ * it is the asynchronous pattern of architecture decision 1 — queue, webhook,
+ * Realtime.
+ */
+export const maxDuration = 60;
+
 export default async function StudioPage(props: PageProps<"/">) {
   const searchParams = await props.searchParams;
   const supabase = await createSupabaseServerClient();

@@ -14,6 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_models: {
+        Row: {
+          capabilities: string[]
+          created_at: string
+          display_name: string
+          enabled: boolean
+          extraction_sparks: number | null
+          id: string
+          is_default: boolean
+          provider_id: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          capabilities?: string[]
+          created_at?: string
+          display_name: string
+          enabled?: boolean
+          extraction_sparks?: number | null
+          id?: string
+          is_default?: boolean
+          provider_id: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          capabilities?: string[]
+          created_at?: string
+          display_name?: string
+          enabled?: boolean
+          extraction_sparks?: number | null
+          id?: string
+          is_default?: boolean
+          provider_id?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_models_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "ai_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_providers: {
+        Row: {
+          created_at: string
+          display_name: string
+          enabled: boolean
+          env_var_name: string
+          id: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          enabled?: boolean
+          env_var_name: string
+          id?: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          enabled?: boolean
+          env_var_name?: string
+          id?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       assets: {
         Row: {
           byte_size: number | null
@@ -209,6 +286,82 @@ export type Database = {
           },
         ]
       }
+      extractions: {
+        Row: {
+          created_at: string
+          entity_id: string
+          error_message: string | null
+          id: string
+          input_tokens: number | null
+          model_id: string
+          output_tokens: number | null
+          real_cost_cents: number | null
+          reference_asset_id: string | null
+          source: Database["public"]["Enums"]["extraction_source"]
+          source_text: string | null
+          sparks_charged: number
+          status: Database["public"]["Enums"]["extraction_status"]
+          summary: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          error_message?: string | null
+          id?: string
+          input_tokens?: number | null
+          model_id: string
+          output_tokens?: number | null
+          real_cost_cents?: number | null
+          reference_asset_id?: string | null
+          source: Database["public"]["Enums"]["extraction_source"]
+          source_text?: string | null
+          sparks_charged?: number
+          status: Database["public"]["Enums"]["extraction_status"]
+          summary?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          error_message?: string | null
+          id?: string
+          input_tokens?: number | null
+          model_id?: string
+          output_tokens?: number | null
+          real_cost_cents?: number | null
+          reference_asset_id?: string | null
+          source?: Database["public"]["Enums"]["extraction_source"]
+          source_text?: string | null
+          sparks_charged?: number
+          status?: Database["public"]["Enums"]["extraction_status"]
+          summary?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extractions_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extractions_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "ai_models"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extractions_reference_asset_id_fkey"
+            columns: ["reference_asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       generations: {
         Row: {
           completed_at: string | null
@@ -320,6 +473,7 @@ export type Database = {
           cost_real_cents: number | null
           created_at: string
           description: string | null
+          extraction_id: string | null
           generation_id: string | null
           id: string
           kind: Database["public"]["Enums"]["ledger_kind"]
@@ -331,6 +485,7 @@ export type Database = {
           cost_real_cents?: number | null
           created_at?: string
           description?: string | null
+          extraction_id?: string | null
           generation_id?: string | null
           id?: string
           kind: Database["public"]["Enums"]["ledger_kind"]
@@ -342,12 +497,20 @@ export type Database = {
           cost_real_cents?: number | null
           created_at?: string
           description?: string | null
+          extraction_id?: string | null
           generation_id?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["ledger_kind"]
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "ledger_transactions_extraction_id_fkey"
+            columns: ["extraction_id"]
+            isOneToOne: false
+            referencedRelation: "extractions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ledger_transactions_generation_id_fkey"
             columns: ["generation_id"]
@@ -478,6 +641,45 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cents_per_spark: { Args: never; Returns: number }
+      record_extraction: {
+        Args: {
+          p_entity_id: string
+          p_error_message?: string
+          p_input_tokens?: number
+          p_model_id: string
+          p_output_tokens?: number
+          p_real_cost_cents?: number
+          p_reference_asset_id?: string
+          p_source: Database["public"]["Enums"]["extraction_source"]
+          p_source_text?: string
+          p_status: Database["public"]["Enums"]["extraction_status"]
+          p_summary?: Json
+        }
+        Returns: {
+          created_at: string
+          entity_id: string
+          error_message: string | null
+          id: string
+          input_tokens: number | null
+          model_id: string
+          output_tokens: number | null
+          real_cost_cents: number | null
+          reference_asset_id: string | null
+          source: Database["public"]["Enums"]["extraction_source"]
+          source_text: string | null
+          sparks_charged: number
+          status: Database["public"]["Enums"]["extraction_status"]
+          summary: Json | null
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "extractions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       save_entity_version: {
         Args: { p_entity_id: string; p_label?: string }
         Returns: {
@@ -501,6 +703,8 @@ export type Database = {
       asset_kind: "image" | "video" | "audio"
       asset_source: "upload" | "generation"
       entity_kind: "character" | "product" | "scene" | "outfit" | "accessory"
+      extraction_source: "photo" | "text"
+      extraction_status: "succeeded" | "failed"
       generation_status:
         | "queued"
         | "running"
@@ -639,6 +843,8 @@ export const Constants = {
       asset_kind: ["image", "video", "audio"],
       asset_source: ["upload", "generation"],
       entity_kind: ["character", "product", "scene", "outfit", "accessory"],
+      extraction_source: ["photo", "text"],
+      extraction_status: ["succeeded", "failed"],
       generation_status: [
         "queued",
         "running",

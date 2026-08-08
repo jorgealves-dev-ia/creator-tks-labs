@@ -66,8 +66,3 @@ export function realCostCents(
 
   return Math.ceil(usd * BRL_CENTS_PER_USD);
 }
-
-/** Whether we can price this model at all — used to explain a null cost. */
-export function hasTokenPrice(modelSlug: string): boolean {
-  return modelSlug in TOKEN_PRICES_USD_PER_MTOK;
-}
