@@ -57,24 +57,38 @@ const structureSchema = z.object({
       folha_asset_id: z.string().nullable(),
     })
     .nullable(),
-  identidade: z.array(z.string()),
-  ancora: z.array(z.string()),
-  traje_canonico: z.string().nullable(),
-  cena_padrao: z.array(z.string()),
-  cena_usuario: z.object({ pt: z.string(), en: z.string() }).nullable(),
-  referencias: z.array(
-    z.object({
-      ordem: z.number(),
-      asset_id: z.string(),
-      tipo: z.string().nullable(),
-      origem: z.string(),
-      instrucao_pt: z.string(),
-      instrucao_en: z.string(),
-      diretiva_en: z.string(),
-      fidelidade_en: z.string().nullable(),
-    }),
-  ),
-  restricoes: z.array(z.string()),
+  identidade: z.array(z.string()).default([]),
+  /**
+   * Read as a list, accepted as either.
+   *
+   * Until 2026-08-09 this was a single sentence; it became a list when the
+   * identity reinforcement was added beside it. Both shapes are in the database
+   * and neither can be rewritten — a stored prompt is the record of a generation
+   * that already happened. So the reader adapts to what was written, which is
+   * the whole reason this schema is looser than the compiler's own types.
+   */
+  ancora: z
+    .union([z.array(z.string()), z.string().transform((sentence) => [sentence])])
+    .default([]),
+  traje_canonico: z.string().nullable().default(null),
+  cena_padrao: z.array(z.string()).default([]),
+  cena_usuario: z.object({ pt: z.string(), en: z.string() }).nullable().default(null),
+  referencias: z
+    .array(
+      z.object({
+        ordem: z.number(),
+        asset_id: z.string(),
+        tipo: z.string().nullable().default(null),
+        origem: z.string().default(""),
+        instrucao_pt: z.string().default(""),
+        instrucao_en: z.string().default(""),
+        diretiva_en: z.string().default(""),
+        /** Absent on every generation from before the fidelity clauses existed. */
+        fidelidade_en: z.string().nullable().default(null),
+      }),
+    )
+    .default([]),
+  restricoes: z.array(z.string()).default([]),
   regra_diretor: z.enum(["prompt_dirige", "padroes_da_personagem"]),
 });
 
@@ -91,10 +105,17 @@ const structureSchema = z.object({
  */
 export type StoredPromptStructure = z.infer<typeof structureSchema>;
 
-const compiledSchema = z.object({
-  text: z.string(),
-  structure: structureSchema.optional(),
-});
+/**
+ * The text and the structure are read **separately**, and that is a bug fix.
+ *
+ * Reading them as one object meant an unrecognised structure took the text down
+ * with it: the screen announced "sem texto registrado" while nine hundred
+ * characters of prompt sat in the column. The text is a string and can always be
+ * shown; the structure is best-effort by nature, because it is the shape that
+ * evolves. Never let the fragile half hold the sturdy half hostage.
+ */
+const textSchema = z.object({ text: z.string() });
+const compiledSchema = z.object({ structure: structureSchema });
 
 const paramsSchema = z.object({ aspect_ratio: z.string().optional() });
 
@@ -122,6 +143,7 @@ export async function loadGeneration(input: unknown): Promise<GenerationRecord |
 
   if (!row) return null;
 
+  const text = textSchema.safeParse(row.prompt_compiled);
   const compiled = compiledSchema.safeParse(row.prompt_compiled);
   const params = paramsSchema.safeParse(row.params);
 
@@ -132,8 +154,8 @@ export async function loadGeneration(input: unknown): Promise<GenerationRecord |
     provider: row.provider,
     sparksCharged: row.sparks_charged,
     promptUserPt: row.prompt_user_pt,
-    promptText: compiled.success ? compiled.data.text : "",
-    structure: compiled.success ? (compiled.data.structure ?? null) : null,
+    promptText: text.success ? text.data.text : "",
+    structure: compiled.success ? compiled.data.structure : null,
     aspectRatio: params.success ? (params.data.aspect_ratio ?? null) : null,
     sheetSource: row.sheet_source,
   };

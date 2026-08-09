@@ -789,3 +789,19 @@ E a quitação não é o campo existir — é **alguém ler**. O botão "Ver pro
 | **Quantidade > 1, listas e lote** | Chegam com o assíncrono, em Storyboard + Vídeos |
 | **Edição pós-geração** (upscale, remover fundo) | Arsenal futuro |
 
+
+### 09/08/2026 — Dois bugs achados rodando o roteiro da Etapa C
+
+Nenhum dos dois aparece em lint, typecheck, build ou no harness. Os dois aparecem em quinze segundos de uso.
+
+**1. O leitor de história tinha que ser tolerante, e eu escrevi que tinha e não fiz.** O painel "Ver prompt" abria dizendo *"Sem texto registrado"* — com novecentos caracteres de prompt na coluna. Duas causas somadas:
+
+- o `text` e a `structure` eram validados como **um objeto só**, então uma estrutura irreconhecível derrubava o texto junto. A metade frágil não pode ficar com a metade sólida de refém;
+- a estrutura era validada **estritamente**, e o campo `ancora` tinha mudado de frase para lista horas antes. Três gerações reais foram descartadas inteiras por causa de um campo — sendo que estilo, personagem, referências e cena estavam lá, legíveis.
+
+A regra que fica: **um prompt guardado é o registro de uma geração que já aconteceu, e não pode ser reescrito — então quem lê é que se adapta ao que foi escrito.** O schema de leitura aceita as duas formas de `ancora`, tem default para todo campo que possa faltar, e nunca deixa a estrutura custar o texto.
+
+**2. "Usar como referência" fazia tudo certo e parecia não fazer nada.** O bloco novo nascia num deslocamento fixo a partir do Resultado; quando já havia algo ali, nascia **embaixo** do que já estava. Os dados provavam que funcionou — bloco criado, aresta criada, referência anexada, tudo salvo — e a tela não mostrava nada. É o pior tipo de defeito, porque a reação natural do usuário é clicar de novo.
+
+Agora a posição é procurada: desce até achar lugar livre. Vale para o node Resultado também, que tinha o mesmo risco com o seu escalonamento por irmãos.
+

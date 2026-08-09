@@ -42,6 +42,41 @@ type StoredReference = {
   origem: string;
 };
 
+/**
+ * A spot near `candidate` that no node is already sitting on.
+ *
+ * Found on screen, not in review: "Usar como referência" placed its new block at
+ * a fixed offset from the result, and when something was already there the new
+ * block landed underneath it. The click did everything it promised and looked
+ * like it had done nothing — the worst kind of bug, because the user's next move
+ * is to click again.
+ */
+function freePosition(
+  nodes: readonly Node[],
+  candidate: { x: number; y: number },
+): { x: number; y: number } {
+  const OCCUPIED_WITHIN = 40;
+  const STEP = 64;
+
+  let position = candidate;
+
+  // Bounded rather than `while (true)`: on a canvas dense enough for twenty
+  // collisions in a row, one more perfect placement is not what is missing.
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const taken = nodes.some(
+      (node) =>
+        Math.abs(node.position.x - position.x) < OCCUPIED_WITHIN &&
+        Math.abs(node.position.y - position.y) < OCCUPIED_WITHIN,
+    );
+
+    if (!taken) return position;
+
+    position = { x: position.x, y: position.y + STEP };
+  }
+
+  return position;
+}
+
 function readReferences(node: Node): StoredReference[] {
   return Array.isArray(node.data.references) ? (node.data.references as StoredReference[]) : [];
 }
@@ -268,10 +303,13 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
           {
             id,
             type: "result",
-            position: {
+            // The sibling offset keeps a sequence of attempts readable as a
+            // sequence; freePosition keeps it from landing on an unrelated block
+            // that happens to be parked there.
+            position: freePosition(state.nodes, {
               x: source.position.x + width + 72,
               y: source.position.y + siblings * 48,
-            },
+            }),
             data: { ...data, sourceNodeId },
           },
         ],
@@ -297,7 +335,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       const generator: Node = {
         id,
         type: "generator",
-        position: { x: result.position.x + width + 72, y: result.position.y },
+        position: freePosition(state.nodes, {
+          x: result.position.x + width + 72,
+          y: result.position.y,
+        }),
         data: {
           references: [
             { assetId, kind: null, instrucao: "", origem: "resultado" } satisfies StoredReference,
