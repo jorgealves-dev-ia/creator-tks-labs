@@ -98,6 +98,10 @@ Duas coisas vistas nas primeiras gerações reais contra a API do Google — fol
 
 2. **Variedade das células de expressão da folha.** A grade da folha pede "estudos de expressão" sem enumerá-las, e as células saíram quase idênticas. Quem enumera expressões é o slot `folha_expressoes`, que tem instrução própria — então isto é sobreposição de papéis, não erro. Caminho candidato: enumerar 3–4 expressões na instrução da grade, ou aceitar que a folha ancora identidade e a variedade é assunto do slot dedicado.
 
+3. **O estilo visual está solto — a folha pode sair ilustrada.** Observado pelo Jorge em 09/08/2026: a primeira folha da personagem principal saiu com aspecto de desenho, não de foto. A causa é identificável e nossa: **o prompt canônico não ancora estilo em lugar nenhum.** A moldura do §5.22 diz `professional full-body character reference sheet`, e "character reference sheet" é vocabulário que boa parte dos modelos associa a *character design* ilustrado — a interpretação é legítima, só não é a que queremos. Na validação contra a API a folha saiu fotográfica, o que mostra que hoje isso é sorte do modelo, não decisão do sistema.
+
+   Não é um ajuste de prompt solto: **estilo é a terceira coisa que precisa ser tão determinística quanto identidade e traje.** Uma personagem cuja folha é foto e cujas vistas são ilustração não é a mesma personagem. O desenho fino — âncora fotográfica na moldura, campo de estilo no sheet, ou as duas coisas — é a tarefa seguinte, e vale decidir se estilo entra como campo da Camada 2 (default do sheet, sobrescrevível por node) ou como constante da geração canônica.
+
 **Também confirmado nessa validação:** a moldura do §5.22 passou de primeira com o traje de banho, sem recusa — o fallback existe e não precisou disparar. Uma imagem 2K levou 23–27s, dentro do `maxDuration` de 60 que sustenta o "síncrono agora" do G4; é este número que dirá quando o assíncrono virar necessidade.
 
 ---

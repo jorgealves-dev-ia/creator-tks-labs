@@ -505,7 +505,21 @@ export const RESTRICAO_TIPO = [
 // ---------------------------------------------------------------------------
 
 /**
- * The six canonical image slots. The key is the field name inside the sheet's
+ * The complete reference sheet — the anchor of the whole identity (decision G3
+ * of docs/geracao-canonica.md).
+ *
+ * It is listed apart from the six views for one reason: it is not one of them.
+ * Every view is generated *with the sheet attached as a reference image*, so the
+ * sheet comes first in the interface and first in the order of work. Portrait is
+ * the default; the landscape one is an option, not a second anchor.
+ */
+export const FOLHA_SLOTS = [
+  { key: "folha_completa", pt: "Folha completa", hint: "vertical" },
+  { key: "folha_completa_horizontal", pt: "Folha horizontal", hint: "opcional" },
+] as const;
+
+/**
+ * The six canonical view slots. The key is the field name inside the sheet's
  * `imagens_canonicas` block, and doubles as entity_images.role — so it is as
  * immutable as any option key above.
  */
@@ -518,7 +532,25 @@ export const IMAGENS_CANONICAS_SLOTS = [
   { key: "paleta_cores", pt: "Paleta" },
 ] as const;
 
-export type ImagemCanonicaSlot = (typeof IMAGENS_CANONICAS_SLOTS)[number]["key"];
+/**
+ * Every canonical slot there is, sheets first.
+ *
+ * This list is the single source of truth for what a slot can be: the Zod schema
+ * validates against it, the storage bookkeeping narrows against it, and the
+ * prompt builder keys its recipes by it — so adding a slot is one entry here and
+ * a compiler error everywhere it still needs a decision.
+ */
+export const TODOS_SLOTS_CANONICOS = [
+  ...FOLHA_SLOTS,
+  ...IMAGENS_CANONICAS_SLOTS,
+] as const satisfies readonly { key: string; pt: string }[];
+
+export type ImagemCanonicaSlot = (typeof TODOS_SLOTS_CANONICOS)[number]["key"];
+
+/** The two slots that hold the anchor itself, rather than something it anchored. */
+export function isFolhaSlot(slot: ImagemCanonicaSlot): boolean {
+  return slot === "folha_completa" || slot === "folha_completa_horizontal";
+}
 
 // ---------------------------------------------------------------------------
 // Lookups

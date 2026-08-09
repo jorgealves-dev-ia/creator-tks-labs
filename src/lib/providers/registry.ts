@@ -4,6 +4,7 @@ import {
   anthropicExtractionProvider,
   anthropicTranslationProvider,
 } from "@/lib/providers/anthropic";
+import type { ProviderStatus } from "@/lib/ai/catalog-types";
 import { googleImageProvider } from "@/lib/providers/google";
 import { isProviderConfigured } from "@/lib/providers/keys";
 import type {
@@ -77,8 +78,10 @@ export function hasExtractionAdapter(slug: string): boolean {
   return slug in EXTRACTION_PROVIDERS;
 }
 
-/** Why a provider is or is not usable. See ProviderStatus in extraction/actions. */
-export type ProviderStatus = "ready" | "missing_key" | "no_adapter";
+// ProviderStatus is defined in lib/ai/catalog-types.ts, next to the rest of what
+// the selector reads: this file may not be imported by a client component, and a
+// type the interface needs has no business living behind that wall.
+export type { ProviderStatus };
 
 /**
  * Usable means **both**: an adapter here and a key on the server. The two fail

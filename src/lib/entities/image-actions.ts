@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import {
-  IMAGENS_CANONICAS_SLOTS,
+  TODOS_SLOTS_CANONICOS,
   type ImagemCanonicaSlot,
 } from "@/lib/character-sheet/dictionary";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -26,7 +26,7 @@ const RESTRICT_VIOLATION = "23001";
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
-const SLOT_KEYS = IMAGENS_CANONICAS_SLOTS.map((slot) => slot.key);
+const SLOT_KEYS: readonly ImagemCanonicaSlot[] = TODOS_SLOTS_CANONICOS.map((slot) => slot.key);
 
 /**
  * Zod proves the field is a string; this proves it is one of the six slots and

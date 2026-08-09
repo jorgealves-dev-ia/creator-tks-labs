@@ -1,3 +1,4 @@
+import type { ImagemCanonicaSlot } from "@/lib/character-sheet/dictionary";
 import type { CharacterSheet } from "@/lib/character-sheet/schema";
 import {
   compilePrompt,
@@ -51,24 +52,11 @@ const SHEET_GRID_INSTRUCTION =
   "face, identical body, identical outfit, identical lighting in every cell. " +
   "No text, no labels, no watermarks, no measurement lines";
 
-export const CANONICAL_SLOTS = [
-  "folha_completa",
-  "folha_completa_horizontal",
-  "turnaround_frente",
-  "turnaround_tres_quartos",
-  "turnaround_perfil",
-  "turnaround_costas",
-  "folha_expressoes",
-  "paleta_cores",
-] as const;
-
-export type CanonicalSlot = (typeof CANONICAL_SLOTS)[number];
-
-/** The two slots that hold the anchor itself. */
-export function isSheetSlot(slot: CanonicalSlot): boolean {
-  return slot === "folha_completa" || slot === "folha_completa_horizontal";
-}
-
+/**
+ * The slot list is the dictionary's, not a second copy of it. Keying the recipes
+ * below by that union is what turns "a new slot needs a prompt" from something
+ * to remember into a compiler error.
+ */
 type SlotRecipe = {
   /** What to draw. Replaces the grid instruction on the single views. */
   instruction: string;
@@ -85,7 +73,7 @@ type SlotRecipe = {
 const VIEW_OMIT: readonly CenaPadraoKey[] = ["pose", "enquadramento"];
 const GRID_OMIT: readonly CenaPadraoKey[] = ["pose", "expressao", "enquadramento"];
 
-const RECIPES: Record<CanonicalSlot, SlotRecipe> = {
+const RECIPES: Record<ImagemCanonicaSlot, SlotRecipe> = {
   // Portrait by default (decision G3): a stack of full-body cells wants height.
   folha_completa: {
     instruction: SHEET_GRID_INSTRUCTION,
@@ -164,7 +152,7 @@ export type CanonicalPrompt = {
 
 export type BuildCanonicalPromptOptions = {
   sheet: CharacterSheet;
-  slot: CanonicalSlot;
+  slot: ImagemCanonicaSlot;
   /**
    * The §5.22 fallback: the same generation, once more, in opaque athletic
    * compression wear. Passed through to the compiler so that the outfit is the

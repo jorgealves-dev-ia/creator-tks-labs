@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import {
-  IMAGENS_CANONICAS_SLOTS,
+  TODOS_SLOTS_CANONICOS,
   TRAJE_PADRAO_POR_GENERO,
   type GeneroApresentacao,
 } from "@/lib/character-sheet/dictionary";
@@ -339,7 +339,15 @@ const narrativaSchema = z.object({
 // Canonical images — asset ids only; the files live in entity_images
 // ---------------------------------------------------------------------------
 
+/**
+ * The two sheet slots arrived with the canonical generation (decision G3) and
+ * every sheet saved before that simply does not have them. Defaulting to null is
+ * what makes that a non-event: an old draft and a frozen v1 both parse into a
+ * character whose anchor has not been generated yet, which is exactly true.
+ */
 const imagensCanonicasSchema = z.object({
+  folha_completa: z.string().nullable().default(null),
+  folha_completa_horizontal: z.string().nullable().default(null),
   turnaround_frente: z.string().nullable().default(null),
   turnaround_tres_quartos: z.string().nullable().default(null),
   turnaround_perfil: z.string().nullable().default(null),
@@ -409,4 +417,4 @@ export function sheetToJson(sheet: CharacterSheet): Json {
 }
 
 /** The canonical image slots, in the order the interface shows them. */
-export const CANONICAL_SLOT_KEYS = IMAGENS_CANONICAS_SLOTS.map((slot) => slot.key);
+export const CANONICAL_SLOT_KEYS = TODOS_SLOTS_CANONICOS.map((slot) => slot.key);

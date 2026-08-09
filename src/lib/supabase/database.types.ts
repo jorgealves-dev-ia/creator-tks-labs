@@ -22,6 +22,7 @@ export type Database = {
           enabled: boolean
           extraction_sparks: number | null
           id: string
+          image_sparks: number | null
           is_default: boolean
           provider_id: string
           slug: string
@@ -34,6 +35,7 @@ export type Database = {
           enabled?: boolean
           extraction_sparks?: number | null
           id?: string
+          image_sparks?: number | null
           is_default?: boolean
           provider_id: string
           slug: string
@@ -46,6 +48,7 @@ export type Database = {
           enabled?: boolean
           extraction_sparks?: number | null
           id?: string
+          image_sparks?: number | null
           is_default?: boolean
           provider_id?: string
           slug?: string
@@ -368,11 +371,15 @@ export type Database = {
           cost_charged_cents: number
           cost_real_cents: number
           created_at: string
+          entity_id: string | null
           entity_version_id: string | null
-          error: string | null
+          error_message: string | null
           id: string
+          input_tokens: number | null
           model: string
+          model_id: string | null
           node_id: string | null
+          output_tokens: number | null
           params: Json
           project_id: string | null
           prompt_compiled: Json | null
@@ -381,8 +388,10 @@ export type Database = {
           provider_job_id: string | null
           result_asset_id: string | null
           sheet_source: string | null
+          sparks_charged: number
           started_at: string | null
           status: Database["public"]["Enums"]["generation_status"]
+          summary: Json | null
           updated_at: string
           user_id: string
           workflow_id: string | null
@@ -392,11 +401,15 @@ export type Database = {
           cost_charged_cents?: number
           cost_real_cents?: number
           created_at?: string
+          entity_id?: string | null
           entity_version_id?: string | null
-          error?: string | null
+          error_message?: string | null
           id?: string
+          input_tokens?: number | null
           model: string
+          model_id?: string | null
           node_id?: string | null
+          output_tokens?: number | null
           params?: Json
           project_id?: string | null
           prompt_compiled?: Json | null
@@ -405,8 +418,10 @@ export type Database = {
           provider_job_id?: string | null
           result_asset_id?: string | null
           sheet_source?: string | null
+          sparks_charged?: number
           started_at?: string | null
           status?: Database["public"]["Enums"]["generation_status"]
+          summary?: Json | null
           updated_at?: string
           user_id: string
           workflow_id?: string | null
@@ -416,11 +431,15 @@ export type Database = {
           cost_charged_cents?: number
           cost_real_cents?: number
           created_at?: string
+          entity_id?: string | null
           entity_version_id?: string | null
-          error?: string | null
+          error_message?: string | null
           id?: string
+          input_tokens?: number | null
           model?: string
+          model_id?: string | null
           node_id?: string | null
+          output_tokens?: number | null
           params?: Json
           project_id?: string | null
           prompt_compiled?: Json | null
@@ -429,18 +448,34 @@ export type Database = {
           provider_job_id?: string | null
           result_asset_id?: string | null
           sheet_source?: string | null
+          sparks_charged?: number
           started_at?: string | null
           status?: Database["public"]["Enums"]["generation_status"]
+          summary?: Json | null
           updated_at?: string
           user_id?: string
           workflow_id?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "generations_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "generations_entity_version_id_fkey"
             columns: ["entity_version_id"]
             isOneToOne: false
             referencedRelation: "entity_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generations_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "ai_models"
             referencedColumns: ["id"]
           },
           {
@@ -676,6 +711,59 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "extractions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      record_generation: {
+        Args: {
+          p_entity_id?: string
+          p_entity_version_id?: string
+          p_error_message?: string
+          p_input_tokens?: number
+          p_model_id: string
+          p_output_tokens?: number
+          p_params?: Json
+          p_prompt_compiled?: Json
+          p_real_cost_cents?: number
+          p_result_asset_id?: string
+          p_sheet_source?: string
+          p_status: Database["public"]["Enums"]["generation_status"]
+          p_summary?: Json
+        }
+        Returns: {
+          completed_at: string | null
+          cost_charged_cents: number
+          cost_real_cents: number
+          created_at: string
+          entity_id: string | null
+          entity_version_id: string | null
+          error_message: string | null
+          id: string
+          input_tokens: number | null
+          model: string
+          model_id: string | null
+          node_id: string | null
+          output_tokens: number | null
+          params: Json
+          project_id: string | null
+          prompt_compiled: Json | null
+          prompt_user_pt: string | null
+          provider: string
+          provider_job_id: string | null
+          result_asset_id: string | null
+          sheet_source: string | null
+          sparks_charged: number
+          started_at: string | null
+          status: Database["public"]["Enums"]["generation_status"]
+          summary: Json | null
+          updated_at: string
+          user_id: string
+          workflow_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "generations"
           isOneToOne: true
           isSetofReturn: false
         }

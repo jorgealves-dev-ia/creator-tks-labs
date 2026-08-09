@@ -84,7 +84,15 @@ Consequência prática para quem implementa: um controle novo sem tooltip, um es
 
 O diferencial do produto é o influencer de IA que **continua sendo a mesma pessoa** entre uma geração e outra. Isso não sai de "escrever um prompt bem escrito": sai de uma ficha estruturada com listas fechadas de opções, cada opção com uma tradução fixa em inglês, mais imagens canônicas que acompanham toda geração.
 
-A especificação completa — estrutura JSON, listas fechadas campo a campo e as regras de compilação do prompt — está em [`character-sheet.md`](./character-sheet.md).
+### A folha completa é a âncora universal da identidade
+
+O texto descreve; a imagem prova. Por isso a personagem tem uma imagem acima de todas as outras: a **folha completa** — uma grade única com frente, ¾, perfil, costas, close de rosto e estudos de expressão, tudo na mesma imagem e portanto tudo obrigatoriamente da mesma pessoa.
+
+Ela nasce **só do DNA compilado**, sem foto de referência: a folha errada é campo errado, visível e corrigível. E é a partir dela que tudo o mais se gera — cada vista separada é gerada **com a folha anexada como referência**. Âncora primeiro, o resto referencia a âncora.
+
+Duas consequências práticas: o fluxo natural vira *gerar a folha → conferir → salvar como v1* (a folha congela junto com a versão), e uma personagem sem folha ainda não tem de onde tirar suas vistas — a interface diz isso em vez de oferecer um botão que só poderia falhar.
+
+A especificação completa — estrutura JSON, listas fechadas campo a campo e as regras de compilação do prompt — está em [`character-sheet.md`](./character-sheet.md); a geração canônica, em [`geracao-canonica.md`](./geracao-canonica.md).
 
 ---
 
@@ -140,9 +148,17 @@ Entregue e verificado no navegador:
 - Imagens canônicas por upload manual
 - **Motor de extração** (08/08/2026): foto de referência **ou** texto colado de outra plataforma preenchem o DNA visual, com selo verde no que foi visto e amarelo no que foi deduzido — este último com o motivo da dúvida. É a primeira integração de IA do produto e a primeira cobrança real de Sparks. A extração só preenche campos em branco: nada que o usuário decidiu é desfeito por uma máquina.
 
-O que falta desta fase: a **geração assistida das imagens canônicas** (turnaround e folha de expressões) e o **consumo do `@`** pelos nodes de geração, que depende da Fase 1.
+- **Compilador de prompt e geração canônica** (09/08/2026): o sheet vira prompt de identidade em inglês por uma função pura e determinística, com prévia ao vivo no editor e o placar do que ficou de fora. E a personagem ganha rosto: folha completa gerada só do DNA, vistas geradas com a folha como referência, com moldura de reference sheet e fallback automático de traje. Estreia da capability `image_gen` no catálogo e do adaptador do Google.
 
-Especificações: [`character-sheet.md`](./character-sheet.md), [`versionamento-entidades.md`](./versionamento-entidades.md), [`tela-character-sheet.md`](./tela-character-sheet.md) e [`motor-extracao.md`](./motor-extracao.md).
+O que falta desta fase: o **consumo do `@`** pelos nodes de geração, que depende da Fase 1.
+
+Especificações: [`character-sheet.md`](./character-sheet.md), [`versionamento-entidades.md`](./versionamento-entidades.md), [`tela-character-sheet.md`](./tela-character-sheet.md), [`motor-extracao.md`](./motor-extracao.md) e [`geracao-canonica.md`](./geracao-canonica.md).
+
+**Pendências de refinamento registradas** (a avaliar com mais gerações reais): **âncora de estilo visual** — o prompt canônico não fixa foto vs. ilustração, e uma folha ilustrada com vistas fotográficas não é a mesma personagem; fidelidade da posição de tatuagens no prompt; variedade das células de expressão da folha; e o fatiamento automático da grade da folha em slots individuais.
+
+### Fase 2.5 — Storyboard + Vídeos 📌 conversa dedicada
+
+Registrada a pedido do Jorge, **depois dos nodes de geração**: storyboard cena a cena e geração de vídeo, que chegam junto com a estreia do **padrão assíncrono** (fila → webhook → Realtime). A geração canônica pôde ser síncrona porque uma imagem 2K leva de 20 a 40 segundos e cabe no tempo de função; vídeo não cabe, e é ali que o assíncrono deixa de ser opcional.
 
 ### Fase 3 — Vídeo e voz
 

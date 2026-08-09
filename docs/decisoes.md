@@ -522,3 +522,53 @@ Princípio que sai daqui: **modelo no catálogo ou funciona, ou não fica seleci
 
 ---
 
+### 09/08/2026 — Compilador de prompt e geração das imagens canônicas (G1–G4)
+
+**G1 — A folha nasce do DNA compilado, texto puro. ✅ APROVADO.** Nenhuma foto de referência na v1 da geração canônica. Três motivos: é o padrão do fluxo profissional inspecionado (texto → rosto-base → tudo referencia); prova que o DNA funciona, porque folha errada é campo errado, visível e corrigível; e evita clonagem de rosto de pessoa real — a mesma ética que fez a extração recusar identificação. Foto-referência opcional fica registrada para estudo futuro, com cuidados próprios.
+
+**G2 — Modelo padrão: Google Nano Banana Pro. ✅ APROVADO.** Evidência da inspeção: é o modelo escolhido em todos os geradores de um fluxo profissional de consistência. Slugs e preços conferidos na documentação oficial no dia da implementação, não de memória — e a documentação tinha mudado em três pontos relevantes: o slug é `gemini-3-pro-image` (sem `-preview`), a API virou `POST /v1beta/interactions` (não mais `generateContent` com `responseModalities`), e **nenhum modelo de imagem tem free tier**, o que torna billing obrigatório.
+
+**G3 — Folha única vertical como padrão; vistas sob demanda. ✅ APROVADO.** A folha ganha slot próprio, em destaque no topo da coluna, e vira a referência universal. As seis vistas continuam existindo, geradas sob demanda **com a folha anexada como referência de imagem**. Sem folha, o botão da vista fica desabilitado com o motivo — a regra é enforçada também no servidor, não só na tela.
+
+**G4 — Síncrono agora, assíncrono quando precisar. ✅ APROVADO.** Uma imagem 2K levou 23–27s na validação real, dentro do `maxDuration` de 60. É esse número que dirá quando o assíncrono virar necessidade; ele estreia na conversa de Storyboard + Vídeos, onde é inevitável.
+
+---
+
+**O compilador é função pura, e isso obrigou uma decisão sobre os campos livres.** `lib/prompt/compile.ts` não faz rede, não lê relógio, não sorteia: o mesmo sheet produz o mesmo prompt hoje e daqui a um ano. Mas os campos livres estão em português e precisam chegar em inglês, e uma função pura não pode ir buscar tradução.
+
+Solução: **tradução no salvamento, com cache no próprio envelope** (`detalhes_en`, `descricao_en`, `regra_en`). O autosave grava, uma chamada barata ao Haiku traduz o que falta, e o compilador só lê. Custo interno de fração de centavo por edição, **não cobrado em Sparks** — entra na margem das gerações.
+
+A regra que sustenta o cache cabe numa frase: **mudou o português, morre a tradução.** Ela mora em `syncTranslationCache()`, chamada pelo `updateSheet` da store — por onde toda edição passa. A alternativa seria espalhar a invalidação por cinco editores diferentes, e o quinto esqueceria.
+
+**A ação de tradução não escreve no banco, de propósito.** O rascunho tem um escritor só (`saveCharacterDraft`, movido pelo autosave). Um segundo escritor disputaria com a digitação do usuário o direito à última palavra. Ela devolve o que traduziu, a store aplica, o autosave seguinte persiste — e o ciclo fecha sozinho, porque cache cheio não tem nada pendente.
+
+**A prévia "Prompt compilado" carrega o placar do que ficou de fora.** Não é decoração: um prompt que não se pode auditar é um prompt em que se precisa confiar, e o sistema de estados existe justamente para isso não ser necessário. O placar conta inferidos, vazios, campos livres aguardando tradução — e avisa quando há conteúdo em notas gerais, que nunca entra em prompt de imagem.
+
+**Notas gerais ficam fora do prompt (D6).** A regra 7 do §6 e a §3.3 listam os campos livres como `detalhes`, `descricao` de marcas e `restricoes`; notas gerais não aparecem em nenhuma das duas. É caderno de anotações — e o campo diz isso antes de ser escrito, não depois.
+
+**`record_generation` é gêmea da `record_extraction`.** Preço lido de `ai_models.image_sparks` e nunca do parâmetro, carteira travada com `for update`, débito atômico só no sucesso, `GN001`–`GN003` para a tela dizer cada caso em português. O que já existia e significava a mesma coisa **não foi duplicado**: `cost_real_cents` ficou, e `error` virou `error_message` em vez de ganhar um irmão — duas colunas para uma ideia é como uma consulta acaba perdendo metade das falhas.
+
+**A ordem das escritas erra a favor do usuário.** Storage → asset → vínculo → cobrança → rascunho. Um processo morto entre o vínculo e a cobrança deixa uma imagem de graça, não uma ausência paga. E cobrança que falha derruba a imagem junto: ninguém fica com algo que acabou de ser informado que não podia ter.
+
+**Preço calibrado contra a realidade, não contra a tabela.** Regra da casa: custo real em centavos × 1,35, arredondado para múltiplo de 5. A validação real mediu **74 centavos** por imagem 2K — Nano Banana Pro ficou em 100 ⚡. O cálculo de `real_cost_cents` deixou de somar os tokens de saída por cima do preço por imagem (inflava ~12%): o número gravado agora é conferível linha a linha com a fatura do Google, que é o que o torna útil para calibrar. Tokens de pensamento (~1 centavo em 20) ficam de fora, e isso está escrito no código.
+
+**Dependência nova aprovada: `@google/genai`.** O SDK oficial cobre a Interactions API desde a 2.3.0, então valeu o padrão da casa — SDK, não `fetch` cru, mesma razão do `@anthropic-ai/sdk`. Bônus: os tipos do pacote são a documentação mais confiável dos formatos.
+
+**Validado com geração real antes da entrega** — folha completa e vista de perfil usando a folha como referência. Sem recusa: a moldura de reference sheet do §5.22 passou de primeira com o traje de banho, e o fallback não precisou disparar. E a honestidade dos estados apareceu na imagem: os olhos saíram **castanhos**, não verdes, porque `verde` estava `inferido` e não entrou no prompt. A regra 2 visível a olho nu.
+
+**Pendências de refinamento registradas** (a avaliar com mais gerações reais): a tatuagem foi desenhada no quadril em vez do pulso esquerdo — infidelidade do modelo, com o efeito colateral favorável de ficar *consistente* entre imagens por causa da âncora; e as células de expressão da folha saíram quase idênticas, porque quem enumera expressões é o slot dedicado. Detalhes na seção 6 de [`geracao-canonica.md`](./geracao-canonica.md).
+
+---
+### 09/08/2026 — Achado do teste de navegador: estilo visual está solto
+
+A Etapa C passou nos oito itens do roteiro, e a folha da personagem principal do Jorge trouxe o achado mais útil do dia: **saiu com aspecto de desenho, não de foto.**
+
+A causa é nossa e é identificável: **o prompt canônico não ancora estilo em lugar nenhum.** A moldura do §5.22 abre com `professional full-body character reference sheet`, e "character reference sheet" é vocabulário que boa parte dos modelos associa a *character design* ilustrado. A interpretação do modelo é legítima — só não é a que queremos. Na validação contra a API a folha saiu fotográfica, o que prova que hoje isso é **sorte do modelo, não decisão do sistema**.
+
+Por que isso é maior do que um ajuste de prompt: **estilo é a terceira coisa que precisa ser tão determinística quanto identidade e traje.** O produto inteiro existe para que a personagem continue sendo a mesma pessoa entre gerações; uma folha ilustrada com vistas fotográficas quebra isso tão completamente quanto trocar a cor dos olhos. E o mecanismo que resolve já existe e está provado — lista fechada com frase fixa em inglês, exatamente como os outros 25 campos.
+
+Fica para a tarefa seguinte decidir **onde** o estilo mora: campo da Camada 2 (default do sheet, sobrescrevível por node, que é a hipótese natural) ou constante da geração canônica. As duas opções têm consequência sobre o que uma versão congelada guarda, então a decisão vale uma conversa curta em vez de um commit apressado.
+
+Registrado na seção 6 de [`geracao-canonica.md`](./geracao-canonica.md), junto das outras duas pendências de refinamento.
+
+---

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ExtractionProviderOption } from "@/lib/extraction/actions";
+import type { CatalogProvider } from "@/lib/ai/catalog-types";
 import { t } from "@/lib/i18n/pt-BR";
 
 /**
@@ -16,7 +16,7 @@ import { t } from "@/lib/i18n/pt-BR";
 
 type ModelSelectProps = {
   id: string;
-  providers: readonly ExtractionProviderOption[];
+  providers: readonly CatalogProvider[];
   value: string | null;
   onChange: (modelId: string) => void;
   disabled?: boolean;
@@ -60,7 +60,7 @@ export function ModelSelect({ id, providers, value, onChange, disabled }: ModelS
  * can. Telling someone to configure a key they already configured — which is what
  * a single "unusable" state would do — is worse than saying nothing.
  */
-function labelFor(provider: ExtractionProviderOption): string {
+function labelFor(provider: CatalogProvider): string {
   const extraction = t.characterSheet.extraction;
 
   if (provider.status === "ready") return provider.displayName;
@@ -70,7 +70,7 @@ function labelFor(provider: ExtractionProviderOption): string {
     : `${provider.displayName} ${extraction.noAdapterSuffix}`;
 }
 
-function tooltipFor(provider: ExtractionProviderOption): string | undefined {
+function tooltipFor(provider: CatalogProvider): string | undefined {
   const extraction = t.characterSheet.extraction;
 
   if (provider.status === "ready") return undefined;
@@ -86,7 +86,7 @@ function tooltipFor(provider: ExtractionProviderOption): string | undefined {
  * nothing is usable, which is what makes the panel able to say so instead of
  * offering a button that could only fail.
  */
-export function defaultModelId(providers: readonly ExtractionProviderOption[]): string | null {
+export function defaultModelId(providers: readonly CatalogProvider[]): string | null {
   const usable = providers.filter((provider) => provider.status === "ready");
 
   for (const provider of usable) {
@@ -98,7 +98,7 @@ export function defaultModelId(providers: readonly ExtractionProviderOption[]): 
 }
 
 /** The price of one model, for the cost confirmation. */
-export function findModel(providers: readonly ExtractionProviderOption[], modelId: string | null) {
+export function findModel(providers: readonly CatalogProvider[], modelId: string | null) {
   if (!modelId) return null;
 
   for (const provider of providers) {

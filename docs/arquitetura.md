@@ -109,6 +109,18 @@ O que **não** vai para o banco é a chave secreta (decisão E5). O catálogo gu
 
 `lib/providers/types.ts` declara as interfaces; `lib/providers/registry.ts` mapeia o slug do fornecedor para o adaptador; `lib/providers/anthropic.ts` é a primeira implementação. O produto conversa só com a interface, então fornecedor novo é arquivo novo mais uma linha no registry.
 
+São **três interfaces**, uma por capacidade, e não uma só com métodos opcionais — porque um fornecedor pode perfeitamente saber ler uma foto e ainda não saber desenhar uma:
+
+| Interface | Capability | Implementações |
+|---|---|---|
+| `ExtractionProvider` | `extraction` | `anthropic.ts` |
+| `TranslationProvider` | `translation` | `anthropic.ts` — plumbing interna do compilador, sem preço e sem seletor |
+| `ImageGenerationProvider` | `image_gen` | `google.ts` (Nano Banana Pro / Nano Banana 2) |
+
+`lib/providers/google.ts` usa o **SDK oficial** `@google/genai`, que cobre a Interactions API a partir da 2.3.0 — mesmo padrão do `@anthropic-ai/sdk`, e a fonte mais confiável dos formatos, já que os tipos do pacote são a documentação. Ele **não repete tentativa**: uma geração repetida é uma segunda imagem faturada pelo Google, que não tem como saber que a primeira pode ter dado certo do lado dele. A única retentativa do produto é o fallback de traje do §5.22, que é decisão de uma camada acima, registrada no histórico e visível na tela.
+
+`lib/ai/catalog.ts` lê o catálogo **por capacidade**. Extração e geração de imagem fazem a mesma pergunta às mesmas duas tabelas e diferem em exatamente três detalhes — qual capability filtrar, qual coluna de preço responde, e qual registro sabe se existe adaptador. Os três vivem numa tabela só nesse arquivo, em vez de em duas cópias da mesma consulta: uma cópia que errasse um deles não falharia alto, ofereceria um modelo pelo preço da outra capacidade.
+
 Um fornecedor é **usável** quando as duas coisas valem: existe adaptador no registry *e* existe chave no servidor. As duas falham por motivos diferentes, então `extractionProviderStatus()` devolve **qual** falhou — `ready`, `missing_key` ou `no_adapter` — e o seletor diz a verdade correspondente: "(sem chave)" para o que o usuário pode resolver hoje, "(em breve)" para o que só nós podemos. Um fornecedor cuja chave já foi configurada nunca é mandado configurá-la.
 
 Fornecedor inutilizável aparece apagado, nunca escondido: o usuário vê o caminho adiante em vez de uma lista curta e inexplicada.
@@ -142,6 +154,18 @@ O comentário na tabela `assets` registra a regra: *"Every file lives in Supabas
 3. **A geração fica reproduzível e auditável.** O `prompt_compiled` salvo é o registro histórico: mesmo que a `@julia` evolua para a v5, dá para saber exatamente com que características cada imagem antiga foi gerada. É a "receita" — daí ele ser visível e editável no node de resultado.
 
 **Onde a IA entra e onde não entra.** Isso é crítico para a consistência de personagem: as opções de lista fechada do character sheet usam **frases fixas em inglês, copiadas literalmente de um dicionário de constantes** — nunca re-traduzidas por IA a cada geração. A IA só traduz e harmoniza os campos livres e monta o JSON final. Ver a regra de compilação nº 7 em [`character-sheet.md`](./character-sheet.md#6-regras-de-compilação-do-prompt).
+
+#### O compilador, na prática (09/08/2026)
+
+`lib/prompt/compile.ts` é **função pura**: sem rede, sem relógio, sem aleatoriedade. O mesmo sheet produz o mesmo prompt hoje e daqui a um ano — é isso que torna uma imagem reproduzível a partir do `prompt_compiled` guardado, e o que permite o editor recompilar a cada tecla de graça.
+
+Isso levanta um problema e o resolve num lugar só: os campos livres estão em português e precisam chegar em inglês, mas uma função pura não pode ir buscar tradução. A saída é o **cache no envelope** — quando o autosave grava, uma chamada barata traduz os campos livres e guarda `detalhes_en`, `descricao_en`, `regra_en` ao lado do texto que os gerou. O compilador só lê.
+
+A regra que sustenta o cache é uma frase: **mudou o português, morre a tradução.** Ela vive em `syncTranslationCache()`, chamada pelo `updateSheet` da store — por onde toda edição do aplicativo passa. Um componente não pode honrá-la e outro esquecê-la, porque nenhum dos dois precisa lembrar dela.
+
+A ação de tradução **não escreve no banco**: o rascunho tem um escritor só (`saveCharacterDraft`, movido pelo autosave), e um segundo escritor disputaria com a digitação do usuário o direito à última palavra. Ela devolve o que traduziu, a store aplica, e o autosave seguinte persiste. O ciclo fecha sozinho — cache cheio não tem nada pendente.
+
+`lib/prompt/canonical.ts` embrulha o bloco de identidade na moldura de reference sheet e na instrução da vista (§4.2 e §4.3 de [`geracao-canonica.md`](./geracao-canonica.md)). As receitas são um `Record` indexado pela união dos slots do dicionário, então **slot novo sem prompt é erro de compilação**, não algo a lembrar.
 
 ---
 
@@ -209,9 +233,9 @@ Verificado na Fase 0: sem sessão, as 9 tabelas de então respondiam `42501 perm
 | `entity_versions` | os **snapshots congelados** do sheet: `entity_id`, `user_id`, `version_number` (sequencial por entidade), `sheet jsonb` (cópia integral, nunca um diff), `label` |
 | `entity_images` | join entre `entities` e `assets`: as imagens canônicas de uma entidade (turnaround, expressões), com `role` e ordenação |
 | `assets` | arquivos no Storage: `kind` (image/video/audio), `source` (upload/generation), mime, dimensões, duração |
-| `generations` | cada execução: workflow/node de origem, provedor, modelo, `params jsonb`, `prompt_user_pt`, `prompt_compiled jsonb`, status, custos, `result_asset_id`, `entity_version_id`, `sheet_source`, erro |
+| `generations` | cada execução: workflow/node de origem, `entity_id`, `model_id`, provedor, modelo, `params jsonb`, `prompt_user_pt`, `prompt_compiled jsonb`, status, tokens, `cost_real_cents`, `sparks_charged`, `result_asset_id`, `entity_version_id`, `sheet_source`, `summary jsonb`, `error_message` |
 | `ai_providers` | catálogo de fornecedores de IA: `slug`, `display_name`, `env_var_name` (**qual variável guarda a chave — nunca a chave**), `enabled`, ordenação |
-| `ai_models` | catálogo de modelos: `provider_id`, `slug` (o identificador oficial na API do fornecedor), `capabilities text[]` (`{extraction}` hoje, `{image_gen}`/`{video_gen}` depois), `extraction_sparks`, `is_default`, `enabled` |
+| `ai_models` | catálogo de modelos: `provider_id`, `slug` (o identificador oficial na API do fornecedor), `capabilities text[]` (`{extraction}`, `{translation}`, `{image_gen}`; `{video_gen}` depois), `extraction_sparks`, `image_sparks`, `is_default`, `enabled` |
 | `extractions` | o diário do motor de extração: `entity_id`, `model_id`, `source` (photo/text), `status`, tokens consumidos, `real_cost_cents`, `sparks_charged`, `reference_asset_id` (a foto lida), `source_text` (o texto colado), `summary jsonb` (o placar) |
 
 Sobre `entities.project_id`: **nulo = a entidade vale em todos os projetos do usuário**; preenchido = escopo daquele projeto. O `handle` é um slug minúsculo, único por usuário, validado por constraint no formato `^[a-z0-9][a-z0-9_-]{0,47}$`.
@@ -235,6 +259,8 @@ Esta é a linha divisória mais importante da arquitetura: as regras abaixo **n�
 - Imagem citada no bloco `imagens_canonicas` de qualquer versão **não pode ser deletada** (trigger em `entity_images`) — deletá-la quebraria um retrato congelado. Imagem referenciada só pelo rascunho continua deletável
 - Salvar versão é **atômico**: a função `public.save_entity_version(entity_id, label)` faz o INSERT do retrato e o UPDATE do ponteiro ativo na mesma transação. Ou as duas escritas acontecem, ou nenhuma — nunca um `@julia` apontando para o retrato errado
 - Registrar e cobrar uma extração é **atômico e com preço do catálogo**: `public.record_extraction(...)` grava a linha em `extractions` e insere o débito no ledger na mesma transação, lendo o preço de `ai_models.extraction_sparks` — a função **não aceita valor do chamador**, porque quem pudesse dizer o preço poderia dizer zero. É `security definer` e valida a posse da personagem contra `auth.uid()`, o que faz esta feature inteira **não precisar da service role**. Recusa com `EX001` (saldo insuficiente), `EX002` (personagem não é do chamador) e `EX003` (modelo não habilitado para extração). Falha da API grava `status = 'failed'` e não cobra — garantido também por constraint
+- Registrar e cobrar uma **geração** é atômico pelo mesmo desenho: `public.record_generation(...)` é a gêmea da anterior, lê o preço de `ai_models.image_sparks`, trava a carteira com `for update`, debita só no sucesso e recusa com `GN001` / `GN002` / `GN003`. `generations` já era somente-leitura para o usuário desde a Fase 0, então esta função é o único caminho por onde uma linha nasce — que é o que a torna o único lugar capaz de decidir um preço
+- Preço e capacidade andam juntos por constraint: `('image_gen' = any(capabilities)) = (image_sparks is not null)`, gêmea da que já valia para `extraction_sparks`. Sem ela, uma linha mal cadastrada daria imagens de graça ou ofereceria um modelo que a função de cobrança não sabe precificar — e imagem custa dinheiro de verdade por clique
 - O catálogo de IA (`ai_providers`, `ai_models`) tem `SELECT` para `authenticated` e **nenhuma política de escrita**: nesta fase se gerencia por SQL direto, depois pelo painel admin. `extractions` tem só leitura do próprio usuário — as linhas são escritas exclusivamente pela função acima
 
 **A exceção comum a todas as travas de apagamento**: quando a linha correspondente em `auth.users` já não existe, o delete passa. É o sinal de que se trata da cascata de exclusão de conta, e não de reescrita de história. O cadeado protege o passado; não impede o usuário de apagar a própria conta (LGPD). O padrão nasceu na `reject_ledger_delete` e vale hoje para o ledger, para `entity_versions` e para `entity_images`.

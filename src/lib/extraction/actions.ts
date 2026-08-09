@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { loadCatalog } from "@/lib/ai/catalog";
+import type { CatalogModel, CatalogProvider } from "@/lib/ai/catalog-types";
 import { realCostCents } from "@/lib/ai/pricing";
 import { parseSheet, sheetToJson, type CharacterSheet } from "@/lib/character-sheet/schema";
 import { validateExtraction } from "@/lib/extraction/answer";
@@ -14,11 +16,7 @@ import {
 } from "@/lib/extraction/contract";
 import { buildSystemPrompt } from "@/lib/extraction/prompt";
 import { isProviderConfigured } from "@/lib/providers/keys";
-import {
-  extractionProviderStatus,
-  findExtractionProvider,
-  type ProviderStatus,
-} from "@/lib/providers/registry";
+import { findExtractionProvider } from "@/lib/providers/registry";
 import { ProviderError, type ExtractionInput } from "@/lib/providers/types";
 import { CENTS_PER_SPARK } from "@/lib/sparks";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -109,62 +107,25 @@ async function requireSession() {
 // The catalogue, as the selector needs it
 // ---------------------------------------------------------------------------
 
-export type ExtractionModelOption = {
-  id: string;
-  displayName: string;
-  sparks: number;
-  isDefault: boolean;
-};
-
-export type ExtractionProviderOption = {
-  slug: string;
-  displayName: string;
-  status: ProviderStatus;
-  models: ExtractionModelOption[];
-};
+/**
+ * Kept as names of their own so the extraction panel does not have to learn the
+ * catalogue's vocabulary — but they are the shared shapes, because a selector
+ * that works for one capability and not the other would not be a shared selector.
+ */
+export type ExtractionModelOption = CatalogModel;
+export type ExtractionProviderOption = CatalogProvider;
 
 /**
  * The providers and models that can extract, with why each is or is not usable.
  *
- * The status is computed here, on the server, from the key and the registry —
- * decision E5. The key never leaves this process, and the name of the variable
- * that holds it is not sent either: the interface has no use for it.
+ * The status is computed on the server, from the key and the registry — decision
+ * E5. The key never leaves this process, and the name of the variable that holds
+ * it is not sent either: the interface has no use for it.
  */
 export async function listExtractionProviders(): Promise<ExtractionProviderOption[]> {
   const { supabase } = await requireSession();
 
-  // One literal string, not a concatenation: the Supabase client infers the shape
-  // of the result from the text of the select, and a built-up string is opaque to
-  // it — which costs the types of every column it names.
-  const { data } = await supabase
-    .from("ai_providers")
-    .select(
-      "slug, display_name, enabled, env_var_name, sort_order, ai_models (id, slug, display_name, extraction_sparks, is_default, enabled, capabilities, sort_order)",
-    )
-    .eq("enabled", true)
-    .order("sort_order");
-
-  return (data ?? [])
-    .map((provider) => ({
-      slug: provider.slug,
-      displayName: provider.display_name,
-      status: extractionProviderStatus(provider.slug, provider.env_var_name),
-      models: (provider.ai_models ?? [])
-        .filter(
-          (model) =>
-            model.enabled &&
-            model.capabilities.includes("extraction") &&
-            model.extraction_sparks !== null,
-        )
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map((model) => ({
-          id: model.id,
-          displayName: model.display_name,
-          sparks: model.extraction_sparks ?? 0,
-          isDefault: model.is_default,
-        })),
-    }))
-    .filter((provider) => provider.models.length > 0);
+  return loadCatalog(supabase, "extraction");
 }
 
 /** The user's balance in Sparks — for the cost confirmation of spec §4.1. */

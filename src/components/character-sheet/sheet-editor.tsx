@@ -405,6 +405,7 @@ function SheetEditorDialog({ entityId }: { entityId: string }) {
               sheet={shownSheet}
               update={update}
               readOnly={isViewingVersion}
+              flushDraft={() => saveDraft(entityId)}
             />
           </div>
         </div>

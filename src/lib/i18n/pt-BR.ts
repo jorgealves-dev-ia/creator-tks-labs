@@ -204,6 +204,40 @@ export const t = {
         notAnImage: "Envie um arquivo de imagem.",
         uploadFailed: "Não foi possível enviar a imagem.",
         removeFailed: "Não foi possível remover a imagem.",
+
+        /** Canonical generation, docs/geracao-canonica.md §4.4. */
+        anchorTitle: "A âncora",
+        viewsTitle: "Vistas",
+        anchorHint:
+          "A folha completa é a referência de todas as outras imagens. Gere ela primeiro.",
+        flow:
+          "Fluxo recomendado: gerar a folha → conferir → salvar como v1. A folha congela junto com a versão.",
+        generate: "Gerar",
+        regenerate: "Gerar de novo",
+        generating: "Gerando…",
+        generatingHint: "Leva de 20 a 40 segundos. Não feche esta janela.",
+        modelLabel: "Modelo",
+        costPrefix: "Cada imagem custa",
+        balancePrefix: "saldo:",
+        needsSheet: "Gere a folha primeiro — ela é a âncora.",
+        /** Compilation rule 10: a fallback is never a silent surprise. */
+        fallbackUsed:
+          "O modelo recusou o traje canônico. Refeito uma vez com compressão esportiva opaca — registrado no histórico.",
+        generateErrors: {
+          noModel: "Nenhum modelo de imagem disponível. Configure a chave do fornecedor.",
+          notConfigured: "Este fornecedor está sem chave de API no servidor.",
+          insufficientPrefix: "Você precisa de",
+          insufficientMiddle: "para esta imagem e tem",
+          needsSheet: "Gere a folha completa antes das vistas — elas usam a folha como referência.",
+          translating:
+            "Os campos livres ainda estão sendo traduzidos. Aguarde um instante e tente de novo.",
+          emptySheet:
+            "O DNA está vazio. Preencha ao menos alguns campos antes de gerar — senão não há personagem para desenhar.",
+          refused:
+            "O modelo recusou esta geração, inclusive com o traje alternativo. Nada foi cobrado.",
+          failed: "A geração não deu certo, e nada foi cobrado. Tente de novo.",
+          invalid: "Não foi possível iniciar a geração. Recarregue a página e tente de novo.",
+        },
       },
     },
 
