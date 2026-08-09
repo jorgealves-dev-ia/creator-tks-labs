@@ -130,9 +130,14 @@ O que ficou entregue e verificado no navegador:
 
 O débito de Sparks está construído mas ainda não é exercitado — ele só entra em uso quando existir geração (Fase 1).
 
-### Fase 1 — Geração de imagem 🔨 atual
+### Fase 1 — Geração de imagem ✅ concluída (09/08/2026)
 
-Nodes de input tipados, node de geração (Nano Banana + 1 modelo via fal), sistema de `@`, ingestão de assets, débito de Sparks e prompt duplo PT → EN/JSON.
+Node de geração, sistema de `@`, ingestão de assets, débito de Sparks e prompt duplo PT → EN/JSON — todos entregues e exercitados com gerações reais. Dois modelos de imagem validados contra a API: **Nano Banana Pro** (padrão) e **Nano Banana 2**.
+
+Duas diferenças em relação ao que esta fase previa no papel, ambas registradas em [`decisoes.md`](./decisoes.md):
+
+- **Nodes de input tipados não existem, e não fazem falta.** A decisão N1 substituiu-os por conectores no próprio bloco de geração: referência é propriedade da geração, não passo do fluxo, e como node separado cada imagem custaria um retângulo e um fio.
+- **O segundo modelo não veio por agregador.** `fal` continua previsto para vídeo (Kling, Seedance); para imagem, os dois modelos vêm direto da fonte, que é o critério da Decisão 2.
 
 ### Fase 2 — Entidades 🔨 começou antes da hora, de propósito
 
@@ -150,7 +155,13 @@ Entregue e verificado no navegador:
 
 - **Compilador de prompt e geração canônica** (09/08/2026): o sheet vira prompt de identidade em inglês por uma função pura e determinística, com prévia ao vivo no editor e o placar do que ficou de fora. E a personagem ganha rosto: folha completa gerada só do DNA, vistas geradas com a folha como referência, com moldura de reference sheet e fallback automático de traje. Estreia da capability `image_gen` no catálogo e do adaptador do Google.
 
-O que falta desta fase: o **consumo do `@`** pelos nodes de geração, que depende da Fase 1.
+- **Nodes de geração no canvas** (09/08/2026): o estúdio deixa de ser fábrica de personagens e vira **linha de produção**. O bloco **Gerar Imagem** aceita a cena em português com menções `@`, referências anexadas com tipo e instrução, formato por canal e estilo; cada geração vira um node **Resultado**, que se liga na entrada de outro bloco e vira referência dele. Especificação: [`nodes-geracao.md`](./nodes-geracao.md).
+
+  É aqui que o `@` deixa de ser promessa: mencionar uma personagem anexa o DNA compilado da **versão congelada** mais a folha completa como referência de imagem — a consistência que em ferramenta profissional é trabalho manual, feita por uma menção.
+
+**Este é o estado atual da Fase 2: a linha de produção existe de ponta a ponta.** Personagem → folha → menção → cena dirigida → imagem → a imagem vira insumo da próxima. Fecha também o que faltava da Fase 1 (o consumo do `@`), que dependia justamente destes nodes.
+
+O que a linha ainda não faz, de propósito: mais de uma imagem por clique, mais de uma personagem por geração, e vídeo — os três chegam com o assíncrono, na Fase 2.5.
 
 Especificações: [`character-sheet.md`](./character-sheet.md), [`versionamento-entidades.md`](./versionamento-entidades.md), [`tela-character-sheet.md`](./tela-character-sheet.md), [`motor-extracao.md`](./motor-extracao.md) e [`geracao-canonica.md`](./geracao-canonica.md).
 

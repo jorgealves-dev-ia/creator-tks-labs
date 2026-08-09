@@ -81,3 +81,18 @@ O rótulo mostra intenção + proporção real ("Stories · 9:16"). O catálogo 
 ## 8. Fora do escopo (de propósito) e registros
 
 Quantidade >1, listas e lote (chegam com o assíncrono em Storyboard + Vídeos); nodes de texto reutilizável / list / assistant / router (o mini-modal do Magnific — conversa própria); categorias de biblioteca na galeria (Stock, Style, Camera, Effects); `@` para objetos, cenários e roupas (hoje `@` = personagens; expansão registrada); multi-personagem numa geração; extração de descrição de produto (botão opcional futuro — N4); edição pós-geração (upscale, remover fundo — arsenal futuro); vídeo e Motion Control (conversa dedicada já registrada).
+## 9. Notas da implementação (09/08/2026)
+
+Números e achados que só existiam como "conferir na implementação" quando esta especificação foi escrita. Registrados aqui porque a spec é o lugar onde se procura por eles depois.
+
+**Proporções — todas exatas.** O Nano Banana Pro aceita `1:1 · 2:3 · 3:2 · 3:4 · 4:3 · 4:5 · 5:4 · 9:16 · 16:9 · 21:9`. Os seis presets da §7 mapeiam **sem aproximação**, inclusive o 4:5 do Instagram Feed que a §7 previa que talvez precisasse. O mecanismo de "cai na mais próxima, mostra o número real" existe e não tem uso hoje — é a garantia para o primeiro modelo que chegar com lista menor.
+
+**Referências — teto de 6 por geração, com a folha contando dentro.** A documentação do Google dá dois tetos por categoria e não um total: Pro aceita até 6 imagens de objetos e até 5 de personagens; o Nano Banana 2, até 10 de objetos e até 4 de personagens. Seis é o número que satisfaz os dois tetos sob qualquer mistura que este produto consegue produzir (no máximo uma personagem, pela N2), e é um número que a tela pode dizer sem precisar ensinar as categorias do Google a ninguém. Vive numa tabela por modelo no código, ao lado dos preços.
+
+**Resolução: 2K fixo.** No modelo padrão, 1K e 2K custam o mesmo — pedir o menor seria pagar o preço cheio por menos.
+
+**Cláusulas de fidelidade, acrescentadas depois do primeiro teste real.** Um biquíni anexado como produto voltou com uma alça de cada cor: o modelo tratou a referência como inspiração. Cada tipo passou a carregar uma frase fixa em inglês que nomeia o que não pode mudar, e o `@` com folha carrega a de identidade. **Elevam a taxa de acerto; não garantem 100%** — nenhum prompt torna um modelo de imagem determinístico, e isso está escrito no código para ninguém redescobrir.
+
+**Filtro de conteúdo é probabilístico, e varia por modelo.** A mesma configuração recusada pelo Nano Banana 2 passou de primeira no Pro, e passou no próprio NB2 na segunda tentativa com a frase reformulada. Consequências de produto: reformular é caminho legítimo (a mensagem de recusa diz isso), trocar de modelo também é (o seletor está ao lado do botão), e **recusa nunca cobra** — garantido por constraint, não por código.
+
+**A âncora precisa ser boa.** Uma personagem cuja versão congelada guarda uma folha ruim gera imagens consistentemente ruins, com fidelidade perfeita ao que foi pedido — o pior tipo de erro de diagnosticar, porque nada está quebrado. Folha fotorrealista congelada é pré-requisito de consistência, não passo opcional. Registrado para o onboarding.

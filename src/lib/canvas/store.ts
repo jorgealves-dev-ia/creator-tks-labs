@@ -30,6 +30,95 @@ export type SaveFailure = "conflict" | "error";
 const PERSISTED_NODE_CHANGES = new Set(["add", "remove", "replace", "position"]);
 const PERSISTED_EDGE_CHANGES = new Set(["add", "remove", "replace"]);
 
+/**
+ * A reference as a generating block stores it. Declared structurally rather than
+ * imported from the node component: this file may not depend on a component, and
+ * the shape is small enough that restating it is cheaper than the cycle.
+ */
+type StoredReference = {
+  assetId: string;
+  kind: string | null;
+  instrucao: string;
+  origem: string;
+};
+
+function readReferences(node: Node): StoredReference[] {
+  return Array.isArray(node.data.references) ? (node.data.references as StoredReference[]) : [];
+}
+
+/** The result → generator pair an edge represents, when it represents one. */
+function chainedPair(
+  nodes: readonly Node[],
+  connection: { source?: string | null; target?: string | null },
+): { result: Node; generator: Node; assetId: string } | null {
+  const result = nodes.find((node) => node.id === connection.source);
+  const generator = nodes.find((node) => node.id === connection.target);
+  const assetId = result?.data.assetId;
+
+  if (
+    result?.type !== "result" ||
+    generator?.type !== "generator" ||
+    typeof assetId !== "string"
+  ) {
+    return null;
+  }
+
+  return { result, generator, assetId };
+}
+
+function attachReference(
+  nodes: Node[],
+  connection: { source?: string | null; target?: string | null },
+): Node[] {
+  const pair = chainedPair(nodes, connection);
+
+  if (!pair) return nodes;
+
+  const current = readReferences(pair.generator);
+
+  // Wiring the same result twice is one reference, not two: the second wire is
+  // a gesture the user has already made.
+  if (current.some((reference) => reference.assetId === pair.assetId)) {
+    return nodes;
+  }
+
+  const next: StoredReference = {
+    assetId: pair.assetId,
+    kind: null,
+    instrucao: "",
+    origem: "resultado",
+  };
+
+  return nodes.map((node) =>
+    node.id === pair.generator.id
+      ? { ...node, data: { ...node.data, references: [...current, next] } }
+      : node,
+  );
+}
+
+function detachReference(nodes: Node[], edge: Edge): Node[] {
+  const pair = chainedPair(nodes, edge);
+
+  if (!pair) return nodes;
+
+  const current = readReferences(pair.generator);
+
+  // Only the attachment this wire made. A picture chosen from the gallery that
+  // happens to be the same file was a separate decision, and stays.
+  const next = current.filter(
+    (reference) =>
+      !(reference.assetId === pair.assetId && reference.origem === "resultado"),
+  );
+
+  if (next.length === current.length) return nodes;
+
+  return nodes.map((node) =>
+    node.id === pair.generator.id
+      ? { ...node, data: { ...node.data, references: next } }
+      : node,
+  );
+}
+
 type CanvasState = {
   projectId: string | null;
   nodes: Node[];
@@ -61,6 +150,13 @@ type CanvasState = {
   updateNodeData: (id: string, patch: Record<string, unknown>) => void;
   /** Drops a finished image on the canvas, wired to the block that made it. */
   addResultNode: (input: { sourceNodeId: string; data: Record<string, unknown> }) => void;
+  /**
+   * "Usar como referência": a new generating block, to the right of this result,
+   * already wired to it and already holding it as a reference. The drag anyone
+   * could do by hand, as one click — which is what turns a pile of attempts into
+   * a flow.
+   */
+  addChainedGenerator: (input: { resultNodeId: string }) => void;
   /** For edits React Flow reports outside node/edge changes, such as panning. */
   markDirty: () => void;
   setSaveStatus: (status: SaveStatus) => void;
@@ -105,15 +201,36 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       PERSISTED_EDGE_CHANGES.has(change.type),
     );
 
-    set((state) => ({
-      edges: applyEdgeChanges(changes, state.edges),
-      revision: persisted ? state.revision + 1 : state.revision,
-      saveStatus: persisted ? "dirty" : state.saveStatus,
-    }));
+    set((state) => {
+      // A cut wire has to take its reference with it. Leaving the attachment
+      // behind would mean generating — and paying — with an image the user just
+      // watched themselves disconnect.
+      const removed = changes
+        .filter((change) => change.type === "remove")
+        .map((change) => state.edges.find((edge) => edge.id === change.id))
+        .filter((edge): edge is Edge => edge !== undefined);
+
+      let nodes = state.nodes;
+
+      for (const edge of removed) {
+        nodes = detachReference(nodes, edge);
+      }
+
+      return {
+        nodes,
+        edges: applyEdgeChanges(changes, state.edges),
+        revision: persisted ? state.revision + 1 : state.revision,
+        saveStatus: persisted ? "dirty" : state.saveStatus,
+      };
+    });
   },
 
   onConnect: (connection) =>
     set((state) => ({
+      // Wiring a result into a generating block *is* attaching a reference —
+      // the drag is the gesture, the list in the node is the state. Two ways in
+      // (the picker and the wire), one place where what is attached lives.
+      nodes: attachReference(state.nodes, connection),
       edges: addEdge(connection, state.edges),
       revision: state.revision + 1,
       saveStatus: "dirty",
@@ -161,6 +278,38 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         edges: [
           ...state.edges,
           { id: `${sourceNodeId}->${id}`, source: sourceNodeId, target: id },
+        ],
+        revision: state.revision + 1,
+        saveStatus: "dirty",
+      };
+    }),
+
+  addChainedGenerator: ({ resultNodeId }) =>
+    set((state) => {
+      const result = state.nodes.find((node) => node.id === resultNodeId);
+      const assetId = result?.data.assetId;
+
+      if (!result || typeof assetId !== "string") return state;
+
+      const width = result.measured?.width ?? result.width ?? 256;
+      const id = crypto.randomUUID();
+
+      const generator: Node = {
+        id,
+        type: "generator",
+        position: { x: result.position.x + width + 72, y: result.position.y },
+        data: {
+          references: [
+            { assetId, kind: null, instrucao: "", origem: "resultado" } satisfies StoredReference,
+          ],
+        },
+      };
+
+      return {
+        nodes: [...state.nodes, generator],
+        edges: [
+          ...state.edges,
+          { id: `${resultNodeId}->${id}`, source: resultNodeId, target: id },
         ],
         revision: state.revision + 1,
         saveStatus: "dirty",

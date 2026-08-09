@@ -718,3 +718,74 @@ Duas coisas ficam registradas:
 2. **Modificador de cor é amplificado.** O texto dizia que os reflexos eram *"bem sutis"*; a imagem trouxe reflexos evidentes. É vício conhecido de modelos de imagem com modificadores de cor: o adjetivo de intensidade é a primeira coisa que se perde, o substantivo de cor é a última. Consequência prática para quem escreve campo livre: **descrever pouco tem mais chance de sair certo do que descrever com ressalvas** — "sutil" não é um freio que o modelo respeite.
 
 ---
+
+## Nodes de geração no canvas
+
+> As cinco decisões abaixo estão registradas na seção 2 de [`nodes-geracao.md`](./nodes-geracao.md). Foram tomadas e implementadas em 09/08/2026, em três etapas, cada uma verificada no navegador pelo Jorge antes do commit.
+
+### 09/08/2026 — N1: conectores no node, não node de referência ✅ aprovado
+
+**Decisão do Jorge, e melhor que a proposta original.** A proposta que estava na mesa era um *node de referência* separado, ligado ao gerador por um fio. O Jorge desenhou outra coisa a partir da inspeção do fluxo profissional do Magnific: **conectores visíveis na borda do próprio bloco**, e o clique já abre a ação certa — nada de peça intermediária.
+
+Por que é melhor: uma referência não é um passo do fluxo, é uma **propriedade da geração**. Como node separado, cada imagem anexada custaria um retângulo e um fio no canvas, e três referências transformariam um bloco em uma teia — justamente o ruído que o canvas existe para evitar. Como faixa de miniaturas dentro do bloco, o que ele está olhando fica onde ele está.
+
+O fio continua existindo para o caso em que ele significa alguma coisa: **Resultado → bloco de geração**, que é encadeamento de verdade (a saída de um é a entrada do outro), e não mera posse.
+
+---
+
+### 09/08/2026 — N2: `@` só resolve personagem congelada ✅ aprovado
+
+Digitar `@` abre o seletor das personagens **com versão salva**; `@luna` é a versão ativa, `@luna@v2` é a específica, rascunho nunca — regra herdada do versionamento (D2). Mencionar anexa automaticamente o DNA compilado, a folha completa como referência de imagem e as restrições.
+
+**A resolução acontece no servidor, e isso não é detalhe de implementação.** O navegador manda a frase que o usuário escreveu; qual retrato congelado aquela frase nomeia é decisão que só o servidor toma. Um cliente que pudesse escolher a versão poderia escolher uma não congelada — e aí a reprodutibilidade, que é o produto inteiro, viraria uma promessa que depende do navegador se comportar.
+
+**Uma personagem por geração na v1.** Consistência dupla é problema próprio; meio resolvido pareceria funcionalidade até o dia em que não parecesse. Duas menções distintas são recusadas com mensagem clara.
+
+---
+
+### 09/08/2026 — N3: formatos por canal ✅ aprovado
+
+Presets nomeados por intenção — "Stories · 9:16" —, mapeados às proporções que a API realmente aceita, **com o número real sempre visível**. Alvo sem suporte exato cai na proporção suportada mais próxima, comparada por forma e não por texto (comparar "4:5" com "5:4" como string acharia um vizinho a um quarto de volta de distância).
+
+Conferido na documentação oficial no dia da implementação: **os seis presets mapeiam exato no Nano Banana Pro**, inclusive o 4:5 que a especificação previa que talvez precisasse de aproximação. O mecanismo de aproximação nasceu construído e sem uso — que é a ordem certa: ele é a garantia para o primeiro modelo que chegar com lista menor.
+
+Os presets vivem em `config/format-presets.json` — a Decisão 6 da arquitetura finalmente materializada, no momento em que teve o primeiro consumidor.
+
+---
+
+### 09/08/2026 — N4: produto anexado direto ✅ aprovado
+
+O modelo vê a foto real do produto; nada de descrever o produto em texto na v1. Fidelidade máxima pelo caminho mais curto. O botão "extrair descrição do produto" fica registrado como reforço opcional futuro, para quando a consistência pedir.
+
+---
+
+### 09/08/2026 — N5: uma imagem por clique, síncrono ✅ aprovado
+
+O padrão provado na geração canônica. Quantidade x3/x5, listas e lote chegam com o assíncrono, na conversa de Storyboard + Vídeos. Uma imagem 2K leva de 20 a 40 segundos e cabe no `maxDuration` de 60 — é esse número que dirá quando o assíncrono virar necessidade.
+
+---
+
+### 09/08/2026 — A dívida do `prompt_compiled` está quitada
+
+Estava registrada desde a geração canônica: o texto compilado era gravado, mas o **estilo** não estava na estrutura, e não havia estrutura nenhuma para referências. A pergunta "com que estilo e com quais referências esta imagem nasceu?" só se respondia lendo um parágrafo em inglês e adivinhando.
+
+Agora `prompt_compiled.structure` guarda, por campo: `estilo` (chave, frase, reforço e **de onde veio** — node, personagem ou padrão), `personagem` (handle, versão, id da versão congelada, id da folha), `identidade`, `ancora`, `traje_canonico`, `cena_padrao`, `cena_usuario` (**pt e en lado a lado**), `referencias` (ordem, tipo, origem, instrução pt e en, diretiva e cláusula de fidelidade), `restricoes` e `regra_diretor`.
+
+E a quitação não é o campo existir — é **alguém ler**. O botão "Ver prompt" no node Resultado mostra tudo isso em português, a partir da linha guardada. Nada é recompilado: recompilar responderia quem a personagem é *hoje*, que é exatamente a pergunta que guardar o prompt existe para evitar.
+
+**Junto disso, `record_generation` passou a receber a origem no canvas** — `prompt_user_pt`, `project_id` e `node_id`. As colunas existiam desde a Fase 0, desenhadas para este momento, e estavam nulas porque a única função que escreve na tabela não tinha como recebê-las. O `workflow_id` é **derivado do projeto** dentro da função, e não aceito: um projeto tem exatamente um workflow, então quem pudesse nomear os dois só poderia introduzir a chance de eles discordarem.
+
+---
+
+### 09/08/2026 — Registros de futuro dos nodes de geração
+
+| Registro | Por que fica para depois |
+|---|---|
+| **Nodes de texto reutilizável, list, assistant e router** (o mini-modal do Magnific) | Conversa própria: são blocos de *composição*, não de geração, e mudam o desenho do canvas |
+| **Categorias de biblioteca na galeria** (Stock, Style, Camera, Effects) | A v1 da galeria é o histórico do usuário com filtro e busca. Categorias curadas são catálogo, e catálogo é produto próprio |
+| **`@` para objetos, cenários e roupas** | Hoje `@` é personagem. A tabela `entities` já tem `kind` para os outros; falta a ficha de cada um — um produto não se descreve com formato de rosto |
+| **Multi-personagem numa geração** | Consistência dupla é problema próprio (ver N2) |
+| **Extração de descrição de produto** | Reforço opcional do N4, quando a consistência pedir |
+| **Quantidade > 1, listas e lote** | Chegam com o assíncrono, em Storyboard + Vídeos |
+| **Edição pós-geração** (upscale, remover fundo) | Arsenal futuro |
+

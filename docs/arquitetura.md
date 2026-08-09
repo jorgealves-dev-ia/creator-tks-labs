@@ -167,6 +167,30 @@ A ação de tradução **não escreve no banco**: o rascunho tem um escritor só
 
 `lib/prompt/canonical.ts` embrulha o bloco de identidade na moldura de reference sheet e na instrução da vista (§4.2 e §4.3 de [`geracao-canonica.md`](./geracao-canonica.md)). As receitas são um `Record` indexado pela união dos slots do dicionário, então **slot novo sem prompt é erro de compilação**, não algo a lembrar.
 
+#### A compilação de canvas (09/08/2026)
+
+`lib/prompt/canvas.ts` é o segundo consumidor do compilador, e o momento em que o `@` é finalmente gasto. Também é função pura: o português chega já traduzido, pelo mesmo motivo que os campos livres do sheet chegam traduzidos — uma função que pode ir buscar palavras é uma função cujo resultado depende do dia em que rodou.
+
+A ordem do texto é fixa: **estilo → bloco de identidade → âncora → cena → diretivas das referências → restrições**. Estilo primeiro porque governa como tudo depois dele é desenhado (regra 11); restrições por último, sempre (regra 5).
+
+**A regra do diretor é a parte que não pode ser afrouxada.** Havendo texto no prompt, os padrões de Camada 2 do sheet **e o traje canônico** ficam de fora. O traje canônico é traje de banho — existe para a folha de referência mostrar silhueta e proporção — e deixá-lo sobreviver numa cena que o usuário dirigiu colocaria um biquíni num café que ninguém pediu. A regra bloqueia a **injeção silenciosa do sistema**, nunca a intenção do usuário: dirigir "vestindo este biquíni" funciona, e é caso de uso central (provador de moda praia).
+
+Prompt vazio com `@` faz o oposto — a personagem nos padrões dela, traje canônico incluído —, e a interface avisa isso **antes** do clique, porque 100 ⚡ não podem virar surpresa.
+
+Um detalhe que parece pequeno e não é: a menção é **retirada do texto da cena** antes de a regra decidir qual metade roda. `@luna` digitado sozinho não é direção de cena, é o pedido "mostra ela"; tratá-lo como texto mandaria o tradutor traduzir um handle e pularia os padrões que o usuário estava pedindo.
+
+**A numeração das referências e a ordem dos bytes saem da mesma função.** `buildCanvasPrompt` devolve o texto e a lista ordenada de `asset_id`; a ação carrega os arquivos nessa ordem. Duas peças de código decidindo a mesma ordem é como "the product shown in reference image 2" acaba apontando para a imagem três.
+
+Cada referência carrega, além da diretiva, uma **cláusula fixa de fidelidade** por tipo — e o `@` com folha carrega a de identidade. Elevam a taxa de acerto; não a garantem, e isso está escrito no código: nenhum prompt torna um modelo de imagem determinístico.
+
+#### Do bloco ao Resultado
+
+Geração de canvas é **síncrona** nesta fase (decisão N5), pelo mesmo motivo da canônica: uma imagem 2K cabe no `maxDuration` de 60. O caminho é o provado — saldo antes da chamada, Storage → `assets` → cobrança, e a imagem cai antes se a cobrança falhar.
+
+O sucesso cria um **node Resultado** ligado à saída do bloco. Ele guarda apenas `assetId` e `generationId`: URL assinada expira, e um grafo salvo não pode carregar um endereço que morre amanhã (Decisão 3). A ligação de volta — Resultado → bloco de geração — **é** o anexo de uma referência: o fio é o gesto, a lista dentro do node é o estado, e cortar o fio desfaz o anexo. Duas formas de anexar (a galeria e o fio), um lugar só onde o que está anexado mora.
+
+`generations` guarda de onde veio: `project_id`, `node_id`, `prompt_user_pt` e o `prompt_compiled` estruturado. O `workflow_id` é **derivado do projeto** dentro de `record_generation`, não aceito do chamador — um projeto tem um workflow só, então quem pudesse nomear os dois só poderia fazê-los discordar.
+
 ---
 
 ### Decisão 5 — Dinheiro em centavos inteiros de BRL
@@ -232,7 +256,7 @@ Verificado na Fase 0: sem sessão, as 9 tabelas de então respondiam `42501 perm
 | `entities` | a **identidade** mencionável por `@`: `kind` (character/product/scene/outfit/accessory), `handle` (único por usuário), `sheet jsonb` (o **rascunho vivo**), `active_version_id` (o ponteiro da versão ativa), `archived_at`, `cover_asset_id` |
 | `entity_versions` | os **snapshots congelados** do sheet: `entity_id`, `user_id`, `version_number` (sequencial por entidade), `sheet jsonb` (cópia integral, nunca um diff), `label` |
 | `entity_images` | join entre `entities` e `assets`: as imagens canônicas de uma entidade (turnaround, expressões), com `role` e ordenação |
-| `assets` | arquivos no Storage: `kind` (image/video/audio), `source` (upload/generation), mime, dimensões, duração |
+| `assets` | arquivos no Storage: `kind` (image/video/audio), `source` (upload/generation), mime, dimensões, duração, `label` (nome humano — o nome do arquivo enviado ou as palavras do prompt; alimenta a galeria e a busca dela, e é nulo para tudo que nasceu antes dela) |
 | `generations` | cada execução: workflow/node de origem, `entity_id`, `model_id`, provedor, modelo, `params jsonb`, `prompt_user_pt`, `prompt_compiled jsonb`, status, tokens, `cost_real_cents`, `sparks_charged`, `result_asset_id`, `entity_version_id`, `sheet_source`, `summary jsonb`, `error_message` |
 | `ai_providers` | catálogo de fornecedores de IA: `slug`, `display_name`, `env_var_name` (**qual variável guarda a chave — nunca a chave**), `enabled`, ordenação |
 | `ai_models` | catálogo de modelos: `provider_id`, `slug` (o identificador oficial na API do fornecedor), `capabilities text[]` (`{extraction}`, `{translation}`, `{image_gen}`; `{video_gen}` depois), `extraction_sparks`, `image_sparks`, `is_default`, `enabled` |
@@ -299,7 +323,7 @@ A tela está especificada em [`tela-character-sheet.md`](./tela-character-sheet.
 
 Depois de aplicar, **regerar** `src/lib/supabase/database.types.ts` a partir do banco real — não escrever esse arquivo à mão.
 
-As 14 migrations existentes, em ordem de dependência:
+As 18 migrations existentes, em ordem de dependência:
 
 ```
 20260807140000_core_foundation.sql             helper updated_at, profiles, wallets, trigger de cadastro
@@ -316,6 +340,10 @@ As 14 migrations existentes, em ordem de dependência:
 20260807190000_save_entity_version.sql         salvar versão + mover ponteiro numa transação só
 20260808184059_ai_catalog_and_extractions.sql  catálogo de IA, diário de extrações, cobrança atômica
 20260809005226_calibrate_extraction_price.sql  preço do Sonnet calibrado com custo real
+20260809120000_translation_capability.sql      capability de tradução dos campos livres
+20260809140000_image_generation_catalog.sql    capability image_gen, preços e record_generation
+20260809180000_record_generation_canvas.sql    origem no canvas e o português original do usuário
+20260809200000_asset_label.sql                 nome humano no asset, para a galeria e sua busca
 ```
 
 > **Nota de ambiente.** O `supabase link` está com bug nesta máquina, então a connection string vai explícita na linha de comando. O Jorge aplica manualmente:

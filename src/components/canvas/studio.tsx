@@ -4,6 +4,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import { useEffect, useRef } from "react";
 
 import { SheetEditor } from "@/components/character-sheet/sheet-editor";
+import { PromptInspector } from "@/components/nodes/prompt-inspector";
 import { ReferencePicker } from "@/components/nodes/reference-picker";
 import { Button } from "@/components/ui/button";
 import type { CanvasGraph } from "@/lib/canvas/graph";
@@ -68,6 +69,7 @@ export function Studio({
             sits inside a CSS transform, which would position it against the
             canvas and scale it with the zoom. */}
         <ReferencePicker />
+        <PromptInspector />
       </div>
     </ReactFlowProvider>
   );
