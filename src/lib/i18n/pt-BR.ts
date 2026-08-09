@@ -457,6 +457,7 @@ export const t = {
       proporcoesCintura: "Cintura",
       proporcoesQuadril: "Quadril",
       notasGerais: "O que não coube em nenhum campo",
+      estiloRenderizacao: "Estilo de renderização",
       expressao: "Expressão",
       pose: "Pose",
       trajeCanonico: "Traje canônico",

@@ -8,6 +8,7 @@ import {
   CABELO_REPARTICAO,
   CABELO_TEXTURA,
   ENQUADRAMENTO,
+  ESTILO_RENDERIZACAO,
   EXPRESSAO,
   FORMATO_ROSTO,
   FUNDO_CANONICO,
@@ -376,6 +377,17 @@ function padraoField(
 }
 
 export const PADRAO_FIELDS: readonly PadraoField[] = [
+  // First on purpose: style governs how everything else below is rendered, and
+  // it is the one layer-2 field that always enters a prompt (rule 11).
+  padraoField(
+    "estilo_renderizacao",
+    t.characterSheet.fields.estiloRenderizacao,
+    ESTILO_RENDERIZACAO,
+    (sheet) => sheet.padroes_variaveis.estilo_renderizacao,
+    (sheet, value) => {
+      sheet.padroes_variaveis.estilo_renderizacao = value;
+    },
+  ),
   padraoField(
     "expressao",
     t.characterSheet.fields.expressao,

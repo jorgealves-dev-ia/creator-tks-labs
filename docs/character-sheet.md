@@ -155,6 +155,7 @@ Os comentários `//` abaixo são só explicativos — o arquivo real não os ter
   // Sem envelope de estado: a extração nunca preenche aqui.
   // ─────────────────────────────────────────────
   "padroes_variaveis": {
+    "estilo_renderizacao": { "valor": "...", "detalhes": "" },  // lista 5.26 — ausente = fotorrealista
     "expressao":      { "valor": "...", "detalhes": "" },   // lista 5.20
     "pose":           { "valor": "...", "detalhes": "" },   // lista 5.21
     "traje_canonico": { "valor": "...", "detalhes": "" },   // lista 5.22 — padrão: biquíni/sunga, descalço
@@ -472,6 +473,8 @@ As frases usam `{her/his/their}` onde o gênero importa — o compilador resolve
 | sunga lisa neutra *(padrão masculino)* | `wearing plain, neutral-tone swim briefs, barefoot` |
 | compressão esportiva opaca *(alternativa/fallback)* | `wearing an opaque, tight-fitting athletic compression top and shorts, non-transparent matte fabric, arms and legs uncovered, barefoot` |
 
+**Nota de 09/08/2026:** a moldura abaixo **não é mais a primeira coisa do prompt canônico**. O estilo de renderização (§5.26) vem antes dela, junto do seu reforço — porque foi justamente a expressão *character reference sheet* que induziu a primeira folha a sair ilustrada.
+
 **Estratégia de moldura (framing):** o prompt da geração canônica nunca fala em corpo pela nudez — ele se apresenta com a linguagem técnica padrão da indústria, que os modelos reconhecem como finalidade legítima: `professional full-body character reference sheet, neutral studio background, even lighting, for character silhouette and proportion consistency`. Nenhuma palavra sugestiva, nenhuma menção a pele além do tom.
 
 **Fallback automático:** se o modelo recusar a geração ou degradar o resultado com o traje de banho, o sistema refaz **uma vez** a mesma geração com a opção de compressão esportiva, registra no histórico que houve fallback e mostra isso na interface. Sem surpresa silenciosa: você sempre sabe qual traje foi usado.
@@ -498,6 +501,28 @@ As frases usam `{her/his/their}` onde o gênero importa — o compilador resolve
 | meio corpo | `waist-up shot` |
 | retrato | `head-and-shoulders portrait` |
 
+### 5.26 · Estilo de renderização ✅ decidido em 09/08/2026 (Camada 2)
+
+Nasceu de uma geração real: a primeira folha completa saiu com **aspecto de desenho**. A causa era nossa e era uma ausência — o prompt ancorava identidade e traje e não dizia nada sobre **meio**, e `character reference sheet` é vocabulário que boa parte dos modelos lê como *character design* ilustrado. A leitura do modelo era legítima; ela só não era nossa para deixar por conta dele.
+
+**Cada opção carrega também o seu reforço** — a frase que fecha a porta. E carrega dos dois lados: uma folha anime que sai fotográfica é exatamente o mesmo bug, espelhado.
+
+| Opção | Frase fixa (EN) | Reforço (EN) |
+|---|---|---|
+| **fotorrealista** *(padrão)* | `ultra-realistic photograph, photorealistic, natural skin texture, shot on a professional camera` | `This is a real photograph, not an illustration, drawing or 3D render` |
+| cinematográfico | `cinematic film still, shallow depth of field, filmic color grading, soft natural light` | *(idem acima)* |
+| editorial de moda | `high-fashion editorial photograph, professional studio lighting, magazine-quality retouching` | *(idem acima)* |
+| ilustração 2D | `flat 2D digital illustration, clean line art, cel shading, solid color fills` | `This is a hand-drawn 2D illustration, not a photograph` |
+| anime | `anime illustration, cel-shaded, Japanese animation art style, expressive linework` | `This is an anime illustration, not a photograph` |
+| pixel art | `pixel art, low resolution sprite aesthetic, limited color palette, visible square pixels` | `This is pixel art, not a photograph` |
+| 3D estilizado | `stylized 3D character render, soft global illumination, subsurface scattering on the skin` | `This is a stylized 3D render, not a photograph` |
+
+**Por que Camada 2 e não constante da geração canônica.** Estilo é identidade: uma personagem cuja folha é foto e cujas vistas são ilustração não é a mesma personagem. Então ele pertence ao sheet, congela nas versões como tudo mais, e o node de geração pode sobrescrevê-lo pela hierarquia que a Camada 2 já tem. Uma constante da canônica consertaria só a folha e deixaria toda geração futura do canvas na sorte do modelo.
+
+**Sheets e versões que já existem.** Campo ausente lê como `fotorrealista`, por default de leitura no schema — **nenhuma versão congelada é tocada**. Não é chute: é o que esses sheets já eram na prática, em toda geração que saiu certa.
+
+**Onde entra no prompt.** Primeiro item do bloco de cena no caso geral; na geração canônica, **antes da moldura**, seguido do reforço — que é onde um modelo tem mais chance de obedecer.
+
 ---
 
 ## 6. Regras de compilação do prompt
@@ -523,6 +548,8 @@ Estas regras são o contrato entre o sheet e o node de geração. Elas vão para
 9. **O `prompt_compiled` é salvo em cada geração**, como já definido na Fase 0. É o registro histórico: mesmo que a `@julia` evolua para a v5, você sempre sabe exatamente com que características cada imagem antiga foi gerada.
 
 10. **Geração canônica tem moldura própria e fallback automático.** As gerações de turnaround e folha de expressões sempre abrem com a moldura de reference sheet (seção 5.22), usam o traje canônico do sheet (padrão: biquíni/sunga, descalço) e, em caso de recusa ou degradação pelo modelo, refazem uma única vez com a compressão esportiva opaca — com o fallback registrado no histórico e visível na interface.
+
+11. **Estilo de renderização sempre entra, com default fotorrealista.** ✅ *acrescentada em 09/08/2026, a partir de uma geração real que saiu ilustrada.* Nenhuma geração fica sem âncora de estilo. Campo ausente ou desconhecido lê como `fotorrealista`; a geração canônica declara o estilo **antes da moldura**, seguido do reforço da opção escolhida (§5.26). *(O node de geração pode sobrescrever **qual** estilo, pela hierarquia da Camada 2 — nunca deixar a geração sem estilo.)*
 
 ---
 

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  ESTILO_RENDERIZACAO_PADRAO,
   TODOS_SLOTS_CANONICOS,
   TRAJE_PADRAO_POR_GENERO,
   type GeneroApresentacao,
@@ -293,6 +294,14 @@ const restricaoSchema = z.object({
 export type Restricao = z.infer<typeof restricaoSchema>;
 
 const padroesVariaveisSchema = z.object({
+  /**
+   * Compilation rule 11. The prefault is what makes this arrive without a
+   * migration: a sheet written before 09/08/2026 simply has no such key, and an
+   * absent key reads as photorealistic — which is what those sheets already
+   * were on every generation that came out right. Frozen versions are never
+   * touched; they are only read this way.
+   */
+  estilo_renderizacao: plainChoiceSchema.prefault({ valor: ESTILO_RENDERIZACAO_PADRAO }),
   expressao: plainChoiceSchema.prefault({}),
   pose: plainChoiceSchema.prefault({}),
   traje_canonico: plainChoiceSchema.prefault({}),
@@ -382,6 +391,7 @@ export type ImagensCanonicas = CharacterSheet["imagens_canonicas"];
 export function createEmptySheet(genero?: GeneroApresentacao): CharacterSheet {
   const sheet = characterSheetSchema.parse({});
 
+  sheet.padroes_variaveis.estilo_renderizacao = choice(ESTILO_RENDERIZACAO_PADRAO);
   sheet.padroes_variaveis.expressao = choice("sorriso_suave");
   sheet.padroes_variaveis.pose = choice("em_pe_frontal");
   sheet.padroes_variaveis.fundo_canonico = choice("cinza_claro");

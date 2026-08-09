@@ -40,10 +40,10 @@ Versão curta. O porquê de cada uma está em [`docs/arquitetura.md`](docs/arqui
 5. **Dinheiro em centavos inteiros de BRL.** Spark ⚡ é só exibição (hoje 1 Spark = 1 centavo, `CENTS_PER_SPARK` em `lib/sparks/`). Cada geração grava `cost_real_cents` e `cost_charged_cents`. **Ledger é append-only** — correção é nova transação de estorno, nunca UPDATE/DELETE.
 6. **Presets data-driven.** Proporções e resoluções por canal em `config/format-presets.json`; catálogo de modelos e preços em `config/models.json`. Nunca hardcoded em componentes.
 7. **Conteúdo.** Personagens 100% sintéticos — não implementar face swap de pessoas reais. Recusa de política do provedor é erro **esperado**: mensagem clara e fallback configurável.
-8. **Regras de compilação do character sheet.** As 10 regras da seção 6 de [`docs/character-sheet.md`](docs/character-sheet.md) têm **o mesmo status das 7 decisões acima** e nunca podem ser violadas pelo código sem decisão explícita registrada.
+8. **Regras de compilação do character sheet.** As 11 regras da seção 6 de [`docs/character-sheet.md`](docs/character-sheet.md) têm **o mesmo status das 7 decisões acima** e nunca podem ser violadas pelo código sem decisão explícita registrada.
 9. **Versões de entidade são append-only com trava no banco; menções `@` resolvem sempre para versão congelada, nunca para rascunho.** Entidade sem versão salva não pode ser mencionada. Geração a partir do rascunho é permitida, mas marcada como não reproduzível (`generations.sheet_source = 'draft'`). → [`docs/versionamento-entidades.md`](docs/versionamento-entidades.md)
 
-10. **Compilação é determinística: dicionário literal, só `observado`/`confirmado`, `prompt_compiled` sempre gravado.** O compilador é **função pura** — sem rede, sem relógio, sem aleatoriedade —, copia as frases fixas do dicionário sem re-traduzir e lê os campos livres de um **cache traduzido no salvamento**, nunca de uma chamada no caminho da compilação. Toda geração grava o texto compilado que usou. → [`docs/geracao-canonica.md`](docs/geracao-canonica.md)
+10. **Compilação é determinística: dicionário literal, só `observado`/`confirmado`, `prompt_compiled` sempre gravado.** O compilador é **função pura** — sem rede, sem relógio, sem aleatoriedade —, copia as frases fixas do dicionário sem re-traduzir e lê os campos livres de um **cache traduzido no salvamento**, nunca de uma chamada no caminho da compilação. Toda geração grava o texto compilado que usou. **E nenhuma geração fica sem âncora de estilo**: campo ausente ou desconhecido lê como `fotorrealista`, e a canônica declara o estilo antes da moldura *(o node pode sobrescrever **qual** estilo, pela hierarquia da Camada 2 — nunca deixar a geração sem estilo)*. → [`docs/geracao-canonica.md`](docs/geracao-canonica.md)
 
 11. **Chave de IA só em variável de ambiente; catálogo no banco; extração nunca sobrescreve campo não-vazio.** Nenhuma chave de provedor em coluna, log ou resposta — o que viaja para a tela é o booleano "configurado", calculado no servidor. Fornecedores, modelos e preços vivem em `ai_providers` / `ai_models`, sem política de escrita: o preço de uma extração é decidido pelo catálogo, nunca por quem chama. E a extração preenche **apenas campos `vazio`** — `observado`, `inferido`, `confirmado` e o gênero são preservados e contados no resumo. → [`docs/motor-extracao.md`](docs/motor-extracao.md)
 
@@ -106,6 +106,7 @@ Versão curta. O porquê de cada uma está em [`docs/arquitetura.md`](docs/arqui
 - Um componente por tipo de node em `components/nodes/`
 - Commits no padrão Conventional Commits (`feat:`, `fix:`, `chore:`, `refactor:`, `docs:`)
 - Rodar `npm run lint` e `npm run typecheck` antes de qualquer commit
+- **Artefatos de validação e diagnóstico** — imagens de teste, scripts descartáveis, harnesses, qualquer arquivo de trabalho temporário — vão em `D:\Z - Meus Projetos DevIA\Creator TKS Labs\scratchpad\` (criar se não existir). Fica **fora do repositório**, então nunca entra em commit por acidente. **Nunca usar o `%TEMP%` do disco C:**, que é pequeno e é limpo sem aviso — duas imagens de validação já se perderam assim.
 
 ---
 

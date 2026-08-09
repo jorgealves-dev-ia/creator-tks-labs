@@ -469,6 +469,100 @@ export const TRAJE_PADRAO_POR_GENERO: Record<GeneroApresentacao, string> = {
   androgino: "compressao_esportiva",
 };
 
+/**
+ * §5.26 · Rendering style — compilation rule 11.
+ *
+ * This list exists because of a real generation: the first complete sheet came
+ * out looking like a drawing. The cause was ours and it was an absence — the
+ * canonical prompt anchored identity and outfit and said nothing at all about
+ * medium, and `character reference sheet` is vocabulary a great many models read
+ * as *illustrated character design*. The model's reading was legitimate; it just
+ * was not ours to leave up to it.
+ *
+ * Which is why style is a closed list in layer 2 and not a constant of the
+ * canonical generation: a style that anchors the reference sheet and then lets
+ * every canvas node drift would not be an anchor at all. Same reasoning as every
+ * other field here — an anchor that varies is a bad anchor.
+ *
+ * `reforco` is the sentence that closes the door, and every option carries one,
+ * not only the photographic ones: an anime sheet that comes out photographic is
+ * exactly the same bug, mirrored. Reinforcing one side would fix half a problem.
+ */
+export type EstiloRenderizacaoOption = Omit<SheetOption, "en"> & {
+  /** Never null: rule 11 says a generation is never left without a style. */
+  readonly en: string;
+  /** Stated right after the style, where a model is most likely to obey it. */
+  readonly reforco: string;
+};
+
+const REFORCO_FOTOGRAFICO =
+  "This is a real photograph, not an illustration, drawing or 3D render";
+
+export const ESTILO_RENDERIZACAO = [
+  {
+    key: "fotorrealista",
+    pt: "Fotorrealista",
+    en: "ultra-realistic photograph, photorealistic, natural skin texture, shot on a professional camera",
+    reforco: REFORCO_FOTOGRAFICO,
+  },
+  {
+    key: "cinematografico",
+    pt: "Cinematográfico",
+    en: "cinematic film still, shallow depth of field, filmic color grading, soft natural light",
+    reforco: REFORCO_FOTOGRAFICO,
+  },
+  {
+    key: "editorial_moda",
+    pt: "Editorial de moda",
+    en: "high-fashion editorial photograph, professional studio lighting, magazine-quality retouching",
+    reforco: REFORCO_FOTOGRAFICO,
+  },
+  {
+    key: "ilustracao_2d",
+    pt: "Ilustração 2D",
+    en: "flat 2D digital illustration, clean line art, cel shading, solid color fills",
+    reforco: "This is a hand-drawn 2D illustration, not a photograph",
+  },
+  {
+    key: "anime",
+    pt: "Anime",
+    en: "anime illustration, cel-shaded, Japanese animation art style, expressive linework",
+    reforco: "This is an anime illustration, not a photograph",
+  },
+  {
+    key: "pixel_art",
+    pt: "Pixel art",
+    en: "pixel art, low resolution sprite aesthetic, limited color palette, visible square pixels",
+    reforco: "This is pixel art, not a photograph",
+  },
+  {
+    key: "render_3d",
+    pt: "3D estilizado",
+    en: "stylized 3D character render, soft global illumination, subsurface scattering on the skin",
+    reforco: "This is a stylized 3D render, not a photograph",
+  },
+] as const satisfies readonly EstiloRenderizacaoOption[];
+
+/**
+ * What a sheet with no style means. Every character sheet written before
+ * 09/08/2026 is one of those, and reading them as photorealistic is not a guess:
+ * it is what they already were in practice, on every generation that came out
+ * right.
+ */
+export const ESTILO_RENDERIZACAO_PADRAO = "fotorrealista";
+
+/**
+ * The style of a stored value — never null, whatever arrives. An unknown key or
+ * a missing value falls back to the default rather than producing a prompt with
+ * no medium in it, which is precisely the bug rule 11 exists to close.
+ */
+export function estiloOption(valor: string | null): EstiloRenderizacaoOption {
+  return (
+    ESTILO_RENDERIZACAO.find((option) => option.key === valor) ??
+    ESTILO_RENDERIZACAO.find((option) => option.key === ESTILO_RENDERIZACAO_PADRAO)!
+  );
+}
+
 /** §5.23 · Canonical background. */
 export const FUNDO_CANONICO = [
   { key: "cinza_claro", pt: "Cinza claro sem textura", en: "seamless light gray studio background" },

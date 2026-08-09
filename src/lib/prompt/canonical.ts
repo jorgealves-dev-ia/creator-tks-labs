@@ -1,4 +1,4 @@
-import type { ImagemCanonicaSlot } from "@/lib/character-sheet/dictionary";
+import { estiloOption, type ImagemCanonicaSlot } from "@/lib/character-sheet/dictionary";
 import type { CharacterSheet } from "@/lib/character-sheet/schema";
 import {
   compilePrompt,
@@ -70,8 +70,18 @@ type SlotRecipe = {
   omit: readonly CenaPadraoKey[];
 };
 
-const VIEW_OMIT: readonly CenaPadraoKey[] = ["pose", "enquadramento"];
-const GRID_OMIT: readonly CenaPadraoKey[] = ["pose", "expressao", "enquadramento"];
+/**
+ * Style is omitted from the scene block on every canonical slot — not because it
+ * does not apply, but because it applies so much that it is stated first, ahead
+ * of the framing, by this file. Rule 4's mechanism doing rule 11's work.
+ */
+const VIEW_OMIT: readonly CenaPadraoKey[] = ["estilo_renderizacao", "pose", "enquadramento"];
+const GRID_OMIT: readonly CenaPadraoKey[] = [
+  "estilo_renderizacao",
+  "pose",
+  "expressao",
+  "enquadramento",
+];
 
 const RECIPES: Record<ImagemCanonicaSlot, SlotRecipe> = {
   // Portrait by default (decision G3): a stack of full-body cells wants height.
@@ -176,19 +186,31 @@ export function buildCanonicalPrompt({
 
   const compiled = compilePrompt(sheet, overrides);
 
-  // Framing, then what to draw, then who it is. The order of §4.2, and the order
-  // that matters: the model should know it is drawing a reference sheet before
-  // it knows anything about the body on it.
+  // Style, then framing, then what to draw, then who it is.
   //
-  // The compiled block already ends in a full stop and the two fixed parts do
-  // not, so every part is normalised without one and the sentence is closed once
-  // at the end — otherwise an empty sheet would produce a prompt ending in "..".
-  const joined = [REFERENCE_SHEET_FRAMING, recipe.instruction, compiled.text]
+  // Style leads because of what it cost to learn: `character reference sheet` is
+  // vocabulary a great many models read as illustrated character design, and the
+  // first sheet generated in anger came out looking like a drawing. Naming the
+  // medium *before* the words that suggest one — and following it immediately
+  // with the option's own reinforcement — is what turns the medium from the
+  // model's assumption into ours (rule 11).
+  const estilo = estiloOption(sheet.padroes_variaveis.estilo_renderizacao.valor);
+
+  // The compiled block already ends in a full stop and the fixed parts do not,
+  // so every part is normalised without one and the sentence is closed once at
+  // the end — otherwise an empty sheet would produce a prompt ending in "..".
+  const joined = [
+    estilo.en,
+    estilo.reforco,
+    REFERENCE_SHEET_FRAMING,
+    recipe.instruction,
+    compiled.text,
+  ]
     .map((part) => part.trim().replace(/\.$/, ""))
     .filter((part) => part !== "")
     .join(". ");
 
-  const text = joined === "" ? "" : `${joined}.`;
+  const text = joined === "" ? "" : `${joined.charAt(0).toUpperCase()}${joined.slice(1)}.`;
 
   return {
     text,

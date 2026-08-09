@@ -572,3 +572,28 @@ Fica para a tarefa seguinte decidir **onde** o estilo mora: campo da Camada 2 (d
 Registrado na seção 6 de [`geracao-canonica.md`](./geracao-canonica.md), junto das outras duas pendências de refinamento.
 
 ---
+### 09/08/2026 — Estilo de renderização como lista fechada (regra de compilação 11)
+
+**Âncora que varia de estilo é âncora ruim.** Achado do Jorge na primeira geração real da personagem principal: a folha completa saiu com aspecto de desenho.
+
+A causa era nossa e era uma **ausência**. O prompt canônico ancorava identidade e traje e não dizia nada sobre **meio**. Pior: a própria moldura do §5.22 abre com `character reference sheet`, vocabulário que boa parte dos modelos lê como *character design* ilustrado. A leitura do modelo era legítima — ela só não era nossa para deixar por conta dele. Na validação contra a API a folha tinha saído fotográfica, o que só provava que aquilo era **sorte do modelo, não decisão do sistema**.
+
+**Camada 2, não constante da geração canônica. ✅ DECIDIDO.** O argumento do Jorge, e ele fecha: estilo é identidade, então pertence ao sheet e congela nas versões como tudo mais. Uma constante da canônica consertaria só a folha e deixaria toda geração futura do canvas na sorte do modelo. A exceção pontual é sobrescrita de node — a hierarquia que a Camada 2 já tem, e que a regra 11 delimita: o node escolhe **qual** estilo, nunca deixa a geração **sem** estilo.
+
+**Sete opções**, cada uma com frase fixa em inglês, como os outros 25 campos. `editorial_moda` entrou porque o produto é moda e lifestyle para Instagram/TikTok/Shopee, e editorial é registro real, distinto do fotorrealista puro. Lista completa na §5.26 de [`character-sheet.md`](./character-sheet.md).
+
+**Reforço espelhado, e é o detalhe que vale.** Cada opção carrega a sua própria frase de fechamento — não só as fotográficas. Uma folha anime que sai fotográfica é exatamente o mesmo bug, espelhado; reforçar um lado só consertaria metade do problema.
+
+**Sem migration.** Campo ausente lê como `fotorrealista`, por default de leitura no schema (`prefault`). Nenhuma versão congelada é tocada — elas apenas **leem** assim, que é o que já eram na prática em toda geração que saiu certa. Três camadas com papéis distintos e sem sobreposição: o Zod cobre a chave ausente, o compilador cobre valor nulo ou chave desconhecida, e a interface não oferece "não definido" neste campo.
+
+**Posição no prompt.** Primeiro item do bloco de cena no caso geral. Na geração canônica, **antes da moldura** — nomear o meio *antes* das palavras que sugerem um é o que transforma o meio de suposição do modelo em decisão nossa. Verificado nos quatro casos: sheet antigo sem a chave, prompt canônico da folha, estilo anime numa vista, e valor nulo por corrupção.
+
+---
+
+### 09/08/2026 — Convenção: artefatos de validação ficam no D:
+
+Imagens de teste, scripts descartáveis e harnesses vão para `D:\Z - Meus Projetos DevIA\Creator TKS Labs\scratchpad\` — fora do repositório, então nunca entram em commit por acidente. **Nunca no `%TEMP%` do C:**, que é pequeno e é limpo sem aviso.
+
+A convenção nasceu com prova: as duas imagens da validação da API do Google — a folha e a vista de perfil que fundamentaram três decisões deste ciclo — já não existiam no temp poucas horas depois. Registrada nas convenções de código do `CLAUDE.md`.
+
+---

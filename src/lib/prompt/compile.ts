@@ -7,6 +7,8 @@ import {
   CABELO_TEXTURA,
   DETAIL_PLACEHOLDER,
   ENQUADRAMENTO,
+  ESTILO_RENDERIZACAO,
+  estiloOption,
   EXPRESSAO,
   FORMATO_ROSTO,
   FUNDO_CANONICO,
@@ -114,7 +116,13 @@ export type CompiledPrompt = {
 };
 
 /** The layer-2 fields a caller may supply itself (rule 4: node > sheet default). */
-export type CenaPadraoKey = "pose" | "expressao" | "fundo_canonico" | "iluminacao" | "enquadramento";
+export type CenaPadraoKey =
+  | "estilo_renderizacao"
+  | "pose"
+  | "expressao"
+  | "fundo_canonico"
+  | "iluminacao"
+  | "enquadramento";
 
 export type CompileOverrides = {
   /**
@@ -509,6 +517,20 @@ export function compilePrompt(
 
   const omit = new Set(overrides.omitirCenaPadrao ?? []);
   const cena: string[] = [];
+
+  // Rule 11, and it comes first: style governs how everything after it is drawn.
+  //
+  // The fallback is the rule itself in one line — a null value or a key the
+  // dictionary no longer knows still produces a style, because the alternative
+  // is a prompt with no medium in it, which is exactly the bug this field was
+  // added to close. The caller may override *which* style, never whether.
+  if (!omit.has("estilo_renderizacao")) {
+    const choice = sheet.padroes_variaveis.estilo_renderizacao;
+    const resolved = resolvePlain(choice, ESTILO_RENDERIZACAO, pronoun, tally);
+
+    cena.push(resolved.phrase ?? estiloOption(null).en);
+    if (resolved.detail) cena.push(resolved.detail);
+  }
 
   const cenaFields: readonly { key: CenaPadraoKey; choice: PlainChoice; options: readonly SheetOption[] }[] = [
     { key: "pose", choice: sheet.padroes_variaveis.pose, options: POSE },

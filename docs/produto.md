@@ -154,7 +154,9 @@ O que falta desta fase: o **consumo do `@`** pelos nodes de geração, que depen
 
 Especificações: [`character-sheet.md`](./character-sheet.md), [`versionamento-entidades.md`](./versionamento-entidades.md), [`tela-character-sheet.md`](./tela-character-sheet.md), [`motor-extracao.md`](./motor-extracao.md) e [`geracao-canonica.md`](./geracao-canonica.md).
 
-**Pendências de refinamento registradas** (a avaliar com mais gerações reais): **âncora de estilo visual** — o prompt canônico não fixa foto vs. ilustração, e uma folha ilustrada com vistas fotográficas não é a mesma personagem; fidelidade da posição de tatuagens no prompt; variedade das células de expressão da folha; e o fatiamento automático da grade da folha em slots individuais.
+- **Estilo de renderização** (09/08/2026): lista fechada na Camada 2 com default fotorrealista, resolvendo o achado da primeira geração real — uma folha ilustrada com vistas fotográficas não é a mesma personagem. Virou a regra de compilação nº 11.
+
+**Pendências de refinamento registradas** (a avaliar com mais gerações reais): fidelidade da posição de tatuagens no prompt; variedade das células de expressão da folha; e o fatiamento automático da grade da folha em slots individuais.
 
 ### Fase 2.5 — Storyboard + Vídeos 📌 conversa dedicada
 
