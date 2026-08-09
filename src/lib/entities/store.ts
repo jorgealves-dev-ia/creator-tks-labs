@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import type { CharacterSheet } from "@/lib/character-sheet/schema";
+import { syncTranslationCache } from "@/lib/character-sheet/translation";
 import type { ActiveVersion, CharacterEntity, VersionSummary } from "@/lib/entities/types";
 
 /** Same vocabulary the canvas uses for its own autosave. */
@@ -92,6 +93,12 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
     // assignments without ever touching the object React is rendering.
     const sheet = structuredClone(current.sheet);
     mutate(sheet);
+
+    // Every edit in the application funnels through here, which is exactly why
+    // the cached-English rule lives on this line and nowhere else: change the
+    // Portuguese, lose the translation. A component cannot forget a rule it
+    // never has to remember.
+    syncTranslationCache(current.sheet, sheet);
 
     set((state) => ({
       characters: {

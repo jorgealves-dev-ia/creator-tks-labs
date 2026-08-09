@@ -7,6 +7,8 @@ import {
   ProviderError,
   type ExtractionProvider,
   type ExtractionResult,
+  type TranslationProvider,
+  type TranslationResult,
 } from "@/lib/providers/types";
 
 /**
@@ -186,6 +188,121 @@ export const anthropicExtractionProvider: ExtractionProvider = {
 
     return {
       fields: parsed as Record<string, unknown>,
+      usage: {
+        inputTokens: response.usage.input_tokens,
+        outputTokens: response.usage.output_tokens,
+      },
+    };
+  },
+};
+
+/**
+ * Below the extraction ceiling: a batch of short phrases is a small answer, and
+ * this call runs behind an autosave that nobody is watching.
+ */
+const TRANSLATION_MAX_TOKENS = 2000;
+const TRANSLATION_TIMEOUT_MS = 20_000;
+
+/**
+ * The contract for translating the sheet's free text (§3.3 of
+ * docs/geracao-canonica.md).
+ *
+ * The instructions are narrow on purpose. This model is not being asked to write
+ * a prompt — the dictionary already wrote 95% of it. It is being asked to carry
+ * one hand-typed fragment across a language, keeping it a fragment: no added
+ * subject, no invented adjective, no sentence built around it. Anything more
+ * would be the model quietly editing the DNA.
+ */
+const TRANSLATION_SYSTEM_PROMPT = `You translate short Portuguese fragments into English for use inside an image-generation prompt.
+
+Rules:
+- Translate ONLY what is written. Never add, embellish, interpret or complete a fragment.
+- Keep the grammatical shape of a fragment: no capital letter at the start, no full stop at the end, no subject invented to make a sentence.
+- Keep it as short as the original. "pequena e discreta" is "small and discreet", not "it is a small and discreet mark".
+- Physical description vocabulary. Never name, identify or characterise a person.
+- If a fragment is already English, return it unchanged.
+
+Answer with a strict JSON object mapping each id to its English string, and nothing else:
+{"<id>": "<english>", ...}`;
+
+export const anthropicTranslationProvider: TranslationProvider = {
+  slug: PROVIDER_SLUG,
+
+  async translate({ model, items }): Promise<TranslationResult> {
+    const apiKey = readProviderKey("ANTHROPIC_API_KEY");
+
+    if (!apiKey) {
+      throw new ProviderError("not_configured", "ANTHROPIC_API_KEY is not set on the server");
+    }
+
+    const client = new Anthropic({
+      apiKey,
+      timeout: TRANSLATION_TIMEOUT_MS,
+      maxRetries: MAX_RETRIES,
+    });
+
+    let response: Anthropic.Message;
+
+    try {
+      response = await client.messages.create({
+        model: model.slug,
+        max_tokens: TRANSLATION_MAX_TOKENS,
+        system: TRANSLATION_SYSTEM_PROMPT,
+        messages: [
+          {
+            role: "user",
+            content: JSON.stringify(
+              Object.fromEntries(items.map((item) => [item.id, item.text])),
+            ),
+          },
+        ],
+      });
+    } catch (error) {
+      throw toProviderError(error);
+    }
+
+    const text = response.content
+      .filter((block) => block.type === "text")
+      .map((block) => block.text)
+      .join("\n");
+
+    // A simpler read than the extraction's, and deliberately so: a translation
+    // that does not arrive costs nothing and is retried on the next save, so
+    // there is no paid failure here to diagnose in six months' time.
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+
+    let parsed: unknown = null;
+
+    if (start !== -1 && end > start) {
+      try {
+        parsed = JSON.parse(text.slice(start, end + 1));
+      } catch {
+        parsed = null;
+      }
+    }
+
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new ProviderError(
+        "invalid_answer",
+        "the provider did not return a JSON object of translations",
+        text.slice(0, 200),
+      );
+    }
+
+    // Only strings, only for ids that were actually sent. The answer is data from
+    // outside, and a key we never asked about has no field to land in anyway.
+    const requested = new Set(items.map((item) => item.id));
+    const translations: Record<string, string> = {};
+
+    for (const [id, value] of Object.entries(parsed as Record<string, unknown>)) {
+      if (requested.has(id) && typeof value === "string" && value.trim() !== "") {
+        translations[id] = value.trim();
+      }
+    }
+
+    return {
+      translations,
       usage: {
         inputTokens: response.usage.input_tokens,
         outputTokens: response.usage.output_tokens,

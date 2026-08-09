@@ -70,6 +70,39 @@ export type ExtractionProvider = {
   }): Promise<ExtractionResult>;
 };
 
+// ---------------------------------------------------------------------------
+// Translation — the second capability of the adapter layer
+// ---------------------------------------------------------------------------
+
+/**
+ * One sentence to translate, identified so the answer can be matched back to the
+ * field it came from without relying on order.
+ */
+export type TranslationItem = { id: string; text: string };
+
+export type TranslationResult = {
+  /** Keyed by the id that was sent. A missing key means "could not translate". */
+  translations: Record<string, string>;
+  usage: { inputTokens: number; outputTokens: number };
+};
+
+/**
+ * A provider able to turn the sheet's free text into short English phrases.
+ *
+ * This exists because of §3.3 of docs/geracao-canonica.md and nothing else: the
+ * closed lists translate themselves through the dictionary, so the only
+ * Portuguese that ever needs a model is what the user typed by hand. It is a
+ * separate interface from ExtractionProvider because it is separate work — cheap,
+ * uncharged, and run at save time rather than on demand.
+ */
+export type TranslationProvider = {
+  readonly slug: string;
+  translate(request: {
+    model: { slug: string };
+    items: readonly TranslationItem[];
+  }): Promise<TranslationResult>;
+};
+
 /**
  * Every way a provider call can fail that the interface must speak about. A
  * refusal by content policy is an *expected* error in this product (architecture

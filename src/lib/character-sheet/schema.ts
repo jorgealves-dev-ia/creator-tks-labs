@@ -59,12 +59,29 @@ const MOTIVO_MAX_LENGTH = 160;
 const motivoSchema = z.string().max(MOTIVO_MAX_LENGTH).catch("").default("");
 
 /**
+ * The English of one free-text field, cached at save time.
+ *
+ * §3.3 of docs/geracao-canonica.md: the compiler is a pure function and may not
+ * call anything over the network, but the free-text fields are written in
+ * Portuguese and have to reach the model in English. The way out is to translate
+ * once, when the draft is saved, and store the result next to the text that
+ * produced it — so the compiler only ever reads.
+ *
+ * Empty means "not translated yet", and it is emptied again the moment the
+ * Portuguese changes (see syncTranslationCache in character-sheet/translation.ts).
+ * A cache that outlived its source would be worse than no cache at all: it would
+ * put last week's sentence into this week's image.
+ */
+const cachedEnglishSchema = z.string().catch("").default("");
+
+/**
  * §3 · The field envelope of the visual DNA. `valor` holds an option key, or a
  * number for altura_cm. `detalhes` complements the option and never replaces it.
  */
 const fieldSchema = z.object({
   valor: z.union([z.string(), z.number()]).nullable().default(null),
   detalhes: z.string().default(""),
+  detalhes_en: cachedEnglishSchema,
   estado: estadoSchema.default("vazio"),
   origem: origemSchema.default("manual"),
   motivo: motivoSchema,
@@ -75,6 +92,7 @@ export type SheetField = z.infer<typeof fieldSchema>;
 const emptyField = (): SheetField => ({
   valor: null,
   detalhes: "",
+  detalhes_en: "",
   estado: "vazio",
   origem: "manual",
   motivo: "",
@@ -84,6 +102,7 @@ const emptyField = (): SheetField => ({
 export const confirmedField = (valor: string | number): SheetField => ({
   valor,
   detalhes: "",
+  detalhes_en: "",
   estado: "confirmado",
   origem: "manual",
   motivo: "",
@@ -123,6 +142,11 @@ export function confirmField<T extends { estado: Estado; motivo: string }>(field
  * detail only confirms a field that already has a value. Detail on an empty
  * field stays empty — that is what stops a subjective adjective from sneaking
  * back in through the side door.
+ *
+ * It deliberately does not clear `detalhes_en`. Dropping a stale translation is
+ * one rule with one home — syncTranslationCache() in character-sheet/translation.ts,
+ * which every edit passes through — precisely so it cannot be remembered here and
+ * forgotten in the marks editor.
  */
 export function withDetails(field: SheetField, detalhes: string): SheetField {
   if (field.valor === null) {
@@ -136,11 +160,16 @@ export function withDetails(field: SheetField, detalhes: string): SheetField {
 const plainChoiceSchema = z.object({
   valor: z.string().nullable().default(null),
   detalhes: z.string().default(""),
+  detalhes_en: cachedEnglishSchema,
 });
 
 export type PlainChoice = z.infer<typeof plainChoiceSchema>;
 
-const choice = (valor: string | null = null): PlainChoice => ({ valor, detalhes: "" });
+const choice = (valor: string | null = null): PlainChoice => ({
+  valor,
+  detalhes: "",
+  detalhes_en: "",
+});
 
 // ---------------------------------------------------------------------------
 // Layer 1 — visual DNA
@@ -152,6 +181,7 @@ const tatuagemSchema = z.object({
   tamanho: z.string().nullable().default(null),
   estilo: z.string().nullable().default(null),
   descricao: z.string().default(""),
+  descricao_en: cachedEnglishSchema,
   estado: estadoSchema.default("confirmado"),
   origem: origemSchema.default("manual"),
   motivo: motivoSchema,
@@ -161,6 +191,7 @@ const piercingSchema = z.object({
   local: z.string().nullable().default(null),
   joia: z.string().nullable().default(null),
   detalhes: z.string().default(""),
+  detalhes_en: cachedEnglishSchema,
   estado: estadoSchema.default("confirmado"),
   origem: origemSchema.default("manual"),
   motivo: motivoSchema,
@@ -168,8 +199,11 @@ const piercingSchema = z.object({
 
 const outraMarcaSchema = z.object({
   tipo: z.string().nullable().default(null),
+  // Free text on both, and both reach the prompt — so both need a cache.
   posicao: z.string().default(""),
+  posicao_en: cachedEnglishSchema,
   descricao: z.string().default(""),
+  descricao_en: cachedEnglishSchema,
   estado: estadoSchema.default("confirmado"),
   origem: origemSchema.default("manual"),
   motivo: motivoSchema,
@@ -253,6 +287,7 @@ const dnaVisualSchema = z.object({
 const restricaoSchema = z.object({
   tipo: z.string().default("nunca"),
   regra: z.string().default(""),
+  regra_en: cachedEnglishSchema,
 });
 
 export type Restricao = z.infer<typeof restricaoSchema>;

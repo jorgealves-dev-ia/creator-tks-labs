@@ -76,8 +76,11 @@ export function applyExtraction(
 
     field.field.write(next, {
       valor: answer.valor,
-      // The extraction fills the value; free-text detail stays the user's to write.
+      // The extraction fills the value; free-text detail stays the user's to
+      // write — so its cached English is untouched too, because the sentence it
+      // translates has not changed.
       detalhes: current.detalhes,
+      detalhes_en: current.detalhes_en,
       estado,
       origem: "extracao",
       motivo: answer.motivo,
@@ -116,6 +119,9 @@ function applyMarks(
         tamanho: item.values.tamanho ?? null,
         estilo: item.values.estilo ?? null,
         descricao: item.freeText.descricao ?? "",
+        // Born without English, like anything else typed by hand: the draft's
+        // next save is what fills the cache (docs/geracao-canonica.md §3.3).
+        descricao_en: "",
         estado: estadoFor(item.confianca),
         origem: "extracao",
         motivo: item.motivo,
@@ -132,6 +138,7 @@ function applyMarks(
         local: item.values.local ?? null,
         joia: item.values.joia ?? null,
         detalhes: item.freeText.detalhes ?? "",
+        detalhes_en: "",
         estado: estadoFor(item.confianca),
         origem: "extracao",
         motivo: item.motivo,
@@ -146,7 +153,9 @@ function applyMarks(
     sheet.dna_visual.marcas.outras = items.map((item) => ({
       tipo: item.values.tipo ?? null,
       posicao: item.freeText.posicao ?? "",
+      posicao_en: "",
       descricao: item.freeText.descricao ?? "",
+      descricao_en: "",
       estado: estadoFor(item.confianca),
       origem: "extracao",
       motivo: item.motivo,

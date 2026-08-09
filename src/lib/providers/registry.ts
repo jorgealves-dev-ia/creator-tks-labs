@@ -1,8 +1,11 @@
 import "server-only";
 
-import { anthropicExtractionProvider } from "@/lib/providers/anthropic";
+import {
+  anthropicExtractionProvider,
+  anthropicTranslationProvider,
+} from "@/lib/providers/anthropic";
 import { isProviderConfigured } from "@/lib/providers/keys";
-import type { ExtractionProvider } from "@/lib/providers/types";
+import type { ExtractionProvider, TranslationProvider } from "@/lib/providers/types";
 
 /**
  * Which adapter answers for which provider slug.
@@ -17,8 +20,22 @@ const EXTRACTION_PROVIDERS: Record<string, ExtractionProvider> = {
   [anthropicExtractionProvider.slug]: anthropicExtractionProvider,
 };
 
+/**
+ * The same promise for the second capability. Translation of the sheet's free
+ * text (§3.3 of docs/geracao-canonica.md) is uncharged internal work, but it is
+ * still a model call — so it goes through the layer like everything else, and a
+ * second provider would be a second entry here and nothing more.
+ */
+const TRANSLATION_PROVIDERS: Record<string, TranslationProvider> = {
+  [anthropicTranslationProvider.slug]: anthropicTranslationProvider,
+};
+
 export function findExtractionProvider(slug: string): ExtractionProvider | null {
   return EXTRACTION_PROVIDERS[slug] ?? null;
+}
+
+export function findTranslationProvider(slug: string): TranslationProvider | null {
+  return TRANSLATION_PROVIDERS[slug] ?? null;
 }
 
 /** Whether an adapter exists at all — the second half of "usable" after the key. */

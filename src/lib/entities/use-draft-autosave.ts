@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useRef } from "react";
 
+import { applyTranslations, pendingTranslations } from "@/lib/character-sheet/translation";
 import { saveCharacterDraft } from "@/lib/entities/actions";
 import { useEntitiesStore } from "@/lib/entities/store";
+import { translateDraftFreeText } from "@/lib/prompt/translate";
 
 /**
  * The draft is the notebook that stays open: there is no "save draft" button,
@@ -39,6 +41,11 @@ export function useSaveDraft() {
 
     if (result.ok) {
       useEntitiesStore.getState().markDraftSaved(entityId, revisionAtStart);
+
+      // §3.3: the free text gets its English right after the draft lands, so the
+      // compiler — which may not call anything — always finds a cache waiting.
+      // Deliberately not awaited: nobody should watch a spinner for plumbing.
+      void fillTranslationCache(entityId);
     } else {
       // Never silently discard what the user typed: the indicator turns into a
       // warning and the next edit schedules another attempt.
@@ -47,6 +54,45 @@ export function useSaveDraft() {
 
     return result.ok;
   }, []);
+}
+
+/**
+ * Entities whose translation call is already in flight. Two autosaves in quick
+ * succession would otherwise pay for the same batch twice.
+ */
+const translating = new Set<string>();
+
+/**
+ * Fills the English cache of the free-text fields, then feeds the result back
+ * into the draft as an ordinary edit — which turns it dirty, which makes the next
+ * autosave persist the cache.
+ *
+ * The loop closes by itself: once every fragment has its English, there is
+ * nothing pending, and this returns before making a call.
+ */
+async function fillTranslationCache(entityId: string): Promise<void> {
+  if (translating.has(entityId)) return;
+
+  const character = useEntitiesStore.getState().characters[entityId];
+
+  if (!character || pendingTranslations(character.sheet).length === 0) return;
+
+  translating.add(entityId);
+
+  try {
+    const result = await translateDraftFreeText(entityId);
+
+    if (!result.ok || result.entries.length === 0) return;
+
+    // applyTranslations drops anything whose Portuguese moved on while the call
+    // was in flight, so typing during a translation can never be overwritten by
+    // the English of a sentence that no longer exists.
+    useEntitiesStore.getState().updateSheet(entityId, (sheet) => {
+      applyTranslations(sheet, result.entries);
+    });
+  } finally {
+    translating.delete(entityId);
+  }
 }
 
 /**

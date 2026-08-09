@@ -48,7 +48,11 @@ function RestrictionsEditor({ sheet, update }: PadroesTabProps) {
           type="button"
           onClick={() =>
             update((draft) => {
-              draft.padroes_variaveis.restricoes.push({ tipo: "nunca", regra: "" });
+              draft.padroes_variaveis.restricoes.push({
+                tipo: "nunca",
+                regra: "",
+                regra_en: "",
+              });
             })
           }
           className="rounded-lg border border-line px-2 py-1 text-[11px] text-ink-muted

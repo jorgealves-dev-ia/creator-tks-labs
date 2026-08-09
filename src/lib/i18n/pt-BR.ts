@@ -208,6 +208,45 @@ export const t = {
     },
 
     /**
+     * The compiled-prompt preview, docs/geracao-canonica.md §3.4. Visible always,
+     * editable never: changing the prompt here means changing the fields.
+     */
+    compiled: {
+      title: "Prompt compilado",
+      subtitle:
+        "É isto que vai para o modelo de imagem. Para mudar o prompt, mude os campos — aqui nada se edita.",
+      show: "Mostrar",
+      hide: "Ocultar",
+      viewText: "Texto",
+      viewStructure: "Estrutura",
+      copy: "Copiar",
+      copied: "Copiado",
+      empty: "Nada a compilar ainda. Preencha o DNA e o prompt aparece aqui.",
+      translating: "traduzindo…",
+      translatingTooltip:
+        "Os campos que você escreveu à mão estão sendo traduzidos para o inglês. Leva um instante e não custa Sparks.",
+      versionNotice: "Compilado a partir da versão congelada que você está vendo.",
+      excluded: {
+        prefix: "Não entram:",
+        inferidosOne: "1 inferido aguardando confirmação",
+        inferidosSuffix: " inferidos aguardando confirmação",
+        vaziosOne: "1 em branco",
+        vaziosSuffix: " em branco",
+        traducaoOne: "1 campo livre aguardando tradução",
+        traducaoSuffix: " campos livres aguardando tradução",
+        /** Decision D6 — said out loud so the omission is never a surprise. */
+        notas: "notas gerais (anotações internas, nunca entram no prompt)",
+        none: "Tudo o que está preenchido entrou no prompt.",
+      },
+      blocks: {
+        identidade: "Identidade",
+        traje: "Traje canônico",
+        cena: "Cena padrão",
+        restricoes: "Restrições",
+      },
+    },
+
+    /**
      * The extraction engine, docs/motor-extracao.md §4.5. The same panel serves
      * step 2 of the wizard and the button on the editor's DNA tab, so its words
      * live in one place.
@@ -393,6 +432,9 @@ export const t = {
       alturaSuffix: "cm",
       alturaPlaceholder: "168",
       notasPlaceholder: "Observações livres sobre a aparência.",
+      /** Decision D6: general notes are a notebook, not a prompt. Say it plainly. */
+      notasHint:
+        "Anotações suas, para consulta. Não entram em nenhuma geração — quem vai para o prompt são os campos acima.",
     },
 
     marcas: {

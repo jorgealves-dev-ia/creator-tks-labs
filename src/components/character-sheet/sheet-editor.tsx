@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { CanonicalImagesColumn } from "@/components/character-sheet/canonical-images-column";
+import { CompiledPromptPanel } from "@/components/character-sheet/compiled-prompt-panel";
 import { DnaTab } from "@/components/character-sheet/dna-tab";
 import { Portrait, VersionBadge } from "@/components/character-sheet/identity";
 import { NarrativaTab } from "@/components/character-sheet/narrativa-tab";
@@ -392,6 +393,11 @@ function SheetEditorDialog({ entityId }: { entityId: string }) {
                   ) : null}
                 </fieldset>
               </div>
+
+              {/* Docked below the tabs rather than inside one: the compiled
+                  prompt is a property of the whole sheet, and it is just as
+                  worth reading while looking at a frozen version (§3.4). */}
+              <CompiledPromptPanel sheet={shownSheet} isVersion={isViewingVersion} />
             </div>
 
             <CanonicalImagesColumn

@@ -81,13 +81,19 @@ export function DnaTab({ sheet, update, onConfirm, extraction }: DnaTabProps) {
       </section>
 
       <section>
-        <h3 className="mb-2 text-sm font-medium text-ink">{t.characterSheet.groups.notas}</h3>
+        <h3 className="mb-1 text-sm font-medium text-ink">{t.characterSheet.groups.notas}</h3>
+        {/* Decision D6: this box never reaches an image prompt, so it says so
+            before anything is typed into it rather than after. */}
+        <p className="mb-2 text-xs leading-relaxed text-ink-faint">
+          {t.characterSheet.fields.notasHint}
+        </p>
         <label htmlFor="notas-gerais" className="sr-only">
           {t.characterSheet.fields.notasGerais}
         </label>
         <textarea
           id="notas-gerais"
           rows={3}
+          title={t.characterSheet.fields.notasHint}
           value={sheet.dna_visual.notas_gerais}
           placeholder={t.characterSheet.fields.notasPlaceholder}
           onChange={(event) =>
