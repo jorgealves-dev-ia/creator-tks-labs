@@ -103,6 +103,56 @@ export type TranslationProvider = {
   }): Promise<TranslationResult>;
 };
 
+// ---------------------------------------------------------------------------
+// Image generation — the third capability
+// ---------------------------------------------------------------------------
+
+/** Raw image bytes, as they travel to and from a provider. */
+export type ImagePayload = { mimeType: string; base64: string };
+
+export type ImageGenerationInput = {
+  /** The compiled prompt, already in English. Adapters never translate. */
+  prompt: string;
+  /**
+   * Anchor images the result must stay faithful to.
+   *
+   * Decision G3: the complete sheet is generated from text alone, and every
+   * separate view is then generated *with the sheet attached here* — anchor
+   * first, everything else references the anchor.
+   */
+  references?: readonly ImagePayload[];
+  /** "3:4" for the portrait sheet, "4:3" for the landscape one. */
+  aspectRatio: string;
+  /** "1K" | "2K" | "4K" — the vocabulary the providers themselves use. */
+  imageSize: string;
+};
+
+export type ImageGenerationResult = {
+  image: ImagePayload;
+  /**
+   * What the call consumed, as the provider reported it. Image models bill per
+   * image *and* per token, so both halves are recorded and the real cost is
+   * worked out in lib/ai/pricing.ts.
+   */
+  usage: { inputTokens: number; outputTokens: number };
+};
+
+/**
+ * A provider able to generate one image from a prompt and optional references.
+ *
+ * One implementation in this phase: Google. OpenAI and xAI are already in the
+ * catalogue and greyed out for want of a file next to this one — which is the
+ * whole promise of the adapter layer, stated as a missing entry rather than as
+ * a comment.
+ */
+export type ImageGenerationProvider = {
+  readonly slug: string;
+  generateImage(request: {
+    model: { slug: string };
+    input: ImageGenerationInput;
+  }): Promise<ImageGenerationResult>;
+};
+
 /**
  * Every way a provider call can fail that the interface must speak about. A
  * refusal by content policy is an *expected* error in this product (architecture

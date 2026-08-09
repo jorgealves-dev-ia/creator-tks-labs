@@ -66,3 +66,68 @@ export function realCostCents(
 
   return Math.ceil(usd * BRL_CENTS_PER_USD);
 }
+
+// ---------------------------------------------------------------------------
+// Image generation
+// ---------------------------------------------------------------------------
+
+/**
+ * Image models bill in two currencies at once: a published price per finished
+ * image, which depends on its size, plus the usual per-token price for whatever
+ * went in — and for a separate view, what goes in includes the whole reference
+ * sheet.
+ *
+ * Prices in US dollars, read from Google's official pricing page on 2026-08-09.
+ * Only models with an adapter are listed: a price for a model nothing can call
+ * would be a number nobody could ever check.
+ */
+type ImagePrice = {
+  /** Dollars per finished image, by the size vocabulary the API uses. */
+  perImage: Record<string, number>;
+  /** Dollars per million input tokens (text and image both). */
+  input: number;
+};
+
+const IMAGE_PRICES_USD: Record<string, ImagePrice> = {
+  "gemini-3-pro-image": {
+    perImage: { "1K": 0.134, "2K": 0.134, "4K": 0.24 },
+    input: 2,
+  },
+  "gemini-3.1-flash-image": {
+    perImage: { "512": 0.045, "1K": 0.067, "2K": 0.101, "4K": 0.151 },
+    input: 0.5,
+  },
+};
+
+/**
+ * What one generated image really cost us, in BRL cents, rounded up.
+ *
+ * The published per-image price already contains the image's own output tokens,
+ * so only the input is added on top — and for a separate view the input includes
+ * the whole reference sheet, which is the part worth measuring.
+ *
+ * What is deliberately NOT counted: the model's thinking tokens, which arrive
+ * mixed into the same total_output_tokens as the image itself and are billed at
+ * a different rate. Measured on a real 2K generation they came to about one cent
+ * in twenty. Counting them would mean guessing at the split; leaving them out
+ * keeps this figure reconcilable line by line with the invoice Google actually
+ * sends, which is what makes it usable for calibrating the Spark price at all.
+ * A number you can check beats a number that is complete.
+ *
+ * Returns null for a model or size with no price on file, and the caller records
+ * null rather than inventing a figure.
+ */
+export function imageRealCostCents(
+  modelSlug: string,
+  imageSize: string,
+  usage: { inputTokens: number },
+): number | null {
+  const price = IMAGE_PRICES_USD[modelSlug];
+  const perImage = price?.perImage[imageSize];
+
+  if (!price || perImage === undefined) return null;
+
+  const usd = perImage + (usage.inputTokens * price.input) / TOKENS_PER_MTOK;
+
+  return Math.ceil(usd * BRL_CENTS_PER_USD);
+}

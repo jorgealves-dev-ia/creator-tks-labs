@@ -4,8 +4,13 @@ import {
   anthropicExtractionProvider,
   anthropicTranslationProvider,
 } from "@/lib/providers/anthropic";
+import { googleImageProvider } from "@/lib/providers/google";
 import { isProviderConfigured } from "@/lib/providers/keys";
-import type { ExtractionProvider, TranslationProvider } from "@/lib/providers/types";
+import type {
+  ExtractionProvider,
+  ImageGenerationProvider,
+  TranslationProvider,
+} from "@/lib/providers/types";
 
 /**
  * Which adapter answers for which provider slug.
@@ -34,8 +39,37 @@ export function findExtractionProvider(slug: string): ExtractionProvider | null 
   return EXTRACTION_PROVIDERS[slug] ?? null;
 }
 
+/**
+ * And for image generation. Google is the only entry in this phase (decision
+ * G2); OpenAI and xAI are already in the catalogue, so the selector shows them
+ * greyed out as "(em breve)" — the missing line here is the whole reason why.
+ */
+const IMAGE_PROVIDERS: Record<string, ImageGenerationProvider> = {
+  [googleImageProvider.slug]: googleImageProvider,
+};
+
 export function findTranslationProvider(slug: string): TranslationProvider | null {
   return TRANSLATION_PROVIDERS[slug] ?? null;
+}
+
+export function findImageProvider(slug: string): ImageGenerationProvider | null {
+  return IMAGE_PROVIDERS[slug] ?? null;
+}
+
+/** Whether an image adapter exists at all — the second half of "usable". */
+export function hasImageAdapter(slug: string): boolean {
+  return slug in IMAGE_PROVIDERS;
+}
+
+/**
+ * Why an image provider is or is not usable. Same two-part answer as
+ * extractionProviderStatus, and separate from it because a provider can perfectly
+ * well be ready to read a photo and not yet able to draw one.
+ */
+export function imageProviderStatus(slug: string, envVarName: string): ProviderStatus {
+  if (!hasImageAdapter(slug)) return "no_adapter";
+
+  return isProviderConfigured(envVarName) ? "ready" : "missing_key";
 }
 
 /** Whether an adapter exists at all — the second half of "usable" after the key. */

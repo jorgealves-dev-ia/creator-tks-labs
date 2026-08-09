@@ -90,6 +90,18 @@ Gerar canônicas a partir do rascunho é permitido e esperado (é parte de const
 
 ---
 
-## 6. Fora do escopo (de propósito)
+## 6. Pendências de refinamento (observadas na validação real de 09/08/2026)
+
+Duas coisas vistas nas primeiras gerações reais contra a API do Google — folha completa + vista de perfil, modelo Nano Banana Pro. Nenhuma é bug do compilador nem da moldura: o prompt saiu correto nas duas. São limites de fidelidade do modelo, a avaliar com mais gerações reais durante a Etapa C.
+
+1. **Posição de tatuagem.** O prompt disse `a small fine-line tattoo of a minimalist flower branch on the inner left wrist` e o modelo desenhou a tatuagem no quadril. Efeito colateral favorável: como as vistas usam a folha como referência, o deslocamento fica **consistente** entre imagens em vez de aleatório. Caminho candidato: reforço no prompt (repetir a posição no bloco de restrições, ou dar à posição uma frase própria em vez de uma oração subordinada). Só mexer com evidência de mais de um caso.
+
+2. **Variedade das células de expressão da folha.** A grade da folha pede "estudos de expressão" sem enumerá-las, e as células saíram quase idênticas. Quem enumera expressões é o slot `folha_expressoes`, que tem instrução própria — então isto é sobreposição de papéis, não erro. Caminho candidato: enumerar 3–4 expressões na instrução da grade, ou aceitar que a folha ancora identidade e a variedade é assunto do slot dedicado.
+
+**Também confirmado nessa validação:** a moldura do §5.22 passou de primeira com o traje de banho, sem recusa — o fallback existe e não precisou disparar. Uma imagem 2K levou 23–27s, dentro do `maxDuration` de 60 que sustenta o "síncrono agora" do G4; é este número que dirá quando o assíncrono virar necessidade.
+
+---
+
+## 7. Fora do escopo (de propósito)
 
 Nodes de geração no canvas (próxima conversa — o relatório da inspeção do Magnific é o insumo dela); **Storyboard + Vídeos** (conversa dedicada, registrada no roadmap, junto com a estreia do assíncrono); fatiamento automático da grade em slots individuais (refinamento futuro — o "Split images" do Magnific mostrou o caminho); foto de pessoa real como referência de identidade (estudo futuro com cuidados éticos próprios); adaptadores de imagem OpenAI/xAI (entram quando a demanda chamar — o catálogo já os espera).
