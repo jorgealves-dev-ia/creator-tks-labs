@@ -1,6 +1,7 @@
 import { estiloOption } from "@/lib/character-sheet/dictionary";
 import type { CharacterSheet } from "@/lib/character-sheet/schema";
 import {
+  referenceFidelity,
   referenceSubject,
   type ReferenceKind,
   type ReferenceOrigin,
@@ -101,6 +102,12 @@ export type CanvasReferenceDirective = {
   instrucao_en: string;
   /** The sentence that actually went to the model. */
   diretiva_en: string;
+  /**
+   * The fixed clause that says what may not change about this image. Null for a
+   * reference nobody labelled — see references.ts for why, and for the honest
+   * expectation this sets.
+   */
+  fidelidade_en: string | null;
 };
 
 /**
@@ -116,8 +123,8 @@ export type CanvasPromptStructure = {
     folha_asset_id: string | null;
   } | null;
   identidade: string[];
-  /** The sentence that ties the identity text to the attached sheet image. */
-  ancora: string | null;
+  /** The sentences that tie the identity text to the attached sheet image. */
+  ancora: string[];
   traje_canonico: string | null;
   cena_padrao: string[];
   cena_usuario: { pt: string; en: string } | null;
@@ -159,12 +166,21 @@ const ALL_SCENE_KEYS: readonly CenaPadraoKey[] = [
 ];
 
 /**
- * What the attached sheet is *for*, said out loud. Without this sentence the
- * image is just another reference; with it, it is the identity.
+ * What the attached sheet is *for*, said out loud, and then said again as a
+ * prohibition.
+ *
+ * The first sentence names the image; without it the sheet is just another
+ * reference. The second exists because naming is not insisting: a model given a
+ * face will happily produce a *similar* face, and similar is precisely what this
+ * whole product exists to refuse. Same reasoning as the fidelity clauses of
+ * references.ts, applied to the one reference that matters most — and with the
+ * same honest expectation: this raises the hit rate, it does not guarantee it.
  */
-const ANCHOR_INSTRUCTION =
+const ANCHOR_INSTRUCTIONS = [
   "Reference image 1 is the character reference sheet of this exact person: " +
-  "match the face, hair, body proportions and skin tone to it precisely";
+    "match the face, hair, body proportions and skin tone to it precisely",
+  "Keep the exact same face and features as the character reference sheet",
+] as const;
 
 export function buildCanvasPrompt({
   personagem,
@@ -222,6 +238,7 @@ export function buildCanvasPrompt({
       diretiva_en: instruction
         ? `Use ${subject}, ${instruction}`
         : `Use ${subject}, faithfully`,
+      fidelidade_en: referenceFidelity(reference.kind, ordem),
     };
   });
 
@@ -236,7 +253,7 @@ export function buildCanvasPrompt({
         }
       : null,
     identidade: compiled?.structure.identidade ?? [],
-    ancora: hasAnchorImage ? ANCHOR_INSTRUCTION : null,
+    ancora: hasAnchorImage ? [...ANCHOR_INSTRUCTIONS] : [],
     // The director rule, in the only two lines that enforce it.
     traje_canonico: directed ? null : (compiled?.structure.traje_canonico ?? null),
     cena_padrao: directed ? [] : (compiled?.structure.cena_padrao ?? []),
@@ -270,11 +287,15 @@ function renderText(structure: CanvasPromptStructure): string {
     structure.estilo.frase,
     structure.estilo.reforco,
     structure.identidade.join(", "),
-    structure.ancora ?? "",
+    ...structure.ancora,
     structure.traje_canonico ?? "",
     structure.cena_padrao.join(", "),
     structure.cena_usuario?.en ?? "",
-    ...structure.referencias.map((reference) => reference.diretiva_en),
+    // Each attached image says what to use it for and, immediately after, what
+    // about it may not change — adjacent so the pair reads as one instruction.
+    ...structure.referencias.flatMap((reference) =>
+      [reference.diretiva_en, reference.fidelidade_en ?? ""].filter(Boolean),
+    ),
     ...structure.restricoes,
   ]
     .map((sentence) => sentence.trim().replace(/\.$/, ""))

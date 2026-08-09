@@ -71,6 +71,11 @@ const REFUSAL_MARKERS = [
   "prohibited",
   "content filter",
   "responsible ai",
+  // Seen verbatim on 2026-08-09: "Image generation blocked due to safety
+  // violations. Please modify your input and retry." The first two markers
+  // already catch it; this one is here because the word is what the API chose
+  // and the list is a record of what has actually been observed.
+  "violation",
 ];
 
 export const googleImageProvider: ImageGenerationProvider = {
@@ -159,9 +164,12 @@ export const googleImageProvider: ImageGenerationProvider = {
  * none of them has a free tier.
  */
 function toProviderError(error: unknown): ProviderError {
-  if (error instanceof ApiError) {
-    const detail = error.message;
+  // Verbatim, because a message we write ourselves can only repeat what we
+  // already assumed. This is the response body, never the request, so it cannot
+  // contain the key.
+  const detail = error instanceof Error ? error.message : String(error);
 
+  if (error instanceof ApiError) {
     if (error.status === 401 || error.status === 403) {
       return new ProviderError("not_configured", "the provider rejected the API key", detail);
     }
@@ -170,21 +178,30 @@ function toProviderError(error: unknown): ProviderError {
       return new ProviderError("refused", "the provider declined to draw this", detail);
     }
 
-    return new ProviderError(
-      "provider",
-      `the provider returned ${error.status}`,
-      // Verbatim, because a message we write ourselves can only repeat what we
-      // already assumed. This is the response body, never the request, so it
-      // cannot contain the key.
-      detail,
-    );
+    return new ProviderError("provider", `the provider returned ${error.status}`, detail);
   }
 
-  return new ProviderError(
-    "provider",
-    "the provider could not be reached",
-    error instanceof Error ? error.message : String(error),
-  );
+  // The refusal check is repeated outside the ApiError branch on purpose, and
+  // it is not defensive programming — it is a bug fix with a receipt.
+  //
+  // On 2026-08-09 a real refusal from Nano Banana 2 was recorded as
+  //   "the provider could not be reached: 400 Image generation blocked due to
+  //    safety violations. Please modify your input and retry."
+  //
+  // The sentence says exactly what happened; the prefix is ours, and it is
+  // wrong. The SDK had thrown something that was not an ApiError, so the check
+  // above never ran and a content-policy refusal reached the screen dressed as
+  // a network problem — which sends the user to look at their connection when
+  // the fix was to rephrase a sentence.
+  //
+  // Reading what the provider wrote, rather than which class it was wrapped in,
+  // is what makes the difference visible. Decision 7 of the architecture calls a
+  // refusal an *expected* error; an expected error has to be recognisable.
+  if (isRefusal(detail)) {
+    return new ProviderError("refused", "the provider declined to draw this", detail);
+  }
+
+  return new ProviderError("provider", "the provider could not be reached", detail);
 }
 
 function isRefusal(message: string): boolean {

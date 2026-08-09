@@ -6,7 +6,11 @@ import { z } from "zod";
 import { loadCatalog } from "@/lib/ai/catalog";
 import type { CatalogProvider } from "@/lib/ai/catalog-types";
 import { imageRealCostCents } from "@/lib/ai/pricing";
-import { isFolhaSlot, type ImagemCanonicaSlot } from "@/lib/character-sheet/dictionary";
+import {
+  isFolhaSlot,
+  slotLabel,
+  type ImagemCanonicaSlot,
+} from "@/lib/character-sheet/dictionary";
 import { sheetsEqual } from "@/lib/character-sheet/diff";
 import { loadImagePayload } from "@/lib/generation/asset-payloads";
 import {
@@ -161,7 +165,7 @@ export async function generateCanonicalImage(
   //    photographed from the stored draft: the draft is the only thing there is.
   const { data: entity } = await supabase
     .from("entities")
-    .select("id, sheet, active_version_id")
+    .select("id, handle, sheet, active_version_id")
     .eq("id", parsed.data.entityId)
     .eq("user_id", userId)
     .is("archived_at", null)
@@ -312,6 +316,8 @@ export async function generateCanonicalImage(
       byte_size: bytes.byteLength,
       width: null,
       height: null,
+      // What this image is, in the words the gallery will show it with.
+      label: `${slotLabel(slot)} · @${entity.handle}`,
     })
     .select("id")
     .single();

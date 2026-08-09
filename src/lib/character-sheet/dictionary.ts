@@ -642,6 +642,11 @@ export const TODOS_SLOTS_CANONICOS = [
 export type ImagemCanonicaSlot = (typeof TODOS_SLOTS_CANONICOS)[number]["key"];
 
 /** The two slots that hold the anchor itself, rather than something it anchored. */
+/** The Portuguese name of a slot — what the gallery calls the image it made. */
+export function slotLabel(slot: ImagemCanonicaSlot): string {
+  return TODOS_SLOTS_CANONICOS.find((entry) => entry.key === slot)?.pt ?? slot;
+}
+
 export function isFolhaSlot(slot: ImagemCanonicaSlot): boolean {
   return slot === "folha_completa" || slot === "folha_completa_horizontal";
 }

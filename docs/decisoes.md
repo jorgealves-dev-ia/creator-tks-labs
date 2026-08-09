@@ -612,3 +612,109 @@ Pedido do Jorge ao aprovar a Etapa A dos nodes de geração. São refinamentos d
 > O registro completo do ciclo dos nodes de geração — decisões N1–N5, a quitação da dívida do `prompt_compiled` e os registros de futuro — entra ao final da Etapa C, junto das demais atualizações de documentação, conforme o plano aprovado.
 
 ---
+
+### 09/08/2026 — Filtro de conteúdo é probabilístico por modelo, e reformular é caminho legítimo
+
+**Achado do Jorge nos testes exploratórios da Etapa B**, com validação dos dois lados: a **mesma** configuração recusada pelo Nano Banana 2 passou **de primeira** no Nano Banana Pro; e o próprio NB2 passou na segunda tentativa com a frase reformulada (*"vestindo seu biquíni novo"*).
+
+Três coisas ficam registradas:
+
+1. **O filtro não é uma regra, é uma probabilidade — e ela varia por modelo.** O NB2 tem filtro mais rígido que o Pro. Isso não é bug de nenhum dos dois, e não é algo que o nosso prompt possa "consertar": é política do provedor aplicada a cada chamada. Consequência de produto: **trocar de modelo é uma resposta válida a uma recusa**, e o seletor já está do lado do botão.
+2. **Reformular a cena é caminho legítimo, não gambiarra.** A mesma intenção dita com outras palavras passou. Por isso a mensagem de recusa agora diz exatamente isso — *"Ajuste a descrição da cena e tente de novo"* — em vez de deixar o usuário achando que bateu num muro.
+3. **Recusa nunca cobra.** Provado nos dados, não no código: as duas linhas de `generations` com `status = 'failed'` daquela rodada têm `sparks_charged = 0`. É a constraint `generations_failed_is_free` valendo na prática.
+
+**Junto disso, o Nano Banana 2 foi validado contra a API real** — o segundo modelo de imagem do catálogo a rodar de verdade. Vale o princípio da casa: modelo no catálogo ou funciona, ou não fica selecionável.
+
+---
+
+### 09/08/2026 — Recusa de política estava chegando à tela disfarçada de falha de rede
+
+**Bug, com recibo.** A linha gravada dizia:
+
+```
+the provider could not be reached: 400 Image generation blocked
+due to safety violations. Please modify your input and retry.
+```
+
+A frase do Google está perfeita; **o prefixo é nosso e está errado**. `"could not be reached"` é o ramo de fallback do adaptador, o que significa que `error instanceof ApiError` deu falso — o SDK nem sempre embrulha na classe que esperávamos. Como a checagem de recusa morava **dentro** daquele ramo, uma recusa de conteúdo virou "erro do provedor", e a tela mandou o usuário olhar a conexão quando o conserto era trocar uma palavra da cena.
+
+A correção é ler **o que o provedor escreveu**, não a classe em que veio embrulhado. A Decisão 7 da arquitetura chama recusa de erro **esperado**; erro esperado precisa ser reconhecível.
+
+Regra que fica, gêmea da de 08/08/2026 sobre descartar o corpo da resposta: **classificação de erro se faz pela mensagem do provedor, nunca só pelo tipo do objeto.**
+
+---
+
+### 09/08/2026 — O autosave do canvas podia correr contra si mesmo
+
+**Bug achado pelo Jorge:** "Falha ao salvar / Tentar de novo" logo depois de uma geração bem-sucedida. Nada tinha se perdido — o grafo no banco estava completo, e "Tentar de novo" sempre funcionava —, mas a tela dizia algo alarmante e falso sobre um projeto que estava inteiro.
+
+A causa é uma corrida que a concorrência otimista não cobria. O `version` protege contra **outra aba**; não protegia contra **um segundo salvamento da mesma aba**:
+
+1. o salvamento A parte com a versão 41 e demora (banco remoto, logo depois de uma geração que acabou de usar a conexão)
+2. uma edição chega, o canvas fica sujo de novo
+3. 1,2s depois o salvamento B parte — e lê **41**, porque A ainda não voltou para atualizar
+4. A volta, a linha vira 42
+5. B volta e não casa com nada → conflito → "Falha ao salvar"
+
+**Correção: salvamentos são serializados.** Se um já está em voo, o próximo é enfileirado e roda depois, com a versão que o primeiro produziu. A trava é de módulo e não de `ref` porque `useSaveWorkflow` é chamado em dois componentes — o autosave e o botão de tentar de novo —, e um guarda por instância não é guarda nenhum.
+
+Efeito colateral bom: **conflito volta a significar o que sempre devia** — outra aba editando de verdade —, e por isso ganhou mensagem própria, que manda recarregar em vez de tentar de novo.
+
+**E a mensagem deixou de ser genérica.** *"Falha ao salvar o projeto — suas imagens e créditos estão seguros."* A imagem já está no Storage e o débito já está no ledger muito antes de o canvas ser salvo; quem lê o aviso precisa das duas informações na mesma frase.
+
+---
+
+### 09/08/2026 — Cláusulas fixas de fidelidade nas referências (e a expectativa honesta)
+
+**Achado do Jorge:** um biquíni anexado como produto voltou com **uma alça vermelha e outra azul**. O modelo não ignorou a referência — tratou-a como *inspiração*. Nomear a imagem não é insistir nela.
+
+Cada tipo de referência passa a carregar uma **cláusula fixa em inglês**, no mesmo espírito das frases fixas do dicionário: produto exige *same colors, pattern, materials and details, without alteration*; roupa exige ser vestida exatamente como mostrada; cenário e pose têm as suas. **`Outro` não tem cláusula** — sobre uma imagem que ninguém rotulou não há propriedade que se possa honestamente exigir.
+
+E a mesma lógica vale para a referência que mais importa: sempre que há `@` com folha, entra a cláusula de identidade — *"keep the exact same face and features as the character reference sheet"*. Um modelo que recebe um rosto produz de bom grado um rosto **parecido**, e "parecido" é exatamente o que este produto existe para recusar.
+
+> **Expectativa honesta, escrita no código para ninguém ter que redescobrir:** reforço **eleva a taxa de acerto, não garante 100%**. Nenhum prompt torna um modelo de imagem determinístico. O que a cláusula compra é que o erro fique mais raro — e que, quando acontecer, a instrução violada esteja visível no `prompt_compiled` guardado.
+
+**Observação de amostra única, registrada como dado e não como conclusão:** neste caso o **NB2 saiu mais fiel à referência que o Pro**. É uma geração de cada, sem controle de variáveis — não sustenta nenhuma recomendação de modelo. Fica anotado para a calibração futura, junto do que `real_cost_cents` já vem acumulando.
+
+---
+
+### 09/08/2026 — Pendência de produto: gerações saindo como grade ou par de fotos
+
+Observado nos testes da Etapa B: alguns resultados vêm como **duas fotos numa imagem só**, ou como uma pequena grade, em vez de uma única foto.
+
+**A investigar antes de decidir qualquer coisa:** se vem do nosso prompt compilado ou do modelo. Hipótese inicial, anotada como ponto de partida e não como diagnóstico — as receitas da geração canônica dizem explicitamente *"A single full-body view"*, e **o prompt de canvas não diz nada equivalente**: nada nele pede uma foto só. Um modelo preenchendo um quadro 9:16 com uma colagem é comportamento plausível diante desse silêncio.
+
+Se a causa for nossa, a pergunta seguinte é de produto, não de correção: **oferecemos o controle** ("1 foto" vs "ensaio")? Um par de fotos pode ser exatamente o que um criativo de social commerce quer. Fica para avaliar depois da Etapa C.
+
+---
+
+### 09/08/2026 — Consistência de personagem depende da qualidade da âncora, não só do DNA
+
+**Achado do Jorge no fechamento da Etapa B**, investigando um desvio de cabelo que parecia bug e não era. A `@luna` estava na v3, e a folha completa congelada naquela versão ainda era **a folha com aspecto de desenho** — a que nasceu antes da regra 11. Toda geração de canvas ancorava naquela imagem.
+
+O sistema estava funcionando exatamente como escrito: a folha é a âncora universal, cada vista referencia a âncora, e uma âncora ilustrada puxa o resultado para o lado dela. **Âncora ruim produz consistência ruim com fidelidade perfeita ao que foi pedido** — que é o pior tipo de erro para diagnosticar, porque nada está quebrado.
+
+Higiene feita pelo Jorge: folha fotorrealista gerada, sheet limpo, **v4 salva**, regeneração conferida.
+
+**O que isso vira em produto, e é a parte que importa:**
+
+> **A folha fotorrealista congelada é pré-requisito de consistência, não um passo opcional do fluxo.**
+
+Hoje a interface já sugere o caminho (*gerar folha → conferir → salvar v1*), mas sugerir não basta: uma personagem pode ser mencionada com uma folha antiga, ou com folha nenhuma, e nos dois casos o resultado decepciona sem explicar por quê. **O onboarding futuro deve conduzir a isso** — e a interface deve saber dizer, na hora da menção, quando a âncora que vai ser usada é velha ou ausente. O aviso de "esta versão não tem folha completa" já existe; falta o caso mais traiçoeiro, que é a folha existir e ser ruim.
+
+Registrado para o ciclo de refinamentos de UX do canvas, junto dos quatro itens já anotados.
+
+---
+
+### 09/08/2026 — Todo texto no sheet é prompt, inclusive o que você escreveu para testar
+
+O desvio de cabelo tinha uma segunda causa, e ela é mais geral que a primeira: sobraram **detalhes de teste** no sheet — *"reflexos dourados"*, escrito um dia para exercitar o campo livre. O compilador fez o que existe para fazer: obedeceu literalmente, gerou a personagem com reflexos dourados, e ninguém tinha pedido aquilo naquele dia.
+
+**Não é bug de nada.** É a consequência exata do desenho: campo `observado` ou `confirmado` **entra**, sempre, em toda geração, para sempre — e congela na versão. A honestidade do sistema corta para os dois lados.
+
+Duas coisas ficam registradas:
+
+1. **Sheet não é rascunho de experimentos.** Texto de teste em campo livre não é inerte: ele é prompt, e vai continuar sendo prompt em todas as gerações e em todas as versões que o copiarem. A prévia "Prompt compilado" existe justamente para isso ser visível antes de virar imagem — e neste caso ela mostrava, bastava olhar.
+2. **Modificador de cor é amplificado.** O texto dizia que os reflexos eram *"bem sutis"*; a imagem trouxe reflexos evidentes. É vício conhecido de modelos de imagem com modificadores de cor: o adjetivo de intensidade é a primeira coisa que se perde, o substantivo de cor é a última. Consequência prática para quem escreve campo livre: **descrever pouco tem mais chance de sair certo do que descrever com ressalvas** — "sutil" não é um freio que o modelo respeite.
+
+---

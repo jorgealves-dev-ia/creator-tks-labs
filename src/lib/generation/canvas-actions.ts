@@ -399,6 +399,10 @@ export async function generateFromNode(input: unknown): Promise<CanvasGeneration
       byte_size: bytes.byteLength,
       width: null,
       height: null,
+      // The gallery caption is the user's own sentence, not a description we
+      // invented for it — which also makes the search find an image by what
+      // was asked for rather than by what we decided to call it.
+      label: galleryLabel(request.prompt, character?.handle ?? null),
     })
     .select("id")
     .single();
@@ -464,6 +468,26 @@ export async function generateFromNode(input: unknown): Promise<CanvasGeneration
         }
       : null,
   };
+}
+
+/** The column allows 200; a caption is a line, not a paragraph. */
+const MAX_LABEL_LENGTH = 120;
+
+/**
+ * What the gallery will call this image. The user's own sentence, shortened —
+ * and, when there was no sentence at all (an empty prompt with a mention), the
+ * only true thing left to say about it.
+ */
+function galleryLabel(prompt: string, handle: string | null): string {
+  const written = prompt.trim().replace(/\s+/g, " ");
+
+  if (written !== "") {
+    return written.length > MAX_LABEL_LENGTH
+      ? `${written.slice(0, MAX_LABEL_LENGTH - 1)}…`
+      : written;
+  }
+
+  return handle ? `@${handle} nos padrões dela` : "Imagem no canvas";
 }
 
 // ---------------------------------------------------------------------------

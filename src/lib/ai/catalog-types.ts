@@ -18,6 +18,17 @@ export type Capability = "extraction" | "image_gen";
 
 export type CatalogModel = {
   id: string;
+  /**
+   * The provider's own identifier, e.g. `gemini-3-pro-image`.
+   *
+   * Travels to the browser because the limits of a model are a property of the
+   * model: how many reference images it accepts, which proportions it can draw.
+   * The interface has to state those *before* the click — a ceiling discovered
+   * as an API error after the fact is not a ceiling, it is a surprise. It is not
+   * a secret in any sense: it is the same string the user's own history shows in
+   * generations.model.
+   */
+  slug: string;
   displayName: string;
   /** The price for one unit of this capability, from the catalogue's own column. */
   sparks: number;

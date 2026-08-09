@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { PromptField } from "@/components/nodes/prompt-field";
+import { ReferenceStrip, type ReferenceEntry } from "@/components/nodes/reference-strip";
 import { useImageCatalog } from "@/components/nodes/use-image-catalog";
 import { defaultModelId, findModel, ModelSelect } from "@/components/ui/model-select";
 import { signAssetUrls } from "@/lib/assets/actions";
 import { ESTILO_RENDERIZACAO, estiloOption } from "@/lib/character-sheet/dictionary";
+import { useReferencePicker } from "@/lib/canvas/reference-picker-store";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { useEntitiesStore } from "@/lib/entities/store";
 import {
@@ -16,7 +18,12 @@ import {
   type CanvasGenerationResult,
 } from "@/lib/generation/canvas-actions";
 import { findMentions, sceneWithoutMentions } from "@/lib/generation/mentions";
-import { DEFAULT_PRESET_ID, FORMAT_PRESETS, findPreset } from "@/lib/generation/presets";
+import {
+  DEFAULT_PRESET_ID,
+  FORMAT_PRESETS,
+  findPreset,
+  maxReferences,
+} from "@/lib/generation/presets";
 import { t } from "@/lib/i18n/pt-BR";
 
 /**
@@ -40,6 +47,8 @@ export type GeneratorNodeData = {
   presetId?: string;
   /** null (or absent) means "inherit the character's style" — rule 11. */
   estiloKey?: string | null;
+  /** The images attached to this block, in the order they will be numbered. */
+  references?: ReferenceEntry[];
   lastAssetId?: string | null;
   lastGenerationId?: string | null;
 };
@@ -89,6 +98,15 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
       : null,
   );
 
+  const references = data.references ?? [];
+
+  // The ceiling belongs to the model, and the character's own sheet occupies one
+  // of its places — so the number the strip shows is the number the server will
+  // enforce, said before the click instead of after it.
+  const limit = model ? maxReferences(model.slug) : 1;
+  const reserved =
+    mentioned?.activeVersion?.sheet.imagens_canonicas.folha_completa ? 1 : 0;
+
   const lastAssetId = data.lastAssetId ?? null;
   const previewUrl = lastAssetId && preview?.assetId === lastAssetId ? preview.url : null;
 
@@ -110,6 +128,14 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
     };
   }, [lastAssetId]);
 
+  function openPicker() {
+    useReferencePicker.getState().open({
+      nodeId: id,
+      remaining: Math.max(0, limit - references.length - reserved),
+      limit,
+    });
+  }
+
   async function handleGenerate() {
     setMessage(null);
     setNotice(null);
@@ -130,7 +156,7 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
       modelId,
       presetId,
       estiloKey,
-      references: [],
+      references,
     });
 
     setBusy(false);
@@ -238,6 +264,15 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
               : copy.node.promptHint}
         </p>
 
+        <ReferenceStrip
+          references={references}
+          limit={limit}
+          reserved={reserved}
+          disabled={busy}
+          onAdd={openPicker}
+          onChange={(next) => updateNodeData(id, { references: next })}
+        />
+
         <div className="mt-3 grid grid-cols-2 gap-2">
           <div className="col-span-2">
             <label
@@ -334,6 +369,18 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
           <p className="mt-2 text-[10px] leading-relaxed text-warning">{message}</p>
         ) : null}
       </div>
+
+      {/* Decision N1: the connector is always visible on the edge, and clicking
+          it opens the right action rather than merely being a socket. It also
+          accepts an edge from a Resultado — the same reference, arriving from
+          the canvas instead of from the gallery. */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        title={copy.node.inputHandle}
+        onClick={openPicker}
+        className="!size-2.5 !cursor-pointer !border-2 !border-canvas !bg-accent"
+      />
 
       <Handle
         type="source"

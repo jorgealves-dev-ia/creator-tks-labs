@@ -80,6 +80,7 @@ export async function loadCatalog(
         .sort((a, b) => a.sort_order - b.sort_order)
         .map((model) => ({
           id: model.id,
+          slug: model.slug,
           displayName: model.display_name,
           sparks: reader.price(model) ?? 0,
           isDefault: model.is_default,

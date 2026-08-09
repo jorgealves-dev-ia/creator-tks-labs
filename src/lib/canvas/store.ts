@@ -13,6 +13,16 @@ import { create } from "zustand";
 export type SaveStatus = "saved" | "dirty" | "saving" | "failed";
 
 /**
+ * Why a save failed, because the two have different cures and only one of them
+ * is the user's to apply.
+ *
+ * `conflict` means somebody else saved this project first — another tab. The
+ * fix is to reload. `error` is everything else: a network that dropped, a server
+ * that answered badly. The fix is to try again.
+ */
+export type SaveFailure = "conflict" | "error";
+
+/**
  * Changes React Flow emits that actually alter the saved graph. Everything else
  * — measuring on mount, selecting, hovering — must not mark the canvas dirty,
  * otherwise simply opening a project would trigger a save.
@@ -26,6 +36,8 @@ type CanvasState = {
   edges: Edge[];
   version: number;
   saveStatus: SaveStatus;
+  /** Set only while saveStatus is "failed"; null the rest of the time. */
+  saveFailure: SaveFailure | null;
   /** Bumped by every persisted change; lets a save detect edits made while it ran. */
   revision: number;
 
@@ -52,6 +64,7 @@ type CanvasState = {
   /** For edits React Flow reports outside node/edge changes, such as panning. */
   markDirty: () => void;
   setSaveStatus: (status: SaveStatus) => void;
+  setSaveFailed: (failure: SaveFailure) => void;
   markSaved: (input: { version: number; revision: number }) => void;
 };
 
@@ -61,6 +74,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   edges: [],
   version: 1,
   saveStatus: "saved",
+  saveFailure: null,
   revision: 0,
 
   loadWorkflow: ({ projectId, nodes, edges, version }) =>
@@ -70,6 +84,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       edges,
       version,
       saveStatus: "saved",
+      saveFailure: null,
       revision: 0,
     }),
 
@@ -158,7 +173,11 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       saveStatus: "dirty",
     })),
 
-  setSaveStatus: (saveStatus) => set({ saveStatus }),
+  // Any status other than "failed" leaves no failure behind to explain.
+  setSaveStatus: (saveStatus) =>
+    set({ saveStatus, saveFailure: saveStatus === "failed" ? get().saveFailure : null }),
+
+  setSaveFailed: (saveFailure) => set({ saveStatus: "failed", saveFailure }),
 
   markSaved: ({ version, revision }) => {
     // Only settle on "saved" if nothing changed while the save was in flight.
@@ -167,6 +186,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     set({
       version,
       saveStatus: stillCurrent ? "saved" : "dirty",
+      saveFailure: null,
     });
   },
 }));

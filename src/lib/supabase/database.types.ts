@@ -102,6 +102,7 @@ export type Database = {
           height: number | null
           id: string
           kind: Database["public"]["Enums"]["asset_kind"]
+          label: string | null
           mime_type: string
           source: Database["public"]["Enums"]["asset_source"]
           storage_bucket: string
@@ -116,6 +117,7 @@ export type Database = {
           height?: number | null
           id?: string
           kind: Database["public"]["Enums"]["asset_kind"]
+          label?: string | null
           mime_type: string
           source: Database["public"]["Enums"]["asset_source"]
           storage_bucket?: string
@@ -130,6 +132,7 @@ export type Database = {
           height?: number | null
           id?: string
           kind?: Database["public"]["Enums"]["asset_kind"]
+          label?: string | null
           mime_type?: string
           source?: Database["public"]["Enums"]["asset_source"]
           storage_bucket?: string

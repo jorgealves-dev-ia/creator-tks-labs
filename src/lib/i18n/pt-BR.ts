@@ -68,7 +68,14 @@ export const t = {
       saved: "Salvo",
       saving: "Salvando…",
       unsaved: "Alterações não salvas",
-      failed: "Falha ao salvar",
+      /**
+       * Names what actually failed, and says what did not. A generated image is
+       * in Storage and its debit is in the ledger long before the canvas is
+       * saved, so whoever reads this needs both facts in the same sentence.
+       */
+      failed: "Falha ao salvar o projeto — suas imagens e créditos estão seguros",
+      conflict:
+        "Este projeto foi alterado em outra aba. Recarregue a página para continuar — suas imagens e créditos estão seguros",
       retry: "Tentar de novo",
     },
     sparksLabel: "Sparks",
@@ -235,7 +242,7 @@ export const t = {
           emptySheet:
             "O DNA está vazio. Preencha ao menos alguns campos antes de gerar — senão não há personagem para desenhar.",
           refused:
-            "O modelo recusou esta geração, inclusive com o traje alternativo. Nada foi cobrado.",
+            "O provedor recusou esta geração por política de conteúdo, inclusive com o traje alternativo. Nada foi cobrado.",
           failed: "A geração não deu certo, e nada foi cobrado. Tente de novo.",
           invalid: "Não foi possível iniciar a geração. Recarregue a página e tente de novo.",
         },
@@ -577,6 +584,7 @@ export const t = {
       resultAlt: "Última imagem gerada neste bloco",
       emptyResult: "A imagem aparece aqui depois de gerar.",
       outputHandle: "Liga ao resultado",
+      inputHandle: "Referências — clique para escolher imagens",
       approximatedPrefix: "O modelo não tem",
       approximatedMiddle: "exato; saiu em",
       noSheetImagePrefix: "A",
@@ -592,6 +600,51 @@ export const t = {
       noVersionSuffix: "sem versão",
       noVersionTooltip: "Salve a v1 desta personagem para poder chamá-la com @.",
     },
+    /** The strip of attached images inside the block (N1). */
+    references: {
+      title: "Referências",
+      ofPrefix: "de",
+      sheetCounts: "a folha conta uma",
+      add: "Adicionar referência",
+      imagePrefix: "Imagem",
+      hasDirective: "Tem tipo ou instrução",
+      fullPrefix: "Este modelo aceita até",
+      fullSuffix: "imagens por geração.",
+      remove: "Remover",
+      instructionPlaceholder: "desta imagem, pegue apenas o cenário",
+      instructionHint: "Opcional. Traduzido na hora de gerar.",
+    },
+
+    /** The gallery modal (§4). */
+    picker: {
+      title: "Escolher referências",
+      close: "Fechar",
+      remainingPrefix: "Você pode acrescentar",
+      remainingSuffix: "nesta geração — o limite deste modelo é",
+      filters: {
+        todas: "Todas",
+        geradas: "Geradas",
+        enviadas: "Enviadas",
+      },
+      searchPlaceholder: "Buscar por nome…",
+      upload: "Enviar imagem",
+      uploading: "Enviando…",
+      loading: "Carregando…",
+      empty: "Nenhuma imagem aqui ainda.",
+      emptyHint:
+        "Envie uma imagem ou gere a primeira: tudo o que você gera fica nesta galeria para sempre.",
+      untitled: "Sem nome",
+      loadMore: "Carregar mais",
+      selected: "selecionadas",
+      limitPrefix: "Este modelo aceita até",
+      limitSuffix: "imagens por geração.",
+      notAnImage: "Esse arquivo não é uma imagem.",
+      tooLarge: "Imagem grande demais (máximo 10 MB).",
+      uploadFailed: "Não foi possível enviar a imagem.",
+      cancel: "Cancelar",
+      confirm: "Adicionar",
+    },
+
     result: {
       title: "Resultado",
       loading: "Carregando imagem…",
@@ -621,7 +674,15 @@ export const t = {
         "Não consegui traduzir seu texto agora — nada foi gerado nem cobrado. Tente de novo.",
       insufficientPrefix: "Saldo insuficiente: precisa de",
       insufficientMiddle: "e você tem",
-      refused: "O modelo recusou esta geração pela política de conteúdo dele.",
+      /**
+       * A refusal is an expected error (architecture decision 7), not a defect —
+       * and the sentence has to carry the one thing that fixes it. The filter is
+       * probabilistic and rephrasing genuinely works: the same configuration
+       * refused by Nano Banana 2 passed on the second attempt with different
+       * wording, and passed first time on the Pro.
+       */
+      refused:
+        "O provedor recusou esta geração por política de conteúdo. Ajuste a descrição da cena e tente de novo — nada foi cobrado.",
       failed: "Não foi possível gerar a imagem.",
     },
   },

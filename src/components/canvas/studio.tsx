@@ -4,6 +4,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import { useEffect, useRef } from "react";
 
 import { SheetEditor } from "@/components/character-sheet/sheet-editor";
+import { ReferencePicker } from "@/components/nodes/reference-picker";
 import { Button } from "@/components/ui/button";
 import type { CanvasGraph } from "@/lib/canvas/graph";
 import { useEntitiesStore } from "@/lib/entities/store";
@@ -62,6 +63,11 @@ export function Studio({
 
         {/* Rendered once, above everything: both the card and the sidebar open it. */}
         <SheetEditor />
+
+        {/* Also once, and for a harder reason: a modal inside a React Flow node
+            sits inside a CSS transform, which would position it against the
+            canvas and scale it with the zoom. */}
+        <ReferencePicker />
       </div>
     </ReactFlowProvider>
   );
