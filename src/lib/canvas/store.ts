@@ -38,6 +38,17 @@ type CanvasState = {
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
+  /**
+   * Edits a node's own stored state — the prompt someone is typing, the format
+   * they picked, the references they attached.
+   *
+   * React Flow has no change type for this, and it is emphatically a change to
+   * the saved graph, so it marks the canvas dirty itself. Without it, everything
+   * a generation node knows would be lost on reload.
+   */
+  updateNodeData: (id: string, patch: Record<string, unknown>) => void;
+  /** Drops a finished image on the canvas, wired to the block that made it. */
+  addResultNode: (input: { sourceNodeId: string; data: Record<string, unknown> }) => void;
   /** For edits React Flow reports outside node/edge changes, such as panning. */
   markDirty: () => void;
   setSaveStatus: (status: SaveStatus) => void;
@@ -92,6 +103,54 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       revision: state.revision + 1,
       saveStatus: "dirty",
     })),
+
+  updateNodeData: (id, patch) =>
+    set((state) => ({
+      nodes: state.nodes.map((node) =>
+        node.id === id ? { ...node, data: { ...node.data, ...patch } } : node,
+      ),
+      revision: state.revision + 1,
+      saveStatus: "dirty",
+    })),
+
+  addResultNode: ({ sourceNodeId, data }) =>
+    set((state) => {
+      const source = state.nodes.find((node) => node.id === sourceNodeId);
+
+      if (!source) return state;
+
+      // Cascaded down and to the right of the block that made it, offset by how
+      // many results that block already produced — so a second attempt lands
+      // beside the first instead of on top of it, and the pair reads as a
+      // sequence of tries rather than one image that changed.
+      const siblings = state.nodes.filter(
+        (node) => node.type === "result" && node.data.sourceNodeId === sourceNodeId,
+      ).length;
+
+      const width = source.measured?.width ?? source.width ?? 380;
+      const id = crypto.randomUUID();
+
+      return {
+        nodes: [
+          ...state.nodes,
+          {
+            id,
+            type: "result",
+            position: {
+              x: source.position.x + width + 72,
+              y: source.position.y + siblings * 48,
+            },
+            data: { ...data, sourceNodeId },
+          },
+        ],
+        edges: [
+          ...state.edges,
+          { id: `${sourceNodeId}->${id}`, source: sourceNodeId, target: id },
+        ],
+        revision: state.revision + 1,
+        saveStatus: "dirty",
+      };
+    }),
 
   markDirty: () =>
     set((state) => ({

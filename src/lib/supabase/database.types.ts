@@ -722,9 +722,12 @@ export type Database = {
           p_error_message?: string
           p_input_tokens?: number
           p_model_id: string
+          p_node_id?: string
           p_output_tokens?: number
           p_params?: Json
+          p_project_id?: string
           p_prompt_compiled?: Json
+          p_prompt_user_pt?: string
           p_real_cost_cents?: number
           p_result_asset_id?: string
           p_sheet_source?: string

@@ -160,6 +160,24 @@ export type ImageGenerationProvider = {
  */
 export type ProviderErrorKind = "not_configured" | "refused" | "invalid_answer" | "provider";
 
+/**
+ * The provider's own sentence about a failure, not our summary of it.
+ *
+ * Lives here because every engine that calls a provider needs exactly this
+ * string, and a second copy of it would be a second chance to throw the response
+ * body away — which is the mistake that cost an afternoon of blind diagnosis on
+ * 2026-08-08 and is the reason `detail` exists at all.
+ *
+ * Never contains a credential: it is the response body, never the request.
+ */
+export function providerErrorDetail(error: unknown): string {
+  if (error instanceof ProviderError) {
+    return `${error.message}: ${error.detail ?? "no detail"}`;
+  }
+
+  return error instanceof Error ? error.message : String(error);
+}
+
 export class ProviderError extends Error {
   constructor(
     readonly kind: ProviderErrorKind,

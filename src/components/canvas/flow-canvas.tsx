@@ -11,6 +11,8 @@ import {
 import { useEffect, useRef } from "react";
 
 import { CharacterNode } from "@/components/nodes/character-node";
+import { GeneratorNode } from "@/components/nodes/generator-node";
+import { ResultNode } from "@/components/nodes/result-node";
 import type { CanvasGraph } from "@/lib/canvas/graph";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { useWorkflowAutosave } from "@/lib/canvas/use-autosave";
@@ -20,7 +22,11 @@ import { t } from "@/lib/i18n/pt-BR";
  * Defined at module scope: a fresh object on every render would make React Flow
  * remount every node.
  */
-const nodeTypes: NodeTypes = { character: CharacterNode };
+const nodeTypes: NodeTypes = {
+  character: CharacterNode,
+  generator: GeneratorNode,
+  result: ResultNode,
+};
 
 type FlowCanvasProps = {
   projectId: string;

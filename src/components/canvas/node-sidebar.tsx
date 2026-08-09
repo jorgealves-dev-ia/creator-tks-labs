@@ -31,26 +31,39 @@ export function NodeSidebar() {
       .filter((entityId): entityId is string => typeof entityId === "string"),
   );
 
-  function addToCanvas(entityId: string) {
-    // Dropped where the user is looking, nudged so several cards added in a row
-    // do not land exactly on top of each other.
-    const nudge = (onCanvas.size % 5) * 28;
-    const position = screenToFlowPosition({
+  /** Dropped where the user is looking, nudged so blocks added in a row do not
+   *  land exactly on top of each other. */
+  function dropPosition(nudgeStep: number) {
+    const nudge = (nudgeStep % 5) * 28;
+
+    return screenToFlowPosition({
       x: window.innerWidth / 2 + nudge,
       y: window.innerHeight / 2 + nudge,
     });
+  }
 
+  function addNode(type: string, data: Record<string, unknown>, nudgeStep: number) {
     useCanvasStore.getState().onNodesChange([
       {
         type: "add",
         item: {
           id: crypto.randomUUID(),
-          type: "character",
-          position,
-          data: { entityId },
+          type,
+          position: dropPosition(nudgeStep),
+          data,
         },
       },
     ]);
+  }
+
+  function addToCanvas(entityId: string) {
+    addNode("character", { entityId }, onCanvas.size);
+  }
+
+  function addGenerator() {
+    // The block starts empty on purpose: an empty prompt with no mention is the
+    // one state the button explains rather than the one it hides.
+    addNode("generator", {}, nodes.length);
   }
 
   return (
@@ -167,6 +180,47 @@ export function NodeSidebar() {
               </span>
               <span className={revealed("truncate text-xs font-medium text-ink-muted")}>
                 {t.characterSheet.sidebar.newCharacter}
+              </span>
+            </button>
+          </div>
+
+          <p
+            className={revealed(
+              "mt-4 px-4 pb-1 text-[11px] font-medium uppercase tracking-wide text-ink-faint",
+            )}
+          >
+            {t.studio.sidebarBlocks}
+          </p>
+
+          <div className="px-3">
+            <button
+              type="button"
+              onClick={addGenerator}
+              title={t.generation.node.sidebarHint}
+              className="flex w-full items-center gap-3 rounded-lg py-1.5 text-left
+                         transition-colors hover:bg-surface-hover"
+            >
+              <span
+                aria-hidden
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg
+                           border border-line bg-accent-soft text-ink-muted"
+              >
+                <svg viewBox="0 0 16 16" className="size-3.5" aria-hidden>
+                  <rect x="1.5" y="2.5" width="13" height="11" rx="2"
+                        stroke="currentColor" strokeWidth="1.3" fill="none" />
+                  <path d="M1.5 11l3.2-3.2 2.4 2.4 3-3 4.4 4.4"
+                        stroke="currentColor" strokeWidth="1.3" fill="none"
+                        strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="10.4" cy="6" r="1.1" fill="currentColor" />
+                </svg>
+              </span>
+              <span className={revealed("min-w-0 flex-1")}>
+                <span className="block truncate text-xs font-medium text-ink">
+                  {t.generation.node.title}
+                </span>
+                <span className="block truncate text-[11px] text-ink-faint">
+                  {t.generation.node.sidebarHint}
+                </span>
               </span>
             </button>
           </div>

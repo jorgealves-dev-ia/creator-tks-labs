@@ -5,9 +5,7 @@ import { z } from "zod";
 
 import { parseSheet } from "@/lib/character-sheet/schema";
 import { pendingTranslations } from "@/lib/character-sheet/translation";
-import { isProviderConfigured } from "@/lib/providers/keys";
-import { findTranslationProvider } from "@/lib/providers/registry";
-import { ProviderError } from "@/lib/providers/types";
+import { MAX_TRANSLATION_ITEMS, translateItems } from "@/lib/prompt/translator";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
@@ -34,13 +32,6 @@ export type TranslationEntry = { id: string; source: string; en: string };
 export type TranslateDraftResult =
   | { ok: true; entries: TranslationEntry[] }
   | { ok: false; reason: "invalid" | "not_configured" | "error" };
-
-/**
- * A batch ceiling. A sheet has a couple of dozen free-text fields at most, so
- * this is not a real limit — it is the guarantee that a pathological sheet can
- * never turn one autosave into an expensive call.
- */
-const MAX_ITEMS_PER_CALL = 40;
 
 export async function translateDraftFreeText(input: unknown): Promise<TranslateDraftResult> {
   const parsed = z.uuid().safeParse(input);
@@ -69,71 +60,31 @@ export async function translateDraftFreeText(input: unknown): Promise<TranslateD
     return { ok: false, reason: "invalid" };
   }
 
-  const pending = pendingTranslations(parseSheet(entity.sheet)).slice(0, MAX_ITEMS_PER_CALL);
+  const pending = pendingTranslations(parseSheet(entity.sheet)).slice(0, MAX_TRANSLATION_ITEMS);
 
   if (pending.length === 0) {
     return { ok: true, entries: [] };
   }
 
-  // The model is the catalogue's answer, exactly as it is for extraction: a row
-  // carrying the `translation` capability, cheapest first by sort order. No
-  // price column and no selector — this is plumbing, not a choice the user makes.
-  const { data: models } = await supabase
-    .from("ai_models")
-    .select("slug, sort_order, ai_providers (slug, env_var_name, enabled)")
-    .contains("capabilities", ["translation"])
-    .eq("enabled", true)
-    .order("sort_order");
+  const answer = await translateItems(
+    supabase,
+    pending.map((slot) => ({ id: slot.id, text: slot.source })),
+  );
 
-  const usable = (models ?? []).find((model) => {
-    const provider = model.ai_providers;
-
-    return (
-      provider &&
-      provider.enabled &&
-      findTranslationProvider(provider.slug) !== null &&
-      isProviderConfigured(provider.env_var_name)
-    );
-  });
-
-  const providerRow = usable?.ai_providers;
-  const provider = providerRow ? findTranslationProvider(providerRow.slug) : null;
-
-  if (!usable || !provider) {
-    return { ok: false, reason: "not_configured" };
+  // Nothing is charged and nothing is lost: the fields stay untranslated, the
+  // preview keeps saying so, and the next save tries again.
+  if (!answer.ok) {
+    return { ok: false, reason: answer.reason };
   }
 
-  try {
-    const answer = await provider.translate({
-      model: { slug: usable.slug },
-      items: pending.map((slot) => ({ id: slot.id, text: slot.source })),
-    });
-
-    return {
-      ok: true,
-      entries: pending
-        .map((slot) => ({
-          id: slot.id,
-          source: slot.source,
-          en: answer.translations[slot.id] ?? "",
-        }))
-        .filter((entry) => entry.en !== ""),
-    };
-  } catch (error) {
-    // Nothing is charged and nothing is lost: the fields stay untranslated, the
-    // preview keeps saying so, and the next save tries again. Worth a line in
-    // the terminal during development, where someone is looking.
-    if (process.env.NODE_ENV !== "production") {
-      const detail =
-        error instanceof ProviderError
-          ? `${error.message}: ${error.detail ?? "no detail"}`
-          : error instanceof Error
-            ? error.message
-            : String(error);
-
-      console.error(`[translate] ${usable.slug} failed — ${detail}`);
-    }
-
-    return { ok: false, reason: "error" };
-  }
+  return {
+    ok: true,
+    entries: pending
+      .map((slot) => ({
+        id: slot.id,
+        source: slot.source,
+        en: answer.translations[slot.id] ?? "",
+      }))
+      .filter((entry) => entry.en !== ""),
+  };
 }

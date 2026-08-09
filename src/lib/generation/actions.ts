@@ -8,6 +8,7 @@ import type { CatalogProvider } from "@/lib/ai/catalog-types";
 import { imageRealCostCents } from "@/lib/ai/pricing";
 import { isFolhaSlot, type ImagemCanonicaSlot } from "@/lib/character-sheet/dictionary";
 import { sheetsEqual } from "@/lib/character-sheet/diff";
+import { loadImagePayload } from "@/lib/generation/asset-payloads";
 import {
   CANONICAL_SLOT_KEYS,
   parseSheet,
@@ -18,7 +19,11 @@ import { pendingTranslations } from "@/lib/character-sheet/translation";
 import { buildCanonicalPrompt } from "@/lib/prompt/canonical";
 import { isProviderConfigured } from "@/lib/providers/keys";
 import { findImageProvider } from "@/lib/providers/registry";
-import { ProviderError, type ImagePayload } from "@/lib/providers/types";
+import {
+  ProviderError,
+  providerErrorDetail,
+  type ImagePayload,
+} from "@/lib/providers/types";
 import { CENTS_PER_SPARK } from "@/lib/sparks";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -210,7 +215,7 @@ export async function generateCanonicalImage(
   let references: ImagePayload[] | undefined;
 
   if (!isFolhaSlot(slot) && anchorAssetId) {
-    const reference = await loadReference(supabase, anchorAssetId);
+    const reference = await loadImagePayload(supabase, anchorAssetId);
 
     if (!reference) {
       return { ok: false, reason: "needs_sheet" };
@@ -241,7 +246,7 @@ export async function generateCanonicalImage(
     usage = result.usage;
   } catch (error) {
     const kind = error instanceof ProviderError ? error.kind : "provider";
-    const detail = detailOf(error);
+    const detail = providerErrorDetail(error);
 
     const alreadyCompression =
       sheet.padroes_variaveis.traje_canonico.valor === FALLBACK_OUTFIT;
@@ -271,7 +276,7 @@ export async function generateCanonicalImage(
         model.id,
         slot,
         prompt,
-        `${detail} | fallback: ${detailOf(fallbackError)}`,
+        `${detail} | fallback: ${providerErrorDetail(fallbackError)}`,
       );
 
       const fallbackKind =
@@ -405,29 +410,6 @@ export async function generateCanonicalImage(
 
 type Supabase = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
-/** The stored anchor, as bytes the provider can read. */
-async function loadReference(
-  supabase: Supabase,
-  assetId: string,
-): Promise<ImagePayload | null> {
-  const { data: asset } = await supabase
-    .from("assets")
-    .select("storage_path, mime_type")
-    .eq("id", assetId)
-    .maybeSingle();
-
-  if (!asset) return null;
-
-  const { data: file } = await supabase.storage.from("assets").download(asset.storage_path);
-
-  if (!file) return null;
-
-  return {
-    mimeType: asset.mime_type,
-    base64: Buffer.from(await file.arrayBuffer()).toString("base64"),
-  };
-}
-
 /**
  * Whether this generation can be reproduced from a frozen snapshot.
  *
@@ -478,17 +460,4 @@ async function recordFailure(
     p_params: { slot, aspect_ratio: prompt.aspectRatio, image_size: prompt.imageSize },
     p_error_message: detail.slice(0, 500),
   });
-}
-
-/**
- * The provider's own sentence, not our summary of it. A failure that only says
- * "returned 400" costs an afternoon; the API's own message names the rule.
- * Never contains a credential: it is the response body, never the request.
- */
-function detailOf(error: unknown): string {
-  if (error instanceof ProviderError) {
-    return `${error.message}: ${error.detail ?? "no detail"}`;
-  }
-
-  return error instanceof Error ? error.message : String(error);
 }

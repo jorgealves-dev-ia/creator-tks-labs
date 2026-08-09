@@ -597,3 +597,18 @@ Imagens de teste, scripts descartáveis e harnesses vão para `D:\Z - Meus Proje
 A convenção nasceu com prova: as duas imagens da validação da API do Google — a folha e a vista de perfil que fundamentaram três decisões deste ciclo — já não existiam no temp poucas horas depois. Registrada nas convenções de código do `CLAUDE.md`.
 
 ---
+
+### 09/08/2026 — Refinamentos de UX do canvas registrados (ciclo curto após a Etapa C)
+
+Pedido do Jorge ao aprovar a Etapa A dos nodes de geração. São refinamentos de **uso**, não de mecânica: nenhum deles muda contrato, schema ou regra de compilação, e por isso cabem num ciclo curto de polimento depois que a linha de produção estiver completa — em vez de disputarem espaço com as referências e o encadeamento.
+
+| Refinamento | O que resolve |
+|---|---|
+| **Personagens recolhíveis** — tirar o cartão do canvas para o Arsenal e trazer de volta, com transição | Hoje remover o cartão é um delete que parece perda, ainda que a personagem continue no Arsenal. Recolher e re-adicionar diz a verdade que a decisão de 08/08/2026 já tomou: a personagem é ativo do usuário, o canvas é bancada |
+| **Seletor de estilo: "da personagem" é rótulo, não valor** | O seletor mostra `Da personagem · Fotorrealista` **dentro da opção**, misturando de onde vem com o que é. A origem pertence ao rótulo do campo; o valor exibido deve ser só o estilo |
+| **Lightbox no node Resultado** — duplo clique ou ícone abre a imagem ampliada, com zoom | Uma imagem 2K dentro de um node de 256px não pode ser conferida. Hoje a única saída é baixar o arquivo para olhar |
+| **Retrato da personagem no Arsenal** — miniatura da folha completa como avatar, no lugar das iniciais | As iniciais são um marcador de posição desde a Fase 2; a folha existe e é literalmente o rosto da personagem |
+
+> O registro completo do ciclo dos nodes de geração — decisões N1–N5, a quitação da dívida do `prompt_compiled` e os registros de futuro — entra ao final da Etapa C, junto das demais atualizações de documentação, conforme o plano aprovado.
+
+---

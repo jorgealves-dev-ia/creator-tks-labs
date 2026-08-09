@@ -56,7 +56,8 @@ export const t = {
     noProjectsTitle: "Nenhum projeto ainda",
     noProjectsBody: "Crie seu primeiro projeto para abrir o canvas.",
     sidebarTitle: "Arsenal",
-    sidebarComingSoon: "Os blocos chegam na próxima fase.",
+    sidebarBlocks: "Blocos",
+    sidebarComingSoon: "Vídeo e storyboard chegam nas próximas fases.",
     status: {
       idle: "Pronto",
       generating: "Gerando",
@@ -543,6 +544,85 @@ export const t = {
       handleInvalid: "Use só letras minúsculas, números, hífen e sublinhado.",
       nameRequired: "Dê um nome à personagem.",
       notFound: "Personagem não encontrada.",
+    },
+  },
+
+  /** The generation blocks on the canvas — docs/nodes-geracao.md. */
+  generation: {
+    node: {
+      title: "Gerar Imagem",
+      sidebarHint: "Escreva a cena e gere a imagem",
+      promptLabel: "A cena, em português",
+      promptPlaceholder: "@luna tomando café numa varanda ao amanhecer",
+      promptHint: "Digite @ para chamar uma personagem.",
+      /**
+       * The one warning that keeps 100 ⚡ from becoming a surprise: an empty
+       * prompt is a legitimate, useful command — "show me her as she is" — and
+       * it brings the canonical swimwear with it, because that is what her
+       * defaults say. Better read before the click than discovered after.
+       */
+      emptyPromptWithCharacter:
+        "Prompt vazio gera a personagem nos padrões dela (traje canônico).",
+      emptyPromptAlone: "Escreva a cena ou chame uma personagem com @.",
+      modelLabel: "Modelo",
+      formatLabel: "Formato",
+      styleLabel: "Estilo",
+      styleInheritPrefix: "Da personagem",
+      styleDefaultPrefix: "Padrão",
+      generate: "Gerar",
+      generating: "Gerando…",
+      generatingHint: "Uma imagem 2K leva de 20 a 40 segundos.",
+      costPrefix: "Custa",
+      balancePrefix: "saldo",
+      resultAlt: "Última imagem gerada neste bloco",
+      emptyResult: "A imagem aparece aqui depois de gerar.",
+      outputHandle: "Liga ao resultado",
+      approximatedPrefix: "O modelo não tem",
+      approximatedMiddle: "exato; saiu em",
+      noSheetImagePrefix: "A",
+      noSheetImageSuffix:
+        "não tem folha completa — a identidade entrou só por texto. Gere a folha para ancorar o rosto.",
+    },
+    mention: {
+      /** The autocomplete that opens on `@`. */
+      title: "Personagens",
+      empty: "Nenhuma personagem com versão salva.",
+      emptyHint: "Salve a v1 de uma personagem para poder chamá-la com @.",
+      versionPrefix: "v",
+      noVersionSuffix: "sem versão",
+      noVersionTooltip: "Salve a v1 desta personagem para poder chamá-la com @.",
+    },
+    result: {
+      title: "Resultado",
+      loading: "Carregando imagem…",
+      missing: "Imagem indisponível.",
+      missingHint: "O arquivo pode ter sido removido da galeria.",
+      alt: "Imagem gerada",
+      inputHandle: "Vem do bloco que gerou",
+    },
+    errors: {
+      noModel: "Nenhum modelo de imagem disponível. Configure a chave do fornecedor.",
+      notConfigured: "A chave deste fornecedor não está configurada no servidor.",
+      invalid: "Não foi possível gerar com esses dados.",
+      emptyRequest: "Escreva a cena ou chame uma personagem com @.",
+      emptyCharacter:
+        "Esta versão não tem folha completa nem campos confirmados — não há o que ancorar. Confirme campos ou gere a folha antes.",
+      unknownHandlePrefix: "Não existe personagem",
+      unknownHandleSuffix: "no seu arsenal.",
+      noVersionPrefix: "A personagem",
+      noVersionSuffix: "ainda não tem versão salva. Salve a v1 para poder chamá-la.",
+      unknownVersionPrefix: "A personagem",
+      unknownVersionSuffix: "não tem essa versão.",
+      multipleCharacters: "Uma personagem por geração nesta versão. Deixe só uma menção @.",
+      tooManyReferencesPrefix: "Este modelo aceita até",
+      tooManyReferencesSuffix: "imagens de referência por geração.",
+      missingReference: "Uma das imagens de referência não está mais disponível.",
+      translationFailed:
+        "Não consegui traduzir seu texto agora — nada foi gerado nem cobrado. Tente de novo.",
+      insufficientPrefix: "Saldo insuficiente: precisa de",
+      insufficientMiddle: "e você tem",
+      refused: "O modelo recusou esta geração pela política de conteúdo dele.",
+      failed: "Não foi possível gerar a imagem.",
     },
   },
 } as const;

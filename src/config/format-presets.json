@@ -1,0 +1,11 @@
+{
+  "default": "instagram_feed_retrato",
+  "presets": [
+    { "id": "instagram_feed_retrato", "pt": "Instagram Feed · Retrato", "ratio": "4:5" },
+    { "id": "quadrado", "pt": "Quadrado (IG/FB)", "ratio": "1:1" },
+    { "id": "stories_reels_tiktok", "pt": "Stories / Reels / TikTok", "ratio": "9:16" },
+    { "id": "youtube_thumbnail", "pt": "YouTube / Thumbnail", "ratio": "16:9" },
+    { "id": "paisagem_classica", "pt": "Paisagem clássica", "ratio": "4:3" },
+    { "id": "retrato_classico", "pt": "Retrato clássico", "ratio": "3:4" }
+  ]
+}
