@@ -15,6 +15,7 @@
 | [`docs/character-sheet.md`](docs/character-sheet.md) | Ao trabalhar com entidades `@`, consistência de personagem ou compilação de prompt. É a especificação v1 **final e aprovada**: estrutura JSON, listas fechadas com tradução fixa em inglês e as regras de compilação. |
 | [`docs/versionamento-entidades.md`](docs/versionamento-entidades.md) | Ao mexer em versões de entidade, no ponteiro de versão ativa, na resolução de `@` ou nas travas de banco da `entity_versions`. Especificação v1 aprovada: o que é rascunho, o que é retrato congelado e o que o banco impede. |
 | [`docs/tela-character-sheet.md`](docs/tela-character-sheet.md) | Ao mexer na tela da personagem — cartão no canvas, editor em overlay, selos de estado, contador de amarelos, seletor de versões, coluna de imagens canônicas ou wizard de criação. Especificação v1 aprovada com as decisões U1–U4. |
+| [`docs/motor-extracao.md`](docs/motor-extracao.md) | Ao mexer no motor de extração (foto ou texto colado), no catálogo de fornecedores e modelos de IA, na camada adaptadora ou na cobrança de Sparks por extração. Especificação v1 aprovada com as decisões E1–E6. |
 | [`docs/decisoes.md`](docs/decisoes.md) | Quando quiser saber **por que** algo é do jeito que é, ou antes de reverter uma escolha que parece estranha. Diário cronológico de decisões. |
 
 ---
@@ -41,7 +42,9 @@ Versão curta. O porquê de cada uma está em [`docs/arquitetura.md`](docs/arqui
 8. **Regras de compilação do character sheet.** As 10 regras da seção 6 de [`docs/character-sheet.md`](docs/character-sheet.md) têm **o mesmo status das 7 decisões acima** e nunca podem ser violadas pelo código sem decisão explícita registrada.
 9. **Versões de entidade são append-only com trava no banco; menções `@` resolvem sempre para versão congelada, nunca para rascunho.** Entidade sem versão salva não pode ser mencionada. Geração a partir do rascunho é permitida, mas marcada como não reproduzível (`generations.sheet_source = 'draft'`). → [`docs/versionamento-entidades.md`](docs/versionamento-entidades.md)
 
-**No banco, não no app.** Estas invariantes são garantidas por trigger e constraint, não por código que precisa lembrar de cumpri-las: cadastro cria `profiles` + `wallets`; projeto cria seu `workflows` (1 para 1); ledger recusa UPDATE/DELETE; `wallets.balance_cents` é projeção do ledger com saldo negativo bloqueado; `generations` e `ledger_transactions` são somente-leitura para o usuário; `entity_versions` recusa UPDATE/DELETE e numera as versões sob bloqueio; imagem citada por uma versão não pode ser deletada; RLS default-deny nas 10 tabelas. Todas as travas de apagamento abrem exceção para a cascata de exclusão de conta (LGPD). → [`docs/arquitetura.md`](docs/arquitetura.md#4-modelo-de-dados)
+10. **Chave de IA só em variável de ambiente; catálogo no banco; extração nunca sobrescreve campo não-vazio.** Nenhuma chave de provedor em coluna, log ou resposta — o que viaja para a tela é o booleano "configurado", calculado no servidor. Fornecedores, modelos e preços vivem em `ai_providers` / `ai_models`, sem política de escrita: o preço de uma extração é decidido pelo catálogo, nunca por quem chama. E a extração preenche **apenas campos `vazio`** — `observado`, `inferido`, `confirmado` e o gênero são preservados e contados no resumo. → [`docs/motor-extracao.md`](docs/motor-extracao.md)
+
+**No banco, não no app.** Estas invariantes são garantidas por trigger e constraint, não por código que precisa lembrar de cumpri-las: cadastro cria `profiles` + `wallets`; projeto cria seu `workflows` (1 para 1); ledger recusa UPDATE/DELETE; `wallets.balance_cents` é projeção do ledger com saldo negativo bloqueado; `generations` e `ledger_transactions` são somente-leitura para o usuário; `entity_versions` recusa UPDATE/DELETE e numera as versões sob bloqueio; imagem citada por uma versão não pode ser deletada; extração é gravada e cobrada numa transação só, com o preço lido do catálogo; RLS default-deny nas 13 tabelas. Todas as travas de apagamento abrem exceção para a cascata de exclusão de conta (LGPD). → [`docs/arquitetura.md`](docs/arquitetura.md#4-modelo-de-dados)
 
 ---
 
@@ -82,6 +85,8 @@ Versão curta. O porquê de cada uma está em [`docs/arquitetura.md`](docs/arqui
 - **Entidade / @**: objeto reutilizável mencionável em prompts (`@julia`, `@produto-x`)
 - **Character sheet**: ficha estruturada de um influencer de IA (identidade, dados físicos, turnaround, expressões, paleta de cores, voz), organizada em três camadas — DNA visual (imutável), padrões variáveis (defaults) e narrativa (nunca entra em prompt de imagem)
 - **Geração**: uma execução de modelo com custo associado
+- **Extração**: leitura de uma referência (foto ou texto colado) que preenche o DNA visual com estados honestos — só em campos vazios, com motivo quando houve dúvida
+- **Fornecedor / modelo de IA**: entradas do catálogo em `ai_providers` / `ai_models`; "configurado" significa que a chave existe no servidor
 - **Spark ⚡**: unidade de crédito exibida ao usuário
 - **Preset de formato**: combinação canal + proporção + resolução
 

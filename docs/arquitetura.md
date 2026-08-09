@@ -95,7 +95,27 @@ O comentário na tabela `generations` guarda essa regra dentro do próprio banco
 
 > Nota para não confundir: Higgsfield aparece em [`produto.md`](./produto.md) como **referência visual de UX**, junto com Weavy e Freepik Spaces. Isso é outra coisa — como provedor de modelos, está vetado pela regra acima.
 
-**Como um modelo novo entra.** Duas coisas, e só elas: uma entrada em `config/models.json` (catálogo, provedor e preço) e um adapter em `lib/providers/`. Nunca espalhado pelo resto do código.
+**Como um modelo novo entra.** Duas coisas, e só elas: uma entrada no catálogo (provedor, modelo e preço) e um adapter em `lib/providers/`. Nunca espalhado pelo resto do código.
+
+#### O catálogo mora no banco, não em JSON
+
+A Decisão 6 previa `config/models.json`. Quando o primeiro consumidor real apareceu — o motor de extração —, o catálogo nasceu em **duas tabelas do Postgres** (`ai_providers` e `ai_models`) em vez de um arquivo. O motivo está registrado como decisão E1 em [`decisoes.md`](./decisoes.md): o catálogo é exatamente o que o futuro painel super admin vai gerenciar, e um painel não edita arquivo do repositório. Preço de modelo passa a mudar por SQL, sem deploy.
+
+O que **não** vai para o banco é a chave secreta (decisão E5). O catálogo guarda apenas **o nome da variável de ambiente** que a contém (`ai_providers.env_var_name`); a chave vive em `.env.local` no desenvolvimento e nas Environment Variables da Vercel em produção. O que atravessa para o navegador é um **status**, calculado no servidor — nunca a chave, nunca o nome da variável. Nenhuma coluna, log ou resposta de API jamais contém uma credencial. A trava é de compilação, não de disciplina: `lib/providers/keys.ts` — o único lugar do código que lê uma chave — importa `server-only`, então qualquer componente de tela que o importe, direto ou por cadeia, **quebra o build**.
+
+`config/format-presets.json` continua sendo arquivo: proporção de canal não é coisa que um painel administrativo precise editar.
+
+#### A camada adaptadora, na prática
+
+`lib/providers/types.ts` declara as interfaces; `lib/providers/registry.ts` mapeia o slug do fornecedor para o adaptador; `lib/providers/anthropic.ts` é a primeira implementação. O produto conversa só com a interface, então fornecedor novo é arquivo novo mais uma linha no registry.
+
+Um fornecedor é **usável** quando as duas coisas valem: existe adaptador no registry *e* existe chave no servidor. As duas falham por motivos diferentes, então `extractionProviderStatus()` devolve **qual** falhou — `ready`, `missing_key` ou `no_adapter` — e o seletor diz a verdade correspondente: "(sem chave)" para o que o usuário pode resolver hoje, "(em breve)" para o que só nós podemos. Um fornecedor cuja chave já foi configurada nunca é mandado configurá-la.
+
+Fornecedor inutilizável aparece apagado, nunca escondido: o usuário vê o caminho adiante em vez de uma lista curta e inexplicada.
+
+**Modelo no catálogo ou funciona, ou não fica selecionável.** Antes de um modelo entrar habilitado, ele é exercitado com uma chamada real — Sonnet, Opus e Haiku foram, em 08/08/2026.
+
+`lib/ai/pricing.ts` guarda os preços por token e o câmbio aproximado, e é o que produz `extractions.real_cost_cents`. Câmbio é constante comentada de propósito: cotação viva faria duas extrações idênticas registrarem custos diferentes, que é justamente o ruído que arruinaria a calibração.
 
 ---
 
@@ -143,11 +163,13 @@ A única exceção prevista: a exclusão da conta. Durante o cascade, a linha em
 
 ### Decisão 6 — Presets de formato data-driven
 
-**O quê.** Proporções e resoluções por canal (Instagram, Facebook, TikTok, YouTube, Display Ads) vivem em `config/format-presets.json`. O catálogo de modelos, provedores e preços vive em `config/models.json`. Nunca hardcoded em componentes.
+**O quê.** Proporções e resoluções por canal (Instagram, Facebook, TikTok, YouTube, Display Ads) vivem em `config/format-presets.json`. O catálogo de modelos, provedores e preços vive em **duas tabelas do banco** (`ai_providers`, `ai_models`). Nunca hardcoded em componentes.
 
-**Por quê.** Preço de modelo muda e formato de canal muda — e nenhuma das duas coisas é mudança de comportamento do produto. Como dado, ajustar é editar um arquivo JSON; como código espalhado por componentes, vira uma varredura em busca de todos os lugares onde alguém escreveu `1080` ou `0.04`.
+**Por quê.** Preço de modelo muda e formato de canal muda — e nenhuma das duas coisas é mudança de comportamento do produto. Como dado, ajustar é editar uma linha; como código espalhado por componentes, vira uma varredura em busca de todos os lugares onde alguém escreveu `1080` ou `0.04`.
 
-**Estado atual:** os dois arquivos **ainda não existem** — `src/config/` só tem um `.gitkeep`. Eles entram quando a Fase 1 precisar do primeiro modelo e do primeiro preset.
+**Correção de rota registrada.** Esta decisão dizia `config/models.json`. Quando o catálogo ganhou seu primeiro consumidor real, nasceu **no banco** — motivo em [`decisoes.md`](./decisoes.md), decisão E1: é o catálogo que o futuro painel super admin vai gerenciar, e painel não edita arquivo do repositório. O princípio "data-driven, nunca hardcoded" é o mesmo; só o lugar do dado mudou, e mudou para onde ele pode ser editado sem deploy. Ver a subseção *O catálogo mora no banco, não em JSON* na Decisão 2.
+
+**Estado atual:** o catálogo de IA está no banco e semeado. `config/format-presets.json` **ainda não existe** — entra quando a Fase 1 precisar do primeiro preset de canal.
 
 ---
 
@@ -166,7 +188,7 @@ A única exceção prevista: a exclusão da conta. Durante o cascade, a linha em
 
 ## 4. Modelo de dados
 
-**Postgres no Supabase, RLS habilitado em todas as 10 tabelas, com política default-deny.**
+**Postgres no Supabase, RLS habilitado em todas as 13 tabelas, com política default-deny.**
 
 ### O que "default-deny" significa aqui
 
@@ -174,7 +196,7 @@ Com RLS ligado e nenhuma política que case, o Postgres **nega** a operação. N
 
 Verificado na Fase 0: sem sessão, as 9 tabelas de então respondiam `42501 permission denied`. A décima (`entity_versions`) segue o mesmo padrão e é verificada junto com a migration que a cria.
 
-### As 10 tabelas
+### As 13 tabelas
 
 | Tabela | O que guarda |
 |---|---|
@@ -188,6 +210,9 @@ Verificado na Fase 0: sem sessão, as 9 tabelas de então respondiam `42501 perm
 | `entity_images` | join entre `entities` e `assets`: as imagens canônicas de uma entidade (turnaround, expressões), com `role` e ordenação |
 | `assets` | arquivos no Storage: `kind` (image/video/audio), `source` (upload/generation), mime, dimensões, duração |
 | `generations` | cada execução: workflow/node de origem, provedor, modelo, `params jsonb`, `prompt_user_pt`, `prompt_compiled jsonb`, status, custos, `result_asset_id`, `entity_version_id`, `sheet_source`, erro |
+| `ai_providers` | catálogo de fornecedores de IA: `slug`, `display_name`, `env_var_name` (**qual variável guarda a chave — nunca a chave**), `enabled`, ordenação |
+| `ai_models` | catálogo de modelos: `provider_id`, `slug` (o identificador oficial na API do fornecedor), `capabilities text[]` (`{extraction}` hoje, `{image_gen}`/`{video_gen}` depois), `extraction_sparks`, `is_default`, `enabled` |
+| `extractions` | o diário do motor de extração: `entity_id`, `model_id`, `source` (photo/text), `status`, tokens consumidos, `real_cost_cents`, `sparks_charged`, `reference_asset_id` (a foto lida), `source_text` (o texto colado), `summary jsonb` (o placar) |
 
 Sobre `entities.project_id`: **nulo = a entidade vale em todos os projetos do usuário**; preenchido = escopo daquele projeto. O `handle` é um slug minúsculo, único por usuário, validado por constraint no formato `^[a-z0-9][a-z0-9_-]{0,47}$`.
 
@@ -209,6 +234,8 @@ Esta é a linha divisória mais importante da arquitetura: as regras abaixo **n�
 - `entities.active_version_id` usa **FK composta** `(active_version_id, id) → entity_versions (id, entity_id)`: é o banco que impede o `@julia` de apontar, por bug, para uma versão da `@carla`
 - Imagem citada no bloco `imagens_canonicas` de qualquer versão **não pode ser deletada** (trigger em `entity_images`) — deletá-la quebraria um retrato congelado. Imagem referenciada só pelo rascunho continua deletável
 - Salvar versão é **atômico**: a função `public.save_entity_version(entity_id, label)` faz o INSERT do retrato e o UPDATE do ponteiro ativo na mesma transação. Ou as duas escritas acontecem, ou nenhuma — nunca um `@julia` apontando para o retrato errado
+- Registrar e cobrar uma extração é **atômico e com preço do catálogo**: `public.record_extraction(...)` grava a linha em `extractions` e insere o débito no ledger na mesma transação, lendo o preço de `ai_models.extraction_sparks` — a função **não aceita valor do chamador**, porque quem pudesse dizer o preço poderia dizer zero. É `security definer` e valida a posse da personagem contra `auth.uid()`, o que faz esta feature inteira **não precisar da service role**. Recusa com `EX001` (saldo insuficiente), `EX002` (personagem não é do chamador) e `EX003` (modelo não habilitado para extração). Falha da API grava `status = 'failed'` e não cobra — garantido também por constraint
+- O catálogo de IA (`ai_providers`, `ai_models`) tem `SELECT` para `authenticated` e **nenhuma política de escrita**: nesta fase se gerencia por SQL direto, depois pelo painel admin. `extractions` tem só leitura do próprio usuário — as linhas são escritas exclusivamente pela função acima
 
 **A exceção comum a todas as travas de apagamento**: quando a linha correspondente em `auth.users` já não existe, o delete passa. É o sinal de que se trata da cascata de exclusão de conta, e não de reescrita de história. O cadeado protege o passado; não impede o usuário de apagar a própria conta (LGPD). O padrão nasceu na `reject_ledger_delete` e vale hoje para o ledger, para `entity_versions` e para `entity_images`.
 
@@ -246,7 +273,7 @@ A tela está especificada em [`tela-character-sheet.md`](./tela-character-sheet.
 
 Depois de aplicar, **regerar** `src/lib/supabase/database.types.ts` a partir do banco real — não escrever esse arquivo à mão.
 
-As 12 migrations existentes, em ordem de dependência:
+As 14 migrations existentes, em ordem de dependência:
 
 ```
 20260807140000_core_foundation.sql             helper updated_at, profiles, wallets, trigger de cadastro
@@ -261,6 +288,8 @@ As 12 migrations existentes, em ordem de dependência:
 20260807170000_entity_versions.sql             versões de entidade, ponteiro ativo e travas
 20260807180000_index_active_version_fk.sql     índice de cobertura da FK composta do ponteiro
 20260807190000_save_entity_version.sql         salvar versão + mover ponteiro numa transação só
+20260808184059_ai_catalog_and_extractions.sql  catálogo de IA, diário de extrações, cobrança atômica
+20260809005226_calibrate_extraction_price.sql  preço do Sonnet calibrado com custo real
 ```
 
 > **Nota de ambiente.** O `supabase link` está com bug nesta máquina, então a connection string vai explícita na linha de comando. O Jorge aplica manualmente:
@@ -287,9 +316,11 @@ src/
     nodes/                # um componente por tipo de node
     ui/                   # primitivas de UI
   lib/
+    ai/                   # preços por token e câmbio: o custo real de uma chamada
     character-sheet/      # dicionário PT↔EN, schema Zod do sheet, campos, diff
     entities/             # personagens: actions, store, autosave do rascunho
-    providers/            # adapters (interface GenerationProvider)
+    extraction/           # motor: contrato, prompt, validação, aplicação, action
+    providers/            # adapters (ExtractionProvider, GenerationProvider) e leitura de chaves
     supabase/             # clients (server/browser) e helpers
     prompt/               # compilação PT → JSON EN, resolução de @
     sparks/               # conversão centavos ↔ Sparks, débito/estorno
@@ -316,10 +347,13 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=     # SOMENTE servidor — ignora RLS
 
-# Provedores de IA — somente servidor
+# Provedores de IA — somente servidor.
+# O nome de cada uma está registrado em ai_providers.env_var_name; a existência
+# da variável é o que faz o fornecedor aparecer aceso no seletor de modelos.
 GOOGLE_AI_API_KEY=
 OPENAI_API_KEY=
-ANTHROPIC_API_KEY=
+ANTHROPIC_API_KEY=             # em uso: motor de extração
+XAI_API_KEY=
 FAL_KEY=
 ELEVENLABS_API_KEY=
 

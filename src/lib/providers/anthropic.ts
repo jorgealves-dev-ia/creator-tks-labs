@@ -62,7 +62,7 @@ const EXTRACTION_EFFORT = "medium";
 export const anthropicExtractionProvider: ExtractionProvider = {
   slug: PROVIDER_SLUG,
 
-  async extract({ model, input, systemPrompt, jsonSchema }): Promise<ExtractionResult> {
+  async extract({ model, input, systemPrompt }): Promise<ExtractionResult> {
     const apiKey = readProviderKey("ANTHROPIC_API_KEY");
 
     if (!apiKey) {
@@ -100,14 +100,13 @@ export const anthropicExtractionProvider: ExtractionProvider = {
         max_tokens: MAX_TOKENS,
         system: systemPrompt,
         messages: [{ role: "user", content }],
-        // Structured outputs: the answer is constrained to the schema, so the
-        // model cannot wrap it in prose or trail off into commentary. It does not
-        // replace validation — the schema knows the field names, only our own Zod
-        // pass knows the closed lists.
-        output_config: {
-          format: { type: "json_schema", schema: jsonSchema },
-          ...(EFFORT_CAPABLE_MODELS.has(model.slug) ? { effort: EXTRACTION_EFFORT } : {}),
-        },
+        // No structured-output schema: this contract is too big for the feature
+        // (measured — see the note at the top of lib/extraction/prompt.ts). The
+        // prompt asks for the shape and the Zod pass enforces the vocabulary,
+        // which is where the specification always put the rule.
+        ...(EFFORT_CAPABLE_MODELS.has(model.slug)
+          ? { output_config: { effort: EXTRACTION_EFFORT } }
+          : {}),
       });
     } catch (error) {
       throw toProviderError(error);
@@ -121,22 +120,64 @@ export const anthropicExtractionProvider: ExtractionProvider = {
       throw new ProviderError("refused", "the provider declined to analyse this input");
     }
 
+    const textBlocks = response.content.filter((block) => block.type === "text");
+
+    // Every text block, joined — not the first one.
+    //
+    // A model is free to split its answer: a sentence of preamble in one block
+    // and the JSON in the next, or a thinking block ahead of both. Reading only
+    // the first text block found the preamble, threw the JSON away, and reported
+    // the model's apology as the error. Joining costs nothing and cannot be
+    // wrong; the brace scan below picks the object out of whatever arrives.
+    const text = textBlocks.map((block) => block.text).join("\n");
+
+    /** What went wrong, in facts rather than in the model's prose. */
+    const diagnose = (problem: string) =>
+      `${problem}; stop_reason=${response.stop_reason}, blocos_texto=${textBlocks.length}, ` +
+      `tamanho=${text.length}` +
+      (text ? ` (trecho: ${JSON.stringify(text.slice(0, 120))})` : "");
+
     if (response.stop_reason === "max_tokens") {
-      throw new ProviderError("invalid_answer", "the answer was cut off before it finished");
+      throw new ProviderError(
+        "invalid_answer",
+        "the answer was cut off before it finished",
+        diagnose("resposta truncada no limite de tokens"),
+      );
     }
 
-    const text = response.content.find((block) => block.type === "text")?.text;
-
     if (!text) {
-      throw new ProviderError("invalid_answer", "the provider returned no text");
+      throw new ProviderError(
+        "invalid_answer",
+        "the provider returned no text",
+        diagnose("resposta sem nenhum bloco de texto"),
+      );
+    }
+
+    // Without a schema pinning the output, a model can still decide to be
+    // helpful — a code fence, a sentence of preamble. Reading from the first
+    // brace to the last is what makes that harmless instead of fatal, and costs
+    // nothing when the answer is already clean.
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+
+    if (start === -1 || end <= start) {
+      throw new ProviderError(
+        "invalid_answer",
+        "the provider did not return JSON",
+        diagnose("resposta sem nenhum objeto JSON"),
+      );
     }
 
     let parsed: unknown;
 
     try {
-      parsed = JSON.parse(text);
+      parsed = JSON.parse(text.slice(start, end + 1));
     } catch {
-      throw new ProviderError("invalid_answer", "the provider did not return JSON");
+      throw new ProviderError(
+        "invalid_answer",
+        "the provider did not return valid JSON",
+        diagnose("objeto JSON presente mas malformado"),
+      );
     }
 
     if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
@@ -168,19 +209,62 @@ const TEXT_INSTRUCTION =
   "(JSON, lista, texto corrido).";
 
 /**
- * Turns an SDK error into one of our four kinds. Authentication is reported as a
- * configuration problem because that is what it almost always is — a key that is
- * missing, wrong or revoked — and the interface can then say something useful
- * instead of "error 401".
+ * Turns an SDK error into one of our four kinds, keeping the provider's own
+ * explanation alongside ours.
+ *
+ * Authentication is reported as a configuration problem because that is what it
+ * almost always is — a key that is missing, wrong or revoked — and the interface
+ * can then say something useful instead of "error 401".
  */
 function toProviderError(error: unknown): ProviderError {
-  if (error instanceof Anthropic.AuthenticationError || error instanceof Anthropic.PermissionDeniedError) {
-    return new ProviderError("not_configured", "the provider rejected the API key");
+  if (
+    error instanceof Anthropic.AuthenticationError ||
+    error instanceof Anthropic.PermissionDeniedError
+  ) {
+    return new ProviderError(
+      "not_configured",
+      "the provider rejected the API key",
+      detailOf(error),
+    );
   }
 
   if (error instanceof Anthropic.APIError) {
-    return new ProviderError("provider", `the provider returned ${error.status ?? "an error"}`);
+    return new ProviderError(
+      "provider",
+      `the provider returned ${error.status ?? "an error"}`,
+      detailOf(error),
+    );
   }
 
-  return new ProviderError("provider", "the provider could not be reached");
+  return new ProviderError(
+    "provider",
+    "the provider could not be reached",
+    error instanceof Error ? error.message : String(error),
+  );
+}
+
+/**
+ * The sentence the API actually wrote. A 400 body looks like
+ * `{"type":"error","error":{"type":"invalid_request_error","message":"..."}}`,
+ * and that inner message is the whole diagnosis — which field, which rule.
+ * Falls back to the serialised body, then to the SDK's own message.
+ */
+function detailOf(error: InstanceType<typeof Anthropic.APIError>): string {
+  const body = error.error;
+
+  if (body && typeof body === "object") {
+    const inner = (body as { error?: { message?: unknown } }).error;
+
+    if (inner && typeof inner.message === "string") {
+      return inner.message;
+    }
+
+    try {
+      return JSON.stringify(body);
+    } catch {
+      // Falls through to the SDK message below.
+    }
+  }
+
+  return error.message;
 }

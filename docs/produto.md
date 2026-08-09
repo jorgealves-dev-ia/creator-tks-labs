@@ -138,10 +138,11 @@ Entregue e verificado no navegador:
 - Versões: salvar (atômico no banco), ver versão congelada em somente-leitura, ativar versão antiga e carregar uma versão no rascunho
 - Wizard de criação pelo caminho manual
 - Imagens canônicas por upload manual
+- **Motor de extração** (08/08/2026): foto de referência **ou** texto colado de outra plataforma preenchem o DNA visual, com selo verde no que foi visto e amarelo no que foi deduzido — este último com o motivo da dúvida. É a primeira integração de IA do produto e a primeira cobrança real de Sparks. A extração só preenche campos em branco: nada que o usuário decidiu é desfeito por uma máquina.
 
-O que falta desta fase: **o motor de extração por foto** (a UX já está pronta e marcada "em breve" no passo 2 do wizard), a **geração assistida das imagens canônicas** (turnaround e folha de expressões) e o **consumo do `@`** pelos nodes de geração, que depende da Fase 1.
+O que falta desta fase: a **geração assistida das imagens canônicas** (turnaround e folha de expressões) e o **consumo do `@`** pelos nodes de geração, que depende da Fase 1.
 
-Especificações: [`character-sheet.md`](./character-sheet.md), [`versionamento-entidades.md`](./versionamento-entidades.md) e [`tela-character-sheet.md`](./tela-character-sheet.md).
+Especificações: [`character-sheet.md`](./character-sheet.md), [`versionamento-entidades.md`](./versionamento-entidades.md), [`tela-character-sheet.md`](./tela-character-sheet.md) e [`motor-extracao.md`](./motor-extracao.md).
 
 ### Fase 3 — Vídeo e voz
 

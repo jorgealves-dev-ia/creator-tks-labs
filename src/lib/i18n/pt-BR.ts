@@ -131,9 +131,8 @@ export const t = {
         resumo: "Resumo",
       },
       foto: {
-        soon: "Em breve",
         body:
-          "Em breve você vai poder enviar uma foto e o sistema preenche o DNA sozinho — marcando em verde o que viu com clareza e em amarelo o que só deduziu, para você confirmar. Ainda não está pronto.",
+          "Envie uma foto ou cole a descrição de outra plataforma, e o DNA se preenche: verde no que foi visto com clareza, amarelo no que foi só deduzido, para você confirmar. Ou pule e preencha à mão.",
         manual: "Preencher manualmente",
       },
       dnaHint:
@@ -172,6 +171,10 @@ export const t = {
         padroes: "Os padrões que valem quando o bloco de geração não disser outra coisa.",
         narrativa: "Alimenta roteiro e voz. Nunca entra em prompt de imagem.",
       },
+      extract: {
+        open: "Preencher a partir de foto ou texto",
+        close: "Fechar a análise",
+      },
       autosave: {
         savedAt: "rascunho salvo às",
         saving: "salvando rascunho…",
@@ -204,6 +207,69 @@ export const t = {
       },
     },
 
+    /**
+     * The extraction engine, docs/motor-extracao.md §4.5. The same panel serves
+     * step 2 of the wizard and the button on the editor's DNA tab, so its words
+     * live in one place.
+     */
+    extraction: {
+      title: "Preencher a partir de uma referência",
+      subtitle:
+        "A análise lê apenas atributos físicos e nunca tenta identificar ninguém. Ela preenche só os campos em branco — nada que você já definiu é alterado.",
+      sourcePhoto: "Enviar foto",
+      sourceText: "Colar de outra plataforma",
+      photoHint: "JPG, PNG ou WebP, até 5 MB. Uma foto de frente e com boa luz rende mais.",
+      photoChoose: "Escolher foto",
+      photoChange: "Trocar foto",
+      textHint:
+        "Cole o JSON ou a descrição da personagem vinda de outra ferramenta ou de outra IA. O idioma não importa.",
+      textPlaceholder: '{"hair": "long wavy blonde", "eyes": "green"} — ou texto corrido',
+      modelLabel: "Modelo",
+      modelPlaceholder: "Escolha um modelo",
+      missingKeySuffix: "(sem chave)",
+      missingKeyTooltip: "Configure a chave de API para habilitar",
+      /**
+       * Distinct from the one above on purpose: this provider has a key and
+       * still cannot run, because the adapter does not exist yet. Telling the
+       * user to configure a key they already configured would be a lie.
+       */
+      noAdapterSuffix: "(em breve)",
+      noAdapterTooltip: "Integração com este fornecedor ainda não está pronta",
+      costPrefix: "Esta análise custa",
+      balancePrefix: "seu saldo:",
+      run: "Analisar",
+      uploading: "Enviando a foto…",
+      analyzing: "Analisando…",
+      analyzingHint: "Leva alguns segundos. Não feche esta janela.",
+      again: "Analisar outra referência",
+      chargedPrefix: "Cobrado:",
+      summary: {
+        observados: "observados",
+        inferidos: "inferidos",
+        review: "revise os amarelos",
+        vazios: "em branco",
+        preservados: "preservados",
+        marcas: "marcas encontradas",
+      },
+      errors: {
+        noModel: "Escolha um modelo para analisar.",
+        noPhoto: "Escolha uma foto primeiro.",
+        noText: "Cole o texto da personagem primeiro — pelo menos algumas palavras.",
+        notAnImage: "Formato não aceito. Use JPG, PNG ou WebP.",
+        tooLarge: "Esta foto passa de 5 MB. Use uma menor.",
+        uploadFailed: "Não foi possível enviar a foto. Tente de novo.",
+        insufficientPrefix: "Você precisa de",
+        insufficientMiddle: "para esta análise e tem",
+        notConfigured: "Este fornecedor está sem chave de API no servidor.",
+        refused:
+          "O modelo recusou analisar esta referência. Isso acontece; tente outra foto ou outro modelo — nada foi cobrado.",
+        unreadable: "Não foi possível ler a foto enviada.",
+        failed: "A análise não deu certo, e nada foi cobrado. Tente de novo.",
+        invalid: "Não foi possível iniciar a análise. Recarregue a página e tente de novo.",
+        draftFailed: "Não foi possível salvar o rascunho antes de analisar. Tente de novo.",
+      },
+    },
+
     /** Spec §4.1 — the badges are the heart of the system's honesty. */
     estados: {
       observado: {
@@ -214,6 +280,8 @@ export const t = {
         label: "Inferido",
         tooltip:
           "A extração deduziu sem certeza. Não entra nas gerações até você confirmar.",
+        /** Prefix for the reason the engine recorded — decision E3. */
+        motivoPrefix: "Motivo:",
       },
       confirmado: {
         label: "Confirmado",

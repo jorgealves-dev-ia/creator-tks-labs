@@ -55,10 +55,18 @@ export type ExtractionProvider = {
   extract(request: {
     model: ExtractionModel;
     input: ExtractionInput;
-    /** The instructions and the exact closed lists — built from the dictionary. */
+    /**
+     * The whole contract: the instructions, the exact closed lists, and the
+     * shape the answer must have — all built from the dictionary.
+     *
+     * It is the prompt and not a machine-readable schema because the contract
+     * is too large for Anthropic's structured outputs; the note at the top of
+     * lib/extraction/prompt.ts records what was measured. An adapter for another
+     * provider is free to translate it into whatever that provider supports —
+     * the validation that actually enforces the vocabulary lives above this
+     * layer either way.
+     */
     systemPrompt: string;
-    /** JSON Schema the answer must satisfy, built from the same dictionary. */
-    jsonSchema: Record<string, unknown>;
   }): Promise<ExtractionResult>;
 };
 
@@ -73,6 +81,17 @@ export class ProviderError extends Error {
   constructor(
     readonly kind: ProviderErrorKind,
     message: string,
+    /**
+     * The provider's own words about what went wrong, verbatim.
+     *
+     * This exists because of a real failure: the first version of the adapter
+     * turned every API error into "the provider returned 400" and threw the body
+     * away — and the body was the only thing that said *why*. A message we wrote
+     * ourselves can only ever repeat what we already assumed.
+     *
+     * Never contains a credential: it is the response body, not the request.
+     */
+    readonly detail?: string,
   ) {
     super(message);
     this.name = "ProviderError";

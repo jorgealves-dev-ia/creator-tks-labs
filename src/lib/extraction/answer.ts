@@ -122,7 +122,9 @@ export function validateExtraction(
   const fields = new Map<string, ValidatedAnswer>();
 
   for (const field of extractableFields(sheet)) {
-    const parsed = answerSchema(field).safeParse(raw[field.id]);
+    // Read by wire key, stored by field id: the model answers in flat
+    // underscored keys, the sheet knows dotted paths.
+    const parsed = answerSchema(field).safeParse(raw[field.wireKey]);
     const answer = parsed.success ? parsed.data : NOTHING;
 
     // A reason on a confident answer is noise, and a low-confidence answer with

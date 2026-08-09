@@ -30,8 +30,16 @@ import { t } from "@/lib/i18n/pt-BR";
 const NEVER_EXTRACTED = new Set(["genero_apresentacao"]);
 
 export type ExtractableField = {
-  /** Doubles as the JSON key in the model's answer and the sheet's field id. */
+  /** The sheet's field id — also the DOM anchor the review jumps to. */
   readonly id: string;
+  /**
+   * The key this field carries in the model's answer.
+   *
+   * Not the id, because the ids contain dots and a dot reads as a path: asked
+   * for `olhos.cor` the model answers `{"olhos": {"cor": ...}}`, helpfully and
+   * wrongly. Underscores have no such meaning, so the answer stays flat.
+   */
+  readonly wireKey: string;
   /** The label the user sees, given to the model so it knows what it is judging. */
   readonly label: string;
   readonly kind: "list" | "number";
@@ -41,6 +49,11 @@ export type ExtractableField = {
   readonly max?: number;
   readonly field: DnaField;
 };
+
+/** `olhos.cor` -> `olhos_cor`. Unique, because the ids it comes from are. */
+function toWireKey(id: string): string {
+  return id.replaceAll(".", "_");
+}
 
 /**
  * The extractable fields for one sheet.
@@ -52,6 +65,7 @@ export type ExtractableField = {
 export function extractableFields(sheet: CharacterSheet): readonly ExtractableField[] {
   return DNA_FIELDS.filter((field) => !NEVER_EXTRACTED.has(field.id)).map((field) => ({
     id: field.id,
+    wireKey: toWireKey(field.id),
     label: field.label,
     kind: field.kind === "number" ? "number" : "list",
     keys: field.groups(sheet).flatMap((group) => group.options.map((option) => option.key)),

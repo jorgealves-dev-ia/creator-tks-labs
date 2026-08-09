@@ -368,7 +368,23 @@ function SheetEditorDialog({ entityId }: { entityId: string }) {
                     the platform says that to every control at once. */}
                 <fieldset disabled={isViewingVersion} className="min-w-0">
                   {tab === "dna" ? (
-                    <DnaTab sheet={shownSheet} update={update} onConfirm={handleConfirm} />
+                    <DnaTab
+                      sheet={shownSheet}
+                      update={update}
+                      onConfirm={handleConfirm}
+                      // Not offered while a frozen version is on screen: there is
+                      // no draft to fill in, and the fieldset above has already
+                      // disabled every control anyway.
+                      extraction={
+                        isViewingVersion
+                          ? undefined
+                          : {
+                              entityId,
+                              flushDraft: () => saveDraft(entityId),
+                              onExtracted: (extracted) => loadIntoDraft(entityId, extracted),
+                            }
+                      }
+                    />
                   ) : null}
                   {tab === "padroes" ? <PadroesTab sheet={shownSheet} update={update} /> : null}
                   {tab === "narrativa" ? (

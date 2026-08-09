@@ -59,6 +59,7 @@ export function MarksEditor({ sheet, update, onConfirm }: MarksEditorProps) {
             key={`tatuagem-${index}`}
             fieldId={markFieldId("tatuagens", index)}
             estado={tatuagem.estado}
+            motivo={tatuagem.motivo}
             onConfirm={onConfirm}
             onRemove={() =>
               update((draft) => {
@@ -151,6 +152,7 @@ export function MarksEditor({ sheet, update, onConfirm }: MarksEditorProps) {
             key={`piercing-${index}`}
             fieldId={markFieldId("piercings", index)}
             estado={piercing.estado}
+            motivo={piercing.motivo}
             onConfirm={onConfirm}
             onRemove={() =>
               update((draft) => {
@@ -228,6 +230,7 @@ export function MarksEditor({ sheet, update, onConfirm }: MarksEditorProps) {
             key={`outra-${index}`}
             fieldId={markFieldId("outras", index)}
             estado={outra.estado}
+            motivo={outra.motivo}
             onConfirm={onConfirm}
             onRemove={() =>
               update((draft) => {
@@ -325,12 +328,14 @@ function MarkList({ title, addLabel, isEmpty, onAdd, children }: MarkListProps) 
 function MarkCard({
   fieldId,
   estado,
+  motivo,
   onConfirm,
   onRemove,
   children,
 }: {
   fieldId: string;
   estado: Estado;
+  motivo?: string;
   onConfirm?: (fieldId: string) => void;
   onRemove: () => void;
   children: ReactNode;
@@ -344,7 +349,11 @@ function MarkCard({
       data-field-id={fieldId}
       className="scroll-mt-6 rounded-xl border border-line bg-surface p-3"
     >
-      <div className="mb-2 flex justify-end">
+      <div className="mb-2 flex items-center justify-end gap-1">
+        {/* Same reasoning as a DNA field: the badge carries the reason for the
+            doubt, so it stays visible next to the review actions. */}
+        <StateBadge estado={estado} motivo={motivo} />
+
         {isPending && onConfirm ? (
           <PendingActions
             onConfirm={() => onConfirm(fieldId)}
@@ -352,9 +361,7 @@ function MarkCard({
               cardRef.current?.querySelector<HTMLElement>("select, input, button")?.focus()
             }
           />
-        ) : (
-          <StateBadge estado={estado} />
-        )}
+        ) : null}
       </div>
 
       <div className="grid grid-cols-2 gap-2">{children}</div>

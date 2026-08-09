@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { DnaTab } from "@/components/character-sheet/dna-tab";
+import { ExtractionPanel } from "@/components/character-sheet/extraction-panel";
 import { Portrait } from "@/components/character-sheet/identity";
 import { NarrativaTab } from "@/components/character-sheet/narrativa-tab";
 import { PadroesTab } from "@/components/character-sheet/padroes-tab";
@@ -60,6 +61,9 @@ export function CharacterWizard({ onClose, onCreated }: CharacterWizardProps) {
   );
   const updateSheet = useEntitiesStore((state) => state.updateSheet);
   const addVersion = useEntitiesStore((state) => state.addVersion);
+  // The extraction is applied on the server; the draft receives the whole sheet
+  // back, exactly as loading a version into the draft does.
+  const loadIntoDraft = useEntitiesStore((state) => state.loadIntoDraft);
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const saveDraft = useDraftAutosave(entityId);
@@ -130,7 +134,19 @@ export function CharacterWizard({ onClose, onCreated }: CharacterWizardProps) {
             />
           ) : null}
 
-          {step.id === "foto" ? <PhotoStep onManual={() => setStepIndex(2)} /> : null}
+          {step.id === "foto" && entityId ? (
+            <PhotoStep
+              entityId={entityId}
+              flushDraft={() => saveDraft(entityId)}
+              onExtracted={(extracted) => {
+                loadIntoDraft(entityId, extracted);
+                // Straight to the review: the yellows are the point of the
+                // extraction, and the user should meet them immediately.
+                setStepIndex(2);
+              }}
+              onManual={() => setStepIndex(2)}
+            />
+          ) : null}
 
           {step.id === "dna" && character ? (
             <>
@@ -402,23 +418,42 @@ function IdentityStep({ onCreated }: { onCreated: (character: CharacterEntity) =
 }
 
 // ---------------------------------------------------------------------------
-// Step 2 — reference photo (the extraction engine is the next session)
+// Step 2 — the reference: a photo, or text pasted from another platform
 // ---------------------------------------------------------------------------
 
-function PhotoStep({ onManual }: { onManual: () => void }) {
+/**
+ * The extraction engine's first door (decision E4). The manual path stays one
+ * click away and always will: an engine that cannot be skipped is a toll booth,
+ * and plenty of characters are invented rather than observed.
+ */
+function PhotoStep({
+  entityId,
+  flushDraft,
+  onExtracted,
+  onManual,
+}: {
+  entityId: string;
+  flushDraft: () => Promise<boolean>;
+  onExtracted: (sheet: CharacterSheet) => void;
+  onManual: () => void;
+}) {
   return (
-    <div className="mx-auto max-w-md py-6 text-center">
-      <span className="inline-block rounded-md bg-warning/15 px-2 py-0.5 text-[11px] font-medium text-warning">
-        {t.characterSheet.wizard.foto.soon}
-      </span>
-
-      <p className="mt-4 text-xs leading-relaxed text-ink-muted">
+    <div className="mx-auto max-w-md py-2">
+      <p className="text-center text-xs leading-relaxed text-ink-muted">
         {t.characterSheet.wizard.foto.body}
       </p>
 
-      <Button type="button" className="mt-6 h-9 px-4" onClick={onManual}>
-        {t.characterSheet.wizard.foto.manual}
-      </Button>
+      <ExtractionPanel
+        entityId={entityId}
+        flushDraft={flushDraft}
+        onApplied={(sheet) => onExtracted(sheet)}
+      />
+
+      <div className="mt-2 text-center">
+        <Button type="button" variant="ghost" className="h-9 px-4" onClick={onManual}>
+          {t.characterSheet.wizard.foto.manual}
+        </Button>
+      </div>
     </div>
   );
 }

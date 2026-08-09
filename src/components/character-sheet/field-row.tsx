@@ -122,9 +122,15 @@ export function DnaFieldRow({ field, sheet, update, onConfirm }: DnaFieldRowProp
         onDetailsChange={setDetails}
         badge={
           isPending && onConfirm ? (
-            <PendingActions onConfirm={() => onConfirm(field.id)} onEdit={focusControl} />
+            // The badge stays beside the actions rather than being replaced by
+            // them: it is what carries the reason for the doubt in its tooltip,
+            // and the review is exactly when that reason is worth reading.
+            <span className="flex shrink-0 items-center gap-1">
+              <StateBadge estado={value.estado} motivo={value.motivo} />
+              <PendingActions onConfirm={() => onConfirm(field.id)} onEdit={focusControl} />
+            </span>
           ) : (
-            <StateBadge estado={value.estado} />
+            <StateBadge estado={value.estado} motivo={value.motivo} />
           )
         }
       >

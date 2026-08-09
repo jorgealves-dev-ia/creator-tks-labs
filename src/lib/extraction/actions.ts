@@ -12,9 +12,13 @@ import {
   MAX_IMAGE_BYTES,
   MAX_SOURCE_TEXT_LENGTH,
 } from "@/lib/extraction/contract";
-import { buildJsonSchema, buildSystemPrompt } from "@/lib/extraction/prompt";
+import { buildSystemPrompt } from "@/lib/extraction/prompt";
 import { isProviderConfigured } from "@/lib/providers/keys";
-import { findExtractionProvider, hasExtractionAdapter } from "@/lib/providers/registry";
+import {
+  extractionProviderStatus,
+  findExtractionProvider,
+  type ProviderStatus,
+} from "@/lib/providers/registry";
 import { ProviderError, type ExtractionInput } from "@/lib/providers/types";
 import { CENTS_PER_SPARK } from "@/lib/sparks";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -115,17 +119,16 @@ export type ExtractionModelOption = {
 export type ExtractionProviderOption = {
   slug: string;
   displayName: string;
-  /** Lit up in the selector: a key exists on the server AND an adapter exists. */
-  configured: boolean;
+  status: ProviderStatus;
   models: ExtractionModelOption[];
 };
 
 /**
- * The providers and models that can extract, with whether each is usable.
+ * The providers and models that can extract, with why each is or is not usable.
  *
- * `configured` is computed here, on the server, and crosses to the browser as a
- * boolean — decision E5. The key never leaves this process, and the name of the
- * variable that holds it is not sent either: the interface has no use for it.
+ * The status is computed here, on the server, from the key and the registry —
+ * decision E5. The key never leaves this process, and the name of the variable
+ * that holds it is not sent either: the interface has no use for it.
  */
 export async function listExtractionProviders(): Promise<ExtractionProviderOption[]> {
   const { supabase } = await requireSession();
@@ -145,8 +148,7 @@ export async function listExtractionProviders(): Promise<ExtractionProviderOptio
     .map((provider) => ({
       slug: provider.slug,
       displayName: provider.display_name,
-      configured:
-        hasExtractionAdapter(provider.slug) && isProviderConfigured(provider.env_var_name),
+      status: extractionProviderStatus(provider.slug, provider.env_var_name),
       models: (provider.ai_models ?? [])
         .filter(
           (model) =>
@@ -319,10 +321,27 @@ export async function runExtraction(input: unknown): Promise<ExtractionResult> {
       model: { slug: model.slug },
       input: providerInput,
       systemPrompt: buildSystemPrompt(sheet),
-      jsonSchema: buildJsonSchema(sheet),
     });
   } catch (error) {
     const kind = error instanceof ProviderError ? error.kind : "provider";
+
+    // The provider's own sentence, not our summary of it. A failure that only
+    // says "returned 400" costs an afternoon; the API's own message names the
+    // field and the rule. Kept in the log so a failed extraction can be
+    // diagnosed months later, from the row alone.
+    const detail =
+      error instanceof ProviderError
+        ? `${error.message}: ${error.detail ?? "no detail"}`
+        : error instanceof Error
+          ? error.message
+          : String(error);
+
+    // In development it also goes to the terminal, where whoever is looking at
+    // the screen is also looking. Never contains a credential: this is the
+    // response body, never the request.
+    if (process.env.NODE_ENV !== "production") {
+      console.error(`[extraction] ${model.slug} failed — ${detail}`);
+    }
 
     // Recorded, and free: an API failure is nobody's bill.
     await supabase.rpc("record_extraction", {
@@ -332,7 +351,7 @@ export async function runExtraction(input: unknown): Promise<ExtractionResult> {
       p_status: "failed",
       p_reference_asset_id: referenceAssetId ?? undefined,
       p_source_text: sourceText ?? undefined,
-      p_error_message: error instanceof Error ? error.message.slice(0, 500) : "unknown",
+      p_error_message: detail.slice(0, 500),
     });
 
     return {

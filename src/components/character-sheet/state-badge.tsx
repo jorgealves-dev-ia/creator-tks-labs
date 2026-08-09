@@ -35,12 +35,22 @@ const STYLES: Record<Estado, { className: string; label: string; tooltip: string
   },
 };
 
-export function StateBadge({ estado }: { estado: Estado }) {
+/**
+ * `motivo` is the reason the extraction hesitated (decision E3). It rides in the
+ * tooltip rather than on the screen: the badge already says "not sure", and the
+ * *why* is what the user wants exactly once, at the moment they decide.
+ */
+export function StateBadge({ estado, motivo }: { estado: Estado; motivo?: string }) {
   const style = STYLES[estado];
+
+  const tooltip =
+    estado === "inferido" && motivo
+      ? `${style.tooltip} ${t.characterSheet.estados.inferido.motivoPrefix} ${motivo}`
+      : style.tooltip;
 
   return (
     <span
-      title={style.tooltip}
+      title={tooltip}
       className={`inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5
                   text-[11px] font-medium ${style.className}`}
     >

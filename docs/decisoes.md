@@ -307,3 +307,218 @@ Ponto de parada com a tela inteira entregue, em três etapas, cada uma verificad
 **Próximo passo combinado:** o **motor de extração por foto** — o passo 2 do wizard, hoje marcado "em breve". A UX já está especificada na seção 7 de [`tela-character-sheet.md`](./tela-character-sheet.md) e o lugar dele no fluxo já existe, então o motor encaixa sem retrabalho de tela. Ele é o que finalmente produz campos `inferido` de verdade: até aqui o fluxo dos amarelos só pôde ser exercitado marcando um campo à mão no banco.
 
 **Estado do repositório na pausa:** árvore limpa, `master` sincronizada com o remoto, 12 migrations aplicadas e verificadas, `database.types.ts` regerado do banco.
+
+---
+
+## Motor de extração e infraestrutura de IA
+
+> As seis decisões abaixo estão registradas na seção 2 de [`motor-extracao.md`](./motor-extracao.md). Foram tomadas e implementadas em 08/08/2026.
+
+### 08/08/2026 — E1: multi-fornecedor desde o berço, Anthropic primeiro ✅ aprovado
+
+Catálogo de fornecedores (Anthropic, OpenAI, Google, xAI) e seus modelos **no banco**, em `ai_providers` e `ai_models`. Só a Anthropic nasce configurada; as demais ficam visíveis porém apagadas no seletor até terem chave — o usuário vê o caminho adiante em vez de uma lista curta e inexplicada.
+
+**Por quê no banco e não em `config/models.json`, como dizia a Decisão 6 da arquitetura.** Porque este catálogo é exatamente o que o futuro painel super admin vai gerenciar, e painel administrativo não edita arquivo do repositório. Preço de modelo passa a mudar por SQL, sem deploy. O princípio "data-driven, nunca hardcoded" continua o mesmo; só o lugar do dado mudou, e mudou para onde ele pode ser editado sem release. A Decisão 6 foi corrigida no documento.
+
+A coluna `capabilities text[]` é o que faz uma tabela só servir o produto inteiro: `{extraction}` hoje, `{image_gen}` e `{video_gen}` quando a geração chegar.
+
+---
+
+### 08/08/2026 — E2: extração debita Sparks e registra o custo real ✅ aprovado
+
+Preço fixo em Sparks por extração, lido do catálogo, debitado no ledger **apenas no sucesso**. Cada extração grava tokens consumidos e custo real calculado — a matéria-prima da calibração de preço e do futuro dashboard.
+
+Preço inicial semeado: **Sonnet 10 ⚡** (o chute educado da spec, mantido de propósito), Opus 30 ⚡, Haiku 4 ⚡. A conta grossa diz que 10 ⚡ está na fronteira do custo real de uma foto no Sonnet — e é exatamente por isso que a tabela `extractions` existe: para o preço deixar de ser chute em uma dúzia de extrações.
+
+**Dois juízes da escolha de `effort: "medium"` no adaptador** (em vez do `high` que é o padrão da API): `real_cost_cents` diz se ficou barato, e a **taxa de inferidos** diz se ficou bom. Um `effort` baixo demais aparece como excesso de amarelos antes de aparecer na conta.
+
+---
+
+### 08/08/2026 — E3: amarelo com motivo ✅ aprovado
+
+Todo campo `inferido` carrega uma frase curta do porquê da dúvida ("luz amarelada, cor dos olhos incerta"), no tooltip do selo durante a revisão. Campo novo e opcional `motivo` no envelope, compatível com todo sheet gravado antes dele.
+
+O motivo é **apagado quando o campo é confirmado**: ele descrevia uma hesitação que deixou de existir, e um campo confirmado explicando por que já foi incerto é ruído.
+
+Consequência de tela que não estava prevista: durante a revisão, o selo amarelo era **substituído** pelos botões Confirmar/Editar — ou seja, o tooltip com o motivo não apareceria justo no momento em que ele importa. O selo passou a conviver com as ações, em vez de dar lugar a elas.
+
+---
+
+### 08/08/2026 — E4: duas portas, uma regra ✅ aprovado
+
+Extração disponível no passo 2 do wizard e no botão da aba DNA do editor, servidos pelo **mesmo componente**: duas cópias dessa tela divergiriam, e a segunda a divergir seria a que esquece de dizer o custo.
+
+A regra inegociável: extração preenche **apenas campos `vazio`**. `observado`, `inferido`, `confirmado` e o gênero são preservados e contados no resumo. É isso que torna seguro rodar o motor duas vezes, e seguro apertar o botão numa personagem já meio preenchida — nada que você decidiu é desfeito por uma máquina.
+
+Para as marcas (tatuagens, piercings, pintas), "só o que está vazio" só pode significar uma coisa: **lista que já tem item fica intocada**. Não existe vaga por item para estar vazia, e mesclar numa lista que o usuário curou seria exatamente a sobrescrita que a regra proíbe.
+
+---
+
+### 08/08/2026 — E5: chave em variável de ambiente, catálogo no banco ✅ aprovado
+
+O banco guarda o catálogo, inclusive **o nome da variável** que contém a chave (`ai_providers.env_var_name`). A chave secreta vive fora do banco, e "configurado" é calculado no servidor pela existência da variável, viajando para o navegador como **booleano**.
+
+A trava não é disciplina, é compilação: `lib/providers/keys.ts` — único lugar do código que lê uma chave — importa `server-only`. **Provado nesta sessão:** um componente de tela importando esse arquivo derruba o build com `'server-only' cannot be imported from a Client Component module`.
+
+Efeito colateral bom: como o débito no ledger virou função no banco (abaixo), esta feature inteira **não precisa da service role**.
+
+---
+
+### 08/08/2026 — E6: duas fontes, um motor ✅ aprovado
+
+A extração aceita foto **ou** texto colado (JSON ou descrição vinda de outra plataforma ou de outra IA). O pipeline é idêntico: mapear para as chaves das listas fechadas, marcar estados com motivo, validar contra o dicionário, preencher só vazios. Importar um character sheet de outra ferramenta é colar o texto. Preço igual nas duas fontes na v1.
+
+---
+
+### 08/08/2026 — Registrar e cobrar uma extração é função no Postgres
+
+**Detalhe:** migration `20260808184059_ai_catalog_and_extractions.sql`
+
+Mesmo precedente do `save_entity_version`: gravar a linha em `extractions` e inserir o débito no ledger são duas escritas que precisam ser uma. Se o débito passa e o registro falha, cobramos sem prova do que foi pago.
+
+Duas propriedades que a função ganha por ser `security definer` e por ler o catálogo:
+
+1. **O preço não é parâmetro.** A função recebe o id do modelo e busca `ai_models.extraction_sparks` — quem pudesse dizer o preço poderia dizer zero.
+2. **Não precisamos da service role.** A função valida a posse da personagem contra `auth.uid()` e é a única coisa que escreve no ledger, então nenhuma chave de administrador precisa existir no código desta feature.
+
+Três recusas com código próprio: `EX001` saldo insuficiente, `EX002` personagem não é do chamador, `EX003` modelo não habilitado para extração.
+
+Adicionada também `ledger_transactions.extraction_id`, espelhando o `generation_id` que já existia: sem ela, um débito e sua extração nunca poderiam ser reconciliados, e o dashboard futuro não responderia "o que cobramos por esta análise?".
+
+---
+
+### 08/08/2026 — A ordem das operações do motor é a especificação de segurança dele
+
+Cada passo existe para impedir um jeito específico de estar errado, e a ordem é a parte que importa:
+
+1. **saldo antes da chamada** — ninguém ouve "saldo insuficiente" depois de já termos gasto dinheiro em nome dele
+2. **foto registrada antes da chamada** — uma extração que falhou ainda responde "o que ela tentou ler?"
+3. **validação antes de tocar o sheet** — vocabulário inventado nunca chega ao rascunho
+4. **cobrança e registro na mesma transação** — extração paga é sempre extração registrada
+5. **sheet devolvido de qualquer jeito** — o autosave do rascunho é a rede de segurança, então uma extração paga nunca se perde num write que falhou
+
+O rascunho é lido do banco, não enviado pelo navegador — mesmo motivo pelo qual uma versão é fotografada do rascunho gravado. Por isso a tela dá flush no autosave antes de chamar o motor.
+
+---
+
+### 08/08/2026 — Verificação por sabotagem virou o método de teste do motor
+
+Antes de qualquer chamada real, o pipeline foi exercitado com uma resposta de modelo deliberadamente inválida: chave inexistente no dicionário, altura fora da faixa, confiança baixa com motivo, confiança alta, marca sem conteúdo e marca válida. Cada regra respondeu como devia — inventado e fora de faixa viraram campo vazio, baixa virou `inferido` com motivo, alta virou `observado`, marca vazia foi descartada.
+
+O que isso comprou: as regras de honestidade do sistema foram provadas **antes** de existir tela e antes de gastar um centavo de API. Testar o caminho feliz prova que funciona; testar o caminho sabotado prova que **as travas** funcionam — e são as travas que fazem este produto valer algo.
+
+---
+
+### 08/08/2026 — Pendências e roadmap registrados do motor de extração
+
+| Pendência | Quando | Origem |
+|---|---|---|
+| **Painel super admin** — gerenciamento de fornecedores e chaves de IA, usuários ativos, métricas SaaS (MRR etc.). Exigência já cumprida: `ai_providers`, `ai_models` e `extractions` nasceram sendo fonte de leitura dele | fase de monetização / operação | seção 2 de [`motor-extracao.md`](./motor-extracao.md) |
+| ~~Calibrar o preço em Sparks do Sonnet~~ — ✅ **decidido em 08/08/2026: 20 ⚡**, com os dados reais. Ver a entrada de calibração abaixo | feito | decisão E2 |
+| **Reavaliar o preço do Haiku** — custa 4 ¢ e cobra 4 ⚡, margem zero, com acerto comparável ao do Opus na mesma entrada | quando houver volume | calibração de 08/08/2026 |
+| **Faxina de fotos de extrações falhas** — a referência de uma extração que falhou é guardada de propósito (é a prova do que o motor leu), mas nada as remove depois | quando o volume justificar | sessão de 08/08/2026 |
+| **Chaves trazidas pelo usuário**, com armazenamento criptografado — a estrutura já recebe | quando houver terceiros | decisão E5 |
+| **Extração de múltiplas fotos combinadas** — a v1 é uma foto | refinamento futuro | seção 6 de [`motor-extracao.md`](./motor-extracao.md) |
+| **Adaptadores de OpenAI, Google e xAI** — e, junto de cada um, conferir o identificador do modelo na documentação oficial: os semeados para esses três estão marcados no SQL como **não verificados** | quando houver chave | decisão E1 |
+| **Compra de Sparks de verdade** | fase de monetização | seção 6 de [`motor-extracao.md`](./motor-extracao.md) |
+
+---
+
+### 08/08/2026 — O contrato com o modelo é o prompt, não um JSON Schema estrito
+
+**Medido contra a API real, não suposto.** A primeira versão do adaptador travava a resposta com o *structured outputs* da Anthropic. A API recusou com 400, e a recusa foi estreitada hipótese por hipótese:
+
+| O que foi tentado | Resposta da API |
+|---|---|
+| `anyOf: [{enum}, {null}]` por campo | *"too many parameters with union types (29 … limit: 16)"* |
+| `enum` contendo `null`, sem nenhuma união | *"the compiled grammar is too large"* |
+| strings puras, sem enum nenhum | ainda *"too large"* |
+| busca binária no número de campos | 15 campos passam, 20 falham |
+
+Vinte e seis campos não cabem nesse recurso, em forma nenhuma. Então a rigidez ficou onde a spec sempre disse que a regra mora (§4.3): a validação Zod contra o dicionário. Isso não é perda — o schema só tornava a violação *rara*; o Zod é o que a torna **impossível de gravar**. O adaptador passou a extrair o JSON entre a primeira `{` e a última `}`, para uma cerca de código ou uma frase de preâmbulo não custarem a análise inteira.
+
+**Efeito colateral que quase passou batido:** sem schema, o modelo leu os pontos das nossas chaves (`olhos.cor`) como caminho e devolveu `{"olhos": {"cor": …}}` — prestativo e errado. As chaves do fio viraram `olhos_cor`; o ponto não sobrevive à fronteira, o id do campo continua com ele.
+
+Registro para quem for escrever o próximo adaptador: a interface entrega **o contrato em prosa**, e cada fornecedor traduz para o que suportar. A validação que de fato garante o vocabulário está acima da camada de adaptadores, então nenhum fornecedor precisa ser confiável para o sistema ser honesto.
+
+---
+
+### 08/08/2026 — Erro de provedor sem o corpo da resposta é bug, não simplificação
+
+O adaptador transformava toda falha da API em `"the provider returned 400"` e **descartava o corpo** — que era a única coisa que dizia *por quê*. Custou uma rodada inteira de diagnóstico às cegas.
+
+Regra que fica: erro de provedor carrega a frase que o provedor escreveu, verbatim. `ProviderError` ganhou o campo `detail`; em desenvolvimento ele vai para o terminal, e sempre vai para `extractions.error_message`. Nunca contém credencial — é o corpo da **resposta**, nunca o do pedido.
+
+Uma mensagem que nós mesmos escrevemos só consegue repetir o que já supúnhamos.
+
+---
+
+### 08/08/2026 — Retentativa não sobe a foto de novo
+
+Durante a falha acima, cada tentativa subiu uma cópia nova da mesma foto ao Storage. O painel passou a lembrar o caminho do upload enquanto o arquivo escolhido não muda: retentar custa uma chamada de API e mais nada.
+
+A foto de uma extração **falha** continua guardada de propósito — ela é a prova do que o motor tentou ler. Limpeza de referências antigas é faxina periódica, não trabalho do caminho de erro.
+
+---
+
+### 08/08/2026 — Primeira medição de custo real: 10 ⚡ está abaixo do custo
+
+Caminho feliz verificado contra a API real, nas duas fontes, com o código de produção:
+
+| Fonte | Placar | Tokens (in/out) | Custo real |
+|---|---|---|---|
+| Texto colado (JSON de outra plataforma) | 13 observados · 1 inferido · 9 vazios · 3 marcas | 2.764 / 1.689 | **19 centavos** |
+| Foto (gradiente sintético, sem rosto) | 0 · 0 · 23 vazios | 2.572 / 824 | **12 centavos** |
+
+Duas coisas que esses números provam além do custo. O comprimento do cabelo voltou **inferido** com o motivo *"o termo 'long' não ancora o comprimento exato no corpo"* — a decisão E3 funcionando exatamente como escrita. E a foto sem rosto devolveu **tudo vazio**: o motor não inventou nada onde não havia o que ver, que é a regra 4 do prompt valendo na prática.
+
+O custo, porém, contradiz o chute: cobramos 10 ⚡ = 10 centavos e gastamos 19. O gasto é dominado pela **saída** (1.689 tokens ≈ 14 dos 19 centavos), porque a resposta tem 26 chaves e o `effort: medium` ainda pensa antes. Decisão de preço é do Jorge; os caminhos são subir o preço do Sonnet, baixar o `effort` e medir de novo, ou aceitar o prejuízo enquanto é só desenvolvimento.
+
+> Nota de leitura: `real_cost_cents` usa o preço de tabela do Sonnet (US$ 3/15). Até 31/08/2026 vale o promocional (US$ 2/10), então a fatura real é ~2/3 do registrado — o registro erra para cima de propósito.
+
+---
+
+### 08/08/2026 — Preço calibrado: Sonnet a 20 ⚡, `effort` medium mantido ✅ decidido
+**Migration:** `20260809005226_calibrate_extraction_price.sql`
+
+Decisão do Jorge com os dados na mão, substituindo o chute educado de 10 ⚡ da especificação. Os custos reais medidos:
+
+| Modelo | Tokens (in/out) | Custo real | Preço |
+|---|---|---|---|
+| Sonnet, texto colado | 2.764 / 1.689 | 19 ¢ | **20 ⚡** |
+| Sonnet, foto | 2.572 / 824 | 12 ¢ | **20 ⚡** |
+| Opus, texto colado | 2.724 / 1.130 | 24 ¢ | 30 ⚡ |
+| Haiku, texto colado | 2.097 / 1.021 | 4 ¢ | 4 ⚡ |
+
+Vinte deixa margem no preço de tabela da Anthropic e margem folgada no promocional que vale até 31/08/2026 — ou seja, a virada de preço não obriga a mexer de novo.
+
+**`effort` fica em medium**, e não cai para low, porque a **taxa de inferidos é qualidade do produto**, não linha de custo. Uma análise mais barata que hesita mais só transfere o trabalho para quem revisa os amarelos.
+
+**Tratamento do seed.** O valor vivo é 20; o seed de `20260808184059` continua dizendo 10, porque é história do que foi aplicado. A calibração virou **migration própria** para que um reset futuro reproduza a decisão em vez de regredir ao chute. Regra que fica: preço de modelo muda por migration, não por UPDATE avulso no painel.
+
+**Dado registrado para a próxima calibração:** o Haiku custa 4 ¢ e é cobrado 4 ⚡ — margem zero. E na mesma entrada ele acertou tanto quanto o Opus (7 observados contra 6). Vale reavaliar preço e posição dele quando houver volume.
+
+---
+
+### 08/08/2026 — Dois bugs achados pelo Jorge no teste de navegador
+
+**O parser lia só o primeiro bloco de texto da resposta.** Extração com Opus falhava, e a evidência foi o `error_message` recém-instrumentado: gravou *"Desculpe — aqui está a ficha:"*. O modelo tinha respondido — em **dois blocos de texto**, um de preâmbulo e outro com o JSON. O `.find()` pegava o primeiro, não achava chave nenhuma e reportava o pedido de desculpas do modelo como se fosse o erro.
+
+Agora todos os blocos de texto são concatenados antes da varredura de chaves: custa nada e não tem como estar errado, seja qual for a forma que chegar. Verificado contra a API real — Opus devolve `thinking` + `text`, Haiku embrulha em cerca ```json, e os dois passam. O prompt também ficou mais literal ("o primeiro caractere é `{` e o último é `}`").
+
+**Mensagem de erro passou a dizer a causa técnica.** Em vez do início da prosa do modelo, o `error_message` agora traz `stop_reason`, quantidade de blocos de texto e tamanho — com um trecho curto ao final como evidência, não como diagnóstico. A pergunta "por que falhou?" tem que ser respondida pela linha do banco, sozinha.
+
+**Elegibilidade de fornecedor tem duas condições e duas explicações.** Com a `OPENAI_API_KEY` no ambiente, a OpenAI acenderia no seletor sem existir adaptador. A regra já exigia chave **e** adaptador, mas o rótulo mentiria: diria "configure a chave" para quem acabou de configurá-la. Agora o status é `ready` / `missing_key` / `no_adapter`, e um fornecedor sem adaptador aparece como **"(em breve)"**. A derivação mora em `lib/providers/registry.ts`, junto do registro que responde metade da pergunta — e onde pode ser exercitada sem precisar de sessão.
+
+Princípio que sai daqui: **modelo no catálogo ou funciona, ou não fica selecionável.** Opus e Haiku foram validados com chamada real antes deste commit.
+
+---
+
+### 08/08/2026 — Registrados para a conversa da geração canônica (a próxima)
+
+**Folha única vs. vistas separadas.** Oferecer as duas formas de gerar as imagens canônicas: por vista (um slot de cada vez, trocável individualmente) e folha única em grade, no estilo do character sheet do Magnific, numa geração só. Não são excludentes — o desenho fino é assunto daquela conversa. A coluna de imagens canônicas já existe com os seis slots e o upload manual, então as duas formas encaixam sem retrabalho de tela.
+
+**Prévia do prompt compilado.** O compilador das 10 regras da seção 6 de [`character-sheet.md`](./character-sheet.md) nasce naquela conversa, e com ele o painel "Prompt compilado (prévia)" no editor: o JSON em inglês visível ao vivo. Visível sempre, editável nunca como texto no nível do DNA — edição de prompt acontece nos nodes de geração, preservando as listas fechadas. O dicionário PT↔EN já está pronto e é a fonte única dessa tradução; o motor de extração acabou de provar que ele serve as duas pontas sem divergir.
+
+---
+
