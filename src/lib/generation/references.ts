@@ -13,7 +13,13 @@
  * code so they cannot drift apart.
  */
 
-export type ReferenceKind = "produto" | "roupa" | "cenario" | "pose" | "outro";
+export type ReferenceKind =
+  | "produto"
+  | "roupa"
+  | "cenario"
+  | "pose"
+  | "estilo_visual"
+  | "outro";
 
 /** Where an attached image came from. Audit only; it changes no behaviour. */
 export type ReferenceOrigin = "personagem" | "upload" | "galeria" | "resultado";
@@ -76,6 +82,18 @@ export const REFERENCE_KINDS = [
     en: "the pose shown in reference image {n}",
     fidelidade:
       "Match the body position and limb placement of reference image {n} exactly",
+  },
+  {
+    // The first kind about the *how* rather than the *what*. The clause names
+    // what to match (style, mood, grading, light) and forbids what to copy
+    // (subject, content) — without the prohibition, "use the style" degenerates
+    // into "copy the image".
+    key: "estilo_visual",
+    pt: "Estilo visual",
+    en: "the visual style of reference image {n}",
+    fidelidade:
+      "Match the visual style, mood, color grading and lighting of reference " +
+      "image {n} — do not copy its subject or content",
   },
   { key: "outro", pt: "Outro", en: "reference image {n}", fidelidade: null },
 ] as const satisfies readonly ReferenceKindOption[];
