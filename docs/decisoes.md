@@ -877,3 +877,30 @@ O que os dados sustentam é mais simples e já era a decisão registrada: **o fi
 
 **Método que fica:** quando uma hipótese sobre o filtro aparecer, ela é testável contra a própria tabela `generations` — cena, referências, modelo e resultado estão todos lá. Registrar a hipótese sem conferir seria transformar uma coincidência em regra do projeto.
 
+
+### 09/08/2026 — Fechado: a recusa da praia era política do provedor, e só
+
+O discriminador fechou a questão em uso real. Uma geração **através de um bloco encadeado**, com as referências vindas da cadeia, gerou normalmente e com o pijama fiel à referência — mesmo caminho de código, mesma personagem, mesmas mecânicas de referência. A cláusula de foto única também apareceu funcionando nas gerações novas.
+
+Ou seja: **as seis recusas da praia não tinham nada de nosso.** Não eram o encadeamento, não eram as referências acumuladas, não era a cláusula nova. Era política de conteúdo do provedor, aplicada a uma vizinhança específica de cena.
+
+Isso encerra a investigação e confirma, com a maior amostra que o projeto já teve, o que estava registrado desde a Etapa B: **o filtro é clima, não regra** — e o produto responde a ele com mensagem honesta, reformulação e troca de modelo, nunca com um erro genérico e nunca com cobrança.
+
+---
+
+### 09/08/2026 — Roadmap: conteúdo de moda praia e corpo vira requisito de plataforma no SaaS 📌 registrado
+
+**Decisão do Jorge sobre onde esta questão pertence.** Hoje a recusa ocasional é um incômodo do fundador testando o próprio produto: ele reformula, troca de modelo, segue. Quando o Creator TKS Labs abrir a terceiros, isso deixa de ser incidente e vira **requisito de plataforma** — porque o público-alvo é social commerce de moda e lifestyle, e moda praia é categoria central de TikTok Shop e Shopee, não caso extremo.
+
+Um vendedor de biquíni que recebe "recusado" três vezes não reformula: ele conclui que a ferramenta não serve para o produto dele. E terá razão, se a ferramenta não tiver nada a dizer além de "tente de novo".
+
+Três direções, todas do Jorge, para a conversa daquele cenário:
+
+- **Orientação na tela** — o produto sabe quais vizinhanças de cena recusam mais; deveria ajudar a escrever antes da recusa, não só explicar depois. É "a tela é o manual" aplicado a um comportamento que não é nosso mas é nosso problema
+- **Escolha de provedor por tolerância de filtro** — o catálogo já é multi-fornecedor por capability, e a tolerância varia de modelo para modelo de forma mensurável. Falta a tolerância ser um **dado do catálogo**, calibrado como o preço foi, em vez de folclore
+- **Retentativa assistida** — reformular funciona e está provado; hoje o usuário precisa saber disso e inventar a reformulação sozinho
+
+**O que já está pronto para esse cenário, e não é pouco:** recusa não cobra (constraint), recusa tem classificação própria (`refused`) e mensagem própria, cada tentativa fica gravada em `generations` com cena, modelo e resultado — que é exatamente a matéria-prima para calibrar tolerância por modelo do mesmo jeito que `real_cost_cents` calibrou preço.
+
+**Decisão fica para lá.** Construir orientação e retentativa assistida agora seria otimizar para um usuário que não existe, com base num volume que não temos — e o registro aqui existe para que, quando ele existir, ninguém precise redescobrir nem o problema nem as evidências.
+
