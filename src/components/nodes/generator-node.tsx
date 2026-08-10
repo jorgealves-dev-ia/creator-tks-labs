@@ -9,7 +9,13 @@ import { ReferenceStrip, type ReferenceEntry } from "@/components/nodes/referenc
 import { useImageCatalog } from "@/components/nodes/use-image-catalog";
 import { defaultModelId, findModel, ModelSelect } from "@/components/ui/model-select";
 import { signAssetUrls } from "@/lib/assets/actions";
-import { ESTILO_RENDERIZACAO, estiloOption } from "@/lib/character-sheet/dictionary";
+import {
+  ANGULO_CAMERA,
+  ESTILO_RENDERIZACAO,
+  estiloOption,
+  EXPRESSAO,
+  ILUMINACAO,
+} from "@/lib/character-sheet/dictionary";
 import { useReferencePicker } from "@/lib/canvas/reference-picker-store";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { useEntitiesStore } from "@/lib/entities/store";
@@ -47,6 +53,13 @@ export type GeneratorNodeData = {
   presetId?: string;
   /** null (or absent) means "inherit the character's style" — rule 11. */
   estiloKey?: string | null;
+  /**
+   * The scene adjustments (§5.27 and §6 rule 4). Null or absent means Auto —
+   * the prompt and the character decide, exactly as before these existed.
+   */
+  anguloKey?: string | null;
+  iluminacaoKey?: string | null;
+  expressaoKey?: string | null;
   /** The images attached to this block, in the order they will be numbered. */
   references?: ReferenceEntry[];
   lastAssetId?: string | null;
@@ -78,6 +91,17 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   const prompt = data.prompt ?? "";
   const presetId = data.presetId ?? DEFAULT_PRESET_ID;
   const estiloKey = data.estiloKey ?? null;
+  const anguloKey = data.anguloKey ?? null;
+  const iluminacaoKey = data.iluminacaoKey ?? null;
+  const expressaoKey = data.expressaoKey ?? null;
+
+  const activeAdjustments = [anguloKey, iluminacaoKey, expressaoKey].filter(
+    (key) => key !== null,
+  ).length;
+
+  // Initial state only: a block reopened with a saved adjustment shows it
+  // without a click, the same way a field with details already open does.
+  const [adjustmentsOpen, setAdjustmentsOpen] = useState(activeAdjustments > 0);
 
   // Resolved rather than stored: writing a default into the node on mount would
   // mark the canvas dirty just for having been opened.
@@ -157,6 +181,9 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
       modelId,
       presetId,
       estiloKey,
+      anguloKey,
+      iluminacaoKey,
+      expressaoKey,
       references,
     });
 
@@ -353,6 +380,125 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
               ))}
             </select>
           </div>
+        </div>
+
+        {/* Rule 4 of §6, exercised. Unlike the style selector, "Auto" here is a
+            plain word on purpose: showing the inherited value would be honest
+            only in "padrões" mode — in a directed scene the sheet's default
+            does not enter at all, so a label promising it would lie half the
+            time. */}
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => setAdjustmentsOpen((current) => !current)}
+            aria-expanded={adjustmentsOpen}
+            className="nodrag flex items-center gap-1.5 text-[11px] font-medium text-ink-muted
+                       transition-colors hover:text-ink"
+          >
+            <svg
+              viewBox="0 0 10 10"
+              className={`size-2.5 transition-transform ${adjustmentsOpen ? "rotate-90" : ""}`}
+              aria-hidden
+            >
+              <path d="M3 1l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+            {copy.node.sceneAdjustments}
+            <span className="font-normal text-ink-faint">
+              {" · "}
+              {!adjustmentsOpen && activeAdjustments > 0
+                ? `${activeAdjustments} ${copy.node.sceneAdjustmentsCountSuffix}`
+                : copy.node.sceneAdjustmentsOptional}
+            </span>
+          </button>
+
+          {adjustmentsOpen ? (
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <div className="col-span-2">
+                <label
+                  htmlFor={`angle-${id}`}
+                  className="mb-1 block text-[11px] font-medium text-ink-muted"
+                >
+                  {copy.node.cameraAngleLabel}
+                </label>
+                <select
+                  id={`angle-${id}`}
+                  value={anguloKey ?? ""}
+                  disabled={busy}
+                  onChange={(event) =>
+                    updateNodeData(id, {
+                      anguloKey: event.target.value === "" ? null : event.target.value,
+                    })
+                  }
+                  className={SELECT_CLASS}
+                >
+                  <option value="">{copy.node.adjustmentAuto}</option>
+                  {ANGULO_CAMERA.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {option.pt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor={`lighting-${id}`}
+                  className="mb-1 block text-[11px] font-medium text-ink-muted"
+                >
+                  {copy.node.lightingLabel}
+                </label>
+                <select
+                  id={`lighting-${id}`}
+                  value={iluminacaoKey ?? ""}
+                  disabled={busy}
+                  onChange={(event) =>
+                    updateNodeData(id, {
+                      iluminacaoKey: event.target.value === "" ? null : event.target.value,
+                    })
+                  }
+                  className={SELECT_CLASS}
+                >
+                  <option value="">{copy.node.adjustmentAuto}</option>
+                  {ILUMINACAO.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {option.pt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor={`expression-${id}`}
+                  className="mb-1 block text-[11px] font-medium text-ink-muted"
+                >
+                  {copy.node.expressionLabel}
+                </label>
+                <select
+                  id={`expression-${id}`}
+                  value={expressaoKey ?? ""}
+                  disabled={busy}
+                  onChange={(event) =>
+                    updateNodeData(id, {
+                      expressaoKey: event.target.value === "" ? null : event.target.value,
+                    })
+                  }
+                  className={SELECT_CLASS}
+                >
+                  <option value="">{copy.node.adjustmentAuto}</option>
+                  {EXPRESSAO.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {option.pt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <p className="col-span-2 text-[10px] leading-relaxed text-ink-faint">
+                {copy.node.sceneAdjustmentsHint}
+              </p>
+            </div>
+          ) : null}
         </div>
 
         <button

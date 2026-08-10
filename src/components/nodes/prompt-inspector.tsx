@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from "react";
 
+import {
+  ANGULO_CAMERA,
+  EXPRESSAO,
+  ILUMINACAO,
+  labelOf,
+  type SheetOption,
+} from "@/lib/character-sheet/dictionary";
 import { usePromptInspector } from "@/lib/canvas/prompt-inspector-store";
 import { findReferenceKind } from "@/lib/generation/references";
 import { loadGeneration, type GenerationRecord } from "@/lib/generation/history";
@@ -21,6 +28,25 @@ import { t } from "@/lib/i18n/pt-BR";
  */
 
 const copy = t.generation.inspector;
+
+/**
+ * Widened to plain strings: `campo` comes from history, and a row written by a
+ * future field must show its raw name rather than break the reader.
+ */
+const ADJUSTMENT_FIELD_LABELS: Record<string, string> = copy.adjustmentField;
+
+const ADJUSTMENT_OPTIONS: Record<string, readonly SheetOption[]> = {
+  angulo_camera: ANGULO_CAMERA,
+  iluminacao: ILUMINACAO,
+  expressao: EXPRESSAO,
+};
+
+/** The PT label of an adjustment's option — or the stored key, shown as itself. */
+function adjustmentValue(adjustment: { campo: string; chave: string }): string {
+  const options = ADJUSTMENT_OPTIONS[adjustment.campo];
+
+  return options ? labelOf(options, adjustment.chave) : adjustment.chave;
+}
 
 export function PromptInspector() {
   const generationId = usePromptInspector((state) => state.generationId);
@@ -143,6 +169,25 @@ function InspectorDialog({ generationId }: { generationId: string }) {
                         : copy.defaults}
                     </p>
                   </Section>
+
+                  {structure.ajustes_cena.length > 0 ? (
+                    <Section title={copy.sceneAdjustments}>
+                      <ul className="space-y-1.5">
+                        {structure.ajustes_cena.map((adjustment) => (
+                          <li key={adjustment.campo} className="text-xs leading-relaxed text-ink">
+                            {ADJUSTMENT_FIELD_LABELS[adjustment.campo] ?? adjustment.campo}
+                            <span className="text-ink-muted">
+                              {" · "}
+                              {adjustmentValue(adjustment)}
+                            </span>
+                            <span className="block text-[10px] leading-relaxed text-ink-faint">
+                              {adjustment.frase}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </Section>
+                  ) : null}
 
                   {structure.referencias.length > 0 ? (
                     <Section title={copy.references}>

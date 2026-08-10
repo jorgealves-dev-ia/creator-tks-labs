@@ -580,6 +580,17 @@ export const t = {
       styleFromCharacter: "da personagem",
       styleFromDefault: "padrão",
       styleFromNode: "neste bloco",
+      /** The collapsed creative controls — §6 rule 4, exercised with a value. */
+      sceneAdjustments: "Ajustes de cena",
+      sceneAdjustmentsOptional: "opcional",
+      /** Suffix after the count while collapsed: "· 2 em uso". */
+      sceneAdjustmentsCountSuffix: "em uso",
+      cameraAngleLabel: "Ângulo de câmera",
+      lightingLabel: "Iluminação",
+      expressionLabel: "Expressão",
+      adjustmentAuto: "Auto",
+      sceneAdjustmentsHint:
+        "Auto segue o padrão; o que você escolher aqui sobrescreve só aquele campo.",
       generate: "Gerar",
       generating: "Gerando…",
       generatingHint: "Uma imagem 2K leva de 20 a 40 segundos.",
@@ -695,6 +706,13 @@ export const t = {
       director: "Regra do diretor",
       directed: "Você dirigiu a cena — os padrões da personagem não entraram.",
       defaults: "Prompt vazio — entraram os padrões da personagem, inclusive o traje canônico.",
+      sceneAdjustments: "Ajustes de cena",
+      /** The Portuguese name of each adjustable field, keyed by `campo`. */
+      adjustmentField: {
+        angulo_camera: "Ângulo de câmera",
+        iluminacao: "Iluminação",
+        expressao: "Expressão",
+      },
       references: "Referências",
       imagePrefix: "Imagem",
       restrictions: "Restrições",
