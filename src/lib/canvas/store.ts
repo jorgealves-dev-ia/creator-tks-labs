@@ -192,6 +192,15 @@ type CanvasState = {
    * a flow.
    */
   addChainedGenerator: (input: { resultNodeId: string }) => void;
+  /**
+   * Takes one attached image off a generating block — and, when that image
+   * arrived through a wire, takes the wire with it.
+   *
+   * The pair has to be symmetric: cutting the wire already removed the
+   * reference, so removing the reference has to remove the wire, or the canvas
+   * ends up drawing a connection that no longer means anything.
+   */
+  removeReference: (input: { nodeId: string; index: number }) => void;
   /** For edits React Flow reports outside node/edge changes, such as panning. */
   markDirty: () => void;
   setSaveStatus: (status: SaveStatus) => void;
@@ -352,6 +361,45 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
           ...state.edges,
           { id: `${resultNodeId}->${id}`, source: resultNodeId, target: id },
         ],
+        revision: state.revision + 1,
+        saveStatus: "dirty",
+      };
+    }),
+
+  removeReference: ({ nodeId, index }) =>
+    set((state) => {
+      const node = state.nodes.find((entry) => entry.id === nodeId);
+
+      if (!node) return state;
+
+      const current = readReferences(node);
+      const removed = current[index];
+
+      if (!removed) return state;
+
+      const next = current.filter((_, position) => position !== index);
+
+      // The wire that brought it, if it came by wire. Identified by both ends
+      // and by the image itself, so a different result feeding the same block
+      // keeps its own connection.
+      const edges =
+        removed.origem === "resultado"
+          ? state.edges.filter((edge) => {
+              if (edge.target !== nodeId) return true;
+
+              const source = state.nodes.find((entry) => entry.id === edge.source);
+
+              return !(source?.type === "result" && source.data.assetId === removed.assetId);
+            })
+          : state.edges;
+
+      return {
+        nodes: state.nodes.map((entry) =>
+          entry.id === nodeId
+            ? { ...entry, data: { ...entry.data, references: next } }
+            : entry,
+        ),
+        edges,
         revision: state.revision + 1,
         saveStatus: "dirty",
       };

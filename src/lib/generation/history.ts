@@ -57,6 +57,8 @@ const structureSchema = z.object({
       folha_asset_id: z.string().nullable(),
     })
     .nullable(),
+  /** Absent on every generation from before the single-photograph clause. */
+  foto_unica: z.string().nullable().default(null),
   identidade: z.array(z.string()).default([]),
   /**
    * Read as a list, accepted as either.

@@ -38,6 +38,8 @@ type ReferenceStripProps = {
   disabled: boolean;
   onChange: (next: ReferenceEntry[]) => void;
   onAdd: () => void;
+  /** Removes by index, taking the wire with it when it came by wire. */
+  onRemove: (index: number) => void;
 };
 
 export function ReferenceStrip({
@@ -47,6 +49,7 @@ export function ReferenceStrip({
   disabled,
   onChange,
   onAdd,
+  onRemove,
 }: ReferenceStripProps) {
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -81,7 +84,7 @@ export function ReferenceStrip({
 
   function remove(index: number) {
     setOpenIndex(null);
-    onChange(references.filter((_, i) => i !== index));
+    onRemove(index);
   }
 
   return (
@@ -100,39 +103,65 @@ export function ReferenceStrip({
           const url = urls[reference.assetId];
 
           return (
-            <button
-              key={`${reference.assetId}-${index}`}
-              type="button"
-              disabled={disabled}
-              onClick={() => setOpenIndex(openIndex === index ? null : index)}
-              title={`${copy.imagePrefix} ${position}`}
-              className={`nodrag relative size-12 shrink-0 overflow-hidden rounded-md border
-                          transition-colors disabled:opacity-50 ${
-                            openIndex === index
-                              ? "border-accent"
-                              : "border-line hover:border-line-strong"
-                          }`}
-            >
-              {url ? (
-                /* Short-lived signed URLs for a private bucket. */
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={url} alt="" className="size-full object-cover" />
-              ) : (
-                <span className="block size-full bg-canvas" />
-              )}
+            <div key={`${reference.assetId}-${index}`} className="group/ref relative">
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => setOpenIndex(openIndex === index ? null : index)}
+                title={`${copy.imagePrefix} ${position}`}
+                className={`nodrag relative block size-12 shrink-0 overflow-hidden rounded-md border
+                            transition-colors disabled:opacity-50 ${
+                              openIndex === index
+                                ? "border-accent"
+                                : "border-line hover:border-line-strong"
+                            }`}
+              >
+                {url ? (
+                  /* Short-lived signed URLs for a private bucket. */
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={url} alt="" className="size-full object-cover" />
+                ) : (
+                  <span className="block size-full bg-canvas" />
+                )}
 
-              <span className="absolute left-0 top-0 rounded-br bg-canvas/85 px-1 text-[9px] font-medium text-ink">
-                {position}
-              </span>
+                <span className="absolute left-0 top-0 rounded-br bg-canvas/85 px-1 text-[9px] font-medium text-ink">
+                  {position}
+                </span>
 
-              {reference.instrucao.trim() !== "" || reference.kind ? (
-                <span
-                  aria-hidden
-                  title={copy.hasDirective}
-                  className="absolute bottom-0.5 right-0.5 size-1.5 rounded-full bg-accent"
-                />
-              ) : null}
-            </button>
+                {reference.instrucao.trim() !== "" || reference.kind ? (
+                  <span
+                    aria-hidden
+                    title={copy.hasDirective}
+                    className="absolute bottom-0.5 right-0.5 size-1.5 rounded-full bg-accent"
+                  />
+                ) : null}
+              </button>
+
+              {/*
+                The obvious way out.
+                Removing an attached image used to live only behind the editor
+                panel below — you had to open the thumbnail to find it. An image
+                you can add with one click and only remove after a detour is an
+                image that stays attached by accident.
+                Visible on hover and on keyboard focus, never on touch-only
+                hover alone: focus-within is what keeps it reachable by Tab.
+              */}
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => remove(index)}
+                title={copy.remove}
+                aria-label={`${copy.remove} — ${copy.imagePrefix} ${position}`}
+                className="nodrag absolute -right-1 -top-1 flex size-4 items-center justify-center
+                           rounded-full border border-line bg-surface text-[9px] leading-none
+                           text-ink-muted opacity-0 transition-opacity
+                           hover:border-negative hover:text-negative
+                           focus:opacity-100 group-hover/ref:opacity-100
+                           disabled:cursor-not-allowed"
+              >
+                ✕
+              </button>
+            </div>
           );
         })}
 

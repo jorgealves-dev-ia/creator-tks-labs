@@ -7,6 +7,7 @@ import { CharacterWizard } from "@/components/character-sheet/character-wizard";
 import { Portrait, VersionBadge } from "@/components/character-sheet/identity";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { useEntitiesStore } from "@/lib/entities/store";
+import { useCharacterPortraits } from "@/lib/entities/use-portraits";
 import { t } from "@/lib/i18n/pt-BR";
 
 /**
@@ -22,6 +23,7 @@ export function NodeSidebar() {
   const order = useEntitiesStore((state) => state.order);
   const openEditor = useEntitiesStore((state) => state.openEditor);
   const nodes = useCanvasStore((state) => state.nodes);
+  const portraits = useCharacterPortraits();
 
   const [creating, setCreating] = useState(false);
 
@@ -118,7 +120,11 @@ export function NodeSidebar() {
                   className="flex min-w-0 flex-1 items-center gap-3 rounded-lg py-1 text-left
                              transition-colors hover:bg-surface-hover"
                 >
-                  <Portrait name={character.displayName} className="size-8" />
+                  <Portrait
+                    name={character.displayName}
+                    src={portraits[character.id]}
+                    className="size-8"
+                  />
 
                   <span className={revealed("min-w-0 flex-1")}>
                     <span className="block truncate text-xs font-medium text-ink">

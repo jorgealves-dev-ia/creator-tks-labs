@@ -61,6 +61,7 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   const projectId = useCanvasStore((state) => state.projectId);
   const updateNodeData = useCanvasStore((state) => state.updateNodeData);
   const addResultNode = useCanvasStore((state) => state.addResultNode);
+  const removeReference = useCanvasStore((state) => state.removeReference);
   const characters = useEntitiesStore((state) => state.characters);
 
   const [busy, setBusy] = useState(false);
@@ -271,6 +272,7 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
           disabled={busy}
           onAdd={openPicker}
           onChange={(next) => updateNodeData(id, { references: next })}
+          onRemove={(index) => removeReference({ nodeId: id, index })}
         />
 
         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -313,11 +315,24 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
           </div>
 
           <div>
+            {/* Where the style comes from belongs to the label; what it is
+                belongs to the value. Reading "Da personagem · Fotorrealista"
+                inside the option asked one control to answer two questions, and
+                made the inherited value look like a different style from the
+                explicit one of the same name. */}
             <label
               htmlFor={`style-${id}`}
-              className="mb-1 block text-[11px] font-medium text-ink-muted"
+              className="mb-1 block truncate text-[11px] font-medium text-ink-muted"
             >
               {copy.node.styleLabel}
+              <span className="font-normal text-ink-faint">
+                {" · "}
+                {estiloKey
+                  ? copy.node.styleFromNode
+                  : mentioned
+                    ? copy.node.styleFromCharacter
+                    : copy.node.styleFromDefault}
+              </span>
             </label>
             <select
               id={`style-${id}`}
@@ -330,10 +345,7 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
             >
               {/* Never an empty or "none" option: the node picks *which* style,
                   never whether there is one (compilation rule 11). */}
-              <option value="">
-                {mentioned ? copy.node.styleInheritPrefix : copy.node.styleDefaultPrefix} ·{" "}
-                {inheritedStyle.pt}
-              </option>
+              <option value="">{inheritedStyle.pt}</option>
               {ESTILO_RENDERIZACAO.map((option) => (
                 <option key={option.key} value={option.key}>
                   {option.pt}

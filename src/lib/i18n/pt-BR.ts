@@ -87,6 +87,8 @@ export const t = {
     card: {
       edit: "Editar",
       editHint: "Clique duas vezes para editar",
+      /** Says where it goes, not that it is destroyed — because it is not. */
+      collapse: "Recolher para o Arsenal (a personagem continua lá)",
       draftBadge: "rascunho",
       versionPrefix: "v",
       dirtyTooltip: "alterações não salvas em versão",
@@ -574,8 +576,10 @@ export const t = {
       modelLabel: "Modelo",
       formatLabel: "Formato",
       styleLabel: "Estilo",
-      styleInheritPrefix: "Da personagem",
-      styleDefaultPrefix: "Padrão",
+      /** Where the style came from — a property of the field, not of the value. */
+      styleFromCharacter: "da personagem",
+      styleFromDefault: "padrão",
+      styleFromNode: "neste bloco",
       generate: "Gerar",
       generating: "Gerando…",
       generatingHint: "Uma imagem 2K leva de 20 a 40 segundos.",
@@ -659,6 +663,15 @@ export const t = {
       useAsReferenceHint: "Cria um novo bloco Gerar Imagem já usando esta imagem",
       seePrompt: "Ver prompt",
       noGeneration: "Esta imagem não guarda o registro da geração.",
+    },
+
+    lightbox: {
+      title: "Imagem ampliada",
+      close: "Fechar",
+      loading: "Carregando…",
+      hint: "Clique na imagem para ampliar · Esc para fechar",
+      zoomedHint: "Clique na imagem para reduzir · arraste para percorrer · Esc para fechar",
+      openHint: "Ver ampliada",
     },
 
     /** "Ver prompt usado" — the stored recipe, read back (§6 regra 3). */

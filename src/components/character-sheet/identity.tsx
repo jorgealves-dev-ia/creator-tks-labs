@@ -9,7 +9,36 @@ import { t } from "@/lib/i18n/pt-BR";
  */
 
 /** Initials until the character has a canonical front portrait. */
-export function Portrait({ name, className = "size-10" }: { name: string; className?: string }) {
+export function Portrait({
+  name,
+  src,
+  className = "size-10",
+}: {
+  name: string;
+  /**
+   * The character's own face, when there is one — the complete sheet.
+   *
+   * Framed from the top (`object-top`) because a reference sheet is a column of
+   * views and the head is at the top of it. Falling back to initials is not a
+   * placeholder for a missing feature: a character with no sheet yet genuinely
+   * has no face to show, and initials say that without pretending otherwise.
+   */
+  src?: string | null;
+  className?: string;
+}) {
+  if (src) {
+    return (
+      /* Short-lived signed URL for a private bucket. */
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt=""
+        aria-hidden
+        className={`${className} shrink-0 rounded-lg object-cover object-top`}
+      />
+    );
+  }
+
   return (
     <span
       aria-hidden

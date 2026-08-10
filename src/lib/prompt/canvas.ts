@@ -1,4 +1,8 @@
-import { estiloOption } from "@/lib/character-sheet/dictionary";
+import {
+  estiloOption,
+  PRONOUN_BY_GENERO,
+  type GeneroApresentacao,
+} from "@/lib/character-sheet/dictionary";
 import type { CharacterSheet } from "@/lib/character-sheet/schema";
 import {
   referenceFidelity,
@@ -122,6 +126,8 @@ export type CanvasPromptStructure = {
     entity_version_id: string;
     folha_asset_id: string | null;
   } | null;
+  /** One photograph of one person — stated only when a character is mentioned. */
+  foto_unica: string | null;
   identidade: string[];
   /** The sentences that tie the identity text to the attached sheet image. */
   ancora: string[];
@@ -181,6 +187,24 @@ const ANCHOR_INSTRUCTIONS = [
     "match the face, hair, body proportions and skin tone to it precisely",
   "Keep the exact same face and features as the character reference sheet",
 ] as const;
+
+/**
+ * One photograph, one person — the clause that answers the grids.
+ *
+ * Evidence, accumulated rather than assumed: the same configuration produced a
+ * *pair* of photos by the pool and a *single* photo on the beach. Nothing in our
+ * prompt asked for one picture, so the model was free to fill a tall frame with
+ * a collage — and a reference sheet among the inputs is an active invitation to
+ * do exactly that, because a sheet is itself a grid of the same person.
+ *
+ * Only stated when a character is mentioned, which is where the evidence is.
+ * `{pronoun}` comes from the sheet's own gender field, through the same table the
+ * compiler uses — the neutral "their" when nobody has said.
+ */
+const SINGLE_PHOTO_INSTRUCTION =
+  "This is a single photograph of {pronoun} alone: one person, once, in one " +
+  "frame — not a grid, not a collage, not a sheet of variations, no repeated " +
+  "or duplicated figures";
 
 export function buildCanvasPrompt({
   personagem,
@@ -242,8 +266,19 @@ export function buildCanvasPrompt({
     };
   });
 
+  // The pronoun the sheet itself settles on, read exactly as the compiler reads
+  // it — "their" when the gender is not decided, which is the honest neutral.
+  const generoKey = personagem?.sheet.dna_visual.genero_apresentacao.valor ?? null;
+  const pronoun =
+    typeof generoKey === "string" && generoKey in PRONOUN_BY_GENERO
+      ? PRONOUN_BY_GENERO[generoKey as GeneroApresentacao]
+      : PRONOUN_BY_GENERO.androgino;
+
   const structure: CanvasPromptStructure = {
     estilo,
+    foto_unica: personagem
+      ? SINGLE_PHOTO_INSTRUCTION.replaceAll("{pronoun}", pronoun)
+      : null,
     personagem: personagem
       ? {
           handle: personagem.handle,
@@ -286,6 +321,9 @@ function renderText(structure: CanvasPromptStructure): string {
   const sentences = [
     structure.estilo.frase,
     structure.estilo.reforco,
+    // Composition before identity: what kind of picture this is has to be
+    // settled before the model starts deciding how many people are in it.
+    structure.foto_unica ?? "",
     structure.identidade.join(", "),
     ...structure.ancora,
     structure.traje_canonico ?? "",

@@ -3,6 +3,7 @@
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { useEffect, useState } from "react";
 
+import { useLightbox } from "@/components/nodes/lightbox";
 import { signAssetUrls } from "@/lib/assets/actions";
 import { usePromptInspector } from "@/lib/canvas/prompt-inspector-store";
 import { useCanvasStore } from "@/lib/canvas/store";
@@ -44,6 +45,7 @@ export function ResultNode({ id, data, selected }: NodeProps<ResultNodeType>) {
 
   const addChainedGenerator = useCanvasStore((state) => state.addChainedGenerator);
   const inspect = usePromptInspector((state) => state.open);
+  const openLightbox = useLightbox((state) => state.open);
 
   const assetId = data.assetId;
 
@@ -78,14 +80,43 @@ export function ResultNode({ id, data, selected }: NodeProps<ResultNodeType>) {
       </div>
 
       <div
-        className="relative flex items-center justify-center overflow-hidden bg-canvas
-                   text-[11px] text-ink-faint"
+        className="group/image relative flex items-center justify-center overflow-hidden
+                   bg-canvas text-[11px] text-ink-faint"
         style={{ aspectRatio: (data.aspectRatio ?? "1:1").replace(":", " / ") }}
+        onDoubleClick={() => {
+          if (url) openLightbox(assetId);
+        }}
       >
         {url ? (
-          /* A plain img: short-lived signed URLs for a private bucket. */
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt={copy.alt} className="size-full object-contain" />
+          <>
+            {/* A plain img: short-lived signed URLs for a private bucket. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url} alt={copy.alt} className="size-full object-contain" />
+
+            {/* Two ways in: a double-click, which nobody discovers on their own,
+                and a button, which everybody does. */}
+            <button
+              type="button"
+              onClick={() => openLightbox(assetId)}
+              title={t.generation.lightbox.openHint}
+              aria-label={t.generation.lightbox.openHint}
+              className="nodrag absolute right-1.5 top-1.5 flex size-6 items-center justify-center
+                         rounded-md border border-line bg-canvas/80 text-ink-muted opacity-0
+                         backdrop-blur-sm transition-opacity hover:text-ink focus:opacity-100
+                         group-hover/image:opacity-100"
+            >
+              <svg viewBox="0 0 16 16" className="size-3.5" aria-hidden>
+                <path
+                  d="M6.5 2.5h-4v4M9.5 13.5h4v-4M13.5 6.5v-4h-4M2.5 9.5v4h4"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </>
         ) : (
           <span className="px-4 text-center leading-relaxed">
             {loading ? copy.loading : copy.missing}

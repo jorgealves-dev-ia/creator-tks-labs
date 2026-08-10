@@ -1,11 +1,17 @@
 "use client";
 
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
+import { useState } from "react";
 
 import { DirtyDot, Portrait, VersionBadge } from "@/components/character-sheet/identity";
+import { useCanvasStore } from "@/lib/canvas/store";
 import { isDraftDirty } from "@/lib/character-sheet/diff";
 import { useEntitiesStore } from "@/lib/entities/store";
+import { useCharacterPortraits } from "@/lib/entities/use-portraits";
 import { t } from "@/lib/i18n/pt-BR";
+
+/** Long enough to read as leaving, short enough not to be a wait. */
+const COLLAPSE_MS = 180;
 
 /**
  * The character on the canvas: a compact card, never the editor (U1).
@@ -18,10 +24,30 @@ import { t } from "@/lib/i18n/pt-BR";
 export type CharacterNodeData = { entityId: string };
 export type CharacterNodeType = Node<CharacterNodeData, "character">;
 
-export function CharacterNode({ data, selected }: NodeProps<CharacterNodeType>) {
+export function CharacterNode({ id, data, selected }: NodeProps<CharacterNodeType>) {
   const character = useEntitiesStore((state) => state.characters[data.entityId]);
   const seeded = useEntitiesStore((state) => state.seeded);
   const openEditor = useEntitiesStore((state) => state.openEditor);
+  const portraits = useCharacterPortraits();
+
+  const [collapsing, setCollapsing] = useState(false);
+
+  /**
+   * Puts the card away — back into the Arsenal, where it has been all along.
+   *
+   * Taking a character off the canvas never deleted anything (decision of
+   * 08/08/2026: the character belongs to the user, the canvas is a workbench),
+   * but the only way to do it was the Delete key, which reads as destruction.
+   * A named action that shrinks away says the true thing: it went back to the
+   * rail, and the "+" there brings it out again.
+   */
+  function collapse() {
+    setCollapsing(true);
+
+    setTimeout(() => {
+      useCanvasStore.getState().onNodesChange([{ type: "remove", id }]);
+    }, COLLAPSE_MS);
+  }
 
   if (!seeded) {
     // One frame while the store receives the server's list. Quiet on purpose:
@@ -46,11 +72,30 @@ export function CharacterNode({ data, selected }: NodeProps<CharacterNodeType>) 
     <div
       onDoubleClick={() => openEditor(character.id)}
       title={t.characterSheet.card.editHint}
-      className={`w-56 rounded-xl border bg-surface-raised shadow-lg shadow-black/30
-                  transition-colors ${selected ? "border-accent" : "border-line"}`}
+      className={`group/card relative w-56 rounded-xl border bg-surface-raised shadow-lg
+                  shadow-black/30 transition-all duration-150 ease-out
+                  ${selected ? "border-accent" : "border-line"}
+                  ${collapsing ? "scale-90 opacity-0" : "scale-100 opacity-100"}`}
     >
+      <button
+        type="button"
+        onClick={collapse}
+        title={t.characterSheet.card.collapse}
+        aria-label={t.characterSheet.card.collapse}
+        className="nodrag absolute -right-1.5 -top-1.5 z-10 flex size-5 items-center justify-center
+                   rounded-full border border-line bg-surface text-[10px] leading-none
+                   text-ink-muted opacity-0 transition-opacity hover:border-line-strong
+                   hover:text-ink focus:opacity-100 group-hover/card:opacity-100"
+      >
+        ✕
+      </button>
+
       <div className="flex items-center gap-2.5 p-3">
-        <Portrait name={character.displayName} className="size-11" />
+        <Portrait
+          name={character.displayName}
+          src={portraits[character.id]}
+          className="size-11"
+        />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">

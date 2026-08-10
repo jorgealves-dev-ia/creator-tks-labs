@@ -4,6 +4,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import { useEffect, useRef } from "react";
 
 import { SheetEditor } from "@/components/character-sheet/sheet-editor";
+import { Lightbox } from "@/components/nodes/lightbox";
 import { PromptInspector } from "@/components/nodes/prompt-inspector";
 import { ReferencePicker } from "@/components/nodes/reference-picker";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,7 @@ export function Studio({
             canvas and scale it with the zoom. */}
         <ReferencePicker />
         <PromptInspector />
+        <Lightbox />
       </div>
     </ReactFlowProvider>
   );

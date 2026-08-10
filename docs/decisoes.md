@@ -805,3 +805,75 @@ A regra que fica: **um prompt guardado é o registro de uma geração que já ac
 
 Agora a posição é procurada: desce até achar lugar livre. Vale para o node Resultado também, que tinha o mesmo risco com o seu escalonamento por irmãos.
 
+
+## Roadmap — visões registradas
+
+### 09/08/2026 — Editor básico de vídeo dentro do fluxo 📌 registrado
+
+**Visão do Jorge.** Entra na conversa **Storyboard + Vídeos** (Fase 2.5), não em conversa própria: quem gera cena a cena precisa emendar, cortar e ordenar no mesmo lugar onde gerou — mandar o usuário para fora do estúdio para juntar cinco clipes quebra o fluxo que o canvas existe para manter.
+
+Escopo a definir naquela conversa. O mínimo que a visão implica: ordenar clipes, cortar pontas, emendar, e provavelmente áudio por cima. O que **não** implica é virar editor de vídeo — a régua é a mesma do resto do produto, poder de profissional com simplicidade de leigo.
+
+---
+
+### 09/08/2026 — Creator TKS Labs como servidor MCP 📌 registrado
+
+**Visão do Jorge, e é uma virada de categoria, não uma funcionalidade.** Expor as ações do sistema como **ferramentas MCP** para que agentes — Claude, Codex, o que vier — comandem a criação de personagens, gerações, roteiros e storyboards. O estúdio deixa de ser só uma tela onde uma pessoa clica e passa a ser também uma **API com intenção**, operável por quem não tem mãos.
+
+Por que encaixa neste produto em particular: as ações já são o que teriam que ser expostas. `save_entity_version`, `record_extraction`, `record_generation` são funções com contrato, preço no catálogo e recusa nomeada; o compilador é puro; o `@` resolve no servidor. Um agente chamando essas ferramentas percorre exatamente os mesmos caminhos que a tela percorre, com as mesmas travas.
+
+**Conversa futura, com especificação própria.** O que ela vai ter que decidir, anotado agora para não se perder:
+
+- **Autenticação** — hoje tudo depende de `auth.uid()` e RLS. Agente não tem sessão de navegador; precisa de token com dono, e o dono precisa ser um usuário de verdade
+- **Escopos** — ler catálogo, criar personagem, gerar imagem e gastar dinheiro são permissões diferentes, e um agente deveria poder ter as três primeiras sem a última
+- **Limites** — e aqui o produto já tem a resposta pronta: **Sparks é o guarda-costas natural do gasto de agente.** Um agente com carteira limitada não pode fazer estrago ilimitado, e o ledger append-only já registra cada centavo com o que o produziu. A trava de gasto não precisa ser inventada; ela precisa ser apontada para o agente
+- **O que não expor** — nem toda ação de tela deveria virar ferramenta; algumas existem porque um humano está olhando
+
+
+## Polimento do canvas
+
+### 09/08/2026 — Ciclo curto de polimento dos nodes de geração
+
+Seis itens de **uso**, nenhum deles mudando contrato, schema ou regra de compilação — exceto o quinto, que é regra de prompt e por isso ganhou cobertura no harness.
+
+**1. Recolher a personagem para o Arsenal.** Tirar o cartão do canvas nunca apagou nada — a personagem é ativo do usuário e o canvas é bancada (decisão de 08/08/2026). Mas a única forma de fazer isso era a tecla Delete, que **lê como destruição**. Agora há um "×" no cartão que diz para onde a personagem vai, e ela encolhe em vez de sumir. O "+" no Arsenal traz de volta.
+
+**2. A origem do estilo é rótulo, não valor.** O seletor dizia `Da personagem · Fotorrealista` **dentro da opção**, pedindo a um controle só que respondesse duas perguntas — e fazendo o valor herdado parecer um estilo diferente do explícito de mesmo nome. Agora o rótulo diz `Estilo · da personagem` (ou `· neste bloco`, ou `· padrão`) e a opção diz `Fotorrealista`.
+
+**3. Lightbox no Resultado.** Uma imagem 2K dentro de um node de 256px não pode ser julgada, e julgar é para o que ela foi gerada. Até aqui, olhar de verdade exigia baixar o arquivo e abrir fora — tirar o usuário do estúdio para fazer a única coisa que o estúdio existe para fazer. Duplo clique **e** um botão, porque duplo clique ninguém descobre sozinho.
+
+**4. O retrato da personagem é a folha dela.** As iniciais eram marcador de posição desde a Fase 2. Quem tem folha aparece com ela, enquadrada pelo topo; quem não tem continua com iniciais — que não é placeholder de funcionalidade faltando, é a verdade: uma personagem sem folha não tem rosto para mostrar.
+
+**5. Uma foto, uma pessoa.** Evidência acumulada do Jorge: a mesma configuração produziu **par de fotos** na piscina e **foto única** na praia. Nada no nosso prompt pedia uma imagem só — e uma folha de referência entre as entradas é convite ativo à grade, porque a folha **é** uma grade da mesma pessoa. Entra a cláusula quando há `@`, com o pronome que a própria ficha resolve, dita **antes do bloco de identidade**: que tipo de imagem é isto tem que estar decidido antes de o modelo decidir quantas pessoas cabem nela.
+
+**6. Sair da referência tinha que ser tão óbvio quanto entrar.** Achado do Jorge no roteiro da Etapa C: não dava para cortar o fio. Duas causas, e as duas viraram correção.
+
+   - **Remover só existia atrás do painel do editor** — era preciso abrir a miniatura para encontrar. Uma imagem que se anexa com um clique e só se remove depois de um desvio é uma imagem que fica anexada por acidente. Agora há "×" na própria miniatura.
+   - **A aresta não dava feedback de seleção perceptível.** As cores já estavam certas; o que faltava era **peso**. Um traço de um pixel mudando de tom, no zoom em que se trabalha de verdade, não é feedback — selecionar um fio parecia selecionar nada, e por isso cortá-lo era indescobrível. Agora a aresta engrossa ao passar o mouse e engrossa mais quando selecionada, com cursor de clique na faixa de interação.
+
+   E as duas metades ficaram simétricas: cortar o fio já removia a referência; remover a referência agora remove o fio. Sem isso o canvas desenharia uma conexão que não significa mais nada.
+
+
+### 09/08/2026 — A maior amostra de recusas até agora, e o que ela desmente
+
+Fechando o polimento, a validação do Jorge produziu nove gerações seguidas com a mesma personagem — a melhor amostra de filtro de conteúdo que este projeto já teve. Vale registrar porque **uma das hipóteses levantadas na hora não sobreviveu aos dados**.
+
+| Cena | Referências anexadas | Resultado |
+|---|---|---|
+| piscina, entardecer | 1 | recusada |
+| praia, anoitecendo | 1 | ✅ gerou |
+| praia, anoitecendo **+ xícara de café** | 1 | recusada **6 vezes**, nos dois modelos |
+| pijama, quarto, UGC | **2** | ✅ gerou |
+
+**A hipótese era que referências de traje empilhadas na cadeia elevavam a recusa. Os dados dizem que não.** A contagem de referências é **constante** entre os sucessos e as recusas da praia, e a única geração com **duas** referências foi justamente uma das que passaram. O que a cadeia acumula não foi o que pesou.
+
+O que os dados sustentam é mais simples e já era a decisão registrada: **o filtro é clima, não regra.** Duas cenas quase idênticas — piscina ao entardecer e praia ao anoitecer, ambas com uma referência — deram resultados opostos com minutos de diferença. E a vizinhança "praia + fim de tarde + traje de banho" se mostrou uma região de alta recusa para os **dois** modelos, o que reforça que trocar de modelo ajuda menos ali do que reformular.
+
+**Três coisas confirmadas em uso real, e essas sim são nossas:**
+
+1. **A classificação de recusa está certa.** Todas as seis linhas gravaram `the provider declined to draw this`, não mais `could not be reached` — a correção de 09/08/2026 valendo em dado de produção.
+2. **A mensagem nova apareceu na tela** e disse o que fazer, em vez de mandar o usuário olhar a conexão.
+3. **Recusa não cobrou, seis vezes seguidas.** `sparks_charged = 0` em todas.
+
+**Método que fica:** quando uma hipótese sobre o filtro aparecer, ela é testável contra a própria tabela `generations` — cena, referências, modelo e resultado estão todos lá. Registrar a hipótese sem conferir seria transformar uma coincidência em regra do projeto.
+

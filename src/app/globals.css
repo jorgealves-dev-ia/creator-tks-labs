@@ -86,6 +86,39 @@ body {
   overflow: hidden;
 }
 
+/*
+ * Wires you can see, hover and select.
+ *
+ * The colours above were already right — line-strong normally, accent when
+ * selected — and it made no difference: at the zoom people actually work at, a
+ * one-pixel line changing hue is not feedback. Selecting a wire looked exactly
+ * like selecting nothing, so cutting one was undiscoverable.
+ *
+ * Weight is what reads at any zoom. The pointer cursor on the interaction band
+ * (React Flow already draws a transparent 20px one for hit-testing) is what says
+ * the wire is a thing you may click at all.
+ */
+.react-flow__edge-path {
+  stroke-width: 1.5;
+  transition:
+    stroke 120ms ease,
+    stroke-width 120ms ease;
+}
+
+.react-flow__edge-interaction {
+  cursor: pointer;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: var(--color-ink-muted);
+  stroke-width: 2.5;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--color-accent);
+  stroke-width: 3.5;
+}
+
 /* React Flow's attribution is kept (MIT allows removing it — your call). */
 .react-flow__attribution a {
   color: var(--color-ink-faint);
