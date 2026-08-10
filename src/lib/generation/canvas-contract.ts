@@ -56,6 +56,15 @@ export type CanvasGenerationRequest = {
   iluminacaoKey: string | null;
   expressaoKey: string | null;
   references: CanvasReferencePayload[];
+  /**
+   * Whether the attached images enter this generation.
+   *
+   * They travel in the body either way — they have to, because the record of
+   * this generation must be able to say that four images were attached and none
+   * of them was used. What the server does when this is false is refuse to
+   * compile them, which is a different thing from never having heard of them.
+   */
+  referencesEnabled: boolean;
 };
 
 export type CanvasGenerationFailure =

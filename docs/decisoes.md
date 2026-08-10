@@ -1204,3 +1204,27 @@ Não por gosto: a documentação do Next é explícita ao dizer para **não usar
 **A recusa sem linha no extrato confirma a outra metade.** `record_generation` só insere no ledger quando `v_charged > 0`, e uma geração falha nunca cobra — por `case` na função e por constraint na tabela. Uma recusa de política agora tem prova de que é grátis, e não só a promessa de que era.
 
 Com isto a **Etapa B fecha**: qualidade por resolução com preço do catálogo, quantidade 1–4 em paralelo de verdade, e o preço dizendo a mesma coisa em todos os lugares da tela.
+
+### 10/08/2026 — A chave "Ativar Inputs de Referências" 🔁 reversão
+
+**A decisão anterior foi contra esta chave**, e o argumento era bom: uma referência anexada que não está sendo usada é um estado a mais para o usuário manter na cabeça, e o jeito de não usar uma referência é não anexá-la.
+
+**O motivo novo do Jorge desmonta isso com um caso de uso real: é mute de mesa de som.** Para ver como a personagem sai **sem** as quatro referências puxando a imagem — uma pergunta legítima e frequente —, o único caminho era desanexar as quatro, gerar, e anexar de novo. Isso perde os chips, perde as instruções escritas em cada uma e corta os fios do canvas, tudo para fazer **uma** pergunta. A chave responde em um clique e devolve tudo em outro. Ninguém desmonta a mesa para ouvir a bateria sozinha.
+
+**O que ela faz e o que ela não faz:**
+
+- Desligada, os inputs **permanecem conectados e visíveis** — miniaturas acinzentadas, não sumidas. Uma referência que você não vê é uma referência que você vai esquecer de religar.
+- O `@` não é afetado. A folha de uma personagem mencionada é **âncora da menção**, não input de referência, e a chave não tem opinião sobre ela.
+- O contador passa a dizer **o que vai viajar**: mudo com `@` mostra "1 de 6"; mudo sem menção mostra "0 de 6". Dizer zero com uma imagem a caminho seria a faixa mentindo exatamente onde ela existe para não mentir.
+- O **teto**, ao contrário, continua contando tudo o que está anexado. Tem que contar: religar a chave nunca pode produzir um bloco acima do limite do modelo.
+- Nada de mudo é traduzido, numerado, enviado ou pago como token de entrada. Mudo custa o que custaria sem referência nenhuma.
+
+**E ela nasce desligada — conectar nunca a liga sozinha** *(decisão do Jorge, mesmo dia, substituindo o "acorda ligada quando há input conectado" da primeira versão).* O caso base deste bloco é gerar **sem referência nenhuma**: "uma imagem de um cachorro". Ligada por padrão trataria a exceção como regra, e — pior — poria imagens dentro de gerações pagas sem ninguém ter pedido. Quem quer que os inputs entrem, liga.
+
+Isso troca um risco por outro, e a troca é deliberada: em vez de "entrou o que eu não pedi", o erro possível passa a ser "não entrou o que eu queria". O segundo é visível de graça — miniaturas cinzas, selo amarelo, contador em zero — e o primeiro só aparece na imagem, depois de paga. **Quando um dos dois erros custa dinheiro e o outro custa um clique, o default escolhe sozinho.**
+
+Para quem acabou de conectar, um **shimmer** percorre o rótulo e a chave **três vezes e para**. Três e não infinito: uma animação que nunca termina vira mobília, e mobília é invisível. E shimmer e não vermelho porque isto não é erro — o selo amarelo ao lado já faz esse trabalho, e dois avisos para o mesmo fato viram nenhum.
+
+*Consequência que vale dizer em voz alta:* blocos salvos antes desta chave reabrem com as referências **mudas**. Não é silencioso — as miniaturas ficam cinzas, o selo amarelo aparece e o contador zera —, e um clique devolve o comportamento antigo. Preferível a abrir ligado por adivinhação e gerar uma cobrança que ninguém pediu.
+
+**E a auditoria trata mudo e ausente como coisas diferentes**, que é o ponto mais importante daqui. `prompt_compiled.structure` grava `referencias_mudas: { quantidade, asset_ids }` ao lado de `referencias: []`, e o "Ver prompt" lê isso de volta em uma frase. **A imagem que sai é a mesma nos dois casos; o motivo de ela ter saído assim não é** — e um registro que só diz "sem referências" não consegue explicar por que alguém anexou quatro fotos e recebeu um rosto sem nenhuma delas.

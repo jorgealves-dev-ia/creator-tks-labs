@@ -49,6 +49,31 @@ body {
   outline-offset: 2px;
 }
 
+/*
+ * A sweep of light across a label, three times, then gone.
+ *
+ * Used once: when an input is wired into a generating block whose references
+ * switch is off. The switch is the thing that has to be noticed, and noticing
+ * has a shape — a glow that passes and stops is a nudge, while anything that
+ * keeps going is a warning, and this is not a warning. The yellow "mudo" beside
+ * it already carries that job.
+ *
+ * Three iterations rather than infinite for the same reason: an animation that
+ * never ends becomes furniture, and furniture is invisible.
+ */
+@keyframes strip-shimmer {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(240%);
+  }
+}
+
+.animate-strip-shimmer {
+  animation: strip-shimmer 1.15s ease-in-out 3;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

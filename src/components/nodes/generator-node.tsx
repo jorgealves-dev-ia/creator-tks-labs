@@ -75,6 +75,15 @@ export type GeneratorNodeData = {
   quantity?: number;
   /** The images attached to this block, in the order they will be numbered. */
   references?: ReferenceEntry[];
+  /**
+   * Whether the attached images enter the generation.
+   *
+   * Absent or false means they do not — the resting state, including right after
+   * something is wired in. The base case of this block is a generation with no
+   * references ("uma imagem de um cachorro"), and a default of `true` would
+   * treat the exception as the rule.
+   */
+  referencesEnabled?: boolean;
   /** The last batch, in slot order — one entry per image that came back. */
   lastAssetIds?: string[];
   lastGenerationIds?: string[];
@@ -173,6 +182,7 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   );
 
   const references = data.references ?? [];
+  const referencesEnabled = data.referencesEnabled === true;
 
   // The ceiling belongs to the model, and the character's own sheet occupies one
   // of its places — so the number the strip shows is the number the server will
@@ -284,6 +294,7 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
       iluminacaoKey,
       expressaoKey,
       references,
+      referencesEnabled,
     };
 
     const results = await Promise.all(
@@ -703,6 +714,8 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
             limit={capacity.limit}
             reserved={capacity.reserved}
             disabled={busy}
+            enabled={referencesEnabled}
+            onEnabledChange={(next) => updateNodeData(id, { referencesEnabled: next })}
             onAdd={openPicker}
             onChange={(next) => updateNodeData(id, { references: next })}
             onRemove={(index) => removeReference({ nodeId: id, index })}

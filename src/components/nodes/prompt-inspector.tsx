@@ -259,6 +259,26 @@ function InspectorDialog({ generationId }: { generationId: string }) {
                     </Section>
                   ) : null}
 
+                  {/*
+                    The mute, read back.
+                    This is the whole reason the compiled record keeps the ids of
+                    references it did not use: without this line, a generation
+                    with four muted images and a generation with no images at all
+                    would be the same document — and the second one cannot
+                    explain why somebody attached four pictures and got a face
+                    with none of them in it.
+                  */}
+                  {structure.referencias_mudas ? (
+                    <Section title={copy.mutedReferences}>
+                      <p className="text-xs leading-relaxed text-ink-muted">
+                        {structure.referencias_mudas.quantidade}{" "}
+                        {structure.referencias_mudas.quantidade === 1
+                          ? copy.mutedSingular
+                          : copy.mutedPlural}
+                      </p>
+                    </Section>
+                  ) : null}
+
                   {structure.restricoes.length > 0 ? (
                     <Section title={copy.restrictions}>
                       <ul className="list-inside list-disc space-y-0.5 text-xs text-ink-muted">

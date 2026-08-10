@@ -111,6 +111,18 @@ const structureSchema = z.object({
       }),
     )
     .default([]),
+  /**
+   * Absent on every generation from before the mute switch existed, which reads
+   * as null — and null is exactly right for them: nothing was silenced, because
+   * nothing could be.
+   */
+  referencias_mudas: z
+    .object({
+      quantidade: z.number(),
+      asset_ids: z.array(z.string()).default([]),
+    })
+    .nullable()
+    .default(null),
   restricoes: z.array(z.string()).default([]),
   regra_diretor: z.enum(["prompt_dirige", "padroes_da_personagem"]),
 });

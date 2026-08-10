@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { signAssetUrls } from "@/lib/assets/actions";
 import { findReferenceKind, REFERENCE_KINDS, type ReferenceKind, type ReferenceOrigin } from "@/lib/generation/references";
@@ -91,6 +91,15 @@ type ReferenceStripProps = {
   /** 1 when a mentioned character brings its own sheet, which occupies a slot. */
   reserved: number;
   disabled: boolean;
+  /**
+   * Whether the attached images are heard at all.
+   *
+   * Off is the resting state, including the moment something is wired in — see
+   * the switch below for why. Off is not the same as having nothing attached,
+   * and that difference is the whole point of the switch existing.
+   */
+  enabled: boolean;
+  onEnabledChange: (enabled: boolean) => void;
   onChange: (next: ReferenceEntry[]) => void;
   onAdd: () => void;
   /** Removes by index, taking the wire with it when it came by wire. */
@@ -102,6 +111,8 @@ export function ReferenceStrip({
   limit,
   reserved,
   disabled,
+  enabled,
+  onEnabledChange,
   onChange,
   onAdd,
   onRemove,
@@ -109,6 +120,40 @@ export function ReferenceStrip({
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [openSlot, setOpenSlot] = useState<number | null>(null);
   const products = useProductsStore((state) => state.products);
+
+  /**
+   * The nudge.
+   *
+   * Something was just attached to a block that is not listening to anything —
+   * which is a perfectly reasonable thing to have done, and also a thing with
+   * one obvious next step. A sweep of light across the switch and its label,
+   * three times, says "here" without saying "wrong".
+   *
+   * Fires on anything arriving, not only on a wire: choosing an image from the
+   * gallery lands the user in exactly the same place, and a hint that only
+   * appeared for one of the two ways in would be a hint you cannot rely on.
+   *
+   * The ref starts at the mounted count, so reopening a project with references
+   * already attached is silent. Nothing arrived; nothing happened.
+   */
+  const [shimmering, setShimmering] = useState(false);
+  const previousCount = useRef(references.length);
+
+  useEffect(() => {
+    const grew = references.length > previousCount.current;
+
+    previousCount.current = references.length;
+
+    if (!grew || enabled) return;
+
+    setShimmering(true);
+
+    // Slightly past three passes of 1.15s, so the class is gone once the
+    // animation has finished rather than while its last frame is drawing.
+    const timer = window.setTimeout(() => setShimmering(false), 3600);
+
+    return () => window.clearTimeout(timer);
+  }, [references.length, enabled]);
 
   const assetIds = references.map((reference) => reference.assetId);
   const key = assetIds.join(",");
@@ -130,8 +175,23 @@ export function ReferenceStrip({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
-  const used = references.length + reserved;
-  const full = used >= limit;
+  /**
+   * What will actually travel, which is what the counter has to say.
+   *
+   * Muted references count for nothing here — and the sheet of a mentioned
+   * character still counts for one, because it is not a reference input: it is
+   * the anchor of the `@`, and the mute has no opinion about the `@`. Saying
+   * "0 de 6" with an image on its way would be the strip lying in the one place
+   * it exists to tell the truth.
+   */
+  const used = (enabled ? references.length : 0) + reserved;
+
+  /**
+   * The ceiling, on the other hand, counts everything that is attached —
+   * muted or not. It has to: turning the switch back on must never produce a
+   * block holding more images than the model accepts.
+   */
+  const full = references.length + reserved >= limit;
 
   const slots = toSlots(references, reserved);
   const open = openSlot !== null ? slots[openSlot] : undefined;
@@ -154,9 +214,40 @@ export function ReferenceStrip({
 
   return (
     <div className="mt-3">
-      <div className="mb-1 flex items-baseline justify-between">
-        <span className="text-[11px] font-medium text-ink-muted">{copy.title}</span>
-        <span className="text-[10px] text-ink-faint">
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <span className="flex min-w-0 items-center gap-1.5">
+          {/* The switch is always here, whether or not anything is attached.
+              A control that appears when the first image arrives is a control
+              nobody knows exists until they have already tripped over it. */}
+          <span className="relative flex min-w-0 items-center gap-1.5 overflow-hidden rounded">
+            <InputsSwitch
+              on={enabled}
+              disabled={disabled}
+              onToggle={() => onEnabledChange(!enabled)}
+            />
+
+            <span className="truncate text-[11px] font-medium text-ink-muted">
+              {copy.title}
+              {!enabled && references.length > 0 ? (
+                <span className="font-normal text-warning"> · {copy.muted}</span>
+              ) : null}
+            </span>
+
+            {shimmering ? (
+              <span
+                aria-hidden
+                className="animate-strip-shimmer pointer-events-none absolute inset-y-0 -left-8
+                           w-8 bg-gradient-to-r from-transparent via-ink/25 to-transparent"
+              />
+            ) : null}
+          </span>
+
+          {/* Outside the sheen's wrapper, which clips its own overflow — a
+              tooltip inside it would be cut off at the edge of the label. */}
+          <HelpTip />
+        </span>
+
+        <span className="shrink-0 text-[10px] text-ink-faint">
           {used} {copy.ofPrefix} {limit}
           {reserved > 0 ? ` · ${copy.sheetCounts}` : ""}
         </span>
@@ -199,16 +290,21 @@ export function ReferenceStrip({
                     : `border ${selected ? "border-accent" : "border-line hover:border-line-strong"}`
                 }`}
               >
-                {slot.kind === "product" ? (
-                  <>
-                    <span className="mb-1 block max-w-36 truncate px-0.5 text-left text-[9px] text-ink-faint">
-                      {products[slot.productId]?.displayName ?? copy.productUnknown}
-                    </span>
-                    <span className="flex gap-1">{thumbs}</span>
-                  </>
-                ) : (
-                  thumbs
-                )}
+                {/* Greyed, not hidden. A muted reference is still attached, and
+                    an attachment you cannot see is one you will forget to turn
+                    back on. */}
+                <span className={enabled ? "block" : "block opacity-40 grayscale"}>
+                  {slot.kind === "product" ? (
+                    <>
+                      <span className="mb-1 block max-w-36 truncate px-0.5 text-left text-[9px] text-ink-faint">
+                        {products[slot.productId]?.displayName ?? copy.productUnknown}
+                      </span>
+                      <span className="flex gap-1">{thumbs}</span>
+                    </>
+                  ) : (
+                    thumbs
+                  )}
+                </span>
               </button>
 
               {/*
@@ -325,6 +421,94 @@ export function ReferenceStrip({
         </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * The switch that decides whether the attached images enter the generation.
+ *
+ * Reinstated on 10/08/2026 after being argued against and dropped, because the
+ * case that won is a working one: to see what a character looks like *without*
+ * four references pulling at her, the alternative was to detach all of them,
+ * generate, and attach them again — losing the chips, the sentences and the
+ * wires, to ask one question. A mute answers it in one click and gives
+ * everything back in a second one.
+ *
+ * **It is born off, and stays off until someone turns it on** — including at
+ * the moment something is wired in. Connecting never flips it. The base case of
+ * this block is a generation with no references at all ("uma imagem de um
+ * cachorro"); defaulting to on would treat the exception as the rule, and would
+ * quietly put images into generations nobody asked to put them into.
+ *
+ * Rendered as a switch and not a checkbox because that is what it is: the state
+ * it names is "these are being heard", and the thing it must never look like is
+ * "delete these".
+ */
+function InputsSwitch({
+  on,
+  disabled,
+  onToggle,
+}: {
+  on: boolean;
+  disabled: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      disabled={disabled}
+      title={copy.switchHint}
+      aria-label={copy.switchLabel}
+      onClick={onToggle}
+      className={`nodrag flex h-3.5 w-6 shrink-0 items-center rounded-full p-0.5
+                  transition-colors disabled:cursor-not-allowed disabled:opacity-50
+                  ${on ? "bg-accent" : "bg-surface-hover"}`}
+    >
+      <span
+        className={`size-2.5 rounded-full bg-canvas transition-transform
+                    ${on ? "translate-x-2.5" : "translate-x-0"}`}
+      />
+    </button>
+  );
+}
+
+/**
+ * The one sentence that explains the whole mechanism, on hover.
+ *
+ * A custom bubble rather than the native `title` this file uses everywhere else,
+ * for one reason: `title` waits about a second, renders in the operating
+ * system's font at the operating system's size, and truncates where it feels
+ * like. That is fine for "Remover" and wrong for the only text in the block that
+ * teaches somebody how the block works.
+ *
+ * Reachable by keyboard as well as pointer — `focus-within` on the wrapper is
+ * what makes tabbing to the "?" show the same thing hovering does.
+ */
+function HelpTip() {
+  return (
+    <span className="group/help relative flex shrink-0">
+      <button
+        type="button"
+        aria-label={copy.helpLabel}
+        className="nodrag flex size-3.5 items-center justify-center rounded-full border
+                   border-line text-[9px] leading-none text-ink-faint transition-colors
+                   hover:border-line-strong hover:text-ink"
+      >
+        ?
+      </button>
+
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute left-1/2 top-full z-30 mt-1.5 w-56 -translate-x-1/2
+                   rounded-lg border border-line bg-surface-raised p-2 text-[10px] leading-relaxed
+                   text-ink-muted opacity-0 shadow-lg shadow-black/40 transition-opacity
+                   group-hover/help:opacity-100 group-focus-within/help:opacity-100"
+      >
+        {copy.helpBody}
+      </span>
+    </span>
   );
 }
 

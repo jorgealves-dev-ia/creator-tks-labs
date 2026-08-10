@@ -721,7 +721,22 @@ export const t = {
     },
     /** The strip of attached images inside the block (N1). */
     references: {
-      title: "Referências",
+      /**
+       * As aspas são de propósito: o rótulo nomeia a chave, e a chave se chama
+       * "Referências". Sem elas, "Input Referências" lê como duas palavras
+       * soltas em vez do nome de uma coisa.
+       */
+      title: 'Input "Referências"',
+      /** O selo ao lado do título quando há referências e a chave está desligada. */
+      muted: "mudo",
+      switchLabel: 'Ativar Input "Referências"',
+      switchHint:
+        "Desligado, as referências continuam conectadas e não entram nesta geração.",
+      helpLabel: "Como funcionam os inputs",
+      helpBody:
+        "Os inputs — produto, imagem, pose, ficha — ficam na seção Inputs do menu " +
+        "lateral. Arraste um para o canvas, conecte na borda esquerda deste bloco e " +
+        "ligue a chave para ele entrar na geração.",
       ofPrefix: "de",
       sheetCounts: "a folha conta uma",
       add: "Adicionar referência",
@@ -844,6 +859,9 @@ export const t = {
         expressao: "Expressão",
       },
       references: "Referências",
+      mutedReferences: "Referências mudas",
+      mutedSingular: "imagem estava conectada e não entrou nesta geração.",
+      mutedPlural: "imagens estavam conectadas e não entraram nesta geração.",
       imagePrefix: "Imagem",
       /** A product occupied several slots and gave one instruction: "Imagens 2, 3 e 4". */
       imagesPrefix: "Imagens",

@@ -125,6 +125,13 @@ const generateSchema = z.object({
   // costs a database round trip. The real limit is the model's and is checked
   // once the model is known.
   references: z.array(referenceSchema).max(12),
+  /**
+   * The switch of §5. Defaults to **false**, which is both the resting state of
+   * the control and the safe reading of a request that does not mention it: a
+   * browser holding an older bundle sends nothing, and nothing must never mean
+   * "put four images the caller did not ask about into a paid generation".
+   */
+  referencesEnabled: z.boolean().default(false),
 });
 
 /**
@@ -243,7 +250,24 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
   // 4. The reference ceiling of the chosen model, counting the character's own
   //    sheet — it is an image in the same call and occupies the same room.
   const limit = maxReferences(model.slug);
-  const total = request.references.length + (character?.folhaAssetId ? 1 : 0);
+  // 3b. The mute (§5).
+  //
+  //     One list from here on, so no step downstream has to remember to ask.
+  //     Muted means the images do not travel, are not translated, are not
+  //     numbered and are not paid for as input tokens — but they are recorded,
+  //     because "four references were attached and none was used" is a different
+  //     fact from "there were no references", and only one of them explains why
+  //     an image came out the way it did.
+  //
+  //     The `@` is untouched either way: a mentioned character's sheet is the
+  //     anchor of the mention, not a reference input, and the switch has no
+  //     opinion about it.
+  const heard = request.referencesEnabled ? request.references : [];
+  const silenced = request.referencesEnabled
+    ? []
+    : request.references.map((reference) => reference.assetId);
+
+  const total = heard.length + (character?.folhaAssetId ? 1 : 0);
 
   if (total > limit) {
     return { ok: false, reason: "too_many_references", limit };
@@ -267,7 +291,7 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
   // 5b. The products on the wires, named here rather than taken on trust. One
   //     query for all of them, and a product the user does not own simply comes
   //     back nameless — RLS answers that question, not this code.
-  const productNames = await loadProductNames(supabase, request.references);
+  const productNames = await loadProductNames(supabase, heard);
 
   // Which photo of each product speaks for it. The rest are numbered and sent,
   // but they do not repeat the sentence — three copies of "reproduce the exact
@@ -276,7 +300,7 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
   const groupLeaders = new Set<number>();
   const seenProducts = new Set<string>();
 
-  request.references.forEach((reference, index) => {
+  heard.forEach((reference, index) => {
     if (!reference.productId) {
       groupLeaders.add(index);
       return;
@@ -291,7 +315,7 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
   // 6. Portuguese in, English out — before a single Spark is at risk.
   const items = [
     ...(scene === "" ? [] : [{ id: "cena", text: scene }]),
-    ...request.references
+    ...heard
       .map((reference, index) => ({
         id: `ref.${index}`,
         text: groupLeaders.has(index) ? reference.instrucao.trim() : "",
@@ -314,7 +338,7 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
   }
 
   // 7. The prompt. Pure function, and the source of the reference ordering.
-  const references: CanvasReferenceInput[] = request.references.map((reference, index) => ({
+  const references: CanvasReferenceInput[] = heard.map((reference, index) => ({
     assetId: reference.assetId,
     kind: (reference.kind as CanvasReferenceInput["kind"]) ?? null,
     instrucaoPt: reference.instrucao.trim(),
@@ -341,6 +365,7 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
     iluminacaoKey: request.iluminacaoKey,
     expressaoKey: request.expressaoKey,
     referencias: references,
+    referenciasSilenciadas: silenced,
   });
 
   // 8. A mention that contributes nothing is a mention that will disappoint. With
@@ -374,6 +399,10 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
     estilo_origem: prompt.structure.estilo.origem,
     regra_diretor: prompt.structure.regra_diretor,
     referencias: prompt.referenceAssetIds.length,
+    // Zero here with a number here is the mute; zero in both is a block with
+    // nothing attached. The summary is what the history lists by, so it has to
+    // be able to tell the two apart without opening the compiled prompt.
+    referencias_mudas: silenced.length,
     formato_aproximado: format.approximated,
     sem_folha: character !== null && character.folhaAssetId === null,
   };

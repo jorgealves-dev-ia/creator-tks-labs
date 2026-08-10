@@ -104,6 +104,17 @@ export type BuildCanvasPromptOptions = {
   iluminacaoKey: string | null;
   expressaoKey: string | null;
   referencias: readonly CanvasReferenceInput[];
+  /**
+   * The asset ids of references that were attached and muted (§5).
+   *
+   * They contribute nothing to the prompt — that is the point — and they are
+   * carried here so the compiled record can say so. `referencias: []` with this
+   * list empty means nobody attached anything; `referencias: []` with four ids
+   * here means somebody attached four images and deliberately silenced them.
+   * The image that comes out is the same in both cases; the reason it came out
+   * that way is not, and only one of these two records can explain it.
+   */
+  referenciasSilenciadas?: readonly string[];
 };
 
 // ---------------------------------------------------------------------------
@@ -187,6 +198,11 @@ export type CanvasPromptStructure = {
   cena_usuario: { pt: string; en: string } | null;
   ajustes_cena: CanvasSceneAdjustment[];
   referencias: CanvasReferenceDirective[];
+  /**
+   * What was attached and silenced. Null when the switch was on, which is also
+   * what every generation before the switch existed reads as.
+   */
+  referencias_mudas: { quantidade: number; asset_ids: string[] } | null;
   restricoes: string[];
   /** Which half of the director rule ran. Recorded, never inferred later. */
   regra_diretor: "prompt_dirige" | "padroes_da_personagem";
@@ -283,6 +299,7 @@ export function buildCanvasPrompt({
   iluminacaoKey,
   expressaoKey,
   referencias,
+  referenciasSilenciadas,
 }: BuildCanvasPromptOptions): CanvasPrompt {
   const directed = cenaPt.trim() !== "";
 
@@ -428,6 +445,13 @@ export function buildCanvasPrompt({
     cena_usuario: directed ? { pt: cenaPt.trim(), en: cenaEn.trim() } : null,
     ajustes_cena: ajustes,
     referencias: directives,
+    referencias_mudas:
+      referenciasSilenciadas && referenciasSilenciadas.length > 0
+        ? {
+            quantidade: referenciasSilenciadas.length,
+            asset_ids: [...referenciasSilenciadas],
+          }
+        : null,
     restricoes: compiled?.structure.restricoes ?? [],
     regra_diretor: directed ? "prompt_dirige" : "padroes_da_personagem",
   };

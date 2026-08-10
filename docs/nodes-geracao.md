@@ -50,6 +50,19 @@ O estúdio deixa de ser fábrica de personagens e vira **linha de produção de 
 
 **Ajustes de cena · opcional** *(acrescentado em 10/08/2026):* seção recolhida dentro da configuração, com três seletores — **ângulo de câmera** (§5.27 do character sheet), **iluminação** (§5.24) e **expressão** (§5.20). Todos começam em **Auto**, que é o comportamento de sempre: quem decide são o prompt e a personagem. Escolher qualquer coisa diferente de Auto é exercer a hierarquia da regra 4 (node > sheet) — ver as regras da seção 6. A seção abre sozinha quando o bloco já tem ajuste salvo e, recolhida, mostra quantos estão em uso: um controle que muda o resultado não pode ficar escondido depois de escolhido.
 
+**A chave Input "Referências"** *(10/08/2026 — reversão registrada em [`decisoes.md`](./decisoes.md)).* Fica **sempre visível** na faixa, com um **?** ao lado que explica em uma frase de onde vêm os inputs e como usá-los.
+
+- **Ligada:** as referências entram na compilação.
+- **Desligada:** os inputs **permanecem conectados e visíveis**, as miniaturas ficam acinzentadas, e a geração **não envia nenhuma referência** — só prompt, `@` e configuração. É mute de mesa de som, não desconectar o cabo.
+
+**Ela nasce desligada, e conectar nunca a liga sozinha.** O caso base deste bloco é gerar sem referência nenhuma — "uma imagem de um cachorro" —, e ligada por padrão trataria a exceção como regra. Quem quer que os inputs entrem, liga. Para quem acabou de conectar um input com a chave desligada, um **shimmer percorre o rótulo e a chave três vezes e para**: chama o olho sem virar aviso permanente, que é o trabalho do selo amarelo ao lado.
+
+Três detalhes que a chave não pode errar:
+
+1. **O contador diz o que vai viajar.** Desligada, as referências anexadas contam zero — mas a folha de uma personagem mencionada continua contando uma, porque ela não é input de referência: é a âncora do `@`, e a chave não tem opinião sobre o `@`. Dizer "0 de 6" com uma imagem a caminho seria a faixa mentindo no único lugar onde ela existe para dizer a verdade.
+2. **O teto continua contando tudo o que está anexado**, mudo ou não. Tem que contar: religar a chave nunca pode produzir um bloco com mais imagens do que o modelo aceita.
+3. **`prompt_compiled` grava o estado.** `referencias_mudas: { quantidade, asset_ids }` fica ao lado de `referencias: []`. Referência muda **≠** ausência de referência: a imagem que sai é a mesma nos dois casos, o motivo de ela ter saído assim não é, e só um desses dois registros consegue explicar por que alguém anexou quatro fotos e recebeu um rosto sem nenhuma delas.
+
 **Cada referência anexada carrega:**
 - a imagem (do upload, da galeria ou de um Resultado conectado);
 - **tipo opcional** (chip): produto · roupa · cenário · pose · **estilo visual** · outro — orienta a frase compilada ("the product shown in reference image 2, held in her hands"). *Estilo visual (10/08/2026) é o primeiro tipo sobre o **como** e não sobre o **quê**: a cláusula manda casar estilo, clima, color grading e luz da referência e **proíbe copiar o sujeito ou o conteúdo** — sem a proibição, "use o estilo" degenera em "copie a imagem";*
