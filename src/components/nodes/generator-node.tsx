@@ -31,7 +31,13 @@ import {
   sheetAnchorSlots,
 } from "@/lib/generation/capacity";
 import { findMentions, sceneWithoutMentions } from "@/lib/generation/mentions";
-import { DEFAULT_PRESET_ID, FORMAT_PRESETS, findPreset } from "@/lib/generation/presets";
+import {
+  DEFAULT_IMAGE_SIZE,
+  DEFAULT_PRESET_ID,
+  FORMAT_PRESETS,
+  IMAGE_SIZES,
+  findPreset,
+} from "@/lib/generation/presets";
 import { t } from "@/lib/i18n/pt-BR";
 import { useBalance } from "@/lib/sparks/balance-store";
 
@@ -54,6 +60,8 @@ export type GeneratorNodeData = {
   prompt?: string;
   modelId?: string | null;
   presetId?: string;
+  /** "1K" · "2K" · "4K". Absent means the default, which is 2K. */
+  imageSize?: string;
   /** null (or absent) means "inherit the character's style" — rule 11. */
   estiloKey?: string | null;
   /**
@@ -98,6 +106,7 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
 
   const prompt = data.prompt ?? "";
   const presetId = data.presetId ?? DEFAULT_PRESET_ID;
+  const imageSize = data.imageSize ?? DEFAULT_IMAGE_SIZE;
   const estiloKey = data.estiloKey ?? null;
   const anguloKey = data.anguloKey ?? null;
   const iluminacaoKey = data.iluminacaoKey ?? null;
@@ -116,6 +125,20 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   const modelId = data.modelId ?? defaultModelId(providers);
   const model = findModel(providers, modelId);
   const preset = findPreset(presetId);
+
+  /**
+   * What this resolution costs on this model — and whether the model sells it
+   * at all.
+   *
+   * Both answers come from the catalogue rather than from a table in here, for
+   * the same reason the price of a model does: a number the browser knows on its
+   * own is a number that can disagree with the bill. When the model does not
+   * sell the chosen size, there is deliberately no fallback price: the block
+   * says so and refuses to generate, because the alternative is quoting one
+   * price and being charged another.
+   */
+  const sizePrice = model?.sizes.find((entry) => entry.size === imageSize) ?? null;
+  const sizeOffered = sizePrice !== null;
 
   const mentions = findMentions(prompt);
   const scene = sceneWithoutMentions(prompt, mentions);
@@ -214,6 +237,7 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
       prompt,
       modelId,
       presetId,
+      imageSize,
       estiloKey,
       anguloKey,
       iluminacaoKey,
@@ -393,6 +417,38 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
                 ))}
               </select>
             </div>
+
+            <div>
+              <label
+                htmlFor={`quality-${id}`}
+                className="mb-1 block text-[11px] font-medium text-ink-muted"
+              >
+                {copy.node.qualityLabel}
+              </label>
+              <select
+                id={`quality-${id}`}
+                value={imageSize}
+                disabled={busy}
+                onChange={(event) => updateNodeData(id, { imageSize: event.target.value })}
+                className={SELECT_CLASS}
+              >
+                {/* Every resolution the product knows, always — the ones this
+                    model does not sell stay on the list, greyed, saying why.
+                    An option that is merely absent teaches nobody anything.
+                    The price is in the label because resolution is the one
+                    setting here whose whole point is what it costs. */}
+                {IMAGE_SIZES.map((size) => {
+                  const price = model?.sizes.find((entry) => entry.size === size) ?? null;
+
+                  return (
+                    <option key={size} value={size} disabled={price === null}>
+                      {size} ·{" "}
+                      {price ? `${price.sparks} ⚡` : copy.node.qualityUnavailable}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
           </div>
 
           {/* Rule 4 of §6, exercised. Unlike the style selector, "Auto" here is a
@@ -562,7 +618,7 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
           {/* ── O botão, e logo abaixo o que ele custa ───────────────────── */}
           <button
             type="button"
-            disabled={busy || nothingToDo || !modelId || !projectId}
+            disabled={busy || nothingToDo || !modelId || !projectId || !sizeOffered}
             title={nothingToDo ? copy.node.emptyPromptAlone : undefined}
             onClick={() => void handleGenerate()}
             className="nodrag mt-3 h-9 w-full rounded-lg bg-accent text-xs font-medium text-canvas
@@ -576,16 +632,24 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
               Both halves are needed to answer the only question anyone asks here:
               can I afford this one? */}
           {model ? (
-            <p className="mt-1.5 text-center text-[11px] text-ink-faint">
-              {copy.node.costWillPrefix}{" "}
-              <strong className="font-medium text-ink-muted">{model.sparks} ⚡</strong>
-              {balance === null ? null : (
-                <>
-                  {" · "}
-                  {copy.node.balanceLabel}: {balance.toLocaleString("pt-BR")} ⚡
-                </>
-              )}
-            </p>
+            sizePrice ? (
+              <p className="mt-1.5 text-center text-[11px] text-ink-faint">
+                {copy.node.costWillPrefix}{" "}
+                <strong className="font-medium text-ink-muted">{sizePrice.sparks} ⚡</strong>
+                {balance === null ? null : (
+                  <>
+                    {" · "}
+                    {copy.node.balanceLabel}: {balance.toLocaleString("pt-BR")} ⚡
+                  </>
+                )}
+              </p>
+            ) : (
+              /* No price, so no price is shown. Falling back to the model's base
+                 figure would quote one number and charge another. */
+              <p className="mt-1.5 text-center text-[11px] leading-relaxed text-warning">
+                {copy.errors.unsupportedSize}
+              </p>
+            )
           ) : null}
 
           {busy ? (
@@ -661,6 +725,8 @@ function failureMessage(result: Extract<CanvasGenerationResult, { ok: false }>):
       return `${errors.unknownVersionPrefix} @${result.handle ?? ""} ${errors.unknownVersionSuffix}`;
     case "multiple_characters":
       return errors.multipleCharacters;
+    case "unsupported_size":
+      return errors.unsupportedSize;
     case "too_many_references":
       return `${errors.tooManyReferencesPrefix} ${result.limit ?? 0} ${errors.tooManyReferencesSuffix}`;
     case "missing_reference":

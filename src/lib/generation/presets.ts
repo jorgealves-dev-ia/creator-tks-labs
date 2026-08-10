@@ -189,9 +189,36 @@ export function resolveFormat(modelSlug: string, presetId: string | null): Resol
   return { preset, ratio: closest, approximated: closest !== preset.ratio };
 }
 
+// ---------------------------------------------------------------------------
+// Resolution
+// ---------------------------------------------------------------------------
+
 /**
- * The single resolution of v1 (§3 of docs/nodes-geracao.md). 1K and 2K cost
- * exactly the same on the default model, so asking for the smaller one would be
- * paying full price for less.
+ * The resolutions the product offers, smallest first — its vocabulary, not any
+ * one model's.
+ *
+ * Which of these a given model actually sells comes from the catalogue
+ * (`ai_model_image_prices`), and the two lists exist for different jobs: this one
+ * decides what the selector *shows*, the catalogue decides what is *selectable*.
+ * Without a list of everything, a model that has no 4K could only omit the
+ * option — and an option that is simply absent teaches nobody anything. Present
+ * and greyed out, with the reason, is the screen doing its job as the manual.
+ *
+ * Google's Flash model also publishes 0.5K. It is deliberately not here: half a
+ * thousand pixels is a thumbnail, and offering it would put a choice in front of
+ * everyone that almost nobody should make.
  */
-export const CANVAS_IMAGE_SIZE = "2K";
+export const IMAGE_SIZES = ["1K", "2K", "4K"] as const;
+
+/**
+ * What a block starts on.
+ *
+ * Was a constant of the whole product until 10/08/2026, with a comment
+ * explaining that 1K and 2K cost the same on the default model so asking for
+ * less would be paying full price for less. That was true when the default was
+ * Nano Banana Pro, where 1K and 2K really are the same $0.134. The default is
+ * now Nano Banana 2, where 1K costs a third less than 2K — so the smaller size
+ * stopped being a worse deal and became a real choice, which is most of why the
+ * selector exists at all.
+ */
+export const DEFAULT_IMAGE_SIZE = "2K";

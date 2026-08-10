@@ -1139,3 +1139,26 @@ Duas peças aprovadas hoje e **deliberadamente adiadas**, com a data e o motivo 
 - **Entrada "Galeria" no sidebar**, reaproveitando o modal do seletor de referências em **modo navegação**: sem seleção, sem confirmar, com as ações que fazem sentido quando ninguém está escolhendo nada — baixar e ver o prompt. O modal já sabe listar, filtrar, buscar e paginar as imagens do usuário; o que falta é um modo em que ele não esteja a serviço de outra decisão.
 
 **Por que esperar em vez de fazer agora.** A Etapa B redesenha a ocupação do painel de resultado — a grade 2×2 da quantidade. Desenhar a faixa de recentes contra o estado provisório significaria desenhá-la duas vezes, e a segunda com a primeira ainda no caminho. **Desenha-se contra o estado final, não contra o provisório** — é a mesma razão pela qual o painel já nasceu com quatro lugares em vez de um.
+
+### 10/08/2026 — Qualidade 1K/2K/4K, com preço vindo do catálogo
+
+O node Gerar Imagem ganha um seletor de **Qualidade**. Até aqui a resolução era uma constante — `CANVAS_IMAGE_SIZE = "2K"` — com um comentário explicando que pedir menos seria pagar o mesmo por menos.
+
+**O comentário estava certo e ficou errado.** Ele foi escrito quando o modelo padrão era o Nano Banana Pro, onde 1K e 2K custam os mesmos $0,134 de verdade. O padrão virou o Nano Banana 2 em 10/08, e lá 1K custa **um terço menos** que 2K. A frase continuou no arquivo dizendo uma coisa que tinha deixado de ser verdade — que é o modo mais silencioso de um comentário mentir.
+
+**Da documentação oficial do Google, lida hoje:**
+
+| | 0.5K | 1K | 2K | 4K |
+|---|---|---|---|---|
+| Nano Banana Pro | — | $0,134 | $0,134 | $0,24 |
+| Nano Banana 2 | $0,045 | $0,067 | $0,101 | $0,151 |
+
+Em Sparks, pela regra da casa (USD × 550 × 1,35, arredondado a 5): Pro **100 / 100 / 180**, Flash **50 / 75 / 110**. Os dois preços de 2K são exatamente os que já estavam em `image_sparks` — ninguém paga diferente amanhã pela mesma imagem que pediu ontem. O 0.5K existe na API e **não** é oferecido: meio milhar de pixels é miniatura, e oferecer seria pôr diante de todo mundo uma escolha que quase ninguém deveria fazer.
+
+**Tabela nova, não colunas.** `ai_model_image_prices (model_id, image_size, sparks)`. `image_sparks_1k`/`image_sparks_4k` resolveria hoje e precisaria de migration no dia em que um modelo publicasse um tamanho que os outros não têm. E a tabela ganha um segundo papel, que é o mais importante: **é ela quem diz quais resoluções um modelo oferece.** Não existe oferecer um tamanho que não se sabe cobrar.
+
+**Duas listas, dois trabalhos.** `IMAGE_SIZES` no código decide o que o seletor **mostra**; o catálogo decide o que é **selecionável**. Sem a lista de tudo, um modelo sem 4K só poderia omitir a opção — e uma opção ausente não ensina nada a ninguém. Presente, cinza e dizendo "indisponível neste modelo" é a tela sendo o manual.
+
+**O preço nunca vem de quem chama, e isso não mudou.** `record_generation` ganhou `p_image_size`, que nomeia um *tamanho* — exatamente como `p_model_id` nomeia um modelo. Quanto custa continua sendo resposta do catálogo. Um tamanho sem linha de preço é recusado com **GN005**, nunca cobrado pelo preço-base: cair no preço-base seria entregar 4K cobrando 2K, que é precisamente o buraco que a tabela fecha.
+
+**E a checagem acontece duas vezes, de propósito.** O servidor confere o tamanho contra o catálogo **antes** de chamar o provedor, porque a recusa do banco chega depois de a imagem existir — ou seja, depois de o Google ter sido pago por ela. O `GN005` continua lá como rede: o banco é a autoridade sobre preço, e uma autoridade cuja recusa não tem nome deste lado vira "erro inesperado" na tela. A ordem que não erra a favor de ninguém é descobrir antes.

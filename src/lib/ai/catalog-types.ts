@@ -33,6 +33,24 @@ export type CatalogModel = {
   /** The price for one unit of this capability, from the catalogue's own column. */
   sparks: number;
   isDefault: boolean;
+  /**
+   * The resolutions this model sells, cheapest first — and therefore the ones it
+   * *offers*, because there is no offering a size we cannot price.
+   *
+   * Empty for a capability that has no notion of size (extraction) and for an
+   * image model with no price rows yet, in which case the interface offers only
+   * the default size at `sparks` and says so about the rest. What it never does
+   * is invent a number: a price we did not read in the provider's documentation
+   * would be a guess printed next to a button that spends money.
+   */
+  sizes: ModelImageSize[];
+};
+
+/** One resolution a model sells, at the price the catalogue decided. */
+export type ModelImageSize = {
+  /** The provider's own identifier — "1K", "2K", "4K". */
+  size: string;
+  sparks: number;
 };
 
 export type CatalogProvider = {

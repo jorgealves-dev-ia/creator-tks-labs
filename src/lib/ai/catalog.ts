@@ -3,6 +3,7 @@ import "server-only";
 import type {
   Capability,
   CatalogProvider,
+  ModelImageSize,
   ProviderStatus,
 } from "@/lib/ai/catalog-types";
 import { extractionProviderStatus, imageProviderStatus } from "@/lib/providers/registry";
@@ -25,7 +26,7 @@ import type { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
-/** The three things that differ between capabilities, in one place. */
+/** The four things that differ between capabilities, in one place. */
 const CAPABILITY_READERS: Record<
   Capability,
   {
@@ -33,17 +34,33 @@ const CAPABILITY_READERS: Record<
     flag: string;
     /** Which column prices it. */
     price: (model: { extraction_sparks: number | null; image_sparks: number | null }) => number | null;
+    /**
+     * Which resolutions it sells. Only image generation has any: an extraction
+     * has no size, and answering with the image prices anyway would offer the
+     * extraction panel a choice that means nothing.
+     */
+    sizes: (model: {
+      ai_model_image_prices: { image_size: string; sparks: number; sort_order: number }[];
+    }) => ModelImageSize[];
     status: (slug: string, envVarName: string) => ProviderStatus;
   }
 > = {
   extraction: {
     flag: "extraction",
     price: (model) => model.extraction_sparks,
+    sizes: () => [],
     status: extractionProviderStatus,
   },
   image_gen: {
     flag: "image_gen",
     price: (model) => model.image_sparks,
+    sizes: (model) =>
+      [...model.ai_model_image_prices]
+        // By sort_order, which the catalogue set from smallest to largest —
+        // the order somebody thinks about resolution in, and not the
+        // alphabetical order in which 4K comes before 1K.
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((price) => ({ size: price.image_size, sparks: price.sparks })),
     status: imageProviderStatus,
   },
 };
@@ -60,7 +77,7 @@ export async function loadCatalog(
   const { data } = await supabase
     .from("ai_providers")
     .select(
-      "slug, display_name, enabled, env_var_name, sort_order, ai_models (id, slug, display_name, extraction_sparks, image_sparks, is_default, enabled, capabilities, sort_order)",
+      "slug, display_name, enabled, env_var_name, sort_order, ai_models (id, slug, display_name, extraction_sparks, image_sparks, is_default, enabled, capabilities, sort_order, ai_model_image_prices (image_size, sparks, sort_order))",
     )
     .eq("enabled", true)
     .order("sort_order");
@@ -84,6 +101,7 @@ export async function loadCatalog(
           displayName: model.display_name,
           sparks: reader.price(model) ?? 0,
           isDefault: model.is_default,
+          sizes: reader.sizes(model),
         })),
     }))
     .filter((provider) => provider.models.length > 0);

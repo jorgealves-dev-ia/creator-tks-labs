@@ -211,7 +211,7 @@ A única exceção prevista: a exclusão da conta. Durante o cascade, a linha em
 
 ### Decisão 6 — Presets de formato data-driven
 
-**O quê.** Proporções e resoluções por canal (Instagram, Facebook, TikTok, YouTube, Display Ads) vivem em `config/format-presets.json`. O catálogo de modelos, provedores e preços vive em **duas tabelas do banco** (`ai_providers`, `ai_models`). Nunca hardcoded em componentes.
+**O quê.** Proporções e resoluções por canal (Instagram, Facebook, TikTok, YouTube, Display Ads) vivem em `config/format-presets.json`. O catálogo de modelos, provedores e preços vive em **três tabelas do banco** (`ai_providers`, `ai_models`, `ai_model_image_prices`). Nunca hardcoded em componentes.
 
 **Por quê.** Preço de modelo muda e formato de canal muda — e nenhuma das duas coisas é mudança de comportamento do produto. Como dado, ajustar é editar uma linha; como código espalhado por componentes, vira uma varredura em busca de todos os lugares onde alguém escreveu `1080` ou `0.04`.
 
@@ -236,7 +236,7 @@ A única exceção prevista: a exclusão da conta. Durante o cascade, a linha em
 
 ## 4. Modelo de dados
 
-**Postgres no Supabase, RLS habilitado em todas as 13 tabelas, com política default-deny.**
+**Postgres no Supabase, RLS habilitado em todas as 14 tabelas, com política default-deny.**
 
 ### O que "default-deny" significa aqui
 
@@ -244,7 +244,7 @@ Com RLS ligado e nenhuma política que case, o Postgres **nega** a operação. N
 
 Verificado na Fase 0: sem sessão, as 9 tabelas de então respondiam `42501 permission denied`. A décima (`entity_versions`) segue o mesmo padrão e é verificada junto com a migration que a cria.
 
-### As 13 tabelas
+### As 14 tabelas
 
 | Tabela | O que guarda |
 |---|---|
@@ -259,7 +259,8 @@ Verificado na Fase 0: sem sessão, as 9 tabelas de então respondiam `42501 perm
 | `assets` | arquivos no Storage: `kind` (image/video/audio), `source` (upload/generation), mime, dimensões, duração, `label` (nome humano — o nome do arquivo enviado ou as palavras do prompt; alimenta a galeria e a busca dela, e é nulo para tudo que nasceu antes dela) |
 | `generations` | cada execução: workflow/node de origem, `entity_id`, `model_id`, provedor, modelo, `params jsonb`, `prompt_user_pt`, `prompt_compiled jsonb`, status, tokens, `cost_real_cents`, `sparks_charged`, `result_asset_id`, `entity_version_id`, `sheet_source`, `summary jsonb`, `error_message` |
 | `ai_providers` | catálogo de fornecedores de IA: `slug`, `display_name`, `env_var_name` (**qual variável guarda a chave — nunca a chave**), `enabled`, ordenação |
-| `ai_models` | catálogo de modelos: `provider_id`, `slug` (o identificador oficial na API do fornecedor), `capabilities text[]` (`{extraction}`, `{translation}`, `{image_gen}`; `{video_gen}` depois), `extraction_sparks`, `image_sparks`, `is_default`, `enabled` |
+| `ai_models` | catálogo de modelos: `provider_id`, `slug` (o identificador oficial na API do fornecedor), `capabilities text[]` (`{extraction}`, `{translation}`, `{image_gen}`; `{video_gen}` depois), `extraction_sparks`, `image_sparks` (preço-base, de quem não nomeia tamanho), `is_default`, `enabled` |
+| `ai_model_image_prices` | preço em Sparks por **resolução** (`model_id`, `image_size`, `sparks`, ordenação) — e, por consequência, **quais resoluções cada modelo oferece**: não se oferece um tamanho que não se sabe cobrar. Lida por `record_generation` para decidir o preço e pela tela para desabilitar as opções indisponíveis com o motivo à vista |
 | `extractions` | o diário do motor de extração: `entity_id`, `model_id`, `source` (photo/text), `status`, tokens consumidos, `real_cost_cents`, `sparks_charged`, `reference_asset_id` (a foto lida), `source_text` (o texto colado), `summary jsonb` (o placar) |
 
 Sobre `entities.project_id`: **nulo = a entidade vale em todos os projetos do usuário**; preenchido = escopo daquele projeto. O `handle` é um slug minúsculo, único por usuário, validado por constraint no formato `^[a-z0-9][a-z0-9_-]{0,47}$`.
@@ -294,9 +295,9 @@ Esta é a linha divisória mais importante da arquitetura: as regras abaixo **n�
 - Um produto guarda **no máximo 5 fotos** (trigger em `entity_images`) — o número que o bloco de geração conta em voz alta ao dizer "4 de 6", porque cada foto ocupa uma vaga de referência do modelo
 - Salvar versão é **atômico**: a função `public.save_entity_version(entity_id, label)` faz o INSERT do retrato e o UPDATE do ponteiro ativo na mesma transação. Ou as duas escritas acontecem, ou nenhuma — nunca um `@julia` apontando para o retrato errado
 - Registrar e cobrar uma extração é **atômico e com preço do catálogo**: `public.record_extraction(...)` grava a linha em `extractions` e insere o débito no ledger na mesma transação, lendo o preço de `ai_models.extraction_sparks` — a função **não aceita valor do chamador**, porque quem pudesse dizer o preço poderia dizer zero. É `security definer` e valida a posse da personagem contra `auth.uid()`, o que faz esta feature inteira **não precisar da service role**. Recusa com `EX001` (saldo insuficiente), `EX002` (personagem não é do chamador) e `EX003` (modelo não habilitado para extração). Falha da API grava `status = 'failed'` e não cobra — garantido também por constraint
-- Registrar e cobrar uma **geração** é atômico pelo mesmo desenho: `public.record_generation(...)` é a gêmea da anterior, lê o preço de `ai_models.image_sparks`, trava a carteira com `for update`, debita só no sucesso e recusa com `GN001` / `GN002` / `GN003`. `generations` já era somente-leitura para o usuário desde a Fase 0, então esta função é o único caminho por onde uma linha nasce — que é o que a torna o único lugar capaz de decidir um preço
+- Registrar e cobrar uma **geração** é atômico pelo mesmo desenho: `public.record_generation(...)` é a gêmea da anterior, trava a carteira com `for update`, debita só no sucesso e recusa com `GN001` / `GN002` / `GN003` / `GN004` / `GN005`. O preço sai do catálogo em dois níveis: de `ai_model_image_prices` quando a chamada **nomeia um tamanho**, e de `ai_models.image_sparks` quando não nomeia (a geração canônica). Nomear um tamanho não é nomear um preço — e um tamanho sem linha de preço é **recusado** (`GN005`), nunca cobrado pelo preço-base, senão pedir 4K e pagar 2K seria possível. `generations` já era somente-leitura para o usuário desde a Fase 0, então esta função é o único caminho por onde uma linha nasce — que é o que a torna o único lugar capaz de decidir um preço
 - Preço e capacidade andam juntos por constraint: `('image_gen' = any(capabilities)) = (image_sparks is not null)`, gêmea da que já valia para `extraction_sparks`. Sem ela, uma linha mal cadastrada daria imagens de graça ou ofereceria um modelo que a função de cobrança não sabe precificar — e imagem custa dinheiro de verdade por clique
-- O catálogo de IA (`ai_providers`, `ai_models`) tem `SELECT` para `authenticated` e **nenhuma política de escrita**: nesta fase se gerencia por SQL direto, depois pelo painel admin. `extractions` tem só leitura do próprio usuário — as linhas são escritas exclusivamente pela função acima
+- O catálogo de IA (`ai_providers`, `ai_models`, `ai_model_image_prices`) tem `SELECT` para `authenticated` e **nenhuma política de escrita**: nesta fase se gerencia por SQL direto, depois pelo painel admin. Um trigger recusa preço de imagem para modelo sem a capability `image_gen` — o espelho, entre tabelas, do CHECK que já existia dentro de `ai_models`. `extractions` tem só leitura do próprio usuário — as linhas são escritas exclusivamente pela função acima
 
 **A exceção comum a todas as travas de apagamento**: quando a linha correspondente em `auth.users` já não existe, o delete passa. É o sinal de que se trata da cascata de exclusão de conta, e não de reescrita de história. O cadeado protege o passado; não impede o usuário de apagar a própria conta (LGPD). O padrão nasceu na `reject_ledger_delete` e vale hoje para o ledger, para `entity_versions` e para `entity_images`.
 

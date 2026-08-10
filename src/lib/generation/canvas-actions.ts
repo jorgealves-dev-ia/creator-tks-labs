@@ -7,7 +7,12 @@ import { imageRealCostCents } from "@/lib/ai/pricing";
 import { parseSheet, type CharacterSheet } from "@/lib/character-sheet/schema";
 import { loadImagePayloads } from "@/lib/generation/asset-payloads";
 import { distinctHandles, findMentions, sceneWithoutMentions } from "@/lib/generation/mentions";
-import { CANVAS_IMAGE_SIZE, maxReferences, resolveFormat } from "@/lib/generation/presets";
+import {
+  DEFAULT_IMAGE_SIZE,
+  IMAGE_SIZES,
+  maxReferences,
+  resolveFormat,
+} from "@/lib/generation/presets";
 import { REFERENCE_KINDS } from "@/lib/generation/references";
 import {
   buildCanvasPrompt,
@@ -67,6 +72,11 @@ const CHARGE_ERROR_CODES: Record<string, CanvasGenerationFailure> = {
   GN002: "invalid",
   GN003: "invalid",
   GN004: "invalid",
+  // Unreachable in practice — the size is checked against the catalogue before
+  // anything is generated, precisely so this never fires after we have paid the
+  // provider. Mapped anyway: the database is the authority on the price, and an
+  // authority whose refusal has no name on this side becomes "erro inesperado".
+  GN005: "unsupported_size",
 };
 
 const referenceSchema = z.object({
@@ -93,6 +103,13 @@ const generateSchema = z.object({
   prompt: z.string().max(2000),
   modelId: z.uuid(),
   presetId: z.string().min(1).max(80),
+  /**
+   * The resolution asked for. Defaulted rather than required: a browser still
+   * running yesterday's bundle sends nothing, and nothing has always meant 2K.
+   * The *price* of this size is never sent — it is looked up here, from the
+   * catalogue, like every other price in this system.
+   */
+  imageSize: z.enum(IMAGE_SIZES).default(DEFAULT_IMAGE_SIZE),
   /** The node's style override; null means "inherit". */
   estiloKey: z.string().min(1).max(80).nullable(),
   // The scene adjustments (§6 rule 4). Defaulted rather than required: a browser
@@ -117,6 +134,7 @@ export type CanvasGenerationFailure =
   | "no_version"
   | "unknown_version"
   | "multiple_characters"
+  | "unsupported_size"
   | "too_many_references"
   | "missing_reference"
   | "translation_failed"
@@ -180,7 +198,7 @@ export async function generateFromNode(input: unknown): Promise<CanvasGeneration
   const { data: model } = await supabase
     .from("ai_models")
     .select(
-      "id, slug, image_sparks, enabled, capabilities, ai_providers (slug, env_var_name, enabled)",
+      "id, slug, image_sparks, enabled, capabilities, ai_providers (slug, env_var_name, enabled), ai_model_image_prices (image_size, sparks)",
     )
     .eq("id", request.modelId)
     .maybeSingle();
@@ -204,7 +222,25 @@ export async function generateFromNode(input: unknown): Promise<CanvasGeneration
     return { ok: false, reason: "not_configured" };
   }
 
-  const priceSparks = model.image_sparks;
+  // 1b. The price of *this size*, from the catalogue.
+  //
+  //     Checked here rather than left to record_generation, even though the
+  //     database refuses the same case with GN005: that refusal arrives after
+  //     the image exists, which means after Google has been paid for it. The
+  //     order that errs in nobody's favour is to find out first.
+  //
+  //     No fallback to image_sparks. A model whose catalogue does not price the
+  //     requested size cannot draw it for a price we can name, and naming a
+  //     different one is how a 4K image gets billed as a 2K.
+  const sizePrice = model.ai_model_image_prices.find(
+    (price) => price.image_size === request.imageSize,
+  );
+
+  if (!sizePrice) {
+    return { ok: false, reason: "unsupported_size" };
+  }
+
+  const priceSparks = sizePrice.sparks;
 
   // 2. The `@`. One character per generation in v1 — keeping two identities
   //    consistent in one image is its own problem, and half-solving it here would
@@ -366,7 +402,7 @@ export async function generateFromNode(input: unknown): Promise<CanvasGeneration
     preset_id: format.preset.id,
     aspect_ratio: format.ratio,
     proporcao_pedida: format.preset.ratio,
-    image_size: CANVAS_IMAGE_SIZE,
+    image_size: request.imageSize,
     reference_asset_ids: prompt.referenceAssetIds,
   };
 
@@ -397,7 +433,7 @@ export async function generateFromNode(input: unknown): Promise<CanvasGeneration
         prompt: prompt.text,
         references: payloads.length > 0 ? payloads : undefined,
         aspectRatio: format.ratio,
-        imageSize: CANVAS_IMAGE_SIZE,
+        imageSize: request.imageSize,
       },
     });
 
@@ -468,7 +504,7 @@ export async function generateFromNode(input: unknown): Promise<CanvasGeneration
     p_params: params,
     p_input_tokens: usage.inputTokens,
     p_output_tokens: usage.outputTokens,
-    p_real_cost_cents: imageRealCostCents(model.slug, CANVAS_IMAGE_SIZE, usage) ?? undefined,
+    p_real_cost_cents: imageRealCostCents(model.slug, request.imageSize, usage) ?? undefined,
     p_result_asset_id: asset.id,
     p_entity_version_id: character?.versionId ?? undefined,
     // A mention only ever resolves to a frozen snapshot, so this is never
@@ -481,6 +517,10 @@ export async function generateFromNode(input: unknown): Promise<CanvasGeneration
     p_prompt_user_pt: request.prompt.trim() === "" ? undefined : request.prompt.trim(),
     p_project_id: request.projectId,
     p_node_id: request.nodeId,
+    // The size, so the function prices *this* image rather than the model's
+    // base. Naming the size is not naming the price — the catalogue still
+    // answers that, which is the whole shape of this rule.
+    p_image_size: request.imageSize,
   });
 
   if (chargeError || !generation) {
@@ -685,6 +725,9 @@ async function recordFailure(
     p_prompt_user_pt: input.request.prompt.trim() === "" ? undefined : input.request.prompt.trim(),
     p_project_id: input.request.projectId,
     p_node_id: input.request.nodeId,
+    // A failed generation is free, so this changes no money — it is recorded so
+    // the history can answer "which size was being attempted when it broke?".
+    p_image_size: input.request.imageSize,
   });
 }
 

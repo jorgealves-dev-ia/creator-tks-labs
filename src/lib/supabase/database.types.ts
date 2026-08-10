@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_model_image_prices: {
+        Row: {
+          created_at: string
+          id: string
+          image_size: string
+          model_id: string
+          sort_order: number
+          sparks: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_size: string
+          model_id: string
+          sort_order?: number
+          sparks: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_size?: string
+          model_id?: string
+          sort_order?: number
+          sparks?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_model_image_prices_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "ai_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_models: {
         Row: {
           capabilities: string[]
@@ -723,6 +758,7 @@ export type Database = {
           p_entity_id?: string
           p_entity_version_id?: string
           p_error_message?: string
+          p_image_size?: string
           p_input_tokens?: number
           p_model_id: string
           p_node_id?: string

@@ -645,6 +645,15 @@ export const t = {
       modelLabel: "Modelo",
       formatLabel: "Formato",
       styleLabel: "Estilo",
+      qualityLabel: "Qualidade",
+      /**
+       * Said inside the option itself, not in a tooltip.
+       *
+       * A resolution the chosen model does not sell stays on the list, greyed —
+       * an option that is simply missing teaches nobody anything, while one that
+       * is present and explains itself is the screen doing its job as the manual.
+       */
+      qualityUnavailable: "indisponível neste modelo",
       /** Where the style came from — a property of the field, not of the value. */
       styleFromCharacter: "da personagem",
       styleFromDefault: "padrão",
@@ -662,7 +671,9 @@ export const t = {
         "Auto segue o padrão; o que você escolher aqui sobrescreve só aquele campo.",
       generate: "Gerar Conteúdo",
       generating: "Gerando…",
-      generatingHint: "Uma imagem 2K leva de 20 a 40 segundos.",
+      // Sem citar resolução desde que existem três: dizer "2K" era exato quando
+      // 2K era a única, e viraria errado nas outras duas.
+      generatingHint: "Uma imagem leva de 20 a 40 segundos — em 4K, um pouco mais.",
       /**
        * The cost, under the button and in the future tense — "custará", not
        * "custa". It moved out of the header for that reason: a number in the
@@ -848,6 +859,8 @@ export const t = {
       unknownVersionPrefix: "A personagem",
       unknownVersionSuffix: "não tem essa versão.",
       multipleCharacters: "Uma personagem por geração nesta versão. Deixe só uma menção @.",
+      unsupportedSize:
+        "Este modelo não gera nessa resolução. Escolha outra qualidade ou outro modelo.",
       tooManyReferencesPrefix: "Este modelo aceita até",
       tooManyReferencesSuffix: "imagens de referência por geração.",
       /** The wire a product could not fit through, said before it is drawn. */
