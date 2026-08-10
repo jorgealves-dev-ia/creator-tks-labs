@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { CharacterWizard } from "@/components/character-sheet/character-wizard";
 import { Portrait, VersionBadge } from "@/components/character-sheet/identity";
+import { NodeIcon } from "@/components/nodes/node-icons";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { useEntitiesStore } from "@/lib/entities/store";
 import { useCharacterPortraits } from "@/lib/entities/use-portraits";
@@ -211,14 +212,9 @@ export function NodeSidebar() {
                 className="flex size-8 shrink-0 items-center justify-center rounded-lg
                            border border-line bg-accent-soft text-ink-muted"
               >
-                <svg viewBox="0 0 16 16" className="size-3.5" aria-hidden>
-                  <rect x="1.5" y="2.5" width="13" height="11" rx="2"
-                        stroke="currentColor" strokeWidth="1.3" fill="none" />
-                  <path d="M1.5 11l3.2-3.2 2.4 2.4 3-3 4.4 4.4"
-                        stroke="currentColor" strokeWidth="1.3" fill="none"
-                        strokeLinecap="round" strokeLinejoin="round" />
-                  <circle cx="10.4" cy="6" r="1.1" fill="currentColor" />
-                </svg>
+                {/* The same glyph the block wears on the canvas: the rail is
+                    where you learn what to look for out there. */}
+                <NodeIcon kind="generator" className="size-3.5" />
               </span>
               <span className={revealed("min-w-0 flex-1")}>
                 <span className="block truncate text-xs font-medium text-ink">

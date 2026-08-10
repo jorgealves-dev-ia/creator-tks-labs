@@ -4,6 +4,7 @@ import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { useState } from "react";
 
 import { DirtyDot, Portrait, VersionBadge } from "@/components/character-sheet/identity";
+import { NodeHeader } from "@/components/nodes/node-header";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { isDraftDirty } from "@/lib/character-sheet/diff";
 import { useEntitiesStore } from "@/lib/entities/store";
@@ -72,23 +73,20 @@ export function CharacterNode({ id, data, selected }: NodeProps<CharacterNodeTyp
     <div
       onDoubleClick={() => openEditor(character.id)}
       title={t.characterSheet.card.editHint}
-      className={`group/card relative w-56 rounded-xl border bg-surface-raised shadow-lg
+      className={`group/node relative w-56 rounded-xl border bg-surface-raised shadow-lg
                   shadow-black/30 transition-all duration-150 ease-out
                   ${selected ? "border-accent" : "border-line"}
                   ${collapsing ? "scale-90 opacity-0" : "scale-100 opacity-100"}`}
     >
-      <button
-        type="button"
-        onClick={collapse}
-        title={t.characterSheet.card.collapse}
-        aria-label={t.characterSheet.card.collapse}
-        className="nodrag absolute -right-1.5 -top-1.5 z-10 flex size-5 items-center justify-center
-                   rounded-full border border-line bg-surface text-[10px] leading-none
-                   text-ink-muted opacity-0 transition-opacity hover:border-line-strong
-                   hover:text-ink focus:opacity-100 group-hover/card:opacity-100"
-      >
-        ✕
-      </button>
+      {/* Removing a character is putting it away, so the card keeps its own
+          shrinking exit instead of the header's plain removal. */}
+      <NodeHeader
+        nodeId={id}
+        kind="character"
+        title={character.displayName}
+        removeHint={t.characterSheet.card.collapse}
+        onRemove={collapse}
+      />
 
       <div className="flex items-center gap-2.5 p-3">
         <Portrait
@@ -97,12 +95,11 @@ export function CharacterNode({ id, data, selected }: NodeProps<CharacterNodeTyp
           className="size-11"
         />
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <p className="truncate text-sm font-medium text-ink">{character.displayName}</p>
-            {dirty ? <DirtyDot /> : null}
-          </div>
-          <p className="truncate text-xs text-ink-faint">@{character.handle}</p>
+        {/* The name moved up into the header, so what is left here is the part
+            the header cannot say: the handle a prompt calls her by. */}
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
+          <p className="truncate text-sm text-ink-muted">@{character.handle}</p>
+          {dirty ? <DirtyDot /> : null}
         </div>
 
         <VersionBadge versionNumber={character.activeVersion?.number ?? null} />

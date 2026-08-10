@@ -1,0 +1,62 @@
+/**
+ * The glyph of each kind of block, in one place.
+ *
+ * A canvas where every card looks the same until you read it is a canvas you
+ * navigate by reading. The icon is what lets someone find the generating block
+ * among six cards at low zoom, before any text is legible — which is also why
+ * the same drawing has to appear on the card and in the Arsenal rail that puts
+ * it there. Two copies of the same glyph is one copy too many.
+ */
+
+export type NodeKind = "character" | "product" | "generator" | "result";
+
+export function NodeIcon({ kind, className }: { kind: NodeKind; className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" className={className} aria-hidden>
+      {PATHS[kind]}
+    </svg>
+  );
+}
+
+const STROKE = {
+  stroke: "currentColor",
+  strokeWidth: 1.3,
+  fill: "none",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+} as const;
+
+const PATHS: Record<NodeKind, React.ReactNode> = {
+  character: (
+    <>
+      <circle cx="8" cy="5.5" r="2.75" {...STROKE} />
+      <path d="M2.75 14c0-2.9 2.35-5.25 5.25-5.25S13.25 11.1 13.25 14" {...STROKE} />
+    </>
+  ),
+
+  // A box in three-quarter view: the only one of the four that is an object
+  // rather than a picture of one, which is exactly what a product is here.
+  product: (
+    <>
+      <path d="M8 1.75l5.75 2.9v6.7L8 14.25 2.25 11.35v-6.7L8 1.75z" {...STROKE} />
+      <path d="M2.25 4.65L8 7.55l5.75-2.9M8 7.55v6.7" {...STROKE} />
+    </>
+  ),
+
+  generator: (
+    <>
+      <rect x="1.5" y="2.5" width="13" height="11" rx="2" {...STROKE} />
+      <path d="M1.5 11l3.2-3.2 2.4 2.4 3-3 4.4 4.4" {...STROKE} />
+      <circle cx="10.4" cy="6" r="1.1" fill="currentColor" />
+    </>
+  ),
+
+  // The same frame as the generator, with a tick instead of a picture being
+  // drawn: the pair reads as "makes an image" and "is a finished image".
+  result: (
+    <>
+      <rect x="1.5" y="2.5" width="13" height="11" rx="2" {...STROKE} />
+      <path d="M5 8.2l2.1 2.1L11 6.4" {...STROKE} strokeWidth={1.5} />
+    </>
+  ),
+};

@@ -4,6 +4,7 @@ import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { NodeHeader } from "@/components/nodes/node-header";
 import { PromptField } from "@/components/nodes/prompt-field";
 import { ReferenceStrip, type ReferenceEntry } from "@/components/nodes/reference-strip";
 import { useImageCatalog } from "@/components/nodes/use-image-catalog";
@@ -125,6 +126,12 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
 
   const references = data.references ?? [];
 
+  // What a removal would actually take with it. Model and format are two clicks
+  // anybody would make again without noticing; a scene somebody wrote, images
+  // somebody attached and an adjustment somebody chose live in the graph and
+  // nowhere else — which is the whole test for whether to ask first.
+  const hasWork = prompt.trim() !== "" || references.length > 0 || activeAdjustments > 0;
+
   // The ceiling belongs to the model, and the character's own sheet occupies one
   // of its places — so the number the strip shows is the number the server will
   // enforce, said before the click instead of after it.
@@ -234,18 +241,27 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
 
   return (
     <div
-      className={`w-[23rem] rounded-xl border bg-surface-raised shadow-lg shadow-black/30
-                  transition-colors ${selected ? "border-accent" : "border-line"}`}
+      className={`group/node w-[23rem] rounded-xl border bg-surface-raised shadow-lg
+                  shadow-black/30 transition-colors
+                  ${selected ? "border-accent" : "border-line"}`}
     >
-      <div className="flex items-center justify-between border-b border-line px-3 py-2">
-        <p className="text-xs font-medium text-ink">{copy.node.title}</p>
-        {model ? (
-          <p className="text-[11px] text-ink-faint">
-            {copy.node.costPrefix} <strong className="text-ink-muted">{model.sparks} ⚡</strong>
-            {balance === null ? null : ` · ${copy.node.balancePrefix} ${balance} ⚡`}
-          </p>
-        ) : null}
-      </div>
+      {/* The only card whose removal can lose something: a prompt somebody wrote
+          and references somebody attached live in the graph and nowhere else. */}
+      <NodeHeader
+        nodeId={id}
+        kind="generator"
+        title={copy.node.title}
+        removeHint={copy.node.remove}
+        confirmRemove={hasWork}
+        meta={
+          model ? (
+            <span className="text-[11px] text-ink-faint">
+              {copy.node.costPrefix} <strong className="text-ink-muted">{model.sparks} ⚡</strong>
+              {balance === null ? null : ` · ${copy.node.balancePrefix} ${balance} ⚡`}
+            </span>
+          ) : null
+        }
+      />
 
       <div className="p-3">
         <div

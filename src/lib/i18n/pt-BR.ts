@@ -82,6 +82,14 @@ export const t = {
     sparksTooltip: "Seus créditos para gerar",
   },
 
+  /** The header every block on the canvas wears — the same two actions, everywhere. */
+  canvasNode: {
+    duplicate: "Duplicar",
+    removeConfirm: "Remover?",
+    yes: "Sim",
+    no: "Não",
+  },
+
   characterSheet: {
     /** The compact card on the canvas (U1). */
     card: {
@@ -600,6 +608,8 @@ export const t = {
       emptyResult: "A imagem aparece aqui depois de gerar.",
       outputHandle: "Liga ao resultado",
       inputHandle: "Referências — clique para escolher imagens",
+      /** Says what leaves and what stays — the results already on the canvas do. */
+      remove: "Tirar este bloco do canvas (os resultados ficam)",
       approximatedPrefix: "O modelo não tem",
       approximatedMiddle: "exato; saiu em",
       noSheetImagePrefix: "A",
@@ -674,6 +684,12 @@ export const t = {
       useAsReferenceHint: "Cria um novo bloco Gerar Imagem já usando esta imagem",
       seePrompt: "Ver prompt",
       noGeneration: "Esta imagem não guarda o registro da geração.",
+      remove: "Tirar do canvas (a imagem continua na galeria)",
+      /**
+       * The one card where duplicating would create nothing. Said as a reason
+       * rather than hidden, so the header is the same header everywhere.
+       */
+      noDuplicate: "A imagem já está na galeria — duplicar o cartão não cria nada novo.",
     },
 
     lightbox: {

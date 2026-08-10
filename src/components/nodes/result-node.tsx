@@ -4,6 +4,7 @@ import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { useEffect, useState } from "react";
 
 import { useLightbox } from "@/components/nodes/lightbox";
+import { NodeHeader } from "@/components/nodes/node-header";
 import { signAssetUrls } from "@/lib/assets/actions";
 import { usePromptInspector } from "@/lib/canvas/prompt-inspector-store";
 import { useCanvasStore } from "@/lib/canvas/store";
@@ -66,18 +67,25 @@ export function ResultNode({ id, data, selected }: NodeProps<ResultNodeType>) {
 
   return (
     <div
-      className={`w-64 rounded-xl border bg-surface-raised shadow-lg shadow-black/30
-                  transition-colors ${selected ? "border-accent" : "border-line"}`}
+      className={`group/node w-64 rounded-xl border bg-surface-raised shadow-lg
+                  shadow-black/30 transition-colors
+                  ${selected ? "border-accent" : "border-line"}`}
     >
-      <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-2">
-        <p className="truncate text-xs font-medium text-ink">{copy.title}</p>
-        {data.handle ? (
-          <p className="shrink-0 text-[11px] text-ink-faint">
-            @{data.handle}
-            {data.versionNumber ? ` v${data.versionNumber}` : ""}
-          </p>
-        ) : null}
-      </div>
+      <NodeHeader
+        nodeId={id}
+        kind="result"
+        title={copy.title}
+        removeHint={copy.remove}
+        duplicateDisabledReason={copy.noDuplicate}
+        meta={
+          data.handle ? (
+            <span className="text-[11px] text-ink-faint">
+              @{data.handle}
+              {data.versionNumber ? ` v${data.versionNumber}` : ""}
+            </span>
+          ) : null
+        }
+      />
 
       <div
         className="group/image relative flex items-center justify-center overflow-hidden

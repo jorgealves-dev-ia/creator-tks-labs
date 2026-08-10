@@ -186,6 +186,19 @@ type CanvasState = {
   /** Drops a finished image on the canvas, wired to the block that made it. */
   addResultNode: (input: { sourceNodeId: string; data: Record<string, unknown> }) => void;
   /**
+   * A second copy of a block, beside the first.
+   *
+   * For a generating block this is the point of the whole action: prompt, model,
+   * format, scene adjustments and attached references all come along, because
+   * they are the question. What it produced is the answer, and answers are not
+   * copied — the clone starts with no result and no wire to one.
+   *
+   * For a character or a product it duplicates only the card. The entity behind
+   * it is one entity, and two cards pointing at it is a layout convenience, not
+   * a second product.
+   */
+  duplicateNode: (id: string) => void;
+  /**
    * "Usar como referência": a new generating block, to the right of this result,
    * already wired to it and already holding it as a reference. The drag anyone
    * could do by hand, as one click — which is what turns a pile of attempts into
@@ -325,6 +338,57 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         edges: [
           ...state.edges,
           { id: `${sourceNodeId}->${id}`, source: sourceNodeId, target: id },
+        ],
+        revision: state.revision + 1,
+        saveStatus: "dirty",
+      };
+    }),
+
+  duplicateNode: (id) =>
+    set((state) => {
+      const source = state.nodes.find((node) => node.id === id);
+
+      // A result has nothing to duplicate: the image is already in the gallery,
+      // and a second card of it would be a second name for one file. The header
+      // says so with a disabled button; this is the same rule, stated where it
+      // cannot be bypassed.
+      if (!source || source.type === "result") return state;
+
+      const width = source.measured?.width ?? source.width ?? 280;
+      const cloneId = crypto.randomUUID();
+
+      const data = structuredClone(source.data);
+
+      // The two ids that point at what this block *produced*. Carrying them over
+      // would give the copy somebody else's image as its preview, and its "ver
+      // prompt" would open a generation the copy never ran.
+      delete data.lastAssetId;
+      delete data.lastGenerationId;
+
+      return {
+        nodes: [
+          ...state.nodes,
+          {
+            id: cloneId,
+            type: source.type,
+            // Beside the original, never on top of it: a clone that lands under
+            // the block it came from looks exactly like a click that did nothing.
+            position: freePosition(state.nodes, {
+              x: source.position.x + width + 40,
+              y: source.position.y,
+            }),
+            data,
+          },
+        ],
+        // The wires that *feed* this block come along, because the references
+        // they attached did. Leaving them behind would give the copy a reference
+        // with no wire — the asymmetry that attachReference and detachReference
+        // exist to prevent. Outgoing wires lead to results, which do not come.
+        edges: [
+          ...state.edges,
+          ...state.edges
+            .filter((edge) => edge.target === id)
+            .map((edge) => ({ ...edge, id: `${edge.source}->${cloneId}`, target: cloneId })),
         ],
         revision: state.revision + 1,
         saveStatus: "dirty",
