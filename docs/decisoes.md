@@ -904,3 +904,88 @@ Três direções, todas do Jorge, para a conversa daquele cenário:
 
 **Decisão fica para lá.** Construir orientação e retentativa assistida agora seria otimizar para um usuário que não existe, com base num volume que não temos — e o registro aqui existe para que, quando ele existir, ninguém precise redescobrir nem o problema nem as evidências.
 
+
+## Refinamentos do canvas 2
+
+> Ciclo curto de 10/08/2026, em cinco fatias verificadas uma a uma pelo Jorge no navegador antes de cada commit.
+
+### 10/08/2026 — Controles criativos no node: a Camada 2 pedindo passagem
+
+A regra 4 da seção 6 do character sheet existe desde o primeiro dia — *"Camada 2 obedece à hierarquia: input do node > default do sheet"* — e até hoje **nenhum node a exercia com um valor**. O estilo era a única sobrescrita real; todo o resto da Camada 2 só sabia ser suprimido, quando o usuário escrevia uma cena. Ou seja: a hierarquia estava escrita, implementada pela metade e invisível.
+
+Agora o bloco Gerar Imagem tem **"Ajustes de cena · opcional"**, recolhido, com três seletores: **ângulo de câmera**, **iluminação** e **expressão**. Todos em **Auto** por padrão, e Auto significa literalmente o comportamento de antes — mesma compilação, mesmo texto, byte a byte.
+
+**O que foi decidido, e por quê:**
+
+- **Ângulo é lista nova (§5.27); iluminação e expressão são as listas do próprio sheet, reusadas.** Onde já havia vocabulário fechado, não se inventa vocabulário paralelo — duas listas de iluminação seriam duas verdades sobre a mesma coisa.
+- **A lista de ângulo não é campo da ficha.** Uma personagem não tem ângulo canônico; um plano tem. Ela mora no dicionário pelas mesmas razões de todas as outras (frase fixa, chave imutável, cópia literal), e está documentada na §5 porque é lá que se procura lista fechada.
+- **Ângulo derruba pose *e* enquadramento.** Os três são o mesmo eixo — onde a câmera está e quanto do corpo ela vê. A pose padrão carrega `standing, facing the camera`; sem essa regra, pedir "perfil" mandaria ao modelo duas ordens contrárias na mesma frase.
+- **Ajuste não torna a cena dirigida.** Quem decide isso continua sendo o texto do prompt, e só ele. Prompt vazio + `@` + ângulo escolhido ainda é "padrões da personagem" — com um campo trocado, não com a regra invertida.
+- **Chave desconhecida vira Auto inteiro.** Meio-aplicar seria a única saída de fato errada: silenciaria o padrão do sheet sem pôr nada no lugar.
+- **"Auto" é palavra seca, e isso é diferente do seletor de estilo.** O estilo mostra o valor herdado porque estilo **sempre** entra (regra 11). Iluminação e expressão herdadas só entram em modo padrões — um rótulo dizendo "Auto (Golden hour)" mentiria toda vez que houvesse texto no prompt.
+- **A regra 11 não foi tocada.** Estilo segue com seletor próprio e nunca fica ausente.
+
+Tudo gravado por campo em `prompt_compiled.structure.ajustes_cena` e legível em português no "Ver prompt" — porque campo que ninguém lê é campo em que ninguém confia. Nove verificações novas no harness, incluindo a que mais importa: **tudo em Auto produz exatamente o texto de antes.**
+
+---
+
+### 10/08/2026 — Guias de alinhamento: grid é regra, guia é ajuda
+
+Arrastar um bloco para perto de outro agora mostra linhas violetas nas bordas e centros que se alinham, com um ímã suave. É o padrão *helper-lines* do React Flow, adaptado à casa.
+
+**Guia em vez de grid, deliberadamente.** Um grid decide por você onde tudo pode ficar; uma guia aparece quando você já estava quase acertando e some quando você não quer. A diferença aparece no canvas que já existe: os blocos têm alturas diferentes e crescem com o conteúdo, então uma grade fixa brigaria com o layout o tempo todo.
+
+**Duas decisões de implementação que valem registro:**
+
+- **O alcance do ímã é constante em pixels de tela, não em coordenadas do fluxo.** Um limiar fixo em unidades do canvas seria uma agulha impossível de acertar no zoom mínimo e uma armadilha da qual não se escapa no máximo. Dividir pelo zoom mantém a sensação idêntica em qualquer lugar — e foi conferido nos dois extremos.
+- **O estado das guias não entra no store do canvas.** Guia é estado de vista de um arraste em curso, não parte do documento salvo. Fica no componente, onde também mora o zoom — e onde não há risco nenhum de tocar no gatilho de "não salvo". *(O arraste já marcava o projeto como sujo a cada quadro antes disso; nada mudou na persistência.)*
+
+Node sem medida ainda não gera guia: melhor nenhuma linha do que uma linha desenhada a partir de um centro chutado. Multi-seleção também não — não há "um" bloco para alinhar.
+
+---
+
+### 10/08/2026 — Referência de estilo visual: a primeira sobre o *como*
+
+Os cinco tipos de referência existentes respondiam à pergunta "**o quê**": este produto, esta roupa, este cenário, esta pose. O tipo novo responde "**como**" — pegue o clima desta imagem, não o conteúdo dela.
+
+A cláusula fixa nomeia o que casar e proíbe o que copiar: *"Match the visual style, mood, color grading and lighting of reference image N — do not copy its subject or content"*. **A proibição é a metade que faz a coisa funcionar:** "use o estilo" sem ela degenera em "copie a imagem", que é exatamente o vício que as cláusulas de fidelidade de 09/08 nasceram para conter, agora aplicado ao caso inverso.
+
+Validado com geração real: praia ao pôr do sol transferiu clima, grading e luz com pose e traje diferentes dos da referência — que é precisamente o comportamento pedido.
+
+A expectativa honesta é a mesma das outras cláusulas, e continua escrita no código: **eleva a taxa de acerto, não garante.** Nenhum prompt torna um modelo de imagem determinístico.
+
+---
+
+### 10/08/2026 — Qualidade segue 2K fixo, e a razão mudou de dono
+
+Estava registrado que 2K é fixo porque *"no modelo padrão, 1K e 2K custam o mesmo"*. Isso era verdade do Nano Banana Pro. Com a troca do padrão (abaixo), **deixou de ser**: no Nano Banana 2, 1K custa US$ 0,067 e 2K custa US$ 0,101.
+
+A conclusão sobrevive, mas por outro caminho, e o caminho importa: **o preço que o usuário paga é por imagem, não por tamanho.** Gerar em 1K entregaria menos pelos mesmos 75 ⚡. A margem em 2K continua na régua da casa (≈56 centavos de custo real para 75 cobrados — os mesmos ~1,35× do Pro).
+
+**Um seletor de qualidade só faz sentido no dia em que o tamanho mexer no preço em Sparks.** Enquanto não mexer, ele seria um controle que só sabe piorar. Fica registrado assim para ninguém reabrir a discussão com o argumento antigo, que agora está errado por um motivo que não é óbvio.
+
+---
+
+### 10/08/2026 — Modelo padrão passa a ser o Nano Banana 2
+
+**Decisão do Jorge, e uma correção de fonte de evidência.** A decisão G2 escolheu o Nano Banana Pro a partir da **inspeção de um fluxo profissional alheio** — a melhor evidência disponível naquele dia, porque este produto ainda não tinha gerado uma única imagem. Depois de dezenas de gerações próprias, a evidência passou a ser nossa:
+
+| Modelo | Preço | Custo real (2K) | Fidelidade na nossa amostra |
+|---|---|---|---|
+| Nano Banana Pro | 100 ⚡ | ~74c | referência |
+| **Nano Banana 2** | **75 ⚡** | ~56c | igual ou melhor |
+
+Um quarto mais barato por clique, com o Pro a **um clique de distância** no mesmo seletor para a geração que pedir. Nada foi aposentado: mudou qual vem pré-selecionado, não quais existem.
+
+**Por migration, não pelo painel.** `is_default` é catálogo, e catálogo é o único lugar autorizado a decidir o que uma geração custa (invariante 11). Um padrão trocado à mão no dashboard seria uma decisão de produto morando em lugar nenhum — e um reset do banco restauraria o seed antigo em silêncio, com o preço voltando a subir sem ninguém perceber. As duas linhas mudam num comando só, para não existir instante com dois padrões nem com nenhum.
+
+---
+
+### 10/08/2026 — Uma recusa em "@luna sorrindo" 📌 dado, não tarefa
+
+Durante a validação deste ciclo, o prompt mais inofensivo possível — **`@luna sorrindo`** — foi recusado por política do provedor. A retentativa, sem mudar nada, passou.
+
+Não há nada a consertar, e é justamente por isso que fica registrado: é a **confirmação mais limpa** que este projeto já teve da doutrina de 09/08, *o filtro é clima, não regra*. Até aqui as recusas tinham vizinhança plausível (praia, fim de tarde, traje de banho) e sempre sobrava a dúvida de estarmos na fronteira de alguma política. Uma personagem sorrindo não tem fronteira nenhuma — o que restou foi o ruído do classificador, visível a olho nu.
+
+**Consequências práticas, todas já construídas:** a recusa não cobrou, foi classificada como `refused` e a mensagem na tela disse o que fazer. **A monitorar:** se recorrer em prompts benignos, deixa de ser ruído e vira dado sobre o modelo — e o lugar de conferir é a própria tabela `generations`, que guarda cena, modelo e resultado de cada tentativa. Nenhuma ação agora: uma ocorrência é uma ocorrência.
+

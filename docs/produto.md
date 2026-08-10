@@ -132,7 +132,7 @@ O débito de Sparks está construído mas ainda não é exercitado — ele só e
 
 ### Fase 1 — Geração de imagem ✅ concluída (09/08/2026)
 
-Node de geração, sistema de `@`, ingestão de assets, débito de Sparks e prompt duplo PT → EN/JSON — todos entregues e exercitados com gerações reais. Dois modelos de imagem validados contra a API: **Nano Banana Pro** (padrão) e **Nano Banana 2**.
+Node de geração, sistema de `@`, ingestão de assets, débito de Sparks e prompt duplo PT → EN/JSON — todos entregues e exercitados com gerações reais. Dois modelos de imagem validados contra a API: **Nano Banana 2** (padrão desde 10/08/2026) e **Nano Banana Pro**.
 
 Duas diferenças em relação ao que esta fase previa no papel, ambas registradas em [`decisoes.md`](./decisoes.md):
 

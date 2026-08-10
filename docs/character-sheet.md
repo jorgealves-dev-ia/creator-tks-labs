@@ -523,6 +523,23 @@ Nasceu de uma geração real: a primeira folha completa saiu com **aspecto de de
 
 **Onde entra no prompt.** Primeiro item do bloco de cena no caso geral; na geração canônica, **antes da moldura**, seguido do reforço — que é onde um modelo tem mais chance de obedecer.
 
+### 5.27 · Ângulo de câmera ✅ decidido em 10/08/2026 (lista do node, não campo do sheet)
+
+**Esta lista não é um campo da ficha.** Uma personagem não tem ângulo de câmera canônico — um *plano* tem. Ela existe para os "Ajustes de cena" do node Gerar Imagem (§3 de [`nodes-geracao.md`](./nodes-geracao.md)) e mora neste dicionário pelos mesmos motivos que todas as outras: frase fixa, chave imutável, copiada literalmente pelo compilador (regra 7). Está documentada aqui porque a seção 5 é o endereço de toda lista fechada do projeto — procurar ângulo em outro lugar seria procurar duas vezes.
+
+| Opção | Frase fixa (EN) |
+|---|---|
+| frontal | `front view, facing the camera directly` |
+| três quartos | `three-quarter view, turned slightly away from the camera` |
+| perfil | `full side profile view` |
+| de cima | `high-angle shot, viewed from above` |
+| de baixo | `low-angle shot, viewed from below` |
+| close no rosto | `close-up on the face, tightly framed portrait` |
+| plano americano | `medium-full shot, framed from mid-thigh up` |
+| corpo inteiro | `full-body shot, entire figure visible from head to toe` |
+
+**Quando escolhido, o ângulo derruba pose *e* enquadramento do sheet** — pela hierarquia da regra 4 da seção 6, e porque os três são o mesmo eixo: onde a câmera está e quanto do corpo ela vê. Não é zelo excessivo: a pose padrão carrega orientação (`standing, facing the camera`), e uma personagem que o usuário pediu de `perfil` chegaria ao modelo com duas ordens contrárias na mesma frase. As outras duas listas dos Ajustes de cena — iluminação (§5.24) e expressão (§5.20) — são as do próprio sheet, reusadas: onde já havia vocabulário, não se inventa vocabulário novo.
+
 ---
 
 ## 6. Regras de compilação do prompt

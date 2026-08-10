@@ -28,7 +28,9 @@ O estúdio deixa de ser fábrica de personagens e vira **linha de produção de 
 
 **Corpo:** área de resultado (vazia até gerar; depois mostra a última imagem) · **campo de prompt em português** com suporte a `@` · faixa de referências (miniaturas + "+") · barra de configuração.
 
-**Barra de configuração:** modelo (seletor reutilizável, capability `image_gen`, preço visível) · **formato/canal** (presets da seção 7) · **estilo de renderização** (herda o default da personagem mencionada; sobrescrevível aqui — a hierarquia da regra 11: o node escolhe *qual*, nunca *nenhum*; sem personagem mencionada, default fotorrealista) · resolução 2K fixa na v1 (mesmo preço que 1K no Nano Banana Pro — qualidade grátis) · custo e saldo · botão Gerar.
+**Barra de configuração:** modelo (seletor reutilizável, capability `image_gen`, preço visível) · **formato/canal** (presets da seção 7) · **estilo de renderização** (herda o default da personagem mencionada; sobrescrevível aqui — a hierarquia da regra 11: o node escolhe *qual*, nunca *nenhum*; sem personagem mencionada, default fotorrealista) · resolução 2K fixa na v1 (o preço em Sparks é por imagem, não por tamanho — pedir menos entregaria menos pelo mesmo preço) · custo e saldo · botão Gerar.
+
+**Ajustes de cena · opcional** *(acrescentado em 10/08/2026):* seção recolhida abaixo da barra, com três seletores — **ângulo de câmera** (§5.27 do character sheet), **iluminação** (§5.24) e **expressão** (§5.20). Todos começam em **Auto**, que é o comportamento de sempre: quem decide são o prompt e a personagem. Escolher qualquer coisa diferente de Auto é exercer a hierarquia da regra 4 (node > sheet) — ver as regras da seção 6. A seção abre sozinha quando o bloco já tem ajuste salvo e, recolhida, mostra quantos estão em uso: um controle que muda o resultado não pode ficar escondido depois de escolhido.
 
 **Conectores na borda (sempre visíveis):**
 - **Entradas de imagem** (lado esquerdo): aceitam conexão de um node Resultado (encadeamento) e, no clique, abrem o **seletor de referências**.
@@ -36,7 +38,7 @@ O estúdio deixa de ser fábrica de personagens e vira **linha de produção de 
 
 **Cada referência anexada carrega:**
 - a imagem (do upload, da galeria ou de um Resultado conectado);
-- **tipo opcional** (chip): produto · roupa · cenário · pose · outro — orienta a frase compilada ("the product shown in reference image 2, held in her hands");
+- **tipo opcional** (chip): produto · roupa · cenário · pose · **estilo visual** · outro — orienta a frase compilada ("the product shown in reference image 2, held in her hands"). *Estilo visual (10/08/2026) é o primeiro tipo sobre o **como** e não sobre o **quê**: a cláusula manda casar estilo, clima, color grading e luz da referência e **proíbe copiar o sujeito ou o conteúdo** — sem a proibição, "use o estilo" degenera em "copie a imagem";*
 - **instrução opcional** em português ("desta imagem, pegue apenas o cenário") — traduzida na geração e compilada como diretiva da referência. *(Pedido original do PDF do projeto, validado pela inspeção.)*
 
 Limite de referências por geração: o máximo que a documentação oficial do modelo permitir (conferido na implementação), com a folha do `@` contando no total e a UI dizendo o limite.
@@ -55,13 +57,14 @@ Cada geração bem-sucedida cria um **node Resultado** conectado à saída do ge
 
 ## 6. Compilação de canvas (o contrato)
 
-Ordem do prompt final: **estilo** (do node; herdado da personagem quando não sobrescrito) → **bloco de identidade** da versão mencionada (o compilador de sempre) → **cena do usuário** (o prompt em PT, traduzido na geração) → **diretivas das referências** (tipo + instrução, traduzidas) → **restrições** (sempre, ao final).
+Ordem do prompt final: **estilo** (do node; herdado da personagem quando não sobrescrito) → **bloco de identidade** da versão mencionada (o compilador de sempre) → **cena do usuário** (o prompt em PT, traduzido na geração) → **ajustes de cena** (quando houver) → **diretivas das referências** (tipo + instrução, traduzidas) → **restrições** (sempre, ao final).
 
 Regras:
 1. **O prompt do node dirige a cena:** quando há texto no prompt, os padrões de cena do sheet (`cena_padrao`, expressão, pose) **não** entram — o usuário é o diretor. Prompt vazio com `@` mencionado: gera a personagem nos padrões dela (comportamento previsível, sem mágica).
 2. **Tradução na geração:** o PT do usuário e das instruções é traduzido no momento de gerar (mesmo mecanismo barato da casa); o **original em PT e o compilado em EN são gravados juntos** no registro da geração — auditoria bilíngue.
 3. **`prompt_compiled` completo (quitação da dívida):** a estrutura gravada passa a incluir o estilo e as diretivas de referência — "com que estilo e com quais referências esta imagem nasceu?" respondível por campo, não por leitura de texto.
 4. Cobrança e registro: `record_generation`, preço do catálogo, débito atômico só no sucesso, `sheet_source`/`entity_version_id` quando houver `@` — tudo já provado, nada novo a inventar.
+5. **Ajustes de cena sobrescrevem por campo** *(10/08/2026, regra 4 da §6 do character sheet finalmente exercida com valor).* Em modo "padrões da personagem", o campo que o node respondeu **sai** do sheet e a frase do node entra no lugar — iluminação por iluminação, expressão por expressão, e **ângulo no lugar de pose e enquadramento** (§5.27: é o mesmo eixo da câmera). Em cena dirigida os padrões já não entravam, então os ajustes apenas **somam**, logo depois da cena do usuário. Ordem fixa: **ângulo → iluminação → expressão**. Um ajuste **não** torna a cena dirigida: a regra 1 continua decidindo isso pelo texto do prompt, e só por ele. Chave desconhecida lê como Auto **inteiro** — nunca meio-aplica, porque silenciar o padrão do sheet sem pôr nada no lugar seria a única saída realmente errada. Tudo gravado por campo em `prompt_compiled.structure.ajustes_cena` e mostrado em português no "Ver prompt".
 
 ## 7. Formatos por canal (presets v1)
 
@@ -89,10 +92,18 @@ Números e achados que só existiam como "conferir na implementação" quando es
 
 **Referências — teto de 6 por geração, com a folha contando dentro.** A documentação do Google dá dois tetos por categoria e não um total: Pro aceita até 6 imagens de objetos e até 5 de personagens; o Nano Banana 2, até 10 de objetos e até 4 de personagens. Seis é o número que satisfaz os dois tetos sob qualquer mistura que este produto consegue produzir (no máximo uma personagem, pela N2), e é um número que a tela pode dizer sem precisar ensinar as categorias do Google a ninguém. Vive numa tabela por modelo no código, ao lado dos preços.
 
-**Resolução: 2K fixo.** No modelo padrão, 1K e 2K custam o mesmo — pedir o menor seria pagar o preço cheio por menos.
+**Resolução: 2K fixo.** No Nano Banana Pro, 1K e 2K custam o mesmo — pedir o menor seria pagar o preço cheio por menos. **Atualizado em 10/08/2026, quando o padrão virou o Nano Banana 2:** ali os tamanhos *não* custam o mesmo para nós (US$ 0,067 em 1K contra US$ 0,101 em 2K), mas o preço que o usuário paga é **por imagem, não por tamanho** — então a conclusão sobrevive à troca por outro caminho: gerar em 1K entregaria menos pelos mesmos 75 ⚡. A margem em 2K continua na régua da casa (≈56 centavos de custo real para 75 ⚡ cobrados, os mesmos ~1,35× do Pro). Um seletor de qualidade só passa a fazer sentido no dia em que o tamanho mudar o **preço em Sparks**; enquanto não mudar, ele seria um controle que só sabe piorar.
 
 **Cláusulas de fidelidade, acrescentadas depois do primeiro teste real.** Um biquíni anexado como produto voltou com uma alça de cada cor: o modelo tratou a referência como inspiração. Cada tipo passou a carregar uma frase fixa em inglês que nomeia o que não pode mudar, e o `@` com folha carrega a de identidade. **Elevam a taxa de acerto; não garantem 100%** — nenhum prompt torna um modelo de imagem determinístico, e isso está escrito no código para ninguém redescobrir.
 
 **Filtro de conteúdo é probabilístico, e varia por modelo.** A mesma configuração recusada pelo Nano Banana 2 passou de primeira no Pro, e passou no próprio NB2 na segunda tentativa com a frase reformulada. Consequências de produto: reformular é caminho legítimo (a mensagem de recusa diz isso), trocar de modelo também é (o seletor está ao lado do botão), e **recusa nunca cobra** — garantido por constraint, não por código.
 
 **A âncora precisa ser boa.** Uma personagem cuja versão congelada guarda uma folha ruim gera imagens consistentemente ruins, com fidelidade perfeita ao que foi pedido — o pior tipo de erro de diagnosticar, porque nada está quebrado. Folha fotorrealista congelada é pré-requisito de consistência, não passo opcional. Registrado para o onboarding.
+
+## 10. Notas da implementação (10/08/2026)
+
+**O modelo padrão é o Nano Banana 2.** A decisão G2 escolheu o Pro a partir da inspeção de um fluxo profissional alheio, antes de este produto ter gerado a primeira imagem. Depois de dezenas de gerações próprias, a evidência é nossa: 75 ⚡ contra 100 ⚡, com fidelidade igual ou melhor na nossa amostra. O Pro continua a um clique no mesmo seletor — mudou qual vem pré-selecionado, não quais existem. Registrado em [`decisoes.md`](./decisoes.md); o `is_default` vive no catálogo e mudou por migration, como manda a invariante 11.
+
+**`ajustes_cena` na estrutura, com leitura tolerante.** Gerações anteriores a este ciclo leem o campo como lista vazia — a mesma técnica que já cobria `foto_unica` e `fidelidade_en`, e pela mesma razão: um prompt guardado é o registro de algo que já aconteceu e não pode ser reescrito, então quem lê é que se adapta. O `campo` é string solta no leitor de propósito: um ajuste renomeado no futuro tem que continuar legível no histórico de hoje.
+
+**As três listas cobertas no harness, não só na tela.** O compilador de canvas ganhou nove verificações novas fora do Next (`scratchpad/canvas-compile-harness.ts`): que tudo em Auto produz **exatamente** o texto de antes, que o ângulo derruba pose e enquadramento, que uma cena dirigida só soma, que chave desconhecida vira Auto inteiro, e que a referência de estilo visual sai com a cláusula certa. As 84 verificações passam — as antigas continuam sendo a prova de que nada regrediu.
