@@ -481,9 +481,12 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
       const data = structuredClone(source.data);
 
-      // The two ids that point at what this block *produced*. Carrying them over
-      // would give the copy somebody else's image as its preview, and its "ver
-      // prompt" would open a generation the copy never ran.
+      // Everything that points at what this block *produced*. Carrying any of it
+      // over would give the copy somebody else's images as its result, and its
+      // "ver prompt" would open a generation the copy never ran. Both the plural
+      // fields and the singular ones an older graph may still carry.
+      delete data.lastAssetIds;
+      delete data.lastGenerationIds;
       delete data.lastAssetId;
       delete data.lastGenerationId;
 

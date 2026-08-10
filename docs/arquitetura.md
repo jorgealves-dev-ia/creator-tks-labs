@@ -185,7 +185,13 @@ Cada referência carrega, além da diretiva, uma **cláusula fixa de fidelidade*
 
 #### Do bloco ao Resultado
 
-Geração de canvas é **síncrona** nesta fase (decisão N5), pelo mesmo motivo da canônica: uma imagem 2K cabe no `maxDuration` de 60. O caminho é o provado — saldo antes da chamada, Storage → `assets` → cobrança, e a imagem cai antes se a cobrança falhar.
+Geração de canvas é **síncrona** nesta fase (decisão N5), pelo mesmo motivo da canônica: uma imagem cabe no `maxDuration` de 60. O caminho é o provado — saldo antes da chamada, Storage → `assets` → cobrança, e a imagem cai antes se a cobrança falhar.
+
+**Quantidade 1–4 é síncrona paralela, e é uma rota, não uma Server Action** *(10/08/2026, revisão parcial da N5).* Pedir quatro imagens dispara **quatro requisições independentes** — cada uma com a sua linha em `generations`, o seu débito no ledger e o seu jeito de falhar. Não existe "geração em lote" no servidor: o endpoint sabe fazer uma imagem, e quatro é o navegador pedindo quatro vezes ao mesmo tempo.
+
+Ser rota (`app/api/generations/canvas/route.ts`) é o que torna isso verdade. A documentação do Next é explícita: **não usar `Promise.all` para paralelizar Server Actions no cliente** — elas passam pelo ciclo de renderização do React e são serializadas, então quatro chamadas de trinta segundos virariam dois minutos em fila. A postura de segurança é a mesma que uma Server Action já tinha, porque é a mesma: endpoint público dos dois jeitos, sessão relida do cookie, corpo validado por Zod, RLS em toda leitura e preço vindo do catálogo por `record_generation`. Sem segredo compartilhado, porque é o usuário chamando o próprio estúdio com a própria sessão — os endpoints de `app/api/webhooks` é que não têm cookie de ninguém para conferir.
+
+Uma consequência que valeu uma linha no proxy: rota sob `/api/` sem sessão passa a receber **401 em JSON**, não o redirect 307 para `/login`. Um redirect é a resposta certa para quem digitou um endereço e a errada para um `fetch`, que o segue e recebe o HTML da tela de login com status 200 — fazendo uma sessão expirada em aba aberta chegar ao canvas como "erro inesperado" em vez da única frase que resolve.
 
 O sucesso cria um **node Resultado** ligado à saída do bloco. Ele guarda apenas `assetId` e `generationId`: URL assinada expira, e um grafo salvo não pode carregar um endereço que morre amanhã (Decisão 3). A ligação de volta — Resultado → bloco de geração — **é** o anexo de uma referência: o fio é o gesto, a lista dentro do node é o estado, e cortar o fio desfaz o anexo. Duas formas de anexar (a galeria e o fio), um lugar só onde o que está anexado mora.
 

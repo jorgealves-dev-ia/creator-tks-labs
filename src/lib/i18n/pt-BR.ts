@@ -654,6 +654,18 @@ export const t = {
        * is present and explains itself is the screen doing its job as the manual.
        */
       qualityUnavailable: "indisponível neste modelo",
+      /**
+       * O mesmo fato dito do outro lado da frase.
+       *
+       * No seletor de qualidade o sujeito é a resolução, e "indisponível neste
+       * modelo" está certo. No seletor de modelo o sujeito já é o modelo, e
+       * "Nano Banana Pro · indisponível neste modelo" seria o modelo falando de
+       * si na terceira pessoa.
+       */
+      modelSizeUnavailable: "indisponível",
+      quantityLabel: "Quantidade",
+      quantityMore: "Mais uma imagem",
+      quantityFewer: "Uma imagem a menos",
       /** Where the style came from — a property of the field, not of the value. */
       styleFromCharacter: "da personagem",
       styleFromDefault: "padrão",
@@ -861,6 +873,7 @@ export const t = {
       multipleCharacters: "Uma personagem por geração nesta versão. Deixe só uma menção @.",
       unsupportedSize:
         "Este modelo não gera nessa resolução. Escolha outra qualidade ou outro modelo.",
+      unauthenticated: "Sua sessão expirou. Recarregue a página e entre de novo.",
       tooManyReferencesPrefix: "Este modelo aceita até",
       tooManyReferencesSuffix: "imagens de referência por geração.",
       /** The wire a product could not fit through, said before it is drawn. */

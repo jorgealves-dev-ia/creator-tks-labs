@@ -58,6 +58,23 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (!isSignedIn && !isPublicPath(pathname)) {
+    // An API route is answered, never redirected.
+    //
+    // A 307 to /login is the right answer to a person typing an address and the
+    // wrong answer to a fetch: the browser follows it, the caller receives the
+    // HTML of the login page with a 200, and `response.json()` throws — so a
+    // session that quietly expired in an open tab arrives at the canvas as
+    // "erro inesperado" instead of as the one sentence that fixes it.
+    //
+    // Matters from this cycle on, because the canvas generation became a route:
+    // before it, no endpoint of ours was ever called with XHR.
+    if (pathname.startsWith("/api/")) {
+      return withSessionCookies(
+        NextResponse.json({ ok: false, reason: "unauthenticated" }, { status: 401 }),
+        supabaseResponse,
+      );
+    }
+
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";

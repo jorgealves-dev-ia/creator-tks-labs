@@ -22,6 +22,8 @@ O estúdio deixa de ser fábrica de personagens e vira **linha de produção de 
 
 **N5 — Uma imagem por clique, síncrono.** O padrão provado da canônica. Quantidade x3/x5, listas e lote chegam com o assíncrono (conversa Storyboard + Vídeos). Este ciclo também **quita a dívida do `prompt_compiled`**: o estilo entra na estrutura, não só no texto.
 
+> **N5 revisada em parte, 10/08/2026.** A **quantidade 1–4 chega antes do assíncrono**, porque não precisava dele: quatro imagens são **quatro requisições independentes**, cada uma com a sua linha, o seu débito e o seu jeito de falhar — tecnicamente idênticas a quatro cliques. Nenhuma delas segura mais de uma geração dentro de um request, que era a razão inteira da regra. **O assíncrono continua reservado e obrigatório para vídeo**, onde uma única geração já não cabe no `maxDuration`. O que mudou junto foi o transporte: rota HTTP em vez de Server Action, porque Server Actions são serializadas pelo cliente do React — ver [`arquitetura.md`](./arquitetura.md#do-bloco-ao-resultado) e a entrada datada em [`decisoes.md`](./decisoes.md).
+
 ---
 
 ## 3. O node Gerar Imagem (anatomia)

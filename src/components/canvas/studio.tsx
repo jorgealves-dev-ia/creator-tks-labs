@@ -98,13 +98,21 @@ function useSeedArsenal(
   products: Product[],
   balanceCents: number,
 ) {
-  const initial = useRef({ characters, products, balanceCents });
+  const initial = useRef({ characters, products });
 
   useEffect(() => {
     useEntitiesStore.getState().seed(initial.current.characters);
     useProductsStore.getState().seed(initial.current.products);
-    useBalance.getState().seed(initial.current.balanceCents);
   }, []);
+
+  // The balance re-seeds whenever the server sends a new one, unlike the two
+  // lists above. That is what makes the optimistic subtraction after a batch
+  // safe: the block takes the charges off immediately so the number moves when
+  // the button is pressed, and the router.refresh() that follows brings the
+  // wallet's own figure back over the top of it.
+  useEffect(() => {
+    useBalance.getState().seed(balanceCents);
+  }, [balanceCents]);
 }
 
 function NoProjects() {

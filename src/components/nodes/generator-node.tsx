@@ -22,9 +22,9 @@ import { useReferencePicker } from "@/lib/canvas/reference-picker-store";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { useEntitiesStore } from "@/lib/entities/store";
 import {
-  generateFromNode,
+  requestGeneration,
   type CanvasGenerationResult,
-} from "@/lib/generation/canvas-actions";
+} from "@/lib/generation/canvas-contract";
 import {
   generatorCapacity,
   mentionedCharacter,
@@ -71,11 +71,24 @@ export type GeneratorNodeData = {
   anguloKey?: string | null;
   iluminacaoKey?: string | null;
   expressaoKey?: string | null;
+  /** How many images one click asks for, 1 to 4. Absent means one. */
+  quantity?: number;
   /** The images attached to this block, in the order they will be numbered. */
   references?: ReferenceEntry[];
+  /** The last batch, in slot order — one entry per image that came back. */
+  lastAssetIds?: string[];
+  lastGenerationIds?: string[];
+  /**
+   * What a block saved before quantity existed. Read on load and never written
+   * again: one fact, one field, and the plural above is the field.
+   */
   lastAssetId?: string | null;
   lastGenerationId?: string | null;
 };
+
+/** The stepper's range — §4 of the Canvas 4 briefing. */
+const MIN_QUANTITY = 1;
+const MAX_QUANTITY = 4;
 
 export type GeneratorNodeType = Node<GeneratorNodeData, "generator">;
 
@@ -98,15 +111,22 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   // able to say the balance before anything has been generated.
   const balance = useBalance((state) => state.sparks);
   /**
-   * The signed link, remembered next to the asset it belongs to. Keeping the pair
-   * is what lets the preview go blank the instant the node points somewhere else,
-   * instead of showing the previous image until a request comes back.
+   * The batch that is running, or the one that just ran — one entry per image
+   * asked for, each with its own state.
+   *
+   * Transient by construction, and null until the first click of this session:
+   * while it is null the panel is drawn from what the graph saved, and a failed
+   * slot has no business being written into a document that gets reopened
+   * tomorrow. What survives a reload is the images; what a request did is news.
    */
-  const [preview, setPreview] = useState<{ assetId: string; url: string } | null>(null);
+  const [runSlots, setRunSlots] = useState<ResultSlot[] | null>(null);
+  /** Signed links for the saved batch, by asset id. */
+  const [urls, setUrls] = useState<Record<string, string>>({});
 
   const prompt = data.prompt ?? "";
   const presetId = data.presetId ?? DEFAULT_PRESET_ID;
   const imageSize = data.imageSize ?? DEFAULT_IMAGE_SIZE;
+  const quantity = clampQuantity(data.quantity);
   const estiloKey = data.estiloKey ?? null;
   const anguloKey = data.anguloKey ?? null;
   const iluminacaoKey = data.iluminacaoKey ?? null;
@@ -165,26 +185,33 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
     reserved: sheetAnchorSlots(mentioned),
   });
 
-  const lastAssetId = data.lastAssetId ?? null;
-  const previewUrl = lastAssetId && preview?.assetId === lastAssetId ? preview.url : null;
+  /**
+   * The images this block last produced, whatever era the graph was saved in.
+   * A block from before the stepper carries one id in the singular field; the
+   * plural is what everything writes now.
+   */
+  const savedAssetIds = data.lastAssetIds ?? (data.lastAssetId ? [data.lastAssetId] : []);
+  const savedKey = savedAssetIds.join(",");
 
   useEffect(() => {
-    if (!lastAssetId) return;
+    const ids = savedKey === "" ? [] : savedKey.split(",");
+
+    if (ids.length === 0) return;
 
     let cancelled = false;
 
-    // A signed URL expires, so the node stores the id and asks for a link when it
+    // A signed URL expires, so the node stores the ids and asks for links when it
     // mounts — never the other way round.
-    void signAssetUrls([lastAssetId]).then((urls) => {
-      const url = urls[lastAssetId];
-
-      if (!cancelled && url) setPreview({ assetId: lastAssetId, url });
+    void signAssetUrls(ids).then((signed) => {
+      if (!cancelled) setUrls((current) => ({ ...current, ...signed }));
     });
 
     return () => {
       cancelled = true;
     };
-  }, [lastAssetId]);
+    // Keyed by the ids themselves: depending on the array would re-sign on every
+    // render of a parent, which is a request per keystroke in the prompt.
+  }, [savedKey]);
 
   function openPicker() {
     useReferencePicker.getState().open({
@@ -218,6 +245,19 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
     });
   }
 
+  /**
+   * The click.
+   *
+   * `quantity` images means `quantity` independent requests, fired together —
+   * technically identical to pressing the button that many times, which is
+   * exactly what it is meant to replace. Each one has its own row in
+   * `generations`, its own debit in the ledger and its own way of failing, so
+   * each one lands in its own slot as it arrives rather than everything
+   * appearing at the end.
+   *
+   * Nothing here waits for the batch before showing anything: the first image
+   * back is on screen while the fourth is still drawing.
+   */
   async function handleGenerate() {
     setMessage(null);
     setNotice(null);
@@ -230,8 +270,9 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
     }
 
     setBusy(true);
+    setRunSlots(Array.from({ length: quantity }, () => ({ status: "pending" })));
 
-    const result = await generateFromNode({
+    const request = {
       projectId,
       nodeId: id,
       prompt,
@@ -243,19 +284,77 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
       iluminacaoKey,
       expressaoKey,
       references,
-    });
+    };
+
+    const results = await Promise.all(
+      Array.from({ length: quantity }, (_unused, slot) =>
+        requestGeneration(request).then((result) => {
+          applyResult(slot, result);
+          return result;
+        }),
+      ),
+    );
 
     setBusy(false);
 
-    if (!result.ok) {
-      setMessage(failureMessage(result));
-      return;
+    const succeeded = results.filter(
+      (result): result is Extract<CanvasGenerationResult, { ok: true }> => result.ok,
+    );
+
+    // The whole batch failed and every slot already says why in its own words.
+    // A sentence under the button repeating the first of them would be the same
+    // complaint twice — except when there was only one, where the slot is small
+    // and the sentence is the only room to explain properly.
+    if (succeeded.length === 0 && quantity === 1) {
+      const failure = results[0];
+
+      if (failure && !failure.ok) setMessage(failureMessage(failure));
     }
 
-    updateNodeData(id, {
-      lastAssetId: result.assetId,
-      lastGenerationId: result.generationId,
+    if (succeeded.length > 0) {
+      updateNodeData(id, {
+        lastAssetIds: succeeded.map((result) => result.assetId),
+        lastGenerationIds: succeeded.map((result) => result.generationId),
+      });
+
+      // Both of these are honesty, not decoration: the proportion that was really
+      // drawn, and an identity that had to travel as text alone. Read off the
+      // first image back — they all asked the same question, so they all have
+      // the same answer.
+      const first = succeeded[0];
+
+      if (first.approximated && preset) {
+        setNotice(
+          `${copy.node.approximatedPrefix} ${preset.ratio} ${copy.node.approximatedMiddle} ${first.aspectRatio}.`,
+        );
+      } else if (first.character && !first.character.hasSheetImage) {
+        setNotice(
+          `${copy.node.noSheetImagePrefix} v${first.character.versionNumber} de @${first.character.handle} ${copy.node.noSheetImageSuffix}`,
+        );
+      }
+    }
+
+    // Once, at the end, not once per image: the balance in the header belongs to
+    // the server-rendered page, and four refreshes would re-render it four times
+    // to show the same final number.
+    router.refresh();
+  }
+
+  /** One answer, in its own slot — drawn the moment it arrives. */
+  function applyResult(slot: number, result: CanvasGenerationResult) {
+    setRunSlots((current) => {
+      if (!current) return current;
+
+      const next = [...current];
+
+      next[slot] = result.ok
+        ? { status: "done", assetId: result.assetId, url: result.url }
+        : { status: "failed", message: failureMessage(result) };
+
+      return next;
     });
+
+    if (!result.ok) return;
 
     addResultNode({
       sourceNodeId: id,
@@ -268,40 +367,31 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
       },
     });
 
-    // The figure the charge itself returned — what the ledger just projected onto
-    // the wallet, not a second opinion about it.
-    useBalance.getState().set(result.balanceSparks);
-    setPreview({ assetId: result.assetId, url: result.url });
-
-    // Both of these are honesty, not decoration: the proportion that was really
-    // drawn, and an identity that had to travel as text alone.
-    if (result.approximated && preset) {
-      setNotice(
-        `${copy.node.approximatedPrefix} ${preset.ratio} ${copy.node.approximatedMiddle} ${result.aspectRatio}.`,
-      );
-    } else if (result.character && !result.character.hasSheetImage) {
-      setNotice(
-        `${copy.node.noSheetImagePrefix} v${result.character.versionNumber} de @${result.character.handle} ${copy.node.noSheetImageSuffix}`,
-      );
-    }
-
-    // The balance in the header belongs to the server-rendered page.
-    router.refresh();
+    // What this image charged, taken off as it lands. Subtracting the charges
+    // rather than trusting each answer's `balanceSparks` is what makes four at
+    // once add up — see the balance store for the arithmetic.
+    useBalance.getState().spend(result.sparksCharged);
   }
 
   const emptyScene = scene === "";
   const nothingToDo = emptyScene && !mentions.length;
 
   /**
-   * What the right-hand panel draws. One slot today; the quantity stepper of the
-   * next step turns this into up to four, and the panel already knows how to lay
-   * them out.
+   * What the right-hand panel draws: the batch that is running or just ran, and
+   * otherwise whatever the graph saved.
+   *
+   * The two are not merged. A run says what each of its requests is doing right
+   * now, failures included; the saved list says which images exist. Falling back
+   * to the saved list only when there is no run is what lets a failed slot stay
+   * on screen with its sentence instead of being replaced by yesterday's image.
    */
-  const slots: ResultSlot[] = busy
-    ? [{ status: "pending" }]
-    : lastAssetId
-      ? [{ status: "done", assetId: lastAssetId, url: previewUrl }]
-      : [];
+  const slots: ResultSlot[] =
+    runSlots ??
+    savedAssetIds.map((assetId) => ({
+      status: "done",
+      assetId,
+      url: urls[assetId] ?? null,
+    }));
 
   return (
     <div
@@ -352,6 +442,9 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
                 providers={providers}
                 value={modelId}
                 disabled={busy}
+                // Priced at the chosen resolution, so this field and the line
+                // under the button can never show two different numbers.
+                imageSize={imageSize}
                 onChange={(value) => updateNodeData(id, { modelId: value })}
               />
             </div>
@@ -448,6 +541,40 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
                   );
                 })}
               </select>
+            </div>
+
+            <div>
+              <span className="mb-1 block text-[11px] font-medium text-ink-muted">
+                {copy.node.quantityLabel}
+              </span>
+
+              {/* A stepper and not a select: the range is four, and four options
+                  behind a menu is three more clicks than "+". */}
+              <div
+                className="nodrag flex h-[30px] items-center justify-between rounded-lg border
+                           border-line bg-surface px-1"
+              >
+                <StepperButton
+                  label={copy.node.quantityFewer}
+                  glyph="−"
+                  disabled={busy || quantity <= MIN_QUANTITY}
+                  onClick={() => updateNodeData(id, { quantity: quantity - 1 })}
+                />
+
+                <span
+                  aria-live="polite"
+                  className="text-xs font-medium tabular-nums text-ink"
+                >
+                  {quantity}
+                </span>
+
+                <StepperButton
+                  label={copy.node.quantityMore}
+                  glyph="+"
+                  disabled={busy || quantity >= MAX_QUANTITY}
+                  onClick={() => updateNodeData(id, { quantity: quantity + 1 })}
+                />
+              </div>
             </div>
           </div>
 
@@ -633,9 +760,15 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
               can I afford this one? */}
           {model ? (
             sizePrice ? (
+              /* The truth, multiplied. "Custará 3 × 75 = 225 ⚡" shows the sum
+                 and the working, because the number that surprises somebody is
+                 the total and the number that explains it is the unit. */
               <p className="mt-1.5 text-center text-[11px] text-ink-faint">
                 {copy.node.costWillPrefix}{" "}
-                <strong className="font-medium text-ink-muted">{sizePrice.sparks} ⚡</strong>
+                {quantity > 1 ? `${quantity} × ${sizePrice.sparks} = ` : null}
+                <strong className="font-medium text-ink-muted">
+                  {quantity * sizePrice.sparks} ⚡
+                </strong>
                 {balance === null ? null : (
                   <>
                     {" · "}
@@ -704,6 +837,42 @@ const SELECT_CLASS =
   "transition-colors hover:border-line-strong focus:border-accent focus:outline-none " +
   "disabled:cursor-not-allowed disabled:opacity-50";
 
+/** 1 to 4, whatever a saved graph or a stale bundle happens to carry. */
+function clampQuantity(value: number | undefined): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return MIN_QUANTITY;
+
+  return Math.min(MAX_QUANTITY, Math.max(MIN_QUANTITY, Math.round(value)));
+}
+
+/** One end of the stepper. */
+function StepperButton({
+  label,
+  glyph,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  glyph: string;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      title={label}
+      aria-label={label}
+      onClick={onClick}
+      className="flex size-5 items-center justify-center rounded text-xs leading-none
+                 text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink
+                 disabled:cursor-not-allowed disabled:opacity-30
+                 disabled:hover:bg-transparent disabled:hover:text-ink-muted"
+    >
+      {glyph}
+    </button>
+  );
+}
+
 /** The sentence for each way a generation can fail, in the user's own terms. */
 function failureMessage(result: Extract<CanvasGenerationResult, { ok: false }>): string {
   const errors = copy.errors;
@@ -727,6 +896,8 @@ function failureMessage(result: Extract<CanvasGenerationResult, { ok: false }>):
       return errors.multipleCharacters;
     case "unsupported_size":
       return errors.unsupportedSize;
+    case "unauthenticated":
+      return errors.unauthenticated;
     case "too_many_references":
       return `${errors.tooManyReferencesPrefix} ${result.limit ?? 0} ${errors.tooManyReferencesSuffix}`;
     case "missing_reference":

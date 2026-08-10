@@ -1,6 +1,6 @@
 "use client";
 
-import type { CatalogProvider } from "@/lib/ai/catalog-types";
+import type { CatalogModel, CatalogProvider } from "@/lib/ai/catalog-types";
 import { t } from "@/lib/i18n/pt-BR";
 
 /**
@@ -20,9 +20,29 @@ type ModelSelectProps = {
   value: string | null;
   onChange: (modelId: string) => void;
   disabled?: boolean;
+  /**
+   * The resolution currently chosen, for capabilities priced by size.
+   *
+   * When set, every model is priced *at that size* instead of at its base
+   * figure. Found in a real click-through: with 4K selected, the model field
+   * still read "· 75 ⚡" while the line under the button read "110 ⚡", and two
+   * prices on one screen look like two charges. A selector that shows a number
+   * the bill will not match is worse than a selector that shows no number.
+   *
+   * Omitted by capabilities that have no size, such as extraction, which keep
+   * the single price they have always had.
+   */
+  imageSize?: string;
 };
 
-export function ModelSelect({ id, providers, value, onChange, disabled }: ModelSelectProps) {
+export function ModelSelect({
+  id,
+  providers,
+  value,
+  onChange,
+  disabled,
+  imageSize,
+}: ModelSelectProps) {
   return (
     <select
       id={id}
@@ -45,13 +65,30 @@ export function ModelSelect({ id, providers, value, onChange, disabled }: ModelS
               disabled={provider.status !== "ready"}
               title={tooltipFor(provider)}
             >
-              {model.displayName} · {model.sparks} ⚡
+              {model.displayName} · {priceLabel(model, imageSize)}
             </option>
           ))}
         </optgroup>
       ))}
     </select>
   );
+}
+
+/**
+ * What one model costs, in the unit the row is asking about.
+ *
+ * A model left selectable even when it does not sell the chosen size, on
+ * purpose: picking it is how somebody would then change the quality, and a
+ * disabled option would leave them with no way out of the combination they are
+ * already in. The block below refuses to generate and says why — which is the
+ * right place for a refusal, because it is where the money would be spent.
+ */
+function priceLabel(model: CatalogModel, imageSize: string | undefined): string {
+  if (imageSize === undefined) return `${model.sparks} ⚡`;
+
+  const sized = model.sizes.find((entry) => entry.size === imageSize);
+
+  return sized ? `${sized.sparks} ⚡` : t.generation.node.modelSizeUnavailable;
 }
 
 /**

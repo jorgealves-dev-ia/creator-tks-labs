@@ -25,14 +25,32 @@ import { centsToSparks } from "@/lib/sparks";
 type BalanceState = {
   /** In Sparks — the unit shown on screen. Null until the page seeds it. */
   sparks: number | null;
-  /** From the server-rendered page, in BRL cents. */
+  /** From the server-rendered page, in BRL cents. The authority. */
   seed: (balanceCents: number) => void;
-  /** From a generation that just charged, already in Sparks. */
-  set: (sparks: number) => void;
+  /**
+   * Subtracts what a generation just charged.
+   *
+   * Subtraction rather than assignment, and that is the whole point. Each
+   * generation answers with the balance *it* saw, and four running at once all
+   * read the same starting figure — so four results carrying "1000 − 75 = 925"
+   * would leave the screen showing 925 after 300 Sparks were spent. Applying the
+   * charges instead of the readings is the same arithmetic the ledger did, in
+   * the same order, so it lands on the same number.
+   *
+   * Optimistic and self-correcting: the page refreshes after a batch and reseeds
+   * this with what the wallet actually says.
+   */
+  spend: (sparks: number) => void;
 };
 
 export const useBalance = create<BalanceState>((set) => ({
   sparks: null,
   seed: (balanceCents) => set({ sparks: centsToSparks(balanceCents) }),
-  set: (sparks) => set({ sparks }),
+  spend: (sparks) =>
+    set((state) => ({
+      // Never below zero on screen. The wallet itself cannot go negative — a
+      // constraint enforces it — so a negative here could only ever be an
+      // artefact of a stale seed.
+      sparks: state.sparks === null ? null : Math.max(0, state.sparks - sparks),
+    })),
 }));

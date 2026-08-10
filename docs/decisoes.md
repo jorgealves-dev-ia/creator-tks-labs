@@ -1162,3 +1162,45 @@ Em Sparks, pela regra da casa (USD × 550 × 1,35, arredondado a 5): Pro **100 /
 **O preço nunca vem de quem chama, e isso não mudou.** `record_generation` ganhou `p_image_size`, que nomeia um *tamanho* — exatamente como `p_model_id` nomeia um modelo. Quanto custa continua sendo resposta do catálogo. Um tamanho sem linha de preço é recusado com **GN005**, nunca cobrado pelo preço-base: cair no preço-base seria entregar 4K cobrando 2K, que é precisamente o buraco que a tabela fecha.
 
 **E a checagem acontece duas vezes, de propósito.** O servidor confere o tamanho contra o catálogo **antes** de chamar o provedor, porque a recusa do banco chega depois de a imagem existir — ou seja, depois de o Google ter sido pago por ela. O `GN005` continua lá como rede: o banco é a autoridade sobre preço, e uma autoridade cuja recusa não tem nome deste lado vira "erro inesperado" na tela. A ordem que não erra a favor de ninguém é descobrir antes.
+
+**Um preço que sobrou, achado clicando** *(mesmo dia, na validação).* O seletor de modelo continuava mostrando o preço-base: com 4K escolhido, o campo dizia "Nano Banana 2 · 75 ⚡" e a linha do botão dizia "110 ⚡". Ninguém lê isso como um número desatualizado — lê como **dois números**, e a soma dos dois. O seletor passa a precificar cada modelo **na resolução selecionada**, campo fechado e lista aberta, e um modelo que não vende aquele tamanho mostra "indisponível" no lugar do preço. **Um seletor que exibe um número que a conta não vai bater é pior do que um seletor sem número nenhum.** O modelo continua selecionável nesse caso — escolhê-lo é justamente como se sai da combinação, e a recusa mora embaixo do botão, que é onde o dinheiro seria gasto.
+
+### 10/08/2026 — Quantidade 1–4 🔁 revisão parcial da N5, e a geração vira rota
+
+**A N5 dizia uma imagem por clique, síncrona, com quantidade adiada para quando o motor assíncrono chegasse.** A parte adiada chega antes — e chega sem violar nada, o que é o ponto.
+
+**Quatro imagens são quatro requisições, não uma requisição de quatro.** Cada uma tem a sua linha em `generations`, o seu débito no ledger, o seu progresso e o seu jeito de falhar. Nenhuma delas segura mais de uma geração dentro de um request HTTP — que era a razão inteira da regra. É tecnicamente idêntico a apertar o botão quatro vezes, que é exatamente o que substitui. **O assíncrono continua reservado e obrigatório para vídeo**, onde uma única geração já não cabe no `maxDuration` de 60.
+
+**Débito atômico por imagem.** Se duas saem e uma falha, cobram-se duas — o slot que falhou mostra a frase dele, e uma geração falha já era grátis por constraint. Retry é um clique novo, que é uma requisição nova.
+
+**Um Resultado por imagem, não um Resultado com quatro.** O node Resultado tem um `assetId`, um handle de saída, um "Usar como referência" e um "Ver prompt". Um card com quatro imagens teria que escolher qual delas o handle exporta, qual o download baixa e qual o "Ver prompt" abre — quatro perguntas novas para um node que hoje responde uma. Quatro cards são quatro débitos e quatro linhas: o canvas fica isomórfico ao extrato. O ruído visual é exatamente o de quatro cliques, que é o que isto é.
+
+---
+
+**E a geração deixou de ser Server Action.**
+
+Não por gosto: a documentação do Next é explícita ao dizer para **não usar `Promise.all` para paralelizar Server Actions no cliente**. Elas são despachadas pelo ciclo de renderização do React e saem em fila — quatro chamadas de trinta segundos virariam dois minutos, uma esperando a outra, para um trabalho que não tem dependência nenhuma entre si. É propriedade do despachante, não do trabalho, e a saída é parar de usar aquele despachante. `app/api/generations/canvas/route.ts` é um endpoint HTTP comum, e quatro `fetch` são quatro requisições.
+
+**A postura de segurança não mudou, porque é a mesma.** Server Action também é endpoint público. A sessão é relida do cookie, o corpo é validado pelo mesmo schema Zod, RLS escopa toda leitura e o preço continua vindo do catálogo por `record_generation`. Sem segredo compartilhado, de propósito: é o usuário chamando o próprio estúdio com a própria sessão — os endpoints de `app/api/webhooks` é que não têm cookie de ninguém para conferir.
+
+**Uma consequência que valeu uma linha no proxy.** Rota sob `/api/` sem sessão passa a receber **401 em JSON** em vez do redirect 307 para `/login`. Um redirect é a resposta certa para quem digitou um endereço e a errada para um `fetch`, que o segue e recebe o HTML da tela de login com status 200 — e aí `response.json()` estoura. Uma sessão que expirou numa aba aberta chegava ao canvas como "erro inesperado"; agora chega como "sua sessão expirou, recarregue a página". Nenhum endpoint nosso tinha sido chamado por XHR antes deste ciclo, então o buraco não existia até agora.
+
+**E uma aritmética que só aparece no plural.** Cada geração responde com o saldo que **ela** viu, e quatro rodando juntas leem todas o mesmo número inicial — quatro respostas dizendo "1000 − 75 = 925" deixariam a tela em 925 depois de 300 Sparks gastos. O saldo na tela passa a **subtrair o que cada imagem cobrou** em vez de confiar na leitura de cada uma: a mesma conta que o ledger fez, na mesma ordem, chegando no mesmo número. É otimista e se autocorrige — a página recarrega ao fim do lote e o valor da carteira volta por cima.
+
+### 10/08/2026 — Etapa B validada com gerações pagas 📌 validação manual
+
+**Feita pelo Jorge, com dinheiro de verdade.** O que cada teste provou:
+
+| Teste | Esperado | Resultado |
+|---|---|---|
+| 1 imagem em 1K | 50 ⚡, um débito | ok |
+| 1 imagem em 4K | 110 ⚡, um débito | ok |
+| Quantidade 2 em 1K | 2 × 50, **dois débitos separados** | ok |
+| Recusa de política | sem cobrança e **sem linha no extrato** | ok |
+| Margem | conferida linha a linha contra o custo real | ok |
+
+**O número que interessa é 1,3 segundo.** É o intervalo entre os dois débitos da geração de quantidade 2. Se as requisições tivessem saído em fila — que é o que aconteceria por Server Action —, o intervalo seria o tempo inteiro de uma geração, algo entre vinte e quarenta segundos. Um segundo e três décimos é o tempo de duas coisas acontecendo juntas e terminando quase juntas. **A troca de Server Action por rota não foi teórica: é medível no extrato.**
+
+**A recusa sem linha no extrato confirma a outra metade.** `record_generation` só insere no ledger quando `v_charged > 0`, e uma geração falha nunca cobra — por `case` na função e por constraint na tabela. Uma recusa de política agora tem prova de que é grátis, e não só a promessa de que era.
+
+Com isto a **Etapa B fecha**: qualidade por resolução com preço do catálogo, quantidade 1–4 em paralelo de verdade, e o preço dizendo a mesma coisa em todos os lugares da tela.

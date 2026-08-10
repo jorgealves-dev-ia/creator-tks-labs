@@ -1,11 +1,14 @@
-"use server";
+import "server-only";
 
-import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { imageRealCostCents } from "@/lib/ai/pricing";
 import { parseSheet, type CharacterSheet } from "@/lib/character-sheet/schema";
 import { loadImagePayloads } from "@/lib/generation/asset-payloads";
+import type {
+  CanvasGenerationFailure,
+  CanvasGenerationResult,
+} from "@/lib/generation/canvas-contract";
 import { distinctHandles, findMentions, sceneWithoutMentions } from "@/lib/generation/mentions";
 import {
   DEFAULT_IMAGE_SIZE,
@@ -124,66 +127,14 @@ const generateSchema = z.object({
   references: z.array(referenceSchema).max(12),
 });
 
-export type CanvasGenerationFailure =
-  | "invalid"
-  | "not_configured"
-  | "insufficient_balance"
-  | "empty_request"
-  | "empty_character"
-  | "unknown_handle"
-  | "no_version"
-  | "unknown_version"
-  | "multiple_characters"
-  | "unsupported_size"
-  | "too_many_references"
-  | "missing_reference"
-  | "translation_failed"
-  | "refused"
-  | "error";
-
-export type CanvasGenerationResult =
-  | {
-      ok: true;
-      generationId: string;
-      assetId: string;
-      url: string;
-      sparksCharged: number;
-      balanceSparks: number;
-      /** What the API was actually asked for — shown next to the preset label. */
-      aspectRatio: string;
-      /** True when the model had no exact match for the channel's proportion. */
-      approximated: boolean;
-      character: {
-        handle: string;
-        versionNumber: number;
-        /** False when that version was saved before it had a complete sheet. */
-        hasSheetImage: boolean;
-      } | null;
-    }
-  | {
-      ok: false;
-      reason: CanvasGenerationFailure;
-      /** The handle that could not be resolved, so the message can name it. */
-      handle?: string;
-      versionNumber?: number;
-      neededSparks?: number;
-      balanceSparks?: number;
-      limit?: number;
-    };
-
-async function requireSession() {
-  const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.auth.getClaims();
-  const userId = data?.claims?.sub;
-
-  if (!userId) {
-    redirect("/login");
-  }
-
-  return { supabase, userId };
-}
-
-export async function generateFromNode(input: unknown): Promise<CanvasGenerationResult> {
+/**
+ * One image, start to finish.
+ *
+ * Called by the route handler and by nothing else. It never redirects and never
+ * throws: it is one of up to four running at once, and a caller holding four
+ * promises needs four answers, not one exception that cancels the others.
+ */
+export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerationResult> {
   const parsed = generateSchema.safeParse(input);
 
   if (!parsed.success) {
@@ -191,7 +142,17 @@ export async function generateFromNode(input: unknown): Promise<CanvasGeneration
   }
 
   const request = parsed.data;
-  const { supabase, userId } = await requireSession();
+  const supabase = await createSupabaseServerClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+
+  // Answered, never redirected — see the proxy, which says the same thing for
+  // the same reason and gets there first. This check is the one that survives if
+  // the matcher ever changes: a Server Action or a route is a public endpoint,
+  // and neither may rely on the proxy having run.
+  if (!userId) {
+    return { ok: false, reason: "unauthenticated" };
+  }
 
   // 1. The model, its price and its provider — from the catalogue, never from the
   //    browser. The browser only names an id.
