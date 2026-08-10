@@ -16,6 +16,18 @@ import { maxReferences } from "@/lib/generation/presets";
  * a sheet. Nothing here knows about React Flow or about the catalogue.
  */
 
+/**
+ * How long a scene may be, in characters.
+ *
+ * Lives here rather than in the Server Action's Zod schema alone so the box and
+ * the validator count to the same number: a field that lets someone type 2001
+ * characters and then refuses the whole generation is a field that wasted the
+ * sentence. The textarea stops at this number; the server checks it again,
+ * because a Server Action is a public endpoint and nothing typed in a browser is
+ * evidence of anything.
+ */
+export const PROMPT_MAX_LENGTH = 2000;
+
 export type GeneratorCapacity = {
   /** The model's ceiling for one generation, the sheet included. */
   limit: number;

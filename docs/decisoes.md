@@ -1071,3 +1071,71 @@ Três coisas que apareceram na conversa deste ciclo e **não** foram construída
 - **Input de pose/ângulo como node separado.** A lista de **ângulo de câmera** dos Ajustes de cena (§5.27) e o chip **pose** nas referências já cobrem os dois caminhos que existem: o vocabulário fechado e a imagem de exemplo. Um terceiro seria uma terceira forma de dizer a mesma coisa, com uma terceira chance de contradizer as outras duas.
 
 **Adiado com data:** quantidade **x2–x4** por geração chega junto com o motor assíncrono da frente de vídeo. A **N5 fica mantida** pela razão de sempre — quatro imagens síncronas seriam quatro esperas em sequência dentro de um request HTTP, que é exatamente o que a invariante 1 proíbe.
+
+---
+
+### 10/08/2026 — Roteiro do Canvas 3: 6/6 no navegador 📌 validação manual
+
+**Validado manualmente pelo Jorge**, com a migration `20260810160000_product_images_limit.sql` já aplicada. Os seis passos do roteiro, e o que cada um provou:
+
+| # | Passo | Veredito |
+|---|---|---|
+| 1 | Cabeçalho nos quatro tipos de node | ok |
+| 2 | Duplicar gerador — config e referências vêm, Resultados não | ok |
+| 3 | Remover com confirmação onde há perda | ok |
+| 4 | Produto criado com 3 fotos | ok |
+| 5 | Fio anexando como unidade, faixa dizendo **"4 de 6"**; teto recusando com a frase no bloco | ok |
+| 6 | Geração real com o produto conectado — fidelidade na imagem, cláusula única no "Ver prompt" | ok |
+
+**O que o passo 6 prova e o harness não podia provar.** As 96 verificações fora do Next são sobre uma função pura: garantem que o texto compilado sai com **uma** cláusula de fidelidade nomeando todas as posições, e que um produto de uma foto produz byte a byte o texto de antes. Nada disso diz o que o modelo faz com esse texto. Um pijama que voltou fiel, com o "Ver prompt" mostrando o grupo como um bloco só, é a outra metade — e é a metade que só uma geração paga responde.
+
+**A expectativa honesta continua a mesma, e continua escrita no código.** As cláusulas de fidelidade elevam a taxa de acerto; não garantem. Nenhum prompt torna um modelo de imagem determinístico, e a cláusula de unificação não é exceção — ela reduz a chance de três fotos virarem três produtos, não a zera. **Uma geração fiel é uma geração fiel**, pela mesma disciplina do registro da recusa em "@luna sorrindo": o que vira dado sobre o modelo é a repetição, não a primeira ocorrência.
+
+**O que fica em observação para os próximos ciclos de uso real**, sem ação agora: se um produto de 4 ou 5 fotos se comporta como um de 3 (mais fotos é mais chance de o modelo tratar alguma como cena separada); e se a instrução padrão editada por geração — o caso que a faixa permite e o roteiro não exercitou — sobrevive à tradução com o mesmo acerto da instrução salva no produto.
+
+Com isto o **Canvas 3 fecha**: cabeçalho padronizado, Produtos como cidadãos do Arsenal, o fio como unidade e o teto dito antes do clique.
+
+---
+
+### 10/08/2026 — Canvas 4 · a anatomia do gerador, reordenada 🔁 reversão de layout
+
+**O bloco Gerar Imagem passa a ter ordem normativa**, escrita em [`nodes-geracao.md §3`](./nodes-geracao.md): cabeçalho → configuração → chave de inputs → prompt principal → botão → **custo e saldo** → imagem gerada. A referência é o padrão do sistema Studio Oikos do Jorge.
+
+**O que estava errado não era feio, era invertido.** A ordem antiga abria o card com a moldura vazia onde a imagem *ia* aparecer — a **resposta** era a primeira coisa do bloco e a pergunta vinha por baixo dela. E o preço morava no canto do cabeçalho, a três centímetros do botão que o gasta. Um número no canto de um card é um rótulo; o mesmo número embaixo do botão é um **preço**. Por isso ele desceu, e por isso mudou de tempo verbal: "Custa 75 ⚡" virou **"Custará 75 ⚡ · Saldo: X ⚡"**.
+
+**O saldo passou a ser conhecido antes do primeiro clique.** Enquanto o custo era rótulo, dava para o saldo só aparecer depois da primeira geração. Embaixo do botão isso vira a meia-promessa que este projeto vive recusando: o motivo inteiro de pôr o número antes do clique é ele **estar lá** antes do clique. O valor é semeado pela página, que é quem lê a carteira, e atualizado pelo número que a própria cobrança devolve — o que o ledger acabou de projetar, não uma segunda opinião sobre isso.
+
+Também mudou de lugar o aviso do teto de referências: ele agora aparece **ao lado da faixa que recusou o fio**, não no pé do card.
+
+**Duas colunas, e não uma** *(ajuste da validação visual, mesmo dia).* Empilhar tudo verticalmente deixou o card **mais alto que a tela**: para ler os controles era preciso rolar, e para ver o card inteiro era preciso afastar o zoom até não dar mais para lê-los. Rolagem e zoom brigando é o oposto do que um canvas serve para ser. Então a pergunta ficou à esquerda — configuração → referências → prompt → botão → custo — e a **resposta à direita**, num painel próprio. Um bloco tem que caber num olhar; senão, é um formulário com fio.
+
+**A moldura do resultado tem tamanho fixo e é quadrada.** Ela não acompanha a proporção escolhida, de propósito: uma moldura que muda de forma faz o node inteiro crescer e encolher quando alguém troca de Stories para Feed, e os controles da esquerda pulam debaixo do ponteiro por um motivo que não tem nada a ver com eles. O quadrado custa um pouco de espaço vazio ao lado de um 9:16; a moldura elástica custa a estabilidade do layout, que vale mais. A imagem se ajusta dentro com `contain`, então nada é cortado.
+
+**E o painel já nasceu com quatro lugares.** O stepper de quantidade chega na etapa seguinte, e um painel que só soubesse desenhar uma imagem teria que ser redesenhado para aprender as outras: uma preenche o quadrado, duas o partem ao meio, três ou quatro caem na grade 2×2 — **com o quadrado externo igual nos quatro casos**, para que o node nunca mude de altura por causa de quantas imagens foram pedidas. Cada célula carrega o seu próprio estado, porque cada imagem vai ser a sua própria requisição, a sua própria cobrança e o seu próprio jeito de falhar.
+
+### 10/08/2026 — A lixeira, no lugar do ✕
+
+O botão de excluir de todos os nodes passa a usar um ícone de **lixeira**. O ✕ é o glifo que todo overlay deste produto usa para **fechar** — o seletor de referências, o lightbox, o editor de ficha —, então usá-lo aqui fazia "remover do canvas" parecer "dispensar esta janela". Duas ações opostas com o mesmo desenho, a poucos pixels de distância. A confirmação continua exatamente como está.
+
+### 10/08/2026 — A lixeirinha pergunta sempre 🔁 reversão
+
+**Todo node confirma antes de excluir.** A regra anterior era mais esperta: perguntar só quando havia perda real (um prompt escrito, referências anexadas), porque uma pergunta inútil treina a pessoa a clicar "sim" sem ler.
+
+**O que a teoria não viu é que quem clica não enxerga a classificação.** Um node de input cujas fotos levaram dez minutos para escolher é visualmente idêntico a um que levou zero. Um canvas de oito blocos onde dois perguntam e seis não é um canvas em que ninguém sabe o que o ✕ vai fazer. **Uma regra só, dita uma vez, ganha de uma regra mais esperta que ninguém consegue prever.** O `confirmRemove` saiu do `NodeHeader` — não é mais configurável, para não voltar por descuido.
+
+### 10/08/2026 — Estilo "Ultra realista" na lista fechada
+
+Nova opção em `ESTILO_RENDERIZACAO` (§5.26 do [character sheet](./character-sheet.md)), logo depois de `fotorrealista`. Ela puxa acima dele em fidelidade de pele, textura e luz: poro visível, penugem, *subsurface scattering*, assimetria e micro-imperfeições, catchlight nos olhos, queda de luz fisicamente correta, 85mm em f/2.
+
+**O reforço é próprio, e é aí que está o raciocínio.** O jeito de "hiper-realista" falhar não é sair desenhado — é sair de cera. Modelos respondem "pele extremamente detalhada" com aerógrafo com frequência suficiente para a proibição precisar dizer o nome: *"not digitally smoothed or airbrushed skin"*.
+
+**A palavra "ultra-realistic" já aparecia na frase do `fotorrealista`, e ela fica lá.** Editar uma frase do dicionário mudaria o que **toda versão congelada já salva** compila hoje. Acrescentar uma entrada é seguro; editar uma existente é uma decisão de outra natureza, e não é esta. Verruga registrada em vez de consertada.
+
+### 10/08/2026 — Canvas 4 · Etapa D: histórico à mão 📌 aprovada em conceito, a executar depois de B e C
+
+Duas peças aprovadas hoje e **deliberadamente adiadas**, com a data e o motivo escritos para não virarem lembrança de conversa:
+
+- **Faixa "Recentes" no painel de resultado.** Três ou quatro miniaturas das últimas gerações **deste gerador**, sob a moldura principal. Clique promove a miniatura à moldura; um botão **"Ver todas"** abre o resto. Hoje, a única memória visível de um bloco é a última imagem que ele fez — tentar de novo apaga da tela o que veio antes, e comparar duas tentativas exige caçar os nodes Resultado espalhados pelo canvas.
+- **Entrada "Galeria" no sidebar**, reaproveitando o modal do seletor de referências em **modo navegação**: sem seleção, sem confirmar, com as ações que fazem sentido quando ninguém está escolhendo nada — baixar e ver o prompt. O modal já sabe listar, filtrar, buscar e paginar as imagens do usuário; o que falta é um modo em que ele não esteja a serviço de outra decisão.
+
+**Por que esperar em vez de fazer agora.** A Etapa B redesenha a ocupação do painel de resultado — a grade 2×2 da quantidade. Desenhar a faixa de recentes contra o estado provisório significaria desenhá-la duas vezes, e a segunda com a primeira ainda no caminho. **Desenha-se contra o estado final, não contra o provisório** — é a mesma razão pela qual o painel já nasceu com quatro lugares em vez de um.

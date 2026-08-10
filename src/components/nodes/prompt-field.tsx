@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 
 import { Portrait, VersionBadge } from "@/components/character-sheet/identity";
+import { PROMPT_MAX_LENGTH } from "@/lib/generation/capacity";
 import {
   activeMentionQuery,
   applyMention,
@@ -152,7 +153,11 @@ export function PromptField({ id, value, onChange, disabled }: PromptFieldProps)
           id={id}
           value={value}
           disabled={disabled}
-          rows={3}
+          // Six lines, not three. The prompt is the one field in the block where
+          // the user does the actual writing, and a box that shows three lines of
+          // a six-line scene makes them edit through a letterbox.
+          rows={6}
+          maxLength={PROMPT_MAX_LENGTH}
           spellCheck
           placeholder={copy.node.promptPlaceholder}
           onChange={(event) => {
@@ -196,61 +201,81 @@ export function PromptField({ id, value, onChange, disabled }: PromptFieldProps)
                       bg-transparent text-ink placeholder:text-ink-faint focus:outline-none
                       disabled:cursor-not-allowed disabled:opacity-60`}
         />
+
+        {/* Inside the frame, which is the positioned ancestor `top-full` measures
+            against. Outside it, the list would be pushed down by the counter
+            below and stop touching the box it belongs to. */}
+        {open ? (
+          <ul
+            className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-lg
+                       border border-line bg-surface-raised shadow-lg shadow-black/40"
+          >
+            <li className="px-2.5 pt-1.5 text-[10px] font-medium uppercase tracking-wide text-ink-faint">
+              {copy.mention.title}
+            </li>
+
+            {suggestions.map((character, index) => {
+              const mentionable = character.activeVersion !== null;
+
+              return (
+                <li key={character.id}>
+                  <button
+                    type="button"
+                    disabled={!mentionable}
+                    title={mentionable ? undefined : copy.mention.noVersionTooltip}
+                    // onMouseDown, not onClick: the textarea's blur would close the
+                    // list before a click could land.
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      if (mentionable) accept(character.handle);
+                    }}
+                    onMouseEnter={() => moveHighlight(index)}
+                    className={`flex w-full items-center gap-2 px-2.5 py-1.5 text-left transition-colors
+                                ${index === highlighted && mentionable ? "bg-surface-hover" : ""}
+                                ${mentionable ? "" : "cursor-not-allowed opacity-50"}`}
+                  >
+                    <Portrait name={character.displayName} className="size-6" />
+
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-xs text-ink">
+                        @{character.handle}
+                      </span>
+                      <span className="block truncate text-[10px] text-ink-faint">
+                        {character.displayName}
+                      </span>
+                    </span>
+
+                    {mentionable ? (
+                      <VersionBadge versionNumber={character.activeVersion?.number ?? null} />
+                    ) : (
+                      <span className="shrink-0 text-[10px] text-ink-faint">
+                        {copy.mention.noVersionSuffix}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
       </div>
 
-      {open ? (
-        <ul
-          className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-lg
-                     border border-line bg-surface-raised shadow-lg shadow-black/40"
-        >
-          <li className="px-2.5 pt-1.5 text-[10px] font-medium uppercase tracking-wide text-ink-faint">
-            {copy.mention.title}
-          </li>
-
-          {suggestions.map((character, index) => {
-            const mentionable = character.activeVersion !== null;
-
-            return (
-              <li key={character.id}>
-                <button
-                  type="button"
-                  disabled={!mentionable}
-                  title={mentionable ? undefined : copy.mention.noVersionTooltip}
-                  // onMouseDown, not onClick: the textarea's blur would close the
-                  // list before a click could land.
-                  onMouseDown={(event) => {
-                    event.preventDefault();
-                    if (mentionable) accept(character.handle);
-                  }}
-                  onMouseEnter={() => moveHighlight(index)}
-                  className={`flex w-full items-center gap-2 px-2.5 py-1.5 text-left transition-colors
-                              ${index === highlighted && mentionable ? "bg-surface-hover" : ""}
-                              ${mentionable ? "" : "cursor-not-allowed opacity-50"}`}
-                >
-                  <Portrait name={character.displayName} className="size-6" />
-
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-xs text-ink">
-                      @{character.handle}
-                    </span>
-                    <span className="block truncate text-[10px] text-ink-faint">
-                      {character.displayName}
-                    </span>
-                  </span>
-
-                  {mentionable ? (
-                    <VersionBadge versionNumber={character.activeVersion?.number ?? null} />
-                  ) : (
-                    <span className="shrink-0 text-[10px] text-ink-faint">
-                      {copy.mention.noVersionSuffix}
-                    </span>
-                  )}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      ) : null}
+      {/*
+        The budget, under the box.
+        It started inside the frame, in the corner, and the text ran underneath
+        it — a counter sitting on top of the thing it counts. Outside, it can
+        never collide with a word.
+        Quiet until it matters: the number turns for the last tenth, which is the
+        only stretch where knowing it changes what you write.
+      */}
+      <p
+        aria-hidden
+        className={`mt-1 text-right text-[10px] tabular-nums ${
+          value.length > PROMPT_MAX_LENGTH * 0.9 ? "text-warning" : "text-ink-faint"
+        }`}
+      >
+        {value.length} / {PROMPT_MAX_LENGTH}
+      </p>
     </div>
   );
 }

@@ -26,15 +26,27 @@ O estúdio deixa de ser fábrica de personagens e vira **linha de produção de 
 
 ## 3. O node Gerar Imagem (anatomia)
 
-**Corpo:** área de resultado (vazia até gerar; depois mostra a última imagem) · **campo de prompt em português** com suporte a `@` · faixa de referências (miniaturas + "+") · barra de configuração.
+> **Reordenada em 10/08/2026 (Canvas 4).** A anatomia abaixo é normativa: ela é a estrutura do bloco, não uma sugestão de layout. A anterior — resultado em cima, prompt no meio, configuração embaixo, custo no canto do cabeçalho — abria o card pela **resposta** e deixava a pergunta por baixo dela, e punha o preço a três centímetros do botão que o gasta. A referência é o padrão do Studio Oikos: configuração no topo, chave de inputs, prompt grande, botão, resultado.
 
-**Barra de configuração:** modelo (seletor reutilizável, capability `image_gen`, preço visível) · **formato/canal** (presets da seção 7) · **estilo de renderização** (herda o default da personagem mencionada; sobrescrevível aqui — a hierarquia da regra 11: o node escolhe *qual*, nunca *nenhum*; sem personagem mencionada, default fotorrealista) · resolução 2K fixa na v1 (o preço em Sparks é por imagem, não por tamanho — pedir menos entregaria menos pelo mesmo preço) · custo e saldo · botão Gerar.
+**Cabeçalho** (linha inteira) — o padrão universal de todos os nodes: ícone + nome + Duplicar + **lixeira**, esta **sempre com confirmação** (ver as notas de 10/08 em [`decisoes.md`](./decisoes.md)).
 
-**Ajustes de cena · opcional** *(acrescentado em 10/08/2026):* seção recolhida abaixo da barra, com três seletores — **ângulo de câmera** (§5.27 do character sheet), **iluminação** (§5.24) e **expressão** (§5.20). Todos começam em **Auto**, que é o comportamento de sempre: quem decide são o prompt e a personagem. Escolher qualquer coisa diferente de Auto é exercer a hierarquia da regra 4 (node > sheet) — ver as regras da seção 6. A seção abre sozinha quando o bloco já tem ajuste salvo e, recolhida, mostra quantos estão em uso: um controle que muda o resultado não pode ficar escondido depois de escolhido.
+**Corpo em duas colunas.** A pergunta à esquerda, a resposta à direita.
+
+**Coluna esquerda**, de cima para baixo:
+
+1. **Configuração**, lado a lado onde couber: **modelo** (linha inteira — seletor reutilizável, capability `image_gen`, preço visível) · **formato/canal** (presets da seção 7) + **estilo de renderização** (herda o default da personagem mencionada; sobrescrevível aqui — a hierarquia da regra 11: o node escolhe *qual*, nunca *nenhum*; sem personagem mencionada, default fotorrealista) · **qualidade** + **quantidade** · **ajustes de cena** em pares.
+2. **Chave "Ativar Inputs de Referências"** + as miniaturas espelhadas dos inputs conectados.
+3. **Prompt principal** — rótulo "Prompt principal", placeholder "Insira aqui sua instrução…", caixa de seis linhas com contador de caracteres, suporte a `@`. A menção é **opcional**: sem ela, gera livre com o default fotorrealista.
+4. **Botão "Gerar Conteúdo".**
+5. **Custo e saldo**, logo abaixo do botão e no futuro do indicativo — "Custará 3 × 75 = 225 ⚡ · Saldo: X ⚡". O custo fala a verdade **multiplicada** antes do clique.
+
+**Coluna direita — o painel de resultado.** Moldura **quadrada de tamanho fixo**, independente da proporção gerada: a imagem se ajusta dentro (`contain`), vertical, horizontal ou quadrada. O progresso acontece **dentro** da moldura; vazia, ela diz "A imagem aparecerá aqui"; o clique abre o lightbox. O painel é dividido para até **4 slots** — um preenche o quadrado, dois o partem ao meio, três ou quatro caem na grade 2×2 —, cada um com o seu próprio estado, porque cada imagem é a sua própria requisição, a sua própria cobrança e o seu próprio jeito de falhar. O node Resultado continua nascendo no primeiro Gerar.
 
 **Conectores na borda (sempre visíveis):**
-- **Entradas de imagem** (lado esquerdo): aceitam conexão de um node Resultado (encadeamento) e, no clique, abrem o **seletor de referências**.
+- **Entradas de imagem** (lado esquerdo): aceitam conexão de um node Resultado (encadeamento) e de um node de Input, e no clique abrem o **seletor de referências**.
 - **Saída** (lado direito): liga ao(s) node(s) Resultado gerados.
+
+**Ajustes de cena · opcional** *(acrescentado em 10/08/2026):* seção recolhida dentro da configuração, com três seletores — **ângulo de câmera** (§5.27 do character sheet), **iluminação** (§5.24) e **expressão** (§5.20). Todos começam em **Auto**, que é o comportamento de sempre: quem decide são o prompt e a personagem. Escolher qualquer coisa diferente de Auto é exercer a hierarquia da regra 4 (node > sheet) — ver as regras da seção 6. A seção abre sozinha quando o bloco já tem ajuste salvo e, recolhida, mostra quantos estão em uso: um controle que muda o resultado não pode ficar escondido depois de escolhido.
 
 **Cada referência anexada carrega:**
 - a imagem (do upload, da galeria ou de um Resultado conectado);

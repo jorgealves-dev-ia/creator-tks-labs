@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { NodeHeader } from "@/components/nodes/node-header";
 import { PromptField } from "@/components/nodes/prompt-field";
 import { ReferenceStrip, type ReferenceEntry } from "@/components/nodes/reference-strip";
+import { ResultPanel, type ResultSlot } from "@/components/nodes/result-panel";
 import { useImageCatalog } from "@/components/nodes/use-image-catalog";
 import { defaultModelId, findModel, ModelSelect } from "@/components/ui/model-select";
 import { signAssetUrls } from "@/lib/assets/actions";
@@ -32,6 +33,7 @@ import {
 import { findMentions, sceneWithoutMentions } from "@/lib/generation/mentions";
 import { DEFAULT_PRESET_ID, FORMAT_PRESETS, findPreset } from "@/lib/generation/presets";
 import { t } from "@/lib/i18n/pt-BR";
+import { useBalance } from "@/lib/sparks/balance-store";
 
 /**
  * "Gerar Imagem" — the block where the `@` is finally spent (decision N1).
@@ -84,7 +86,9 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [balance, setBalance] = useState<number | null>(null);
+  // Seeded by the page, not by this block: the price under the button has to be
+  // able to say the balance before anything has been generated.
+  const balance = useBalance((state) => state.sparks);
   /**
    * The signed link, remembered next to the asset it belongs to. Keeping the pair
    * is what lets the preview go blank the instant the node points somewhere else,
@@ -137,12 +141,6 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
     referenceCount: references.length,
     reserved: sheetAnchorSlots(mentioned),
   });
-
-  // What a removal would actually take with it. Model and format are two clicks
-  // anybody would make again without noticing; a scene somebody wrote, images
-  // somebody attached and an adjustment somebody chose live in the graph and
-  // nowhere else — which is the whole test for whether to ask first.
-  const hasWork = prompt.trim() !== "" || references.length > 0 || activeAdjustments > 0;
 
   const lastAssetId = data.lastAssetId ?? null;
   const previewUrl = lastAssetId && preview?.assetId === lastAssetId ? preview.url : null;
@@ -246,7 +244,9 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
       },
     });
 
-    setBalance(result.balanceSparks);
+    // The figure the charge itself returned — what the ledger just projected onto
+    // the wallet, not a second opinion about it.
+    useBalance.getState().set(result.balanceSparks);
     setPreview({ assetId: result.assetId, url: result.url });
 
     // Both of these are honesty, not decoration: the proportion that was really
@@ -268,319 +268,349 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   const emptyScene = scene === "";
   const nothingToDo = emptyScene && !mentions.length;
 
+  /**
+   * What the right-hand panel draws. One slot today; the quantity stepper of the
+   * next step turns this into up to four, and the panel already knows how to lay
+   * them out.
+   */
+  const slots: ResultSlot[] = busy
+    ? [{ status: "pending" }]
+    : lastAssetId
+      ? [{ status: "done", assetId: lastAssetId, url: previewUrl }]
+      : [];
+
   return (
     <div
-      className={`group/node w-[23rem] rounded-xl border bg-surface-raised shadow-lg
+      className={`group/node w-[38rem] rounded-xl border bg-surface-raised shadow-lg
                   shadow-black/30 transition-colors
                   ${selected ? "border-accent" : "border-line"}`}
     >
-      {/* The only card whose removal can lose something: a prompt somebody wrote
-          and references somebody attached live in the graph and nowhere else. */}
       <NodeHeader
         nodeId={id}
         kind="generator"
         title={copy.node.title}
         removeHint={copy.node.remove}
-        confirmRemove={hasWork}
-        meta={
-          model ? (
-            <span className="text-[11px] text-ink-faint">
-              {copy.node.costPrefix} <strong className="text-ink-muted">{model.sparks} ⚡</strong>
-              {balance === null ? null : ` · ${copy.node.balancePrefix} ${balance} ⚡`}
-            </span>
-          ) : null
-        }
       />
 
-      <div className="p-3">
-        <div
-          className={`relative mb-3 flex items-center justify-center overflow-hidden rounded-lg
-                      text-[11px] ${
-                        previewUrl
-                          ? "border border-line bg-canvas"
-                          : "border border-dashed border-line text-ink-faint"
-                      }`}
-          style={{ aspectRatio: aspectRatioStyle(preset?.ratio) }}
-        >
-          {previewUrl ? (
-            /* A plain img: these are short-lived signed URLs for a private
-               bucket, so the optimiser has nothing it could cache. */
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={previewUrl} alt={copy.node.resultAlt} className="size-full object-contain" />
-          ) : (
-            <span className="px-4 text-center leading-relaxed">{copy.node.emptyResult}</span>
-          )}
+      {/*
+        Two columns: the question on the left, the answer on the right.
 
-          {busy ? (
-            <span className="absolute inset-0 flex items-center justify-center bg-canvas/75 text-[11px] text-ink">
-              {copy.node.generating}
-            </span>
-          ) : null}
-        </div>
+        The left column is the anatomy of the block, in order — configuration,
+        then what it is looking at, then what it is being told, then the button,
+        then the price. It reads the way the decision is actually made. The old
+        single column opened with an empty frame where the image would eventually
+        be (the *answer* first, the question underneath it) and kept the price in
+        the top corner, three centimetres from the button that spends it.
 
-        <label htmlFor={`prompt-${id}`} className="mb-1 block text-[11px] font-medium text-ink-muted">
-          {copy.node.promptLabel}
-        </label>
+        Stacking all of that vertically made the card taller than the screen: to
+        read the controls you scrolled, and to see the whole card you zoomed out
+        far enough that you could no longer read them. Putting the result beside
+        the controls instead of below them is what keeps the block a single
+        glance — which is the only reason a canvas beats a form.
+      */}
+      <div className="flex gap-3 p-3">
+        <div className="min-w-0 flex-1">
+          {/* ── Configuração ─────────────────────────────────────────────── */}
+          <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-ink-faint">
+            {copy.node.configTitle}
+          </p>
 
-        <PromptField
-          id={`prompt-${id}`}
-          value={prompt}
-          disabled={busy}
-          onChange={(value) => updateNodeData(id, { prompt: value })}
-        />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="col-span-2">
+              <label
+                htmlFor={`model-${id}`}
+                className="mb-1 block text-[11px] font-medium text-ink-muted"
+              >
+                {copy.node.modelLabel}
+              </label>
+              <ModelSelect
+                id={`model-${id}`}
+                providers={providers}
+                value={modelId}
+                disabled={busy}
+                onChange={(value) => updateNodeData(id, { modelId: value })}
+              />
+            </div>
 
-        <p className="mt-1 text-[10px] leading-relaxed text-ink-faint">
-          {nothingToDo
-            ? copy.node.emptyPromptAlone
-            : emptyScene
-              ? copy.node.emptyPromptWithCharacter
-              : copy.node.promptHint}
-        </p>
+            <div>
+              <label
+                htmlFor={`format-${id}`}
+                className="mb-1 block text-[11px] font-medium text-ink-muted"
+              >
+                {copy.node.formatLabel}
+              </label>
+              <select
+                id={`format-${id}`}
+                value={presetId}
+                disabled={busy}
+                onChange={(event) => updateNodeData(id, { presetId: event.target.value })}
+                className={SELECT_CLASS}
+              >
+                {FORMAT_PRESETS.map((entry) => (
+                  <option key={entry.id} value={entry.id}>
+                    {entry.pt} · {entry.ratio}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        <ReferenceStrip
-          references={references}
-          limit={capacity.limit}
-          reserved={capacity.reserved}
-          disabled={busy}
-          onAdd={openPicker}
-          onChange={(next) => updateNodeData(id, { references: next })}
-          onRemove={(index) => removeReference({ nodeId: id, index })}
-        />
-
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <div className="col-span-2">
-            <label
-              htmlFor={`model-${id}`}
-              className="mb-1 block text-[11px] font-medium text-ink-muted"
-            >
-              {copy.node.modelLabel}
-            </label>
-            <ModelSelect
-              id={`model-${id}`}
-              providers={providers}
-              value={modelId}
-              disabled={busy}
-              onChange={(value) => updateNodeData(id, { modelId: value })}
-            />
+            <div>
+              {/* Where the style comes from belongs to the label; what it is
+                  belongs to the value. Reading "Da personagem · Fotorrealista"
+                  inside the option asked one control to answer two questions, and
+                  made the inherited value look like a different style from the
+                  explicit one of the same name. */}
+              <label
+                htmlFor={`style-${id}`}
+                className="mb-1 block truncate text-[11px] font-medium text-ink-muted"
+              >
+                {copy.node.styleLabel}
+                <span className="font-normal text-ink-faint">
+                  {" · "}
+                  {estiloKey
+                    ? copy.node.styleFromNode
+                    : mentioned
+                      ? copy.node.styleFromCharacter
+                      : copy.node.styleFromDefault}
+                </span>
+              </label>
+              <select
+                id={`style-${id}`}
+                value={estiloKey ?? ""}
+                disabled={busy}
+                onChange={(event) =>
+                  updateNodeData(id, { estiloKey: event.target.value === "" ? null : event.target.value })
+                }
+                className={SELECT_CLASS}
+              >
+                {/* Never an empty or "none" option: the node picks *which* style,
+                    never whether there is one (compilation rule 11). */}
+                <option value="">{inheritedStyle.pt}</option>
+                {ESTILO_RENDERIZACAO.map((option) => (
+                  <option key={option.key} value={option.key}>
+                    {option.pt}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <div>
-            <label
-              htmlFor={`format-${id}`}
-              className="mb-1 block text-[11px] font-medium text-ink-muted"
+          {/* Rule 4 of §6, exercised. Unlike the style selector, "Auto" here is a
+              plain word on purpose: showing the inherited value would be honest
+              only in "padrões" mode — in a directed scene the sheet's default
+              does not enter at all, so a label promising it would lie half the
+              time. */}
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={() => setAdjustmentsOpen((current) => !current)}
+              aria-expanded={adjustmentsOpen}
+              className="nodrag flex items-center gap-1.5 text-[11px] font-medium text-ink-muted
+                         transition-colors hover:text-ink"
             >
-              {copy.node.formatLabel}
-            </label>
-            <select
-              id={`format-${id}`}
-              value={presetId}
-              disabled={busy}
-              onChange={(event) => updateNodeData(id, { presetId: event.target.value })}
-              className={SELECT_CLASS}
-            >
-              {FORMAT_PRESETS.map((entry) => (
-                <option key={entry.id} value={entry.id}>
-                  {entry.pt} · {entry.ratio}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            {/* Where the style comes from belongs to the label; what it is
-                belongs to the value. Reading "Da personagem · Fotorrealista"
-                inside the option asked one control to answer two questions, and
-                made the inherited value look like a different style from the
-                explicit one of the same name. */}
-            <label
-              htmlFor={`style-${id}`}
-              className="mb-1 block truncate text-[11px] font-medium text-ink-muted"
-            >
-              {copy.node.styleLabel}
+              <svg
+                viewBox="0 0 10 10"
+                className={`size-2.5 transition-transform ${adjustmentsOpen ? "rotate-90" : ""}`}
+                aria-hidden
+              >
+                <path d="M3 1l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" />
+              </svg>
+              {copy.node.sceneAdjustments}
               <span className="font-normal text-ink-faint">
                 {" · "}
-                {estiloKey
-                  ? copy.node.styleFromNode
-                  : mentioned
-                    ? copy.node.styleFromCharacter
-                    : copy.node.styleFromDefault}
+                {!adjustmentsOpen && activeAdjustments > 0
+                  ? `${activeAdjustments} ${copy.node.sceneAdjustmentsCountSuffix}`
+                  : copy.node.sceneAdjustmentsOptional}
               </span>
-            </label>
-            <select
-              id={`style-${id}`}
-              value={estiloKey ?? ""}
-              disabled={busy}
-              onChange={(event) =>
-                updateNodeData(id, { estiloKey: event.target.value === "" ? null : event.target.value })
-              }
-              className={SELECT_CLASS}
-            >
-              {/* Never an empty or "none" option: the node picks *which* style,
-                  never whether there is one (compilation rule 11). */}
-              <option value="">{inheritedStyle.pt}</option>
-              {ESTILO_RENDERIZACAO.map((option) => (
-                <option key={option.key} value={option.key}>
-                  {option.pt}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+            </button>
 
-        {/* Rule 4 of §6, exercised. Unlike the style selector, "Auto" here is a
-            plain word on purpose: showing the inherited value would be honest
-            only in "padrões" mode — in a directed scene the sheet's default
-            does not enter at all, so a label promising it would lie half the
-            time. */}
-        <div className="mt-3">
+            {adjustmentsOpen ? (
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <div className="col-span-2">
+                  <label
+                    htmlFor={`angle-${id}`}
+                    className="mb-1 block text-[11px] font-medium text-ink-muted"
+                  >
+                    {copy.node.cameraAngleLabel}
+                  </label>
+                  <select
+                    id={`angle-${id}`}
+                    value={anguloKey ?? ""}
+                    disabled={busy}
+                    onChange={(event) =>
+                      updateNodeData(id, {
+                        anguloKey: event.target.value === "" ? null : event.target.value,
+                      })
+                    }
+                    className={SELECT_CLASS}
+                  >
+                    <option value="">{copy.node.adjustmentAuto}</option>
+                    {ANGULO_CAMERA.map((option) => (
+                      <option key={option.key} value={option.key}>
+                        {option.pt}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor={`lighting-${id}`}
+                    className="mb-1 block text-[11px] font-medium text-ink-muted"
+                  >
+                    {copy.node.lightingLabel}
+                  </label>
+                  <select
+                    id={`lighting-${id}`}
+                    value={iluminacaoKey ?? ""}
+                    disabled={busy}
+                    onChange={(event) =>
+                      updateNodeData(id, {
+                        iluminacaoKey: event.target.value === "" ? null : event.target.value,
+                      })
+                    }
+                    className={SELECT_CLASS}
+                  >
+                    <option value="">{copy.node.adjustmentAuto}</option>
+                    {ILUMINACAO.map((option) => (
+                      <option key={option.key} value={option.key}>
+                        {option.pt}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor={`expression-${id}`}
+                    className="mb-1 block text-[11px] font-medium text-ink-muted"
+                  >
+                    {copy.node.expressionLabel}
+                  </label>
+                  <select
+                    id={`expression-${id}`}
+                    value={expressaoKey ?? ""}
+                    disabled={busy}
+                    onChange={(event) =>
+                      updateNodeData(id, {
+                        expressaoKey: event.target.value === "" ? null : event.target.value,
+                      })
+                    }
+                    className={SELECT_CLASS}
+                  >
+                    <option value="">{copy.node.adjustmentAuto}</option>
+                    {EXPRESSAO.map((option) => (
+                      <option key={option.key} value={option.key}>
+                        {option.pt}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <p className="col-span-2 text-[10px] leading-relaxed text-ink-faint">
+                  {copy.node.sceneAdjustmentsHint}
+                </p>
+              </div>
+            ) : null}
+          </div>
+
+          {/* ── Referências ──────────────────────────────────────────────── */}
+          <ReferenceStrip
+            references={references}
+            limit={capacity.limit}
+            reserved={capacity.reserved}
+            disabled={busy}
+            onAdd={openPicker}
+            onChange={(next) => updateNodeData(id, { references: next })}
+            onRemove={(index) => removeReference({ nodeId: id, index })}
+          />
+
+          {/* The ceiling, said where the wire was aimed and before anything was
+              spent — which is the only moment at which a ceiling is a ceiling.
+              Beside the strip it refused to fill, not at the foot of the card. */}
+          {refusedWire ? (
+            <p className="mt-1.5 text-[10px] leading-relaxed text-warning">
+              {copy.errors.productOverLimitPrefix} {refusedWire.needed}{" "}
+              {copy.errors.productOverLimitMiddle} {refusedWire.free}.{" "}
+              {copy.errors.productOverLimitSuffix}
+            </p>
+          ) : null}
+
+          {/* ── Prompt principal ─────────────────────────────────────────── */}
+          <label
+            htmlFor={`prompt-${id}`}
+            className="mb-1 mt-3 block text-[11px] font-medium text-ink-muted"
+          >
+            {copy.node.promptLabel}
+          </label>
+
+          <PromptField
+            id={`prompt-${id}`}
+            value={prompt}
+            disabled={busy}
+            onChange={(value) => updateNodeData(id, { prompt: value })}
+          />
+
+          <p className="mt-1 text-[10px] leading-relaxed text-ink-faint">
+            {nothingToDo
+              ? copy.node.emptyPromptAlone
+              : emptyScene
+                ? copy.node.emptyPromptWithCharacter
+                : copy.node.promptHint}
+          </p>
+
+          {/* ── O botão, e logo abaixo o que ele custa ───────────────────── */}
           <button
             type="button"
-            onClick={() => setAdjustmentsOpen((current) => !current)}
-            aria-expanded={adjustmentsOpen}
-            className="nodrag flex items-center gap-1.5 text-[11px] font-medium text-ink-muted
-                       transition-colors hover:text-ink"
+            disabled={busy || nothingToDo || !modelId || !projectId}
+            title={nothingToDo ? copy.node.emptyPromptAlone : undefined}
+            onClick={() => void handleGenerate()}
+            className="nodrag mt-3 h-9 w-full rounded-lg bg-accent text-xs font-medium text-canvas
+                       transition-colors hover:bg-accent-hover disabled:cursor-not-allowed
+                       disabled:bg-surface-hover disabled:text-ink-faint"
           >
-            <svg
-              viewBox="0 0 10 10"
-              className={`size-2.5 transition-transform ${adjustmentsOpen ? "rotate-90" : ""}`}
-              aria-hidden
-            >
-              <path d="M3 1l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.5" />
-            </svg>
-            {copy.node.sceneAdjustments}
-            <span className="font-normal text-ink-faint">
-              {" · "}
-              {!adjustmentsOpen && activeAdjustments > 0
-                ? `${activeAdjustments} ${copy.node.sceneAdjustmentsCountSuffix}`
-                : copy.node.sceneAdjustmentsOptional}
-            </span>
+            {busy ? copy.node.generating : copy.node.generate}
           </button>
 
-          {adjustmentsOpen ? (
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <div className="col-span-2">
-                <label
-                  htmlFor={`angle-${id}`}
-                  className="mb-1 block text-[11px] font-medium text-ink-muted"
-                >
-                  {copy.node.cameraAngleLabel}
-                </label>
-                <select
-                  id={`angle-${id}`}
-                  value={anguloKey ?? ""}
-                  disabled={busy}
-                  onChange={(event) =>
-                    updateNodeData(id, {
-                      anguloKey: event.target.value === "" ? null : event.target.value,
-                    })
-                  }
-                  className={SELECT_CLASS}
-                >
-                  <option value="">{copy.node.adjustmentAuto}</option>
-                  {ANGULO_CAMERA.map((option) => (
-                    <option key={option.key} value={option.key}>
-                      {option.pt}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {/* Under the button, in the future tense, with the balance beside it.
+              Both halves are needed to answer the only question anyone asks here:
+              can I afford this one? */}
+          {model ? (
+            <p className="mt-1.5 text-center text-[11px] text-ink-faint">
+              {copy.node.costWillPrefix}{" "}
+              <strong className="font-medium text-ink-muted">{model.sparks} ⚡</strong>
+              {balance === null ? null : (
+                <>
+                  {" · "}
+                  {copy.node.balanceLabel}: {balance.toLocaleString("pt-BR")} ⚡
+                </>
+              )}
+            </p>
+          ) : null}
 
-              <div>
-                <label
-                  htmlFor={`lighting-${id}`}
-                  className="mb-1 block text-[11px] font-medium text-ink-muted"
-                >
-                  {copy.node.lightingLabel}
-                </label>
-                <select
-                  id={`lighting-${id}`}
-                  value={iluminacaoKey ?? ""}
-                  disabled={busy}
-                  onChange={(event) =>
-                    updateNodeData(id, {
-                      iluminacaoKey: event.target.value === "" ? null : event.target.value,
-                    })
-                  }
-                  className={SELECT_CLASS}
-                >
-                  <option value="">{copy.node.adjustmentAuto}</option>
-                  {ILUMINACAO.map((option) => (
-                    <option key={option.key} value={option.key}>
-                      {option.pt}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {busy ? (
+            <p className="mt-2 text-[10px] leading-relaxed text-ink-faint">
+              {copy.node.generatingHint}
+            </p>
+          ) : null}
 
-              <div>
-                <label
-                  htmlFor={`expression-${id}`}
-                  className="mb-1 block text-[11px] font-medium text-ink-muted"
-                >
-                  {copy.node.expressionLabel}
-                </label>
-                <select
-                  id={`expression-${id}`}
-                  value={expressaoKey ?? ""}
-                  disabled={busy}
-                  onChange={(event) =>
-                    updateNodeData(id, {
-                      expressaoKey: event.target.value === "" ? null : event.target.value,
-                    })
-                  }
-                  className={SELECT_CLASS}
-                >
-                  <option value="">{copy.node.adjustmentAuto}</option>
-                  {EXPRESSAO.map((option) => (
-                    <option key={option.key} value={option.key}>
-                      {option.pt}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {notice ? (
+            <p className="mt-2 text-[10px] leading-relaxed text-ink-muted">{notice}</p>
+          ) : null}
 
-              <p className="col-span-2 text-[10px] leading-relaxed text-ink-faint">
-                {copy.node.sceneAdjustmentsHint}
-              </p>
-            </div>
+          {message ? (
+            <p className="mt-2 text-[10px] leading-relaxed text-warning">{message}</p>
           ) : null}
         </div>
 
-        <button
-          type="button"
-          disabled={busy || nothingToDo || !modelId || !projectId}
-          title={nothingToDo ? copy.node.emptyPromptAlone : undefined}
-          onClick={() => void handleGenerate()}
-          className="nodrag mt-3 h-9 w-full rounded-lg bg-accent text-xs font-medium text-canvas
-                     transition-colors hover:bg-accent-hover disabled:cursor-not-allowed
-                     disabled:bg-surface-hover disabled:text-ink-faint"
-        >
-          {busy ? copy.node.generating : copy.node.generate}
-        </button>
-
-        {busy ? (
-          <p className="mt-2 text-[10px] leading-relaxed text-ink-faint">
-            {copy.node.generatingHint}
+        {/* ── O que saiu ───────────────────────────────────────────────── */}
+        <div className="w-56 shrink-0">
+          <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-ink-faint">
+            {copy.node.resultTitle}
           </p>
-        ) : null}
 
-        {notice ? (
-          <p className="mt-2 text-[10px] leading-relaxed text-ink-muted">{notice}</p>
-        ) : null}
-
-        {message ? (
-          <p className="mt-2 text-[10px] leading-relaxed text-warning">{message}</p>
-        ) : null}
-
-        {/* The ceiling, said where the wire was aimed and before anything was
-            spent — which is the only moment at which a ceiling is a ceiling. */}
-        {refusedWire ? (
-          <p className="mt-2 text-[10px] leading-relaxed text-warning">
-            {copy.errors.productOverLimitPrefix} {refusedWire.needed}{" "}
-            {copy.errors.productOverLimitMiddle} {refusedWire.free}.{" "}
-            {copy.errors.productOverLimitSuffix}
-          </p>
-        ) : null}
+          <ResultPanel slots={slots} />
+        </div>
       </div>
 
       {/* Decision N1: the connector is always visible on the edge, and clicking
@@ -609,11 +639,6 @@ const SELECT_CLASS =
   "nodrag w-full rounded-lg border border-line bg-surface px-2 py-1.5 text-xs text-ink " +
   "transition-colors hover:border-line-strong focus:border-accent focus:outline-none " +
   "disabled:cursor-not-allowed disabled:opacity-50";
-
-/** "4:5" → "4 / 5", so the empty frame already has the shape of what will fill it. */
-function aspectRatioStyle(ratio: string | undefined): string {
-  return ratio ? ratio.replace(":", " / ") : "1 / 1";
-}
 
 /** The sentence for each way a generation can fail, in the user's own terms. */
 function failureMessage(result: Extract<CanvasGenerationResult, { ok: false }>): string {

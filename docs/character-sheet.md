@@ -510,12 +510,17 @@ Nasceu de uma geração real: a primeira folha completa saiu com **aspecto de de
 | Opção | Frase fixa (EN) | Reforço (EN) |
 |---|---|---|
 | **fotorrealista** *(padrão)* | `ultra-realistic photograph, photorealistic, natural skin texture, shot on a professional camera` | `This is a real photograph, not an illustration, drawing or 3D render` |
+| **ultra realista** *(10/08/2026)* | `hyper-realistic photograph with extreme detail, visible skin pores and fine facial hair, subsurface scattering in the skin, natural asymmetry and micro-imperfections, sharp focus on the eyes with natural catchlights, physically accurate light falloff, shot on a full-frame camera with an 85mm lens at f/2` | `This is a real, unretouched photograph — not an illustration, drawing or 3D render, and not digitally smoothed or airbrushed skin` |
 | cinematográfico | `cinematic film still, shallow depth of field, filmic color grading, soft natural light` | *(idem acima)* |
 | editorial de moda | `high-fashion editorial photograph, professional studio lighting, magazine-quality retouching` | *(idem acima)* |
 | ilustração 2D | `flat 2D digital illustration, clean line art, cel shading, solid color fills` | `This is a hand-drawn 2D illustration, not a photograph` |
 | anime | `anime illustration, cel-shaded, Japanese animation art style, expressive linework` | `This is an anime illustration, not a photograph` |
 | pixel art | `pixel art, low resolution sprite aesthetic, limited color palette, visible square pixels` | `This is pixel art, not a photograph` |
 | 3D estilizado | `stylized 3D character render, soft global illumination, subsurface scattering on the skin` | `This is a stylized 3D render, not a photograph` |
+
+**`fotorrealista` e `ultra realista` não são sinônimos**, apesar de a palavra *ultra-realistic* aparecer nas duas frases. O primeiro nomeia um **meio** — isto é uma fotografia, não um desenho. O segundo nomeia um **nível de detalhe**, e gasta a frase inteira no que separa um rosto real de um renderizado: poro, penugem, luz atravessando a pele em vez de bater nela, assimetria. O reforço dele é próprio e não o fotográfico compartilhado, porque o jeito de "hiper-realista" falhar não é sair desenhado — é sair de cera; modelos respondem "pele extremamente detalhada" com aerógrafo com frequência suficiente para a proibição precisar dizer o nome.
+
+**A sobreposição da palavra é uma verruga aceita de propósito.** Editar a frase do `fotorrealista` para tirar o "ultra-realistic" mudaria o que **toda versão congelada já salva** compila hoje — e um dicionário cujas entradas se mexem não é um dicionário (regra 7). Acrescentar é seguro; editar seria uma decisão de outra natureza.
 
 **Por que Camada 2 e não constante da geração canônica.** Estilo é identidade: uma personagem cuja folha é foto e cujas vistas são ilustração não é a mesma personagem. Então ele pertence ao sheet, congela nas versões como tudo mais, e o node de geração pode sobrescrevê-lo pela hierarquia que a Camada 2 já tem. Uma constante da canônica consertaria só a folha e deixaria toda geração futura do canvas na sorte do modelo.
 

@@ -16,6 +16,7 @@ import { t } from "@/lib/i18n/pt-BR";
 import { useProductsStore } from "@/lib/products/store";
 import type { Product } from "@/lib/products/types";
 import { createProject } from "@/lib/projects/actions";
+import { useBalance } from "@/lib/sparks/balance-store";
 
 import { FlowCanvas } from "./flow-canvas";
 import { NodeSidebar } from "./node-sidebar";
@@ -41,7 +42,7 @@ export function Studio({
   characters,
   products,
 }: StudioProps) {
-  useSeedArsenal(characters, products);
+  useSeedArsenal(characters, products, balanceCents);
 
   return (
     <ReactFlowProvider>
@@ -84,20 +85,25 @@ export function Studio({
 }
 
 /**
- * Hands the server's Arsenal — characters and products — to the client stores,
- * once.
+ * Hands the server's Arsenal — characters, products and the balance — to the
+ * client stores, once.
  *
  * In an effect rather than during render on purpose: the stores are module-level
  * singletons, and on the server that module is shared by every request in the
- * process. Seeding while rendering would let one visitor's characters end up in
- * another visitor's page.
+ * process. Seeding while rendering would let one visitor's characters — or one
+ * visitor's balance — end up in another visitor's page.
  */
-function useSeedArsenal(characters: CharacterEntity[], products: Product[]) {
-  const initial = useRef({ characters, products });
+function useSeedArsenal(
+  characters: CharacterEntity[],
+  products: Product[],
+  balanceCents: number,
+) {
+  const initial = useRef({ characters, products, balanceCents });
 
   useEffect(() => {
     useEntitiesStore.getState().seed(initial.current.characters);
     useProductsStore.getState().seed(initial.current.products);
+    useBalance.getState().seed(initial.current.balanceCents);
   }, []);
 }
 

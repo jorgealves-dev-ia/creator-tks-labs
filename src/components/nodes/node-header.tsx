@@ -19,8 +19,19 @@ import { t } from "@/lib/i18n/pt-BR";
  *   removing never destroys   A card leaves the canvas; the character goes back
  *                             to the Arsenal, the image stays in the gallery.
  *                             The only thing a removal can truly lose is what
- *                             lives *in the graph* — a prompt somebody wrote —
- *                             and that is the one case that asks first.
+ *                             lives *in the graph* — a prompt somebody wrote.
+ *
+ *   removing always asks      Reversed on 10/08/2026. The header used to ask only
+ *                             when something could be lost, on the theory that a
+ *                             pointless question trains people to click "sim"
+ *                             without reading. What that theory missed is that
+ *                             the *user* cannot see which cards are in which
+ *                             class: an input node whose photos took ten minutes
+ *                             to choose looks exactly like one that took none,
+ *                             and a canvas of eight blocks where two ask and six
+ *                             do not is a canvas where nobody knows what a click
+ *                             on ✕ will do. One rule, stated once, beats a
+ *                             cleverer rule nobody can predict.
  *
  *   duplicating copies the    A generating block is a recipe worth repeating.
  *   question, never the       Its results are not part of the recipe, so they
@@ -37,13 +48,6 @@ type NodeHeaderProps = {
   meta?: React.ReactNode;
   /** What the remove button promises, in this card's own words. */
   removeHint: string;
-  /**
-   * True when removing would lose something the graph cannot get back — a prompt
-   * that was typed, references that were attached. Everything else removes on the
-   * first click, because asking about a card that loses nothing trains people to
-   * click "yes" without reading.
-   */
-  confirmRemove?: boolean;
   /** Replaces the plain removal, for the card that animates on its way out. */
   onRemove?: () => void;
   /** Set when duplicating this card would create nothing: the reason, shown. */
@@ -56,7 +60,6 @@ export function NodeHeader({
   title,
   meta,
   removeHint,
-  confirmRemove = false,
   onRemove,
   duplicateDisabledReason,
 }: NodeHeaderProps) {
@@ -144,15 +147,24 @@ export function NodeHeader({
               type="button"
               title={removeHint}
               aria-label={removeHint}
-              onClick={() => (confirmRemove ? setConfirming(true) : remove())}
+              onClick={() => setConfirming(true)}
               className={`${ACTION_CLASS} hover:!text-negative`}
             >
-              <svg viewBox="0 0 14 14" className="size-3" aria-hidden>
+              {/* A bin, not an ✕. The ✕ is the glyph every overlay in this
+                  product uses for "close" — the picker, the lightbox, the sheet
+                  editor — so wearing it here made removal look like dismissal.
+                  The bin says the one thing the ✕ could not: this card is
+                  going away, not being put down. */}
+              <svg viewBox="0 0 14 14" className="size-3.5" aria-hidden>
                 <path
-                  d="M3.5 3.5l7 7M10.5 3.5l-7 7"
+                  d="M2.25 3.75h9.5M5.5 3.75V2.6a.85.85 0 01.85-.85h1.3a.85.85 0
+                     01.85.85v1.15M3.6 3.75l.5 7.75a1 1 0 001 .94h3.8a1 1 0
+                     001-.94l.5-7.75M5.9 6.1v4.1M8.1 6.1v4.1"
                   stroke="currentColor"
-                  strokeWidth="1.4"
+                  strokeWidth="1.1"
+                  fill="none"
                   strokeLinecap="round"
+                  strokeLinejoin="round"
                 />
               </svg>
             </button>

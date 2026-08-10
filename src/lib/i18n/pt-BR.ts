@@ -630,8 +630,8 @@ export const t = {
     node: {
       title: "Gerar Imagem",
       sidebarHint: "Escreva a cena e gere a imagem",
-      promptLabel: "A cena, em português",
-      promptPlaceholder: "@luna tomando café numa varanda ao amanhecer",
+      promptLabel: "Prompt principal",
+      promptPlaceholder: "Insira aqui sua instrução…",
       promptHint: "Digite @ para chamar uma personagem.",
       /**
        * The one warning that keeps 100 ⚡ from becoming a surprise: an empty
@@ -660,13 +660,23 @@ export const t = {
       adjustmentAuto: "Auto",
       sceneAdjustmentsHint:
         "Auto segue o padrão; o que você escolher aqui sobrescreve só aquele campo.",
-      generate: "Gerar",
+      generate: "Gerar Conteúdo",
       generating: "Gerando…",
       generatingHint: "Uma imagem 2K leva de 20 a 40 segundos.",
-      costPrefix: "Custa",
-      balancePrefix: "saldo",
+      /**
+       * The cost, under the button and in the future tense — "custará", not
+       * "custa". It moved out of the header for that reason: a number in the
+       * corner of a card is a label, and a number under the button you are about
+       * to press is a price.
+       */
+      costWillPrefix: "Custará",
+      balanceLabel: "Saldo",
+      /** The section above the prompt, where model, format and style live. */
+      configTitle: "Configuração",
       resultAlt: "Última imagem gerada neste bloco",
-      emptyResult: "A imagem aparece aqui depois de gerar.",
+      /** The heading of the right-hand column, matching "Configuração". */
+      resultTitle: "Resultado",
+      emptyResult: "A imagem aparecerá aqui",
       outputHandle: "Liga ao resultado",
       inputHandle: "Referências — clique para escolher imagens",
       /** Says what leaves and what stays — the results already on the canvas do. */

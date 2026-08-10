@@ -506,6 +506,38 @@ export const ESTILO_RENDERIZACAO = [
     reforco: REFORCO_FOTOGRAFICO,
   },
   {
+    /**
+     * One step above `fotorrealista`, on the axis where photographs of people
+     * actually fail: skin.
+     *
+     * The two are not synonyms, even though the word "ultra-realistic" appears in
+     * both phrases. `fotorrealista` names a *medium* — this is a photograph, not
+     * a drawing. This one names a *level of detail*, and spends its whole phrase
+     * on the things that separate a real face from a rendered one: pores, fine
+     * hair, light passing through skin rather than bouncing off it, asymmetry.
+     *
+     * Its `reforco` is its own rather than the shared photographic one, because
+     * the failure mode of asking for hyper-realism is not "it came out drawn" —
+     * it is wax. Models answer "extremely detailed skin" with airbrushing often
+     * enough that the prohibition has to name it.
+     *
+     * The overlap in the word is a known wart, kept deliberately: editing the
+     * phrase of `fotorrealista` would change what every frozen version already
+     * saved compiles to today, and a dictionary whose entries move is not a
+     * dictionary (rule 7).
+     */
+    key: "ultra_realista",
+    pt: "Ultra realista",
+    en:
+      "hyper-realistic photograph with extreme detail, visible skin pores and fine facial hair, " +
+      "subsurface scattering in the skin, natural asymmetry and micro-imperfections, " +
+      "sharp focus on the eyes with natural catchlights, physically accurate light falloff, " +
+      "shot on a full-frame camera with an 85mm lens at f/2",
+    reforco:
+      "This is a real, unretouched photograph — not an illustration, drawing or 3D render, " +
+      "and not digitally smoothed or airbrushed skin",
+  },
+  {
     key: "cinematografico",
     pt: "Cinematográfico",
     en: "cinematic film still, shallow depth of field, filmic color grading, soft natural light",
