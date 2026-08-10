@@ -55,6 +55,24 @@ Uma imagem usada uma vez fica na galeria para sempre — subir o produto uma vez
 
 Cada geração bem-sucedida cria um **node Resultado** conectado à saída do gerador: título curto, a imagem, e ações (baixar · usar como referência · ver prompt usado). A saída do Resultado conecta na entrada de imagem de outro gerador — o encadeamento que faz do canvas um fluxo, não uma pilha de tentativas. O Resultado é um `asset` como outro qualquer: aparece na galeria, obedece às regras de proteção existentes.
 
+## 5.1 O node Produto *(10/08/2026)*
+
+A decisão N4 dizia "produto anexado direto, foto real, fidelidade máxima". Ela continua valendo — o que mudou é **de onde a foto vem**. Antes, o produto era imagem solta: subia pela galeria uma por vez, com o chip "produto" escolhido de novo a cada geração. Um produto com frente, verso e etiqueta era três decisões repetidas toda vez.
+
+Agora o produto é **entidade do Arsenal**, ao lado das personagens.
+
+**Criar:** nome + até **5 fotos** (frente, verso, detalhe, etiqueta…) + **instrução padrão opcional** ("a modelo veste esta peça exatamente como mostrada"). As fotos entram pelo mesmo seletor do bloco de geração — enviar do disco ou pegar da galeria —, e são `assets` normais: aparecem na galeria como qualquer outra imagem, e tirar uma foto do produto tira o **vínculo**, nunca o arquivo.
+
+**No canvas:** card com miniatura da primeira foto, nome, cabeçalho padrão e **conector de saída**. Sob o nome, a única linha que importa de verdade: **"3 fotos · ocupa 3 referências"**.
+
+**O fio:** ligado à entrada de um Gerar Imagem, anexa **todas as fotos de uma vez, como unidade** — mesmo tipo (`produto`, fixo), mesma instrução, um `✕` só na faixa. Cortar o fio leva todas embora; tirar qualquer uma tira o grupo inteiro e o fio junto.
+
+**Contagem honesta no teto.** Um produto de 3 fotos ocupa **3 das 6** vagas (a folha do `@` conta uma, como sempre) — a faixa mostra "4 de 6". E um produto que **não cabe inteiro tem a conexão recusada**, com a frase no próprio bloco, antes de qualquer clique em Gerar: meio produto é uma frente sem etiqueta, e quem descobrisse isso descobriria na imagem, depois de pagar. *Teto descoberto como erro depois do clique não é teto, é surpresa.*
+
+**Modelo de dados:** um produto é uma linha de `entities` com `kind = 'product'`; suas fotos são linhas de `entity_images`. Nenhuma tabela nova — o porquê está em [`arquitetura.md`](./arquitetura.md#4-modelo-de-dados) e em [`decisoes.md`](./decisoes.md). Um produto é **arquivado, nunca apagado**, para as gerações que o usaram continuarem apontando para algo que existe.
+
+**Fora do escopo deste ciclo, registrado:** versão de produto; extração de dados do produto a partir das fotos (a pendência da N4 continua pendente); `@produto` no prompt (o fio resolve a v1, e o `handle` já nasce único no mesmo namespace das personagens para o dia em que chegar); reordenar as fotos (a ordem é a de inclusão); desarquivar um produto.
+
 ## 6. Compilação de canvas (o contrato)
 
 Ordem do prompt final: **estilo** (do node; herdado da personagem quando não sobrescrito) → **bloco de identidade** da versão mencionada (o compilador de sempre) → **cena do usuário** (o prompt em PT, traduzido na geração) → **ajustes de cena** (quando houver) → **diretivas das referências** (tipo + instrução, traduzidas) → **restrições** (sempre, ao final).
@@ -65,6 +83,13 @@ Regras:
 3. **`prompt_compiled` completo (quitação da dívida):** a estrutura gravada passa a incluir o estilo e as diretivas de referência — "com que estilo e com quais referências esta imagem nasceu?" respondível por campo, não por leitura de texto.
 4. Cobrança e registro: `record_generation`, preço do catálogo, débito atômico só no sucesso, `sheet_source`/`entity_version_id` quando houver `@` — tudo já provado, nada novo a inventar.
 5. **Ajustes de cena sobrescrevem por campo** *(10/08/2026, regra 4 da §6 do character sheet finalmente exercida com valor).* Em modo "padrões da personagem", o campo que o node respondeu **sai** do sheet e a frase do node entra no lugar — iluminação por iluminação, expressão por expressão, e **ângulo no lugar de pose e enquadramento** (§5.27: é o mesmo eixo da câmera). Em cena dirigida os padrões já não entravam, então os ajustes apenas **somam**, logo depois da cena do usuário. Ordem fixa: **ângulo → iluminação → expressão**. Um ajuste **não** torna a cena dirigida: a regra 1 continua decidindo isso pelo texto do prompt, e só por ele. Chave desconhecida lê como Auto **inteiro** — nunca meio-aplica, porque silenciar o padrão do sheet sem pôr nada no lugar seria a única saída realmente errada. Tudo gravado por campo em `prompt_compiled.structure.ajustes_cena` e mostrado em português no "Ver prompt".
+6. **Um produto é um objeto, quantas fotos tiver** *(10/08/2026).* As fotos de um mesmo produto viram **uma instrução só**, não N. A primeira fala pelo grupo, nomeando todas as posições que ele ocupa, e diz antes de qualquer outra coisa que elas são o mesmo objeto:
+
+   > *Reference images 2, 3 and 4 are the same single object photographed from different angles — show it once, not several times.*
+   > *Use the product shown in reference images 2, 3 and 4, `<instrução traduzida>`.*
+   > *Reproduce the exact product shown in reference images 2, 3 and 4 — same colors, pattern, materials and details, without alteration.*
+
+   **A cláusula de unificação vem antes da de fidelidade, e é ela que faz a segunda significar alguma coisa.** Sem ela, três "reproduce the exact product shown in reference image N" independentes dizem ao modelo que existem três produtos — e ele coloca três, ou mistura os três num quarto. Na estrutura gravada continua havendo **uma diretiva por imagem** (auditoria por imagem), com `grupo` e `unidade_en` novos; as fotos que não falam guardam `diretiva_en` vazia. Produto de **uma** foto degenera exatamente no comportamento de sempre — verificado no harness, byte a byte. A tradução da instrução acontece **uma vez por grupo**, não uma por foto.
 
 ## 7. Formatos por canal (presets v1)
 
@@ -83,7 +108,14 @@ O rótulo mostra intenção + proporção real ("Stories · 9:16"). O catálogo 
 
 ## 8. Fora do escopo (de propósito) e registros
 
-Quantidade >1, listas e lote (chegam com o assíncrono em Storyboard + Vídeos); nodes de texto reutilizável / list / assistant / router (o mini-modal do Magnific — conversa própria); categorias de biblioteca na galeria (Stock, Style, Camera, Effects); `@` para objetos, cenários e roupas (hoje `@` = personagens; expansão registrada); multi-personagem numa geração; extração de descrição de produto (botão opcional futuro — N4); edição pós-geração (upscale, remover fundo — arsenal futuro); vídeo e Motion Control (conversa dedicada já registrada).
+Quantidade >1, listas e lote (chegam com o assíncrono em Storyboard + Vídeos); nodes de texto reutilizável / list / assistant / router (o mini-modal do Magnific — conversa própria); categorias de biblioteca na galeria (Stock, Style, Camera, Effects); `@` para objetos, cenários e roupas (hoje só a personagem é mencionável; o produto entra pelo fio, e o `handle` dele já nasce no mesmo namespace para o dia em que a expansão chegar); multi-personagem numa geração; extração de descrição de produto (botão opcional futuro — N4); edição pós-geração (upscale, remover fundo — arsenal futuro); vídeo e Motion Control (conversa dedicada já registrada).
+
+**Decididos contra, com motivo** *(10/08/2026)*:
+- **Toggle "Ativar inputs" no bloco.** O estado da faixa de referências já comunica: se há miniaturas, há entrada; se não há, o "+" está ali dizendo como criar uma. Um interruptor a mais seria um estado a mais para o usuário manter na cabeça, sem nada novo em troca.
+- **Node Resultado pré-vinculado no nascimento do gerador.** Caixa vazia esperando é ruído no canvas — e ruído que ocupa espaço permanente. O Resultado nasce no primeiro Gerar, que é quando ele tem algo a mostrar.
+- **Input de pose/ângulo como node separado.** A lista de **ângulo de câmera** dos Ajustes de cena (§5.27) e o chip **pose** nas referências já cobrem os dois caminhos que existem: o vocabulário fechado e a imagem de exemplo.
+
+**Adiado com data** *(10/08/2026)*: quantidade **x2–x4** por geração chega junto com o motor assíncrono da frente de vídeo. A N5 fica mantida pela razão de sempre — quatro imagens síncronas seriam quatro esperas em sequência dentro de um request HTTP, que é exatamente o que a invariante 1 proíbe.
 ## 9. Notas da implementação (09/08/2026)
 
 Números e achados que só existiam como "conferir na implementação" quando esta especificação foi escrita. Registrados aqui porque a spec é o lugar onde se procura por eles depois.
@@ -107,3 +139,17 @@ Números e achados que só existiam como "conferir na implementação" quando es
 **`ajustes_cena` na estrutura, com leitura tolerante.** Gerações anteriores a este ciclo leem o campo como lista vazia — a mesma técnica que já cobria `foto_unica` e `fidelidade_en`, e pela mesma razão: um prompt guardado é o registro de algo que já aconteceu e não pode ser reescrito, então quem lê é que se adapta. O `campo` é string solta no leitor de propósito: um ajuste renomeado no futuro tem que continuar legível no histórico de hoje.
 
 **As três listas cobertas no harness, não só na tela.** O compilador de canvas ganhou nove verificações novas fora do Next (`scratchpad/canvas-compile-harness.ts`): que tudo em Auto produz **exatamente** o texto de antes, que o ângulo derruba pose e enquadramento, que uma cena dirigida só soma, que chave desconhecida vira Auto inteiro, e que a referência de estilo visual sai com a cláusula certa. As 84 verificações passam — as antigas continuam sendo a prova de que nada regrediu.
+
+## 11. Notas da implementação — Produtos (10/08/2026)
+
+**O `{n}` deixou de ser um número e passou a ser a frase inteira.** As cláusulas fixas diziam `"reference image {n}"`; agora dizem `"reference {n}"`, e o substituto é `"image 2"`, `"images 2 and 3"` ou `"images 2, 3 and 4"`. Para uma imagem só, o texto de saída é **byte a byte** o de antes — o harness verifica isso explicitamente, porque é a única forma de trocar a mecânica de todas as diretivas sem mudar nenhuma geração de uma foto.
+
+**O harness achou o bug na primeira execução.** A cláusula de fidelidade do tipo *estilo visual* estava partida em dois literais de string (`"…of reference " + "image {n} — …"`), então a reescrita passou por cima dela e o texto saía como `"reference image image 1"`. Nenhum typecheck pega isso; a verificação de 09/08 que compara a frase inteira pegou de primeira. **É o argumento inteiro a favor de verificações que comparam texto literal em vez de estrutura.**
+
+**A conta do teto virou uma função só** (`lib/generation/capacity.ts`). Antes vivia em três lugares — a faixa mostrando "4 de 6", o seletor decidindo quantas imagens ainda aceita, e agora o fio decidindo se um produto cabe. Três cópias de um número que o usuário está prestes a ouvir são três chances de a tela prometer uma coisa e o servidor cobrar outra.
+
+**A recusa do fio não mora no grafo.** Quando um produto não cabe, o motivo vai para uma fatia efêmera do store do canvas (`notice`), fora de `nodes` e `edges`. Se morasse nos dados do node, uma reclamação passageira marcaria o projeto como sujo e seria **salva no workflow** — e o usuário abriria o projeto amanhã com o aviso de ontem.
+
+**O diálogo do produto é um overlay comum, não um `<dialog>`.** Um `showModal()` renderiza na *top layer* do navegador, acima de qualquer `position: fixed` — o seletor de fotos apareceria **atrás** do diálogo que o abriu. É o mesmo tipo de armadilha do modal dentro de um `transform` do React Flow, por outro caminho.
+
+**O nome do produto é resolvido no servidor.** O navegador manda o `id`; a Server Action busca o `display_name` no banco antes de gravar no `prompt_compiled`. Registro de auditoria que acredita no rótulo que o navegador mandou não é registro de auditoria — a mesma doutrina que faz o `@` ser resolvido lá e não aqui.

@@ -74,6 +74,7 @@ Consequência prática para quem implementa: um controle novo sem tooltip, um es
 - **Sidebar lateral recolhível** (expande ao aproximar o mouse) com o arsenal de nodes
 - **Nodes conectáveis**: inputs tipados (produto, cenário, roupa, acessório, pose, imagem/vídeo de referência) → nodes de geração → nodes de resultado
 - **Entidades mencionáveis por `@`** (ex.: `@julia`): character sheets de influencers de IA, produtos, cenários. Digitou `@` num campo de prompt, abre um modal com as entidades do fluxo atual
+- **Produtos no Arsenal**: nome, até 5 fotos (frente, verso, detalhe, etiqueta) e uma instrução padrão, criados uma vez e reusados sempre. Viram card no canvas; o fio para um bloco de geração anexa **todas as fotos como uma unidade**, e a tela diz quantas vagas de referência isso ocupa **antes** do clique
 - **Prompt duplo**: o usuário escreve em PT-BR; o sistema compila para JSON estruturado em inglês antes de gerar; o JSON final fica visível e editável no node de resultado — é a "receita" reproduzível daquela imagem
 - **Carteira de créditos (Sparks ⚡)** com ledger de custo real vs. custo cobrado
 - **Vídeo**: image-to-video, Motion Control (clonagem de movimento a partir de um vídeo de referência), lipsync/voz e continuação de narrativa a partir do último frame do vídeo anterior
@@ -158,6 +159,8 @@ Entregue e verificado no navegador:
 - **Nodes de geração no canvas** (09/08/2026): o estúdio deixa de ser fábrica de personagens e vira **linha de produção**. O bloco **Gerar Imagem** aceita a cena em português com menções `@`, referências anexadas com tipo e instrução, formato por canal e estilo; cada geração vira um node **Resultado**, que se liga na entrada de outro bloco e vira referência dele. Especificação: [`nodes-geracao.md`](./nodes-geracao.md).
 
   É aqui que o `@` deixa de ser promessa: mencionar uma personagem anexa o DNA compilado da **versão congelada** mais a folha completa como referência de imagem — a consistência que em ferramenta profissional é trabalho manual, feita por uma menção.
+
+- **Produtos como cidadãos do Arsenal** (10/08/2026): o produto sai de "imagem solta na galeria" e vira **entidade**, ao lado das personagens — nome, até 5 fotos e uma instrução padrão. No canvas é um card com conector; o fio anexa todas as fotos ao bloco de geração **como uma unidade**, e o compilador as descreve como **um objeto fotografado de vários ângulos**, não como vários produtos. O card diz quantas vagas de referência ele ocupa antes de o fio ser puxado, e uma conexão que não cabe é recusada com o motivo na tela. No mesmo ciclo, todos os nodes ganharam o **mesmo cabeçalho** — ícone, nome, Duplicar e Remover.
 
 **Este é o estado atual da Fase 2: a linha de produção existe de ponta a ponta.** Personagem → folha → menção → cena dirigida → imagem → a imagem vira insumo da próxima. Fecha também o que faltava da Fase 1 (o consumo do `@`), que dependia justamente destes nodes.
 

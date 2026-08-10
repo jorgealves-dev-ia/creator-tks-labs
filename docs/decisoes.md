@@ -989,3 +989,85 @@ Não há nada a consertar, e é justamente por isso que fica registrado: é a **
 
 **Consequências práticas, todas já construídas:** a recusa não cobrou, foi classificada como `refused` e a mensagem na tela disse o que fazer. **A monitorar:** se recorrer em prompts benignos, deixa de ser ruído e vira dado sobre o modelo — e o lugar de conferir é a própria tabela `generations`, que guarda cena, modelo e resultado de cada tentativa. Nenhuma ação agora: uma ocorrência é uma ocorrência.
 
+
+---
+
+### 10/08/2026 — Cabeçalho padronizado: as duas ações que a mão procura
+
+Cada card do canvas tinha inventado a própria borda de cima. A personagem tinha um `✕` flutuante que significava "guardar"; o Gerar Imagem tinha título e custo e **nenhuma ação**; o Resultado tinha uma legenda. Três gramáticas para a mesma coisa, e nenhuma delas oferecia duplicar.
+
+Agora todos usam o mesmo cabeçalho: **ícone do tipo + nome + Duplicar + Remover**. Três decisões dentro dele valem registro:
+
+- **Duplicar copia a pergunta, nunca a resposta.** Num gerador vêm prompt, modelo, formato, ajustes de cena e referências — e **não** vêm os Resultados nem os ids que apontam para eles. Um clone que herdasse `lastGenerationId` teria um "Ver prompt" que abre uma geração que ele nunca rodou.
+- **As arestas de *entrada* vêm junto.** Se uma referência chegou por fio, o clone precisa do fio; senão ficaria com uma referência sem conexão — exatamente a assimetria que `attachReference`/`detachReference` existem para impedir.
+- **Remover só pergunta quando há perda de verdade.** Gerador com prompt escrito, referência anexada ou ajuste escolhido: confirma. Personagem, Produto e Resultado: sai no primeiro clique, porque nada se perde (a personagem volta pelo Arsenal, a imagem continua na galeria). **Perguntar sobre o que não se perde ensina a clicar "Sim" sem ler** — e aí a confirmação que importa também é clicada sem ler.
+
+No Resultado, Duplicar fica **desabilitado com o motivo no título** em vez de escondido: o ponto da mudança é o cabeçalho ser o mesmo em todo lugar, e a frase ("a imagem já está na galeria") ensina mais do que um botão ausente.
+
+---
+
+### 10/08/2026 — Produtos como cidadãos do Arsenal
+
+**Síntese entre a ideia do Jorge de um "input de produto" e a decisão N1.** A N1 já tinha recusado o node de referência solto: o que um bloco está olhando pertence ao bloco. Mas o produto — a peça em volta da qual a campanha inteira gira — continuava sendo imagem solta: subia pela galeria uma foto por vez, com o chip "produto" escolhido de novo a cada geração. Um produto com frente, verso e etiqueta era três decisões repetidas toda vez.
+
+A síntese: **o produto não vira node de input, vira entidade.** Nome, até 5 fotos e uma instrução padrão, criado uma vez no Arsenal ao lado das personagens, posto no canvas como card. O fio para um Gerar Imagem não cria um node de referência — ele **traduz o produto em referências integradas**, que é o que a N1 sempre disse que referências deveriam ser.
+
+Três consequências que só aparecem quando se olha de perto:
+
+- **A unidade é o produto, não a foto.** Uma instrução, um tipo (fixo em "produto"), um `✕`. Cortar o fio leva as três fotos; tirar uma tira o grupo. Deixar o tipo aberto por foto permitiria que uma foto do biquíni fosse marcada "cenário" enquanto as outras duas seguiam "produto" — e o prompt compilado descreveria duas coisas diferentes.
+- **A contagem é honesta, e é dita antes.** Três fotos ocupam três das seis vagas; com a folha do `@`, a faixa diz "4 de 6". E um produto que não cabe inteiro tem a **conexão recusada**, com a frase no bloco, antes do clique em Gerar. Meio produto é uma frente sem etiqueta: o usuário descobriria na imagem, depois de pagar.
+- **A recusa não entra no grafo.** Ela vive numa fatia efêmera do store, fora de `nodes` e `edges`. Se morasse nos dados do node, marcaria o projeto como sujo e seria **salva no workflow** — e o usuário abriria o projeto amanhã com o aviso de ontem.
+
+---
+
+### 10/08/2026 — Reusar `entities` em vez de criar `products`
+
+A pergunta era criar `products` + `product_images`, ou usar o que já existe. **Usar o que já existe**, e a folga não é pequena:
+
+| Critério | Reuso (`entities` + `entity_images`) | Tabelas novas |
+|---|---|---|
+| RLS default-deny do padrão da casa | já existe e já foi verificado | duas tabelas × quatro políticas para escrever e revisar |
+| Fotos são assets normais (galeria) | `entity_images` → `assets`, como as canônicas | idem, com uma segunda tabela de vínculo fazendo o mesmo trabalho |
+| Painel admin futuro | uma tabela, filtro por `kind` | dois lugares para olhar |
+| `@produto` no futuro | `handle` já existe e já é único por usuário | nasceria num namespace separado — o que **não** queremos |
+| Versão de produto no futuro | `entity_versions` já é chaveada por `entity_id` | reconstruir |
+
+O enum `entity_kind` **já tinha `'product'` desde a Fase 0**: a fundação foi construída prevendo exatamente isto.
+
+**O custo, dito na cara:** o produto divide o namespace de handles com as personagens, então um produto "Biquíni" e uma `@biquini` colidem (a criação resolve com sufixo numérico). Isso é **correto, não um efeito colateral** — no dia em que `@produto` existir, o namespace tem que ser um só de qualquer jeito, e fundir dois namespaces depois de dois mil produtos é uma migração que ninguém quer escrever.
+
+Uma coisa só pediu migration: **o teto de 5 fotos, por trigger.** Não é preferência de tela — é o número que a faixa de referências diz em voz alta. Um produto que crescesse em silêncio para oito fotos transformaria "4 de 6" numa recusa da API depois de o dinheiro estar em risco. Mesma doutrina das travas do ledger: regra que precisa ser lembrada é regra que uma hora será esquecida.
+
+---
+
+### 10/08/2026 — Três fotos, um produto (e a cláusula que faz a fidelidade funcionar)
+
+O achado que mudou a implementação. As cláusulas de fidelidade de 09/08 dizem, por imagem: *"Reproduce the exact product shown in reference image N"*. Emitir isso três vezes, uma por foto, **diz ao modelo que existem três produtos** — e ele coloca três na cena, ou funde os três num quarto que não existe.
+
+A correção não é remover a fidelidade; é **unificar antes de insistir**:
+
+> *Reference images 2, 3 and 4 are the same single object photographed from different angles — show it once, not several times.*
+> *Use the product shown in reference images 2, 3 and 4, `<instrução>`.*
+> *Reproduce the exact product shown in reference images 2, 3 and 4 — …*
+
+**A ordem é a decisão.** "São o mesmo objeto" precisa estar resolvido antes de "reproduza exatamente", senão a segunda frase reforça o erro da primeira leitura.
+
+Três notas de implementação com consequência:
+
+- **O `{n}` deixou de ser um número e passou a ser a frase.** As cláusulas diziam `"reference image {n}"`; agora dizem `"reference {n}"`, e o substituto é `"image 2"` ou `"images 2, 3 and 4"`. Para uma imagem só, a saída é **byte a byte** a de antes — verificado no harness, que é a única forma de trocar a mecânica de todas as diretivas sem mudar nenhuma geração existente.
+- **O harness achou um bug na primeira execução.** A cláusula de *estilo visual* estava partida em dois literais (`"…of reference " + "image {n} — …"`), escapou da reescrita e saía como `"reference image image 1"`. Nenhum typecheck pega isso. **É o argumento inteiro a favor de verificações que comparam texto literal em vez de estrutura.**
+- **A estrutura gravada continua com uma diretiva por imagem.** O grupo fala uma vez, mas a auditoria ainda responde "o que era a imagem 3?" — que a frase do grupo sozinha não responderia. As fotos que não falam guardam `diretiva_en` vazia e o `grupo` com todas as posições.
+
+E o nome do produto é resolvido **no servidor**, pelo id. Registro de auditoria que acredita no rótulo que o navegador mandou não é registro de auditoria — a mesma doutrina que faz o `@` ser resolvido lá e não aqui.
+
+---
+
+### 10/08/2026 — Decididos contra, com motivo 📌 registro
+
+Três coisas que apareceram na conversa deste ciclo e **não** foram construídas. Registradas porque "não construímos" sem motivo vira "esquecemos" em dois meses:
+
+- **Toggle "Ativar inputs" no bloco de geração.** O estado da faixa de referências já comunica: se há miniaturas, há entrada; se não há, o "+" está ali dizendo como criar uma. Um interruptor seria mais um estado para o usuário manter na cabeça, sem nada novo em troca.
+- **Node Resultado pré-vinculado no nascimento do gerador.** Caixa vazia esperando é ruído no canvas — e ruído que ocupa espaço permanente. O Resultado nasce no primeiro Gerar, que é quando ele tem algo a mostrar.
+- **Input de pose/ângulo como node separado.** A lista de **ângulo de câmera** dos Ajustes de cena (§5.27) e o chip **pose** nas referências já cobrem os dois caminhos que existem: o vocabulário fechado e a imagem de exemplo. Um terceiro seria uma terceira forma de dizer a mesma coisa, com uma terceira chance de contradizer as outras duas.
+
+**Adiado com data:** quantidade **x2–x4** por geração chega junto com o motor assíncrono da frente de vídeo. A **N5 fica mantida** pela razão de sempre — quatro imagens síncronas seriam quatro esperas em sequência dentro de um request HTTP, que é exatamente o que a invariante 1 proíbe.

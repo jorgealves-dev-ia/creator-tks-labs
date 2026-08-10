@@ -91,6 +91,7 @@ Versão curta. O porquê de cada uma está em [`docs/arquitetura.md`](docs/arqui
 - **Entidade / @**: objeto reutilizável mencionável em prompts (`@julia`, `@produto-x`)
 - **Character sheet**: ficha estruturada de um influencer de IA (identidade, dados físicos, turnaround, expressões, paleta de cores, voz), organizada em três camadas — DNA visual (imutável), padrões variáveis (defaults) e narrativa (nunca entra em prompt de imagem)
 - **Geração**: uma execução de modelo com custo associado
+- **Produto**: entidade do Arsenal com nome, até 5 fotos e uma instrução padrão. Vira card no canvas; o fio para um bloco de geração anexa **todas as fotos como uma unidade**, com a contagem de vagas dita antes do clique
 - **Referência**: imagem anexada a um bloco de geração — do upload, da galeria ou de um Resultado conectado —, com tipo e instrução opcionais. A folha da personagem mencionada é sempre a imagem 1
 - **Galeria**: o histórico de imagens do usuário (`assets`), de onde se reaproveita uma referência sem subir de novo
 - **Extração**: leitura de uma referência (foto ou texto colado) que preenche o DNA visual com estados honestos — só em campos vazios, com motivo quando houve dúvida
