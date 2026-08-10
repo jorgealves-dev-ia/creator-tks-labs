@@ -6,14 +6,18 @@ import {
   Controls,
   MiniMap,
   ReactFlow,
+  useReactFlow,
   type NodeTypes,
+  type OnNodesChange,
 } from "@xyflow/react";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+import { HelperLinesOverlay } from "@/components/canvas/helper-lines-overlay";
 import { CharacterNode } from "@/components/nodes/character-node";
 import { GeneratorNode } from "@/components/nodes/generator-node";
 import { ResultNode } from "@/components/nodes/result-node";
 import type { CanvasGraph } from "@/lib/canvas/graph";
+import { applyHelperLines, NO_LINES, type HelperLines } from "@/lib/canvas/helper-lines";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { useWorkflowAutosave } from "@/lib/canvas/use-autosave";
 import { t } from "@/lib/i18n/pt-BR";
@@ -47,6 +51,28 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
   const markDirty = useCanvasStore((state) => state.markDirty);
   const loadedProjectId = useCanvasStore((state) => state.projectId);
 
+  const { getZoom } = useReactFlow();
+  const [helperLines, setHelperLines] = useState<HelperLines>(NO_LINES);
+
+  // Guides live here, not in the store: they are view state of a drag in
+  // progress, not part of the saved document — and the zoom that scales the
+  // snap threshold only exists on this side. The store's own action still does
+  // all the applying and dirty-marking.
+  const handleNodesChange = useCallback<OnNodesChange>(
+    (changes) => {
+      const result = applyHelperLines(changes, useCanvasStore.getState().nodes, getZoom());
+
+      setHelperLines((previous) =>
+        previous.horizontal === result.lines.horizontal &&
+        previous.vertical === result.lines.vertical
+          ? previous
+          : result.lines,
+      );
+      onNodesChange(result.changes);
+    },
+    [getZoom, onNodesChange],
+  );
+
   const initial = useRef({ projectId, graph, version });
 
   useEffect(() => {
@@ -73,7 +99,7 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
+        onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onMoveEnd={(event) => {
@@ -94,6 +120,7 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
           size={1.5}
           color="#26262f"
         />
+        <HelperLinesOverlay lines={helperLines} />
         <Controls
           position="bottom-right"
           showInteractive={false}
