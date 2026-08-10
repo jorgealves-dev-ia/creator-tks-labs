@@ -2,9 +2,9 @@ import {
   addEdge,
   applyEdgeChanges,
   applyNodeChanges,
+  type Connection,
   type Edge,
   type Node,
-  type OnConnect,
   type OnEdgesChange,
   type OnNodesChange,
 } from "@xyflow/react";
@@ -40,6 +40,53 @@ type StoredReference = {
   kind: string | null;
   instrucao: string;
   origem: string;
+  /**
+   * Set when this image is one photo of a product wired into the block. Every
+   * photo of the same product carries the same id, which is what lets the strip
+   * show them as one thing and the compiler describe them as one object.
+   *
+   * The product's *name* is deliberately not stored: it would go stale the
+   * moment somebody renamed the product, and both the strip and the server can
+   * look it up by id.
+   */
+  productId?: string | null;
+};
+
+/**
+ * What the canvas has to know about a product to wire it in.
+ *
+ * Handed to the store by the component that has the products at hand, rather
+ * than read here: this file is the graph, and the graph has no business holding
+ * a second copy of the Arsenal.
+ */
+export type ConnectedProduct = {
+  id: string;
+  /** Its photos, in order. Every one of them becomes a numbered reference. */
+  assetIds: string[];
+  /** The sentence the product starts every generation with; editable per block. */
+  instrucao: string;
+};
+
+export type ConnectContext = {
+  /** The product on the source end of the wire, when the source is a product card. */
+  product: ConnectedProduct | null;
+  /** How many more images the target block can accept right now. */
+  free: number;
+};
+
+/**
+ * Why a wire was refused, for the block it was aimed at.
+ *
+ * Kept out of `nodes` on purpose: this is something that just happened, not part
+ * of the document. Storing it in node data would mark the project dirty and save
+ * a transient complaint into the workflow.
+ */
+export type CanvasNotice = {
+  nodeId: string;
+  reason: "product_over_limit";
+  /** How many slots the product needed, and how many there were. */
+  needed: number;
+  free: number;
 };
 
 /**
@@ -81,77 +128,68 @@ function readReferences(node: Node): StoredReference[] {
   return Array.isArray(node.data.references) ? (node.data.references as StoredReference[]) : [];
 }
 
-/** The result → generator pair an edge represents, when it represents one. */
-function chainedPair(
-  nodes: readonly Node[],
-  connection: { source?: string | null; target?: string | null },
-): { result: Node; generator: Node; assetId: string } | null {
-  const result = nodes.find((node) => node.id === connection.source);
-  const generator = nodes.find((node) => node.id === connection.target);
-  const assetId = result?.data.assetId;
-
-  if (
-    result?.type !== "result" ||
-    generator?.type !== "generator" ||
-    typeof assetId !== "string"
-  ) {
-    return null;
-  }
-
-  return { result, generator, assetId };
+function withReferences(nodes: Node[], generatorId: string, references: StoredReference[]): Node[] {
+  return nodes.map((node) =>
+    node.id === generatorId ? { ...node, data: { ...node.data, references } } : node,
+  );
 }
 
-function attachReference(
-  nodes: Node[],
+/**
+ * The two ends of a wire that means "attach something", when it means one.
+ *
+ * Two sources feed a generating block: a Resultado, which is one image, and a
+ * Produto, which is all of its photos at once. Both are the same gesture — a
+ * wire — and both end in the same list, which is why they are recognised here
+ * together rather than in two places that could disagree about what a wire does.
+ */
+function wiredPair(
+  nodes: readonly Node[],
   connection: { source?: string | null; target?: string | null },
-): Node[] {
-  const pair = chainedPair(nodes, connection);
+): { source: Node; generator: Node } | null {
+  const source = nodes.find((node) => node.id === connection.source);
+  const generator = nodes.find((node) => node.id === connection.target);
 
-  if (!pair) return nodes;
+  if (!source || generator?.type !== "generator") return null;
+  if (source.type !== "result" && source.type !== "product") return null;
 
-  const current = readReferences(pair.generator);
+  return { source, generator };
+}
 
-  // Wiring the same result twice is one reference, not two: the second wire is
-  // a gesture the user has already made.
-  if (current.some((reference) => reference.assetId === pair.assetId)) {
-    return nodes;
-  }
-
-  const next: StoredReference = {
-    assetId: pair.assetId,
-    kind: null,
-    instrucao: "",
-    origem: "resultado",
-  };
-
-  return nodes.map((node) =>
-    node.id === pair.generator.id
-      ? { ...node, data: { ...node.data, references: [...current, next] } }
-      : node,
-  );
+/** The photos a wired product contributes, in the order they will be numbered. */
+function productReferences(product: ConnectedProduct): StoredReference[] {
+  return product.assetIds.map((assetId) => ({
+    assetId,
+    // A product's photos are products. The chip is not a question the block has
+    // to ask again, and leaving it open would let one photo of a bikini be
+    // labelled "cenário" while the other two stayed "produto".
+    kind: "produto",
+    instrucao: product.instrucao,
+    origem: "produto",
+    productId: product.id,
+  }));
 }
 
 function detachReference(nodes: Node[], edge: Edge): Node[] {
-  const pair = chainedPair(nodes, edge);
+  const pair = wiredPair(nodes, edge);
 
   if (!pair) return nodes;
 
   const current = readReferences(pair.generator);
 
-  // Only the attachment this wire made. A picture chosen from the gallery that
-  // happens to be the same file was a separate decision, and stays.
-  const next = current.filter(
-    (reference) =>
-      !(reference.assetId === pair.assetId && reference.origem === "resultado"),
-  );
+  // Only what this wire attached. A picture chosen from the gallery that happens
+  // to be the same file was a separate decision, and stays. A product leaves
+  // whole, for the same reason it arrived whole.
+  const next =
+    pair.source.type === "product"
+      ? current.filter((reference) => reference.productId !== pair.source.data.entityId)
+      : current.filter(
+          (reference) =>
+            !(reference.assetId === pair.source.data.assetId && reference.origem === "resultado"),
+        );
 
   if (next.length === current.length) return nodes;
 
-  return nodes.map((node) =>
-    node.id === pair.generator.id
-      ? { ...node, data: { ...node.data, references: next } }
-      : node,
-  );
+  return withReferences(nodes, pair.generator.id, next);
 }
 
 type CanvasState = {
@@ -164,6 +202,11 @@ type CanvasState = {
   saveFailure: SaveFailure | null;
   /** Bumped by every persisted change; lets a save detect edits made while it ran. */
   revision: number;
+  /**
+   * The last thing the canvas refused to do, and to whom. Never persisted — see
+   * CanvasNotice. Cleared by the next edit, because an edit is the answer.
+   */
+  notice: CanvasNotice | null;
 
   loadWorkflow: (input: {
     projectId: string;
@@ -173,7 +216,16 @@ type CanvasState = {
   }) => void;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
-  onConnect: OnConnect;
+  /**
+   * A wire, drawn.
+   *
+   * Takes more than React Flow's own `OnConnect` because a wire from a product
+   * card is not just a line: it attaches every photo of that product at once,
+   * and it has to be able to say no. The caller supplies what the graph cannot
+   * know — which product this is, and how much room the block has left — and
+   * this decides.
+   */
+  onConnect: (connection: Connection, context: ConnectContext) => void;
   /**
    * Edits a node's own stored state — the prompt someone is typing, the format
    * they picked, the references they attached.
@@ -216,6 +268,8 @@ type CanvasState = {
   removeReference: (input: { nodeId: string; index: number }) => void;
   /** For edits React Flow reports outside node/edge changes, such as panning. */
   markDirty: () => void;
+  /** Puts away a refusal the user has read. */
+  clearNotice: () => void;
   setSaveStatus: (status: SaveStatus) => void;
   setSaveFailed: (failure: SaveFailure) => void;
   markSaved: (input: { version: number; revision: number }) => void;
@@ -229,6 +283,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   saveStatus: "saved",
   saveFailure: null,
   revision: 0,
+  notice: null,
 
   loadWorkflow: ({ projectId, nodes, edges, version }) =>
     set({
@@ -239,6 +294,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       saveStatus: "saved",
       saveFailure: null,
       revision: 0,
+      notice: null,
     }),
 
   onNodesChange: (changes) => {
@@ -282,16 +338,78 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     });
   },
 
-  onConnect: (connection) =>
-    set((state) => ({
-      // Wiring a result into a generating block *is* attaching a reference —
+  onConnect: (connection, context) =>
+    set((state) => {
+      // Wiring something into a generating block *is* attaching a reference —
       // the drag is the gesture, the list in the node is the state. Two ways in
       // (the picker and the wire), one place where what is attached lives.
-      nodes: attachReference(state.nodes, connection),
-      edges: addEdge(connection, state.edges),
-      revision: state.revision + 1,
-      saveStatus: "dirty",
-    })),
+      const pair = wiredPair(state.nodes, connection);
+
+      const connected = {
+        edges: addEdge(connection, state.edges),
+        revision: state.revision + 1,
+        saveStatus: "dirty" as const,
+        notice: null,
+      };
+
+      if (!pair) return { ...connected, nodes: state.nodes };
+
+      const current = readReferences(pair.generator);
+
+      if (pair.source.type === "product") {
+        const product = context.product;
+
+        // No product to attach, or this one is already here: the wire is drawn
+        // and nothing else happens. A second wire is a gesture already made.
+        if (!product || current.some((reference) => reference.productId === product.id)) {
+          return { ...connected, nodes: state.nodes };
+        }
+
+        // A product arrives whole or not at all. Half of a product is a front
+        // view with no label — a reference that looks attached and cannot say
+        // what the back of the garment looks like. Better refused, in words,
+        // before the wire exists, than discovered as a bad image after paying.
+        if (product.assetIds.length > context.free) {
+          return {
+            nodes: state.nodes,
+            edges: state.edges,
+            revision: state.revision,
+            saveStatus: state.saveStatus,
+            notice: {
+              nodeId: pair.generator.id,
+              reason: "product_over_limit" as const,
+              needed: product.assetIds.length,
+              free: context.free,
+            },
+          };
+        }
+
+        return {
+          ...connected,
+          nodes: withReferences(state.nodes, pair.generator.id, [
+            ...current,
+            ...productReferences(product),
+          ]),
+        };
+      }
+
+      const assetId = pair.source.data.assetId;
+
+      if (
+        typeof assetId !== "string" ||
+        current.some((reference) => reference.assetId === assetId)
+      ) {
+        return { ...connected, nodes: state.nodes };
+      }
+
+      return {
+        ...connected,
+        nodes: withReferences(state.nodes, pair.generator.id, [
+          ...current,
+          { assetId, kind: null, instrucao: "", origem: "resultado" },
+        ]),
+      };
+    }),
 
   updateNodeData: (id, patch) =>
     set((state) => ({
@@ -300,6 +418,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       ),
       revision: state.revision + 1,
       saveStatus: "dirty",
+      // Any edit answers the refusal — a shorter prompt, a bigger model, one
+      // reference fewer. Leaving it on screen would be nagging about a problem
+      // the user just solved.
+      notice: null,
     })),
 
   addResultNode: ({ sourceNodeId, data }) =>
@@ -441,31 +563,40 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
       if (!removed) return state;
 
-      const next = current.filter((_, position) => position !== index);
+      const productId = removed.productId ?? null;
+
+      // A product leaves the way it arrived: all of its photos, one gesture. The
+      // strip only ever offers one ✕ for the group, and this is the rule behind
+      // that button rather than a convenience of it.
+      const next = productId
+        ? current.filter((reference) => reference.productId !== productId)
+        : current.filter((_, position) => position !== index);
 
       // The wire that brought it, if it came by wire. Identified by both ends
-      // and by the image itself, so a different result feeding the same block
-      // keeps its own connection.
-      const edges =
-        removed.origem === "resultado"
-          ? state.edges.filter((edge) => {
-              if (edge.target !== nodeId) return true;
+      // and by what it carried, so a different result — or a different product —
+      // feeding the same block keeps its own connection.
+      const edges = state.edges.filter((edge) => {
+        if (edge.target !== nodeId) return true;
 
-              const source = state.nodes.find((entry) => entry.id === edge.source);
+        const source = state.nodes.find((entry) => entry.id === edge.source);
 
-              return !(source?.type === "result" && source.data.assetId === removed.assetId);
-            })
-          : state.edges;
+        if (productId) {
+          return !(source?.type === "product" && source.data.entityId === productId);
+        }
+
+        return !(
+          removed.origem === "resultado" &&
+          source?.type === "result" &&
+          source.data.assetId === removed.assetId
+        );
+      });
 
       return {
-        nodes: state.nodes.map((entry) =>
-          entry.id === nodeId
-            ? { ...entry, data: { ...entry.data, references: next } }
-            : entry,
-        ),
+        nodes: withReferences(state.nodes, nodeId, next),
         edges,
         revision: state.revision + 1,
         saveStatus: "dirty",
+        notice: null,
       };
     }),
 
@@ -474,6 +605,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       revision: state.revision + 1,
       saveStatus: "dirty",
     })),
+
+  clearNotice: () => set({ notice: null }),
 
   // Any status other than "failed" leaves no failure behind to explain.
   setSaveStatus: (saveStatus) =>

@@ -12,6 +12,7 @@ import type { CharacterSheet } from "@/lib/character-sheet/schema";
 import {
   referenceFidelity,
   referenceSubject,
+  referenceUnity,
   type ReferenceKind,
   type ReferenceOrigin,
 } from "@/lib/generation/references";
@@ -66,6 +67,14 @@ export type CanvasReferenceInput = {
   /** The same sentence in English, translated at generation time. */
   instrucaoEn: string;
   origem: ReferenceOrigin;
+  /**
+   * Set when this image is one photo of a product wired into the block. Every
+   * photo of the same product carries the same id, and that is what turns them
+   * into one instruction instead of N.
+   */
+  produtoId?: string | null;
+  /** The product's name, resolved on the server. For the audit, never for the model. */
+  produtoNome?: string | null;
 };
 
 export type CanvasCharacterInput = {
@@ -127,14 +136,33 @@ export type CanvasReferenceDirective = {
   origem: ReferenceOrigin;
   instrucao_pt: string;
   instrucao_en: string;
-  /** The sentence that actually went to the model. */
+  /**
+   * The sentence that actually went to the model.
+   *
+   * Empty on every photo of a product except the first: a product speaks once,
+   * naming all of its positions at once. One directive per image is kept so the
+   * audit can still answer "what was image 3?", which the group sentence alone
+   * could not.
+   */
   diretiva_en: string;
   /**
    * The fixed clause that says what may not change about this image. Null for a
    * reference nobody labelled — see references.ts for why, and for the honest
-   * expectation this sets.
+   * expectation this sets — and for the photos of a product that are not the
+   * first, whose group already carries it.
    */
   fidelidade_en: string | null;
+  /**
+   * Set on every photo of a product wired into the block, null otherwise. The
+   * `ordens` are all the positions that product occupies, which is what makes
+   * "3 fotos, 3 vagas" checkable in the history rather than merely promised.
+   */
+  grupo: { produto_id: string; produto_nome: string; ordens: number[] } | null;
+  /**
+   * The clause that makes several photos one object — only on the first photo of
+   * a product with more than one, and null everywhere else.
+   */
+  unidade_en: string | null;
 };
 
 /**
@@ -312,9 +340,39 @@ export function buildCanvasPrompt({
 
   const firstAttached = hasAnchorImage ? 2 : 1;
 
+  /**
+   * Every position a given product occupies, and which of its photos speaks for
+   * it. Collected by product id rather than by adjacency: the photos arrive
+   * together and leave together, but a list that only worked while they stayed
+   * next to each other would be a list waiting for its first exception.
+   */
+  const positionsByProduct = new Map<string, number[]>();
+  const leaderByProduct = new Map<string, number>();
+
+  referencias.forEach((reference, index) => {
+    const produtoId = reference.produtoId ?? null;
+
+    if (!produtoId) return;
+
+    const positions = positionsByProduct.get(produtoId) ?? [];
+
+    positions.push(firstAttached + index);
+    positionsByProduct.set(produtoId, positions);
+
+    if (!leaderByProduct.has(produtoId)) leaderByProduct.set(produtoId, index);
+  });
+
   const directives: CanvasReferenceDirective[] = referencias.map((reference, index) => {
     const ordem = firstAttached + index;
-    const subject = referenceSubject(reference.kind, ordem);
+    const produtoId = reference.produtoId ?? null;
+    const positions = produtoId ? (positionsByProduct.get(produtoId) ?? [ordem]) : [ordem];
+
+    // A product says its piece once, from its first photo. The rest are numbered,
+    // sent and recorded — they simply do not repeat the instruction, because
+    // three copies of "reproduce the exact product" describe three products.
+    const speaks = !produtoId || leaderByProduct.get(produtoId) === index;
+
+    const subject = referenceSubject(reference.kind, positions);
     const instruction = reference.instrucaoEn.trim();
 
     return {
@@ -324,10 +382,20 @@ export function buildCanvasPrompt({
       origem: reference.origem,
       instrucao_pt: reference.instrucaoPt.trim(),
       instrucao_en: instruction,
-      diretiva_en: instruction
-        ? `Use ${subject}, ${instruction}`
-        : `Use ${subject}, faithfully`,
-      fidelidade_en: referenceFidelity(reference.kind, ordem),
+      diretiva_en: !speaks
+        ? ""
+        : instruction
+          ? `Use ${subject}, ${instruction}`
+          : `Use ${subject}, faithfully`,
+      fidelidade_en: speaks ? referenceFidelity(reference.kind, positions) : null,
+      grupo: produtoId
+        ? {
+            produto_id: produtoId,
+            produto_nome: reference.produtoNome ?? "",
+            ordens: positions,
+          }
+        : null,
+      unidade_en: speaks ? referenceUnity(positions) : null,
     };
   });
 
@@ -399,8 +467,12 @@ function renderText(structure: CanvasPromptStructure): string {
     ...structure.ajustes_cena.map((adjustment) => adjustment.frase),
     // Each attached image says what to use it for and, immediately after, what
     // about it may not change — adjacent so the pair reads as one instruction.
+    // A product's photos put the unifying clause first: "these are one object"
+    // has to be settled before "reproduce it exactly" can mean anything.
     ...structure.referencias.flatMap((reference) =>
-      [reference.diretiva_en, reference.fidelidade_en ?? ""].filter(Boolean),
+      [reference.unidade_en ?? "", reference.diretiva_en, reference.fidelidade_en ?? ""].filter(
+        Boolean,
+      ),
     ),
     ...structure.restricoes,
   ]

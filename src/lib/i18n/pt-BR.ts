@@ -699,6 +699,12 @@ export const t = {
       remove: "Remover",
       instructionPlaceholder: "desta imagem, pegue apenas o cenário",
       instructionHint: "Opcional. Traduzido na hora de gerar.",
+      /** A product's photos are one thing in the strip, as they are in the prompt. */
+      productPrefix: "Produto:",
+      productUnknown: "Produto",
+      removeProduct: "Remover o produto inteiro",
+      productFixedKind: "Tipo fixo:",
+      productInstructionHint: "Vale para todas as fotos deste produto, só nesta geração.",
     },
 
     /** The gallery modal (§4) — used by a generating block and by the product editor. */
@@ -806,6 +812,9 @@ export const t = {
       },
       references: "Referências",
       imagePrefix: "Imagem",
+      /** A product occupied several slots and gave one instruction: "Imagens 2, 3 e 4". */
+      imagesPrefix: "Imagens",
+      and: "e",
       restrictions: "Restrições",
       sent: "O que foi para o modelo",
       noText: "Sem texto registrado.",
@@ -831,6 +840,11 @@ export const t = {
       multipleCharacters: "Uma personagem por geração nesta versão. Deixe só uma menção @.",
       tooManyReferencesPrefix: "Este modelo aceita até",
       tooManyReferencesSuffix: "imagens de referência por geração.",
+      /** The wire a product could not fit through, said before it is drawn. */
+      productOverLimitPrefix: "Este produto ocupa",
+      productOverLimitMiddle: "referências e só resta espaço para",
+      productOverLimitSuffix:
+        "Tire uma referência do bloco ou escolha um modelo com teto maior.",
       missingReference: "Uma das imagens de referência não está mais disponível.",
       translationFailed:
         "Não consegui traduzir seu texto agora — nada foi gerado nem cobrado. Tente de novo.",

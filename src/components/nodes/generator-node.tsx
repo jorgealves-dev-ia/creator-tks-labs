@@ -24,13 +24,13 @@ import {
   generateFromNode,
   type CanvasGenerationResult,
 } from "@/lib/generation/canvas-actions";
-import { findMentions, sceneWithoutMentions } from "@/lib/generation/mentions";
 import {
-  DEFAULT_PRESET_ID,
-  FORMAT_PRESETS,
-  findPreset,
-  maxReferences,
-} from "@/lib/generation/presets";
+  generatorCapacity,
+  mentionedCharacter,
+  sheetAnchorSlots,
+} from "@/lib/generation/capacity";
+import { findMentions, sceneWithoutMentions } from "@/lib/generation/mentions";
+import { DEFAULT_PRESET_ID, FORMAT_PRESETS, findPreset } from "@/lib/generation/presets";
 import { t } from "@/lib/i18n/pt-BR";
 
 /**
@@ -77,6 +77,9 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   const addResultNode = useCanvasStore((state) => state.addResultNode);
   const removeReference = useCanvasStore((state) => state.removeReference);
   const characters = useEntitiesStore((state) => state.characters);
+  // A wire the canvas refused, aimed at this block. Ephemeral by construction —
+  // it lives outside the saved graph, and the next edit clears it.
+  const refusedWire = useCanvasStore((state) => (state.notice?.nodeId === id ? state.notice : null));
 
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -112,9 +115,7 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
 
   const mentions = findMentions(prompt);
   const scene = sceneWithoutMentions(prompt, mentions);
-  const mentioned = mentions[0]
-    ? Object.values(characters).find((character) => character.handle === mentions[0].handle)
-    : undefined;
+  const mentioned = mentionedCharacter(prompt, characters);
 
   // What "inherit" resolves to right now, shown in the selector itself — a
   // default the user cannot see is a default the user cannot trust.
@@ -126,18 +127,22 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
 
   const references = data.references ?? [];
 
+  // The ceiling belongs to the model, and the character's own sheet occupies one
+  // of its places — so the number the strip shows is the number the server will
+  // enforce, said before the click instead of after it. Computed by the same
+  // function the wire from a product card consults, so the two can never
+  // disagree about how much room is left.
+  const capacity = generatorCapacity({
+    modelSlug: model?.slug ?? null,
+    referenceCount: references.length,
+    reserved: sheetAnchorSlots(mentioned),
+  });
+
   // What a removal would actually take with it. Model and format are two clicks
   // anybody would make again without noticing; a scene somebody wrote, images
   // somebody attached and an adjustment somebody chose live in the graph and
   // nowhere else — which is the whole test for whether to ask first.
   const hasWork = prompt.trim() !== "" || references.length > 0 || activeAdjustments > 0;
-
-  // The ceiling belongs to the model, and the character's own sheet occupies one
-  // of its places — so the number the strip shows is the number the server will
-  // enforce, said before the click instead of after it.
-  const limit = model ? maxReferences(model.slug) : 1;
-  const reserved =
-    mentioned?.activeVersion?.sheet.imagens_canonicas.folha_completa ? 1 : 0;
 
   const lastAssetId = data.lastAssetId ?? null;
   const previewUrl = lastAssetId && preview?.assetId === lastAssetId ? preview.url : null;
@@ -164,8 +169,8 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
     useReferencePicker.getState().open({
       key: id,
       scope: "geracao",
-      remaining: Math.max(0, limit - references.length - reserved),
-      limit,
+      remaining: capacity.free,
+      limit: capacity.limit,
       onConfirm: (picked) => {
         // Read fresh rather than closing over `references`: the modal outlives
         // the render that opened it, and a wire connected meanwhile is a
@@ -334,8 +339,8 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
 
         <ReferenceStrip
           references={references}
-          limit={limit}
-          reserved={reserved}
+          limit={capacity.limit}
+          reserved={capacity.reserved}
           disabled={busy}
           onAdd={openPicker}
           onChange={(next) => updateNodeData(id, { references: next })}
@@ -565,6 +570,16 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
 
         {message ? (
           <p className="mt-2 text-[10px] leading-relaxed text-warning">{message}</p>
+        ) : null}
+
+        {/* The ceiling, said where the wire was aimed and before anything was
+            spent — which is the only moment at which a ceiling is a ceiling. */}
+        {refusedWire ? (
+          <p className="mt-2 text-[10px] leading-relaxed text-warning">
+            {copy.errors.productOverLimitPrefix} {refusedWire.needed}{" "}
+            {copy.errors.productOverLimitMiddle} {refusedWire.free}.{" "}
+            {copy.errors.productOverLimitSuffix}
+          </p>
         ) : null}
       </div>
 

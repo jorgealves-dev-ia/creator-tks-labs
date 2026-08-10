@@ -41,6 +41,13 @@ const ADJUSTMENT_OPTIONS: Record<string, readonly SheetOption[]> = {
   expressao: EXPRESSAO,
 };
 
+/** "2, 3 e 4" — the slots one product occupied, read back in Portuguese. */
+function listOrdens(ordens: readonly number[]): string {
+  if (ordens.length <= 1) return String(ordens[0] ?? "");
+
+  return `${ordens.slice(0, -1).join(", ")} ${copy.and} ${ordens[ordens.length - 1]}`;
+}
+
 /** The PT label of an adjustment's option — or the stored key, shown as itself. */
 function adjustmentValue(adjustment: { campo: string; chave: string }): string {
   const options = ADJUSTMENT_OPTIONS[adjustment.campo];
@@ -192,38 +199,62 @@ function InspectorDialog({ generationId }: { generationId: string }) {
                   {structure.referencias.length > 0 ? (
                     <Section title={copy.references}>
                       <ul className="space-y-2">
-                        {structure.referencias.map((reference) => (
-                          <li
-                            key={reference.ordem}
-                            className="rounded-lg border border-line bg-surface-raised p-2"
-                          >
-                            <p className="text-[11px] font-medium text-ink">
-                              {copy.imagePrefix} {reference.ordem}
-                              {reference.tipo ? (
-                                <span className="text-ink-muted">
-                                  {" · "}
-                                  {findReferenceKind(reference.tipo)?.pt ?? reference.tipo}
-                                </span>
+                        {/* A product occupied several slots and gave one
+                            instruction, so it is read back as one block. Its
+                            other photos are still in the stored structure — they
+                            simply have nothing of their own to say. */}
+                        {structure.referencias
+                          .filter(
+                            (reference) =>
+                              reference.grupo === null ||
+                              reference.grupo.ordens[0] === reference.ordem,
+                          )
+                          .map((reference) => (
+                            <li
+                              key={reference.ordem}
+                              className="rounded-lg border border-line bg-surface-raised p-2"
+                            >
+                              <p className="text-[11px] font-medium text-ink">
+                                {reference.grupo && reference.grupo.ordens.length > 1
+                                  ? `${copy.imagesPrefix} ${listOrdens(reference.grupo.ordens)}`
+                                  : `${copy.imagePrefix} ${reference.ordem}`}
+                                {reference.tipo ? (
+                                  <span className="text-ink-muted">
+                                    {" · "}
+                                    {findReferenceKind(reference.tipo)?.pt ?? reference.tipo}
+                                  </span>
+                                ) : null}
+                                {reference.grupo?.produto_nome ? (
+                                  <span className="text-ink-muted">
+                                    {" · "}
+                                    {reference.grupo.produto_nome}
+                                  </span>
+                                ) : null}
+                              </p>
+
+                              {reference.instrucao_pt ? (
+                                <p className="mt-1 text-[11px] leading-relaxed text-ink-muted">
+                                  “{reference.instrucao_pt}”
+                                  <span className="text-ink-faint">
+                                    {" → "}
+                                    {reference.instrucao_en}
+                                  </span>
+                                </p>
                               ) : null}
-                            </p>
 
-                            {reference.instrucao_pt ? (
-                              <p className="mt-1 text-[11px] leading-relaxed text-ink-muted">
-                                “{reference.instrucao_pt}”
-                                <span className="text-ink-faint">
-                                  {" → "}
-                                  {reference.instrucao_en}
-                                </span>
-                              </p>
-                            ) : null}
+                              {reference.unidade_en ? (
+                                <p className="mt-1 text-[10px] leading-relaxed text-ink-faint">
+                                  {reference.unidade_en}
+                                </p>
+                              ) : null}
 
-                            {reference.fidelidade_en ? (
-                              <p className="mt-1 text-[10px] leading-relaxed text-ink-faint">
-                                {reference.fidelidade_en}
-                              </p>
-                            ) : null}
-                          </li>
-                        ))}
+                              {reference.fidelidade_en ? (
+                                <p className="mt-1 text-[10px] leading-relaxed text-ink-faint">
+                                  {reference.fidelidade_en}
+                                </p>
+                              ) : null}
+                            </li>
+                          ))}
                       </ul>
                     </Section>
                   ) : null}

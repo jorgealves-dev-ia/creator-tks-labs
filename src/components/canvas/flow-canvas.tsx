@@ -7,6 +7,8 @@ import {
   MiniMap,
   ReactFlow,
   useReactFlow,
+  type Connection,
+  type Node,
   type NodeTypes,
   type OnNodesChange,
 } from "@xyflow/react";
@@ -17,11 +19,20 @@ import { CharacterNode } from "@/components/nodes/character-node";
 import { GeneratorNode } from "@/components/nodes/generator-node";
 import { ProductNode } from "@/components/nodes/product-node";
 import { ResultNode } from "@/components/nodes/result-node";
+import { useImageCatalog } from "@/components/nodes/use-image-catalog";
+import { defaultModelId, findModel } from "@/components/ui/model-select";
 import type { CanvasGraph } from "@/lib/canvas/graph";
 import { applyHelperLines, NO_LINES, type HelperLines } from "@/lib/canvas/helper-lines";
-import { useCanvasStore } from "@/lib/canvas/store";
+import { useCanvasStore, type ConnectedProduct } from "@/lib/canvas/store";
 import { useWorkflowAutosave } from "@/lib/canvas/use-autosave";
+import { useEntitiesStore } from "@/lib/entities/store";
+import {
+  generatorCapacity,
+  mentionedCharacter,
+  sheetAnchorSlots,
+} from "@/lib/generation/capacity";
 import { t } from "@/lib/i18n/pt-BR";
+import { useProductsStore } from "@/lib/products/store";
 
 /**
  * Defined at module scope: a fresh object on every render would make React Flow
@@ -49,12 +60,38 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
   const edges = useCanvasStore((state) => state.edges);
   const onNodesChange = useCanvasStore((state) => state.onNodesChange);
   const onEdgesChange = useCanvasStore((state) => state.onEdgesChange);
-  const onConnect = useCanvasStore((state) => state.onConnect);
   const markDirty = useCanvasStore((state) => state.markDirty);
   const loadedProjectId = useCanvasStore((state) => state.projectId);
 
+  const providers = useImageCatalog();
+  const characters = useEntitiesStore((state) => state.characters);
+  const products = useProductsStore((state) => state.products);
+
   const { getZoom } = useReactFlow();
   const [helperLines, setHelperLines] = useState<HelperLines>(NO_LINES);
+
+  /**
+   * A wire, with the two things the graph itself cannot answer.
+   *
+   * Which product a card stands for lives in the Arsenal store, and how many
+   * images a block may still accept depends on the model catalogue and on the
+   * `@` in its prompt. Both are resolved here, where they are already loaded,
+   * and handed to the store — which stays the single authority on what a wire
+   * does to the graph.
+   */
+  const handleConnect = useCallback(
+    (connection: Connection) => {
+      const nodes = useCanvasStore.getState().nodes;
+      const source = nodes.find((node) => node.id === connection.source);
+      const target = nodes.find((node) => node.id === connection.target);
+
+      useCanvasStore.getState().onConnect(connection, {
+        product: source?.type === "product" ? productOf(source, products) : null,
+        free: freeSlots(target, providers, characters),
+      });
+    },
+    [providers, characters, products],
+  );
 
   // Guides live here, not in the store: they are view state of a drag in
   // progress, not part of the saved document — and the zoom that scales the
@@ -103,7 +140,7 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
         nodeTypes={nodeTypes}
         onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
+        onConnect={handleConnect}
         onMoveEnd={(event) => {
           // React Flow passes a null event for programmatic viewport changes
           // such as fitView on load. Only a real pan or zoom is an edit.
@@ -143,6 +180,43 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
       {nodes.length === 0 ? <EmptyCanvasHint /> : null}
     </div>
   );
+}
+
+/** The product a card stands for, as the graph needs it. */
+function productOf(
+  card: Node,
+  products: ReturnType<typeof useProductsStore.getState>["products"],
+): ConnectedProduct | null {
+  const entityId = card.data.entityId;
+  const product = typeof entityId === "string" ? products[entityId] : undefined;
+
+  if (!product) return null;
+
+  return {
+    id: product.id,
+    assetIds: product.photos.map((photo) => photo.assetId),
+    instrucao: product.instrucaoPadrao,
+  };
+}
+
+/** How many more images a generating block can take. Zero for anything else. */
+function freeSlots(
+  target: Node | undefined,
+  providers: ReturnType<typeof useImageCatalog>,
+  characters: ReturnType<typeof useEntitiesStore.getState>["characters"],
+): number {
+  if (target?.type !== "generator") return 0;
+
+  const prompt = typeof target.data.prompt === "string" ? target.data.prompt : "";
+  const modelId =
+    typeof target.data.modelId === "string" ? target.data.modelId : defaultModelId(providers);
+  const references = Array.isArray(target.data.references) ? target.data.references : [];
+
+  return generatorCapacity({
+    modelSlug: findModel(providers, modelId)?.slug ?? null,
+    referenceCount: references.length,
+    reserved: sheetAnchorSlots(mentionedCharacter(prompt, characters)),
+  }).free;
 }
 
 function EmptyCanvasHint() {

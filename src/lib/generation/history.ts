@@ -94,6 +94,20 @@ const structureSchema = z.object({
         diretiva_en: z.string().default(""),
         /** Absent on every generation from before the fidelity clauses existed. */
         fidelidade_en: z.string().nullable().default(null),
+        /**
+         * Absent on every generation from before products existed. `produto_id`
+         * is a plain string for the same reason `tipo` is: this is history, and
+         * a product archived since then still has to be readable here.
+         */
+        grupo: z
+          .object({
+            produto_id: z.string(),
+            produto_nome: z.string().default(""),
+            ordens: z.array(z.number()).default([]),
+          })
+          .nullable()
+          .default(null),
+        unidade_en: z.string().nullable().default(null),
       }),
     )
     .default([]),

@@ -73,7 +73,17 @@ const referenceSchema = z.object({
   assetId: z.uuid(),
   kind: z.enum(REFERENCE_KINDS.map((kind) => kind.key) as [string, ...string[]]).nullable(),
   instrucao: z.string().max(400),
-  origem: z.enum(["upload", "galeria", "resultado"]),
+  origem: z.enum(["upload", "galeria", "resultado", "produto"]),
+  /**
+   * The product this photo belongs to, when it came through a wire from a
+   * product card. Defaulted rather than required: a browser still running
+   * yesterday's bundle sends nothing here, and nothing means "a lone image".
+   *
+   * Only the id travels. The product's *name* is looked up on this side — it
+   * goes into the audit trail, and an audit trail that believes whatever the
+   * browser called something is not an audit trail.
+   */
+  productId: z.uuid().nullable().default(null),
 });
 
 const generateSchema = z.object({
@@ -257,11 +267,38 @@ export async function generateFromNode(input: unknown): Promise<CanvasGeneration
     return { ok: false, reason: "insufficient_balance", neededSparks: priceSparks, balanceSparks };
   }
 
+  // 5b. The products on the wires, named here rather than taken on trust. One
+  //     query for all of them, and a product the user does not own simply comes
+  //     back nameless — RLS answers that question, not this code.
+  const productNames = await loadProductNames(supabase, request.references);
+
+  // Which photo of each product speaks for it. The rest are numbered and sent,
+  // but they do not repeat the sentence — three copies of "reproduce the exact
+  // product" would describe three products. Mirrors buildCanvasPrompt, which is
+  // the authority; this is only what decides what needs translating.
+  const groupLeaders = new Set<number>();
+  const seenProducts = new Set<string>();
+
+  request.references.forEach((reference, index) => {
+    if (!reference.productId) {
+      groupLeaders.add(index);
+      return;
+    }
+
+    if (seenProducts.has(reference.productId)) return;
+
+    seenProducts.add(reference.productId);
+    groupLeaders.add(index);
+  });
+
   // 6. Portuguese in, English out — before a single Spark is at risk.
   const items = [
     ...(scene === "" ? [] : [{ id: "cena", text: scene }]),
     ...request.references
-      .map((reference, index) => ({ id: `ref.${index}`, text: reference.instrucao.trim() }))
+      .map((reference, index) => ({
+        id: `ref.${index}`,
+        text: groupLeaders.has(index) ? reference.instrucao.trim() : "",
+      }))
       .filter((item) => item.text !== ""),
   ];
 
@@ -286,6 +323,8 @@ export async function generateFromNode(input: unknown): Promise<CanvasGeneration
     instrucaoPt: reference.instrucao.trim(),
     instrucaoEn: (translation.translations[`ref.${index}`] ?? "").trim(),
     origem: reference.origem,
+    produtoId: reference.productId,
+    produtoNome: reference.productId ? (productNames.get(reference.productId) ?? "") : null,
   }));
 
   const prompt = buildCanvasPrompt({
@@ -497,6 +536,44 @@ function galleryLabel(prompt: string, handle: string | null): string {
   }
 
   return handle ? `@${handle} nos padrões dela` : "Imagem no canvas";
+}
+
+// ---------------------------------------------------------------------------
+// Resolving the products on the wires
+// ---------------------------------------------------------------------------
+
+/**
+ * The display name of every product a wire brought in, by id.
+ *
+ * The browser sends ids and this side supplies the words, for the same reason
+ * the `@` is resolved here: what goes into the permanent record of a generation
+ * has to be what the database says, not what a page happened to be showing.
+ *
+ * RLS scopes the lookup, so an id belonging to somebody else simply finds
+ * nothing and the group is recorded nameless — the images themselves are already
+ * protected by the same rule in loadImagePayloads.
+ */
+async function loadProductNames(
+  supabase: Supabase,
+  references: readonly { productId: string | null }[],
+): Promise<Map<string, string>> {
+  const ids = [
+    ...new Set(
+      references
+        .map((reference) => reference.productId)
+        .filter((id): id is string => id !== null),
+    ),
+  ];
+
+  if (ids.length === 0) return new Map();
+
+  const { data } = await supabase
+    .from("entities")
+    .select("id, display_name")
+    .eq("kind", "product")
+    .in("id", ids);
+
+  return new Map((data ?? []).map((row) => [row.id, row.display_name]));
 }
 
 // ---------------------------------------------------------------------------
