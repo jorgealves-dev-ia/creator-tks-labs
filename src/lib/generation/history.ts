@@ -75,6 +75,13 @@ const structureSchema = z.object({
   traje_canonico: z.string().nullable().default(null),
   cena_padrao: z.array(z.string()).default([]),
   cena_usuario: z.object({ pt: z.string(), en: z.string() }).nullable().default(null),
+  /**
+   * Absent on every generation from before the scene adjustments existed.
+   * `campo` is a plain string for the same reason `tipo` is: this is history.
+   */
+  ajustes_cena: z
+    .array(z.object({ campo: z.string(), chave: z.string(), frase: z.string() }))
+    .default([]),
   referencias: z
     .array(
       z.object({

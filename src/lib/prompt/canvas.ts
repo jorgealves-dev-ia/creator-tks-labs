@@ -1,7 +1,12 @@
 import {
+  ANGULO_CAMERA,
   estiloOption,
+  EXPRESSAO,
+  findOption,
+  ILUMINACAO,
   PRONOUN_BY_GENERO,
   type GeneroApresentacao,
+  type SheetOption,
 } from "@/lib/character-sheet/dictionary";
 import type { CharacterSheet } from "@/lib/character-sheet/schema";
 import {
@@ -81,6 +86,14 @@ export type BuildCanvasPromptOptions = {
   cenaEn: string;
   /** The node's style override; null inherits from the character, then default. */
   estiloKey: string | null;
+  /**
+   * The node's scene adjustments — rule 4 of §6, exercised with a value for the
+   * first time. Null (or an unknown key) means Auto: the prompt and the
+   * character decide, exactly as before these existed.
+   */
+  anguloKey: string | null;
+  iluminacaoKey: string | null;
+  expressaoKey: string | null;
   referencias: readonly CanvasReferenceInput[];
 };
 
@@ -94,6 +107,16 @@ export type CanvasStyleBlock = {
   reforco: string;
   /** Which of the three levels of the hierarchy actually answered. */
   origem: "node" | "personagem" | "padrao";
+};
+
+/**
+ * One scene adjustment the node made, recorded per field — which control was
+ * touched, which option it named and the fixed phrase that entered the prompt.
+ */
+export type CanvasSceneAdjustment = {
+  campo: "angulo_camera" | "iluminacao" | "expressao";
+  chave: string;
+  frase: string;
 };
 
 export type CanvasReferenceDirective = {
@@ -134,6 +157,7 @@ export type CanvasPromptStructure = {
   traje_canonico: string | null;
   cena_padrao: string[];
   cena_usuario: { pt: string; en: string } | null;
+  ajustes_cena: CanvasSceneAdjustment[];
   referencias: CanvasReferenceDirective[];
   restricoes: string[];
   /** Which half of the director rule ran. Recorded, never inferred later. */
@@ -206,11 +230,30 @@ const SINGLE_PHOTO_INSTRUCTION =
   "frame — not a grid, not a collage, not a sheet of variations, no repeated " +
   "or duplicated figures";
 
+/**
+ * The adjustment a node key names, when it resolves to a phrase — else Auto.
+ *
+ * All or nothing on purpose: a key this dictionary no longer recognises must not
+ * half-apply, silencing the sheet's default while putting nothing in its place.
+ */
+function sceneAdjustment(
+  campo: CanvasSceneAdjustment["campo"],
+  options: readonly SheetOption[],
+  key: string | null,
+): CanvasSceneAdjustment | null {
+  const option = findOption(options, key);
+
+  return option?.en ? { campo, chave: option.key, frase: option.en } : null;
+}
+
 export function buildCanvasPrompt({
   personagem,
   cenaPt,
   cenaEn,
   estiloKey,
+  anguloKey,
+  iluminacaoKey,
+  expressaoKey,
   referencias,
 }: BuildCanvasPromptOptions): CanvasPrompt {
   const directed = cenaPt.trim() !== "";
@@ -229,12 +272,34 @@ export function buildCanvasPrompt({
     origem: estiloKey ? "node" : personagem ? "personagem" : "padrao",
   };
 
+  // Rule 4 of §6, now with a replacement and not only a silence. In "padrões"
+  // mode a field the node answered leaves the sheet's default out and puts the
+  // node's phrase in; in a directed scene the defaults are already out and the
+  // adjustments simply add. The camera angle stands down pose *and* framing —
+  // the three are one axis (where the camera is, how much of the body it sees),
+  // and the sheet's pose carries a facing that would contradict "profile".
+  const angulo = sceneAdjustment("angulo_camera", ANGULO_CAMERA, anguloKey);
+  const iluminacao = sceneAdjustment("iluminacao", ILUMINACAO, iluminacaoKey);
+  const expressao = sceneAdjustment("expressao", EXPRESSAO, expressaoKey);
+
+  // Fixed order — camera, then light, then face: the order a scene is read in.
+  const ajustes = [angulo, iluminacao, expressao].filter(
+    (adjustment): adjustment is CanvasSceneAdjustment => adjustment !== null,
+  );
+
+  const omitted: readonly CenaPadraoKey[] = directed
+    ? ALL_SCENE_KEYS
+    : [
+        "estilo_renderizacao",
+        ...(angulo ? (["pose", "enquadramento"] as const) : []),
+        ...(iluminacao ? (["iluminacao"] as const) : []),
+        ...(expressao ? (["expressao"] as const) : []),
+      ];
+
   // One compilation, then a selection. Compiling twice — once with defaults and
   // once without — would be two chances to disagree about the same sheet.
   const compiled = personagem
-    ? compilePrompt(personagem.sheet, {
-        omitirCenaPadrao: directed ? ALL_SCENE_KEYS : ["estilo_renderizacao"],
-      })
+    ? compilePrompt(personagem.sheet, { omitirCenaPadrao: omitted })
     : null;
 
   const hasAnchorImage = personagem !== null && personagem.folhaAssetId !== null;
@@ -293,6 +358,7 @@ export function buildCanvasPrompt({
     traje_canonico: directed ? null : (compiled?.structure.traje_canonico ?? null),
     cena_padrao: directed ? [] : (compiled?.structure.cena_padrao ?? []),
     cena_usuario: directed ? { pt: cenaPt.trim(), en: cenaEn.trim() } : null,
+    ajustes_cena: ajustes,
     referencias: directives,
     restricoes: compiled?.structure.restricoes ?? [],
     regra_diretor: directed ? "prompt_dirige" : "padroes_da_personagem",
@@ -311,8 +377,8 @@ export function buildCanvasPrompt({
  *
  * Style first (rule 11: naming the medium before anything that could imply one),
  * identity next, then the scene — the user's, or the character's own when there
- * is no user's — then what to do with each attached image, and restrictions last,
- * always (rule 5).
+ * is no user's — then the node's scene adjustments, then what to do with each
+ * attached image, and restrictions last, always (rule 5).
  *
  * Every part is normalised without a full stop and the sentence is closed once at
  * the end, so a missing block can never leave ".." behind.
@@ -329,6 +395,8 @@ function renderText(structure: CanvasPromptStructure): string {
     structure.traje_canonico ?? "",
     structure.cena_padrao.join(", "),
     structure.cena_usuario?.en ?? "",
+    // The node's adjustments, right after the scene they adjust.
+    ...structure.ajustes_cena.map((adjustment) => adjustment.frase),
     // Each attached image says what to use it for and, immediately after, what
     // about it may not change — adjacent so the pair reads as one instruction.
     ...structure.referencias.flatMap((reference) =>

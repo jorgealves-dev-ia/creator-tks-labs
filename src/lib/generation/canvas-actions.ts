@@ -85,6 +85,12 @@ const generateSchema = z.object({
   presetId: z.string().min(1).max(80),
   /** The node's style override; null means "inherit". */
   estiloKey: z.string().min(1).max(80).nullable(),
+  // The scene adjustments (§6 rule 4). Defaulted rather than required: a browser
+  // still running yesterday's bundle sends nothing here, and "Auto" is exactly
+  // what nothing means.
+  anguloKey: z.string().min(1).max(80).nullable().default(null),
+  iluminacaoKey: z.string().min(1).max(80).nullable().default(null),
+  expressaoKey: z.string().min(1).max(80).nullable().default(null),
   // A ceiling far above any model's, so a malformed request is refused before it
   // costs a database round trip. The real limit is the model's and is checked
   // once the model is known.
@@ -295,6 +301,9 @@ export async function generateFromNode(input: unknown): Promise<CanvasGeneration
     cenaPt: scene,
     cenaEn: (translation.translations.cena ?? "").trim(),
     estiloKey: request.estiloKey,
+    anguloKey: request.anguloKey,
+    iluminacaoKey: request.iluminacaoKey,
+    expressaoKey: request.expressaoKey,
     referencias: references,
   });
 

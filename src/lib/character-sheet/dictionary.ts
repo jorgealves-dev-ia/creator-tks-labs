@@ -586,6 +586,27 @@ export const ENQUADRAMENTO = [
 ] as const satisfies readonly SheetOption[];
 
 /**
+ * §5.27 · Camera angle — the generation node's list, not a sheet field.
+ *
+ * A character has no canonical camera angle; a *shot* does. This list exists for
+ * the node's "Ajustes de cena" and lives in this dictionary for the same reasons
+ * every other list does: fixed phrase, immutable key, copied verbatim (rule 7).
+ *
+ * When active it stands down the sheet's pose *and* framing (rule 4 of §6) —
+ * the three are one axis: where the camera is and how much of the body it sees.
+ */
+export const ANGULO_CAMERA = [
+  { key: "frontal", pt: "Frontal", en: "front view, facing the camera directly" },
+  { key: "tres_quartos", pt: "Três quartos", en: "three-quarter view, turned slightly away from the camera" },
+  { key: "perfil", pt: "Perfil", en: "full side profile view" },
+  { key: "de_cima", pt: "De cima", en: "high-angle shot, viewed from above" },
+  { key: "de_baixo", pt: "De baixo", en: "low-angle shot, viewed from below" },
+  { key: "close_rosto", pt: "Close no rosto", en: "close-up on the face, tightly framed portrait" },
+  { key: "plano_americano", pt: "Plano americano", en: "medium-full shot, framed from mid-thigh up" },
+  { key: "corpo_inteiro", pt: "Corpo inteiro", en: "full-body shot, entire figure visible from head to toe" },
+] as const satisfies readonly SheetOption[];
+
+/**
  * Restriction kind. Compilation rule 5: restrictions always enter the prompt, at
  * the end, whatever the generating node asked for.
  */
