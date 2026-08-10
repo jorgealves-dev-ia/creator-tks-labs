@@ -564,6 +564,67 @@ export const t = {
     },
   },
 
+  /** Products in the Arsenal — the peça a campanha inteira gira em volta. */
+  products: {
+    sidebar: {
+      title: "Produtos",
+      newProduct: "Novo produto",
+      addToCanvas: "Adicionar ao canvas",
+      onCanvas: "No canvas",
+      empty: "Nenhum produto ainda. Crie o primeiro.",
+    },
+
+    card: {
+      editHint: "Clique duas vezes para editar",
+      edit: "Editar",
+      remove: "Recolher para o Arsenal (o produto continua lá)",
+      outputHandle: "Ligar este produto a um bloco de geração",
+      noPhotos: "Sem fotos ainda",
+      /** "3 fotos · ocupa 3 referências" — dito antes do clique, nunca depois. */
+      occupies: "ocupa",
+      photoSingular: "foto",
+      photoPlural: "fotos",
+      referenceSingular: "referência",
+      referencePlural: "referências",
+      missing: "Produto não encontrado",
+      missingHint: "Ele pode ter sido removido. Tire este cartão do canvas.",
+    },
+
+    dialog: {
+      newTitle: "Novo produto",
+      newSubtitle: "Nome primeiro; as fotos e a instrução vêm na tela seguinte.",
+      nameLabel: "Nome",
+      namePlaceholder: "Biquíni cortininha verde",
+      create: "Criar produto",
+      creating: "Criando…",
+      createFailed: "Não foi possível criar o produto.",
+      cancel: "Cancelar",
+      close: "Fechar",
+      done: "Concluir",
+
+      photosLabel: "Fotos",
+      photosOf: "de",
+      photosHint: "Frente, verso, detalhe, etiqueta — cada foto entra na geração.",
+      addPhoto: "Adicionar foto",
+      removePhoto: "Remover foto",
+      full: "Um produto guarda até 5 fotos.",
+      photoFailed: "Não foi possível anexar a foto.",
+      removePhotoHint: "A foto sai do produto e continua na galeria.",
+
+      instructionLabel: "Instrução padrão",
+      instructionPlaceholder: "a modelo veste esta peça exatamente como mostrada",
+      instructionHint:
+        "Opcional, e editável em cada geração. Traduzida na hora de gerar.",
+
+      archive: "Remover do Arsenal",
+      archiveConfirm: "Remover este produto?",
+      archiveHint: "As fotos continuam na galeria e as imagens já geradas não mudam.",
+      archiveFailed: "Não foi possível remover o produto.",
+      yes: "Remover",
+      no: "Cancelar",
+    },
+  },
+
   /** The generation blocks on the canvas — docs/nodes-geracao.md. */
   generation: {
     node: {
@@ -640,12 +701,28 @@ export const t = {
       instructionHint: "Opcional. Traduzido na hora de gerar.",
     },
 
-    /** The gallery modal (§4). */
+    /** The gallery modal (§4) — used by a generating block and by the product editor. */
     picker: {
-      title: "Escolher referências",
+      /**
+       * The half of the copy that depends on who opened it. Everything else is
+       * the same sentence for both, which is the point of there being one modal.
+       */
+      scopes: {
+        geracao: {
+          title: "Escolher referências",
+          remainingSuffix: "nesta geração — o limite deste modelo é",
+          limitPrefix: "Este modelo aceita até",
+          limitSuffix: "imagens por geração.",
+        },
+        produto: {
+          title: "Escolher fotos do produto",
+          remainingSuffix: "neste produto — o limite é",
+          limitPrefix: "Um produto guarda até",
+          limitSuffix: "fotos.",
+        },
+      },
       close: "Fechar",
       remainingPrefix: "Você pode acrescentar",
-      remainingSuffix: "nesta geração — o limite deste modelo é",
       filters: {
         todas: "Todas",
         geradas: "Geradas",
@@ -661,8 +738,6 @@ export const t = {
       untitled: "Sem nome",
       loadMore: "Carregar mais",
       selected: "selecionadas",
-      limitPrefix: "Este modelo aceita até",
-      limitSuffix: "imagens por geração.",
       notAnImage: "Esse arquivo não é uma imagem.",
       tooLarge: "Imagem grande demais (máximo 10 MB).",
       uploadFailed: "Não foi possível enviar a imagem.",

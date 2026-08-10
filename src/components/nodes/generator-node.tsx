@@ -162,9 +162,33 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
 
   function openPicker() {
     useReferencePicker.getState().open({
-      nodeId: id,
+      key: id,
+      scope: "geracao",
       remaining: Math.max(0, limit - references.length - reserved),
       limit,
+      onConfirm: (picked) => {
+        // Read fresh rather than closing over `references`: the modal outlives
+        // the render that opened it, and a wire connected meanwhile is a
+        // reference this block already has.
+        const node = useCanvasStore.getState().nodes.find((entry) => entry.id === id);
+        const current = Array.isArray(node?.data.references)
+          ? (node.data.references as ReferenceEntry[])
+          : [];
+
+        updateNodeData(id, {
+          references: [
+            ...current,
+            ...picked.map(
+              (image): ReferenceEntry => ({
+                assetId: image.assetId,
+                kind: null,
+                instrucao: "",
+                origem: image.source === "upload" ? "upload" : "galeria",
+              }),
+            ),
+          ],
+        });
+      },
     });
   }
 

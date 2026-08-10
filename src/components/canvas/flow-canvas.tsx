@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { HelperLinesOverlay } from "@/components/canvas/helper-lines-overlay";
 import { CharacterNode } from "@/components/nodes/character-node";
 import { GeneratorNode } from "@/components/nodes/generator-node";
+import { ProductNode } from "@/components/nodes/product-node";
 import { ResultNode } from "@/components/nodes/result-node";
 import type { CanvasGraph } from "@/lib/canvas/graph";
 import { applyHelperLines, NO_LINES, type HelperLines } from "@/lib/canvas/helper-lines";
@@ -28,6 +29,7 @@ import { t } from "@/lib/i18n/pt-BR";
  */
 const nodeTypes: NodeTypes = {
   character: CharacterNode,
+  product: ProductNode,
   generator: GeneratorNode,
   result: ResultNode,
 };
