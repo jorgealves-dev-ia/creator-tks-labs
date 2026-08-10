@@ -3,6 +3,10 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import {
+  structureSchema,
+  type StoredPromptStructure,
+} from "@/lib/generation/prompt-structure";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
@@ -35,110 +39,6 @@ export type GenerationRecord = {
   /** 'version' when a frozen snapshot was used — never 'draft' from a mention. */
   sheetSource: string | null;
 };
-
-/**
- * The stored shape, validated rather than cast: this is jsonb coming back out of
- * the database, which is a boundary like any other. A row written by an older
- * version of the compiler simply arrives without a structure, and the screen
- * shows the text it does have instead of failing.
- */
-const structureSchema = z.object({
-  estilo: z.object({
-    chave: z.string(),
-    frase: z.string(),
-    reforco: z.string(),
-    origem: z.enum(["node", "personagem", "padrao"]),
-  }),
-  personagem: z
-    .object({
-      handle: z.string(),
-      versao: z.number(),
-      entity_version_id: z.string(),
-      folha_asset_id: z.string().nullable(),
-    })
-    .nullable(),
-  /** Absent on every generation from before the single-photograph clause. */
-  foto_unica: z.string().nullable().default(null),
-  identidade: z.array(z.string()).default([]),
-  /**
-   * Read as a list, accepted as either.
-   *
-   * Until 2026-08-09 this was a single sentence; it became a list when the
-   * identity reinforcement was added beside it. Both shapes are in the database
-   * and neither can be rewritten — a stored prompt is the record of a generation
-   * that already happened. So the reader adapts to what was written, which is
-   * the whole reason this schema is looser than the compiler's own types.
-   */
-  ancora: z
-    .union([z.array(z.string()), z.string().transform((sentence) => [sentence])])
-    .default([]),
-  traje_canonico: z.string().nullable().default(null),
-  cena_padrao: z.array(z.string()).default([]),
-  cena_usuario: z.object({ pt: z.string(), en: z.string() }).nullable().default(null),
-  /**
-   * Absent on every generation from before the scene adjustments existed.
-   * `campo` is a plain string for the same reason `tipo` is: this is history.
-   */
-  ajustes_cena: z
-    .array(z.object({ campo: z.string(), chave: z.string(), frase: z.string() }))
-    .default([]),
-  referencias: z
-    .array(
-      z.object({
-        ordem: z.number(),
-        asset_id: z.string(),
-        tipo: z.string().nullable().default(null),
-        origem: z.string().default(""),
-        instrucao_pt: z.string().default(""),
-        instrucao_en: z.string().default(""),
-        diretiva_en: z.string().default(""),
-        /** Absent on every generation from before the fidelity clauses existed. */
-        fidelidade_en: z.string().nullable().default(null),
-        /**
-         * Absent on every generation from before products existed. `produto_id`
-         * is a plain string for the same reason `tipo` is: this is history, and
-         * a product archived since then still has to be readable here.
-         */
-        grupo: z
-          .object({
-            produto_id: z.string(),
-            produto_nome: z.string().default(""),
-            ordens: z.array(z.number()).default([]),
-          })
-          .nullable()
-          .default(null),
-        unidade_en: z.string().nullable().default(null),
-      }),
-    )
-    .default([]),
-  /**
-   * Absent on every generation from before the mute switch existed, which reads
-   * as null — and null is exactly right for them: nothing was silenced, because
-   * nothing could be.
-   */
-  referencias_mudas: z
-    .object({
-      quantidade: z.number(),
-      asset_ids: z.array(z.string()).default([]),
-    })
-    .nullable()
-    .default(null),
-  restricoes: z.array(z.string()).default([]),
-  regra_diretor: z.enum(["prompt_dirige", "padroes_da_personagem"]),
-});
-
-/**
- * What a stored structure is, which is deliberately looser than what the
- * compiler produces today.
- *
- * `tipo` and `origem` are plain strings here rather than the unions of
- * references.ts, and that is the point: this is history. A generation from a
- * month ago may name a kind that has since been renamed or retired, and the
- * honest thing is to show what it said — the same reasoning that makes the
- * compiler tolerate a dictionary key it no longer recognises instead of
- * pretending the sheet is broken.
- */
-export type StoredPromptStructure = z.infer<typeof structureSchema>;
 
 /**
  * The text and the structure are read **separately**, and that is a bug fix.

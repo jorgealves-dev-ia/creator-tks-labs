@@ -88,15 +88,15 @@ const referenceSchema = z.object({
   instrucao: z.string().max(400),
   origem: z.enum(["upload", "galeria", "resultado", "produto"]),
   /**
-   * The product this photo belongs to, when it came through a wire from a
-   * product card. Defaulted rather than required: a browser still running
+   * The group this image belongs to, when it arrived with others that count as
+   * one thing. Defaulted rather than required: a browser still running
    * yesterday's bundle sends nothing here, and nothing means "a lone image".
    *
-   * Only the id travels. The product's *name* is looked up on this side — it
-   * goes into the audit trail, and an audit trail that believes whatever the
+   * Only the id travels. What the group is *called* is resolved on this side —
+   * it goes into the audit trail, and an audit trail that believes whatever the
    * browser called something is not an audit trail.
    */
-  productId: z.uuid().nullable().default(null),
+  groupId: z.uuid().nullable().default(null),
 });
 
 const generateSchema = z.object({
@@ -298,17 +298,17 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
   // product" would describe three products. Mirrors buildCanvasPrompt, which is
   // the authority; this is only what decides what needs translating.
   const groupLeaders = new Set<number>();
-  const seenProducts = new Set<string>();
+  const seenGroups = new Set<string>();
 
   heard.forEach((reference, index) => {
-    if (!reference.productId) {
+    if (!reference.groupId) {
       groupLeaders.add(index);
       return;
     }
 
-    if (seenProducts.has(reference.productId)) return;
+    if (seenGroups.has(reference.groupId)) return;
 
-    seenProducts.add(reference.productId);
+    seenGroups.add(reference.groupId);
     groupLeaders.add(index);
   });
 
@@ -344,8 +344,8 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
     instrucaoPt: reference.instrucao.trim(),
     instrucaoEn: (translation.translations[`ref.${index}`] ?? "").trim(),
     origem: reference.origem,
-    produtoId: reference.productId,
-    produtoNome: reference.productId ? (productNames.get(reference.productId) ?? "") : null,
+    grupoId: reference.groupId,
+    grupoRotulo: reference.groupId ? (productNames.get(reference.groupId) ?? "") : null,
   }));
 
   const prompt = buildCanvasPrompt({
@@ -585,12 +585,12 @@ function galleryLabel(prompt: string, handle: string | null): string {
  */
 async function loadProductNames(
   supabase: Supabase,
-  references: readonly { productId: string | null }[],
+  references: readonly { groupId: string | null }[],
 ): Promise<Map<string, string>> {
   const ids = [
     ...new Set(
       references
-        .map((reference) => reference.productId)
+        .map((reference) => reference.groupId)
         .filter((id): id is string => id !== null),
     ),
   ];

@@ -224,10 +224,10 @@ function InspectorDialog({ generationId }: { generationId: string }) {
                                     {findReferenceKind(reference.tipo)?.pt ?? reference.tipo}
                                   </span>
                                 ) : null}
-                                {reference.grupo?.produto_nome ? (
+                                {reference.grupo?.rotulo ? (
                                   <span className="text-ink-muted">
                                     {" · "}
-                                    {reference.grupo.produto_nome}
+                                    {reference.grupo.rotulo}
                                   </span>
                                 ) : null}
                               </p>

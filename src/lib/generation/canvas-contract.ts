@@ -32,8 +32,16 @@ export type CanvasReferencePayload = {
   kind: ReferenceKind | null;
   instrucao: string;
   origem: ReferenceOrigin;
-  /** Set when this photo is one of a group wired in from a product. */
-  productId?: string | null;
+  /**
+   * Set when this image is one of several that arrived together and must be
+   * treated as one thing — same id on every member of the group.
+   *
+   * Called `productId` until 10/08/2026, because a product's photos were the
+   * only group that existed. They are about to stop being: an input node holding
+   * five photos is the same mechanism, and a mechanism named after its first
+   * user is a mechanism that gets copied instead of reused.
+   */
+  groupId?: string | null;
 };
 
 /**

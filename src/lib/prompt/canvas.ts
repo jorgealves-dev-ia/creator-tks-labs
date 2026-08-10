@@ -68,13 +68,13 @@ export type CanvasReferenceInput = {
   instrucaoEn: string;
   origem: ReferenceOrigin;
   /**
-   * Set when this image is one photo of a product wired into the block. Every
-   * photo of the same product carries the same id, and that is what turns them
-   * into one instruction instead of N.
+   * Set when this image arrived with others that count as one thing. Every
+   * member carries the same id, and that is what turns them into one
+   * instruction instead of N.
    */
-  produtoId?: string | null;
-  /** The product's name, resolved on the server. For the audit, never for the model. */
-  produtoNome?: string | null;
+  grupoId?: string | null;
+  /** What to call the group in the audit trail. Never shown to the model. */
+  grupoRotulo?: string | null;
 };
 
 export type CanvasCharacterInput = {
@@ -164,11 +164,15 @@ export type CanvasReferenceDirective = {
    */
   fidelidade_en: string | null;
   /**
-   * Set on every photo of a product wired into the block, null otherwise. The
-   * `ordens` are all the positions that product occupies, which is what makes
-   * "3 fotos, 3 vagas" checkable in the history rather than merely promised.
+   * Set on every member of a group, null otherwise. The `ordens` are all the
+   * positions that group occupies, which is what makes "3 fotos, 3 vagas"
+   * checkable in the history rather than merely promised.
+   *
+   * Written as `produto_id` / `produto_nome` until 10/08/2026. Rows already in
+   * the database keep those names and are still read — see history.ts, which
+   * accepts either and hands one shape to the screen.
    */
-  grupo: { produto_id: string; produto_nome: string; ordens: number[] } | null;
+  grupo: { grupo_id: string; rotulo: string; ordens: number[] } | null;
   /**
    * The clause that makes several photos one object — only on the first photo of
    * a product with more than one, and null everywhere else.
@@ -363,31 +367,31 @@ export function buildCanvasPrompt({
    * together and leave together, but a list that only worked while they stayed
    * next to each other would be a list waiting for its first exception.
    */
-  const positionsByProduct = new Map<string, number[]>();
-  const leaderByProduct = new Map<string, number>();
+  const positionsByGroup = new Map<string, number[]>();
+  const leaderByGroup = new Map<string, number>();
 
   referencias.forEach((reference, index) => {
-    const produtoId = reference.produtoId ?? null;
+    const grupoId = reference.grupoId ?? null;
 
-    if (!produtoId) return;
+    if (!grupoId) return;
 
-    const positions = positionsByProduct.get(produtoId) ?? [];
+    const positions = positionsByGroup.get(grupoId) ?? [];
 
     positions.push(firstAttached + index);
-    positionsByProduct.set(produtoId, positions);
+    positionsByGroup.set(grupoId, positions);
 
-    if (!leaderByProduct.has(produtoId)) leaderByProduct.set(produtoId, index);
+    if (!leaderByGroup.has(grupoId)) leaderByGroup.set(grupoId, index);
   });
 
   const directives: CanvasReferenceDirective[] = referencias.map((reference, index) => {
     const ordem = firstAttached + index;
-    const produtoId = reference.produtoId ?? null;
-    const positions = produtoId ? (positionsByProduct.get(produtoId) ?? [ordem]) : [ordem];
+    const grupoId = reference.grupoId ?? null;
+    const positions = grupoId ? (positionsByGroup.get(grupoId) ?? [ordem]) : [ordem];
 
     // A product says its piece once, from its first photo. The rest are numbered,
     // sent and recorded — they simply do not repeat the instruction, because
     // three copies of "reproduce the exact product" describe three products.
-    const speaks = !produtoId || leaderByProduct.get(produtoId) === index;
+    const speaks = !grupoId || leaderByGroup.get(grupoId) === index;
 
     const subject = referenceSubject(reference.kind, positions);
     const instruction = reference.instrucaoEn.trim();
@@ -405,10 +409,10 @@ export function buildCanvasPrompt({
           ? `Use ${subject}, ${instruction}`
           : `Use ${subject}, faithfully`,
       fidelidade_en: speaks ? referenceFidelity(reference.kind, positions) : null,
-      grupo: produtoId
+      grupo: grupoId
         ? {
-            produto_id: produtoId,
-            produto_nome: reference.produtoNome ?? "",
+            grupo_id: grupoId,
+            rotulo: reference.grupoRotulo ?? "",
             ordens: positions,
           }
         : null,

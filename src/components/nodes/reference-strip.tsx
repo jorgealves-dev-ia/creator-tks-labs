@@ -34,8 +34,8 @@ export type ReferenceEntry = {
   kind: ReferenceKind | null;
   instrucao: string;
   origem: ReferenceOrigin;
-  /** Set when this image is one photo of a product wired into the block. */
-  productId?: string | null;
+  /** Set when this image arrived with others that count as one thing. */
+  groupId?: string | null;
 };
 
 /**
@@ -47,22 +47,22 @@ export type ReferenceEntry = {
  */
 type Slot =
   | { kind: "single"; indexes: [number]; positions: [number] }
-  | { kind: "product"; productId: string; indexes: number[]; positions: number[] };
+  | { kind: "group"; groupId: string; indexes: number[]; positions: number[] };
 
 function toSlots(references: readonly ReferenceEntry[], reserved: number): Slot[] {
   const slots: Slot[] = [];
-  const byProduct = new Map<string, Extract<Slot, { kind: "product" }>>();
+  const byGroup = new Map<string, Extract<Slot, { kind: "group" }>>();
 
   references.forEach((reference, index) => {
     const position = reserved + index + 1;
-    const productId = reference.productId ?? null;
+    const groupId = reference.groupId ?? null;
 
-    if (!productId) {
+    if (!groupId) {
       slots.push({ kind: "single", indexes: [index], positions: [position] });
       return;
     }
 
-    const existing = byProduct.get(productId);
+    const existing = byGroup.get(groupId);
 
     if (existing) {
       existing.indexes.push(index);
@@ -70,14 +70,14 @@ function toSlots(references: readonly ReferenceEntry[], reserved: number): Slot[
       return;
     }
 
-    const slot: Extract<Slot, { kind: "product" }> = {
-      kind: "product",
-      productId,
+    const slot: Extract<Slot, { kind: "group" }> = {
+      kind: "group",
+      groupId,
       indexes: [index],
       positions: [position],
     };
 
-    byProduct.set(productId, slot);
+    byGroup.set(groupId, slot);
     slots.push(slot);
   });
 
@@ -278,12 +278,12 @@ export function ReferenceStrip({
                 disabled={disabled}
                 onClick={() => setOpenSlot(selected ? null : slotIndex)}
                 title={
-                  slot.kind === "product"
-                    ? `${copy.productPrefix} ${products[slot.productId]?.displayName ?? ""}`.trim()
+                  slot.kind === "group"
+                    ? `${copy.productPrefix} ${products[slot.groupId]?.displayName ?? ""}`.trim()
                     : `${copy.imagePrefix} ${slot.positions[0]}`
                 }
                 className={`nodrag block rounded-md transition-colors disabled:opacity-50 ${
-                  slot.kind === "product"
+                  slot.kind === "group"
                     ? `border border-dashed p-1 ${
                         selected ? "border-accent" : "border-line hover:border-line-strong"
                       }`
@@ -294,10 +294,10 @@ export function ReferenceStrip({
                     an attachment you cannot see is one you will forget to turn
                     back on. */}
                 <span className={enabled ? "block" : "block opacity-40 grayscale"}>
-                  {slot.kind === "product" ? (
+                  {slot.kind === "group" ? (
                     <>
                       <span className="mb-1 block max-w-36 truncate px-0.5 text-left text-[9px] text-ink-faint">
-                        {products[slot.productId]?.displayName ?? copy.productUnknown}
+                        {products[slot.groupId]?.displayName ?? copy.productUnknown}
                       </span>
                       <span className="flex gap-1">{thumbs}</span>
                     </>
@@ -321,10 +321,10 @@ export function ReferenceStrip({
                 type="button"
                 disabled={disabled}
                 onClick={() => remove(slot.indexes[0])}
-                title={slot.kind === "product" ? copy.removeProduct : copy.remove}
+                title={slot.kind === "group" ? copy.removeProduct : copy.remove}
                 aria-label={
-                  slot.kind === "product"
-                    ? `${copy.removeProduct} — ${products[slot.productId]?.displayName ?? ""}`.trim()
+                  slot.kind === "group"
+                    ? `${copy.removeProduct} — ${products[slot.groupId]?.displayName ?? ""}`.trim()
                     : `${copy.remove} — ${copy.imagePrefix} ${slot.positions[0]}`
                 }
                 className="nodrag absolute -right-1 -top-1 flex size-4 items-center justify-center
@@ -359,7 +359,7 @@ export function ReferenceStrip({
 
       {open && openEntry ? (
         <div className="mt-2 rounded-lg border border-line bg-surface p-2">
-          {open.kind === "product" ? (
+          {open.kind === "group" ? (
             /* A product's photos are products — the chip is not a question the
                block gets to ask again. Leaving it open would let one photo of a
                bikini be labelled "cenário" while the other two stayed "produto",
@@ -406,7 +406,7 @@ export function ReferenceStrip({
 
           <div className="mt-1 flex items-center justify-between gap-2">
             <span className="text-[10px] leading-relaxed text-ink-faint">
-              {open.kind === "product" ? copy.productInstructionHint : copy.instructionHint}
+              {open.kind === "group" ? copy.productInstructionHint : copy.instructionHint}
             </span>
             <button
               type="button"
@@ -415,7 +415,7 @@ export function ReferenceStrip({
               className="nodrag shrink-0 text-[10px] text-ink-faint transition-colors
                          hover:text-negative disabled:opacity-50"
             >
-              {open.kind === "product" ? copy.removeProduct : copy.remove}
+              {open.kind === "group" ? copy.removeProduct : copy.remove}
             </button>
           </div>
         </div>

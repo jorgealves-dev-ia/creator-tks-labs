@@ -41,15 +41,17 @@ type StoredReference = {
   instrucao: string;
   origem: string;
   /**
-   * Set when this image is one photo of a product wired into the block. Every
-   * photo of the same product carries the same id, which is what lets the strip
-   * show them as one thing and the compiler describe them as one object.
+   * Set when this image arrived together with others that must be treated as
+   * one thing. Every member of the group carries the same id, which is what
+   * lets the strip show them as one card and the compiler describe them as one
+   * object.
    *
-   * The product's *name* is deliberately not stored: it would go stale the
-   * moment somebody renamed the product, and both the strip and the server can
-   * look it up by id.
+   * Called `productId` until 10/08/2026, when a product's photos were the only
+   * group there was. The grouping was never about products — it is about
+   * several pictures of one subject — and naming it after its first user is how
+   * the next user ends up with a second copy of it.
    */
-  productId?: string | null;
+  groupId?: string | null;
 };
 
 /**
@@ -165,7 +167,7 @@ function productReferences(product: ConnectedProduct): StoredReference[] {
     kind: "produto",
     instrucao: product.instrucao,
     origem: "produto",
-    productId: product.id,
+    groupId: product.id,
   }));
 }
 
@@ -181,7 +183,7 @@ function detachReference(nodes: Node[], edge: Edge): Node[] {
   // whole, for the same reason it arrived whole.
   const next =
     pair.source.type === "product"
-      ? current.filter((reference) => reference.productId !== pair.source.data.entityId)
+      ? current.filter((reference) => reference.groupId !== pair.source.data.entityId)
       : current.filter(
           (reference) =>
             !(reference.assetId === pair.source.data.assetId && reference.origem === "resultado"),
@@ -361,7 +363,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
         // No product to attach, or this one is already here: the wire is drawn
         // and nothing else happens. A second wire is a gesture already made.
-        if (!product || current.some((reference) => reference.productId === product.id)) {
+        if (!product || current.some((reference) => reference.groupId === product.id)) {
           return { ...connected, nodes: state.nodes };
         }
 
@@ -566,13 +568,13 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
       if (!removed) return state;
 
-      const productId = removed.productId ?? null;
+      const groupId = removed.groupId ?? null;
 
-      // A product leaves the way it arrived: all of its photos, one gesture. The
+      // A group leaves the way it arrived: all of its images, one gesture. The
       // strip only ever offers one ✕ for the group, and this is the rule behind
       // that button rather than a convenience of it.
-      const next = productId
-        ? current.filter((reference) => reference.productId !== productId)
+      const next = groupId
+        ? current.filter((reference) => reference.groupId !== groupId)
         : current.filter((_, position) => position !== index);
 
       // The wire that brought it, if it came by wire. Identified by both ends
@@ -583,8 +585,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
         const source = state.nodes.find((entry) => entry.id === edge.source);
 
-        if (productId) {
-          return !(source?.type === "product" && source.data.entityId === productId);
+        if (groupId) {
+          return !(source?.type === "product" && source.data.entityId === groupId);
         }
 
         return !(
