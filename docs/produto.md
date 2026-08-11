@@ -162,9 +162,13 @@ Entregue e verificado no navegador:
 
 - **Produtos como cidadãos do Arsenal** (10/08/2026): o produto sai de "imagem solta na galeria" e vira **entidade**, ao lado das personagens — nome, até 5 fotos e uma instrução padrão. No canvas é um card com conector; o fio anexa todas as fotos ao bloco de geração **como uma unidade**, e o compilador as descreve como **um objeto fotografado de vários ângulos**, não como vários produtos. O card diz quantas vagas de referência ele ocupa antes de o fio ser puxado, e uma conexão que não cabe é recusada com o motivo na tela. No mesmo ciclo, todos os nodes ganharam o **mesmo cabeçalho** — ícone, nome, Duplicar e Remover.
 
+- **O gerador refinado e os inputs como nodes** (10/08/2026): o bloco Gerar Imagem ganha **anatomia normativa em duas colunas** — a pergunta à esquerda, a resposta à direita —, com o custo no futuro do indicativo embaixo do botão que o gasta. Ganha **qualidade 1K/2K/4K** com preço por resolução vindo do catálogo, e **quantidade 1–4**, que são quatro requisições independentes com quatro cobranças e quatro jeitos de falhar (paralelismo medido: 1,3 s entre dois débitos).
+
+  E o Arsenal deixa de ser prateleira de coisas para ser **prateleira de tipos**: a seção **Inputs** oferece Imagem, Produto, Pose/Ângulo e Character Sheet, e toda a configuração mora no card do canvas. A seção Produtos saiu — produto é rotativo, e cadastrar antes de usar cobrava um preço que a lista não pagava de volta. **Toda referência passa a ter node, sem exceção**, com a faixa do bloco virando espelho e nunca porta de entrada, e uma **chave** que silencia os inputs sem desmontar o fluxo.
+
 **Este é o estado atual da Fase 2: a linha de produção existe de ponta a ponta.** Personagem → folha → menção → cena dirigida → imagem → a imagem vira insumo da próxima. Fecha também o que faltava da Fase 1 (o consumo do `@`), que dependia justamente destes nodes.
 
-O que a linha ainda não faz, de propósito: mais de uma imagem por clique, mais de uma personagem por geração, e vídeo — os três chegam com o assíncrono, na Fase 2.5.
+O que a linha ainda não faz, de propósito: mais de uma personagem por geração e vídeo — os dois chegam com o assíncrono, na Fase 2.5. *Mais de uma imagem por clique saiu desta lista em 10/08/2026: quatro imagens são quatro requisições, e nenhuma delas segura mais de uma geração dentro de um request, que era a razão inteira de esperar.*
 
 Especificações: [`character-sheet.md`](./character-sheet.md), [`versionamento-entidades.md`](./versionamento-entidades.md), [`tela-character-sheet.md`](./tela-character-sheet.md), [`motor-extracao.md`](./motor-extracao.md) e [`geracao-canonica.md`](./geracao-canonica.md).
 

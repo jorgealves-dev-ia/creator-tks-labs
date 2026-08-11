@@ -1344,3 +1344,16 @@ A menção já anexa a folha da versão congelada como imagem 1, com as cláusul
 **A cláusula é escrita para ser verdade nos dois mundos** — sozinha, ela é a identidade da chamada; ao lado de uma menção, é uma entre várias referências de identidade. E a segunda frase é o truque inteiro: *"where more than one identity reference is given, they are the same person"*. Ela afirma um **fato**, não uma condição. É isso que permite a um modelo **combinar** duas folhas em vez de tirar a média de dois estranhos — que é o que ele faz quando recebe dois rostos sem ninguém dizer que são o mesmo.
 
 O chip é fixo nos dois cards novos, como no de produto: o papel do card já responde o que a imagem é, e deixar a pergunta aberta permitiria uma folha etiquetada "cenário".
+
+---
+
+### 10/08/2026 — Canvas 4 fecha, e três frases do CLAUDE.md que tinham virado mentira
+
+O ciclo entregou, em quatro etapas: a anatomia nova do gerador em duas colunas; qualidade por resolução com preço do catálogo e quantidade 1–4 em paralelo de verdade; a prateleira de Inputs com quatro tipos, a chave que silencia e a saída dos Produtos do Arsenal; e a exclusão de personagem por arquivamento.
+
+**Ao fechar a documentação, três instruções do `CLAUDE.md` estavam desatualizadas — e uma delas era do tipo perigoso.**
+
+- **`config/models.json` não existe, e nunca vai existir.** Três lugares mandavam escrever nele: a invariante 2 ("modelo novo = entrada em config/models.json"), a invariante 6 e a regra 3 do rodapé. O catálogo nasceu no **banco** pela decisão E1, em 08/08 — porque é o que o painel super admin vai gerenciar, e painel não edita arquivo de repositório. As três frases sobreviveram àquela decisão por dois meses de ciclos. **Uma instrução errada no arquivo que é lido em toda sessão não é documentação velha: é uma armadilha**, e essa em particular mandava criar um arquivo em vez de uma migration.
+- **A invariante 1 dizia "geração é sempre assíncrona" e o produto gera imagem de forma síncrona desde a Fase 1.** A exceção estava registrada em `arquitetura.md` e na decisão N5, mas a invariante — que é a versão curta, a que se lê primeiro — afirmava o contrário sem ressalva. Agora ela carrega a exceção **e o motivo dela**: uma imagem cabe no `maxDuration` de 60, quatro imagens são quatro requisições e não quatro gerações num request, e para vídeo o assíncrono continua obrigatório.
+
+Fica o hábito registrado: **quando um ciclo revisa uma decisão, a versão curta tem que ser revisada junto com a longa.** A versão longa é consultada por quem já desconfia; a curta é obedecida por quem não.
