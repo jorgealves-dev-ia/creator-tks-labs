@@ -14,7 +14,9 @@ export type NodeKind =
   | "generator"
   | "result"
   | "input-image"
-  | "input-product";
+  | "input-product"
+  | "input-pose"
+  | "input-sheet";
 
 export function NodeIcon({ kind, className }: { kind: NodeKind; className?: string }) {
   return (
@@ -74,6 +76,24 @@ const PATHS: Record<NodeKind, React.ReactNode> = {
     <>
       <rect x="1.5" y="2.5" width="13" height="11" rx="2" {...STROKE} />
       <path d="M8 10.4V4.6M5.6 7l2.4-2.4L10.4 7" {...STROKE} />
+    </>
+  ),
+
+  // A camera, because what this input hands over is a point of view and not a
+  // person — the one thing the chip and the angle list cannot carry.
+  "input-pose": (
+    <>
+      <path d="M2 5.4h2.6l1-1.6h4.8l1 1.6H14v7.2H2V5.4z" {...STROKE} />
+      <circle cx="8" cy="9" r="2.3" {...STROKE} />
+    </>
+  ),
+
+  // The grid of the complete sheet, which is exactly what it is: several views
+  // of one person, in one image.
+  "input-sheet": (
+    <>
+      <rect x="1.8" y="2.5" width="12.4" height="11" rx="1.6" {...STROKE} />
+      <path d="M8 2.5v11M1.8 8h12.4" {...STROKE} />
     </>
   ),
 

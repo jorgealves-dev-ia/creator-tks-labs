@@ -150,6 +150,57 @@ export function referenceFidelity(
 }
 
 /**
+ * What an input card *was*, when being that card adds a sentence.
+ *
+ * Distinct from `kind`, which says what the picture shows, and from `origem`,
+ * which says where it came from and deliberately changes no behaviour. This says
+ * which specialised input handed it over — and therefore which extra clause it
+ * earns beyond the chip's own.
+ *
+ * Null for everything else, which is most things: an image, a product photo and
+ * a wired Resultado all say what they are with the chip alone.
+ */
+export type ReferenceRole = "pose" | "folha";
+
+/**
+ * The clause each role adds, on top of the chip's subject and fidelity.
+ *
+ * **pose** — the reason the Pose input exists at all. The `pose` chip already
+ * says "match the body position and limb placement"; what it cannot say is where
+ * the *camera* is, and a photograph of a viewpoint carries that information
+ * exactly. The prohibition matters as much as the instruction: without "use it
+ * for viewpoint only", a picture handed over for its angle comes back with its
+ * clothes and its background too.
+ *
+ * **folha** — an identity reference that has to *add* to the `@` rather than
+ * compete with it. The second sentence is the whole trick: it states as a fact
+ * that the identity references are one person, which is what a model needs in
+ * order to combine them instead of averaging two strangers. It is written to be
+ * true both when a mention brought its own sheet and when this card is the only
+ * identity in the call.
+ */
+export const REFERENCE_ROLES: Record<ReferenceRole, string> = {
+  pose:
+    "Match the camera position and framing of reference {n} — its point of view, " +
+    "camera height and distance to the subject. Use reference {n} for viewpoint " +
+    "only: do not copy its subject, clothing, background or lighting",
+  folha:
+    "Reference {n} is a character reference sheet: match the face, hair, body " +
+    "proportions and skin tone to it precisely. Where more than one identity " +
+    "reference is given, they are the same person",
+};
+
+/** The role's clause, positioned — or null when the reference has no role. */
+export function referenceRoleClause(
+  papel: string | null,
+  positions: readonly number[],
+): string | null {
+  const clause = papel === "pose" || papel === "folha" ? REFERENCE_ROLES[papel] : null;
+
+  return clause ? atPositions(clause, positions) : null;
+}
+
+/**
  * The clause that turns several photos into one object.
  *
  * Without it, three photos of a bikini carrying three independent "reproduce the

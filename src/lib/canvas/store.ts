@@ -61,6 +61,11 @@ type StoredReference = {
    * carries the photos. A copy that is rewritten is not a stale copy.
    */
   groupLabel?: string;
+  /**
+   * Which specialised input card handed this over, when being that card earns
+   * an extra clause — "pose" or "folha". Null for everything else.
+   */
+  papel?: string | null;
 };
 
 /**
@@ -170,7 +175,13 @@ function wiredPair(
  * a condition that has to be edited in four places to add a fourth is a
  * condition that will be edited in three.
  */
-const ATTACHING_SOURCES = new Set(["result", "input-image", "input-product"]);
+const ATTACHING_SOURCES = new Set([
+  "result",
+  "input-image",
+  "input-product",
+  "input-pose",
+  "input-sheet",
+]);
 
 /**
  * What an input node contributes, read from its own stored state.
@@ -209,6 +220,21 @@ function inputReferences(node: Node): StoredReference[] {
 
   if (typeof assetId !== "string") return [];
 
+  // The specialised single-image inputs. Each pins the chip it implies — a pose
+  // card is a pose, a sheet card is a sheet, and neither is a question the block
+  // gets to ask again — and carries the role that earns it its own clause.
+  if (node.type === "input-pose") {
+    return [
+      { assetId, kind: "pose", instrucao, origem: "input", groupId: node.id, papel: "pose" },
+    ];
+  }
+
+  if (node.type === "input-sheet") {
+    return [
+      { assetId, kind: null, instrucao, origem: "input", groupId: node.id, papel: "folha" },
+    ];
+  }
+
   return [
     {
       assetId,
@@ -221,7 +247,7 @@ function inputReferences(node: Node): StoredReference[] {
 }
 
 /** The card types that hand images to a generating block from the canvas. */
-const INPUT_SOURCES = new Set(["input-image", "input-product"]);
+const INPUT_SOURCES = new Set(["input-image", "input-product", "input-pose", "input-sheet"]);
 
 /** Matches `w-56` on the input cards — used only to place one beside a block. */
 const INPUT_NODE_WIDTH = 224;

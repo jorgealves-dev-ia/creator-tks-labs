@@ -57,6 +57,8 @@ export type CanvasReferencePayload = {
    * and a card has no row.
    */
   groupLabel?: string;
+  /** Which specialised input handed it over: "pose", "folha", or nothing. */
+  papel?: string | null;
 };
 
 /**

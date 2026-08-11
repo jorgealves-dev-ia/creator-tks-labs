@@ -242,6 +242,12 @@ function InspectorDialog({ generationId }: { generationId: string }) {
                                 </p>
                               ) : null}
 
+                              {reference.papel_en ? (
+                                <p className="mt-1 text-[10px] leading-relaxed text-ink-faint">
+                                  {reference.papel_en}
+                                </p>
+                              ) : null}
+
                               {reference.unidade_en ? (
                                 <p className="mt-1 text-[10px] leading-relaxed text-ink-faint">
                                   {reference.unidade_en}
@@ -268,6 +274,14 @@ function InspectorDialog({ generationId }: { generationId: string }) {
                     explain why somebody attached four pictures and got a face
                     with none of them in it.
                   */}
+                  {structure.angulo_em_pausa ? (
+                    <Section title={copy.pausedAngle}>
+                      <p className="text-xs leading-relaxed text-ink-muted">
+                        {labelOf(ANGULO_CAMERA, structure.angulo_em_pausa)} · {copy.pausedAngleWhy}
+                      </p>
+                    </Section>
+                  ) : null}
+
                   {structure.referencias_mudas ? (
                     <Section title={copy.mutedReferences}>
                       <p className="text-xs leading-relaxed text-ink-muted">

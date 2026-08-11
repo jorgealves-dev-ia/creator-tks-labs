@@ -184,6 +184,16 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   const references = data.references ?? [];
   const referencesEnabled = data.referencesEnabled === true;
 
+  /**
+   * A Pose input is connected and heard, so the angle selector is standing down.
+   *
+   * Said here rather than discovered in the compiled prompt afterwards: two
+   * controls over the same axis, one silently winning, is the failure the Pose
+   * input was argued against for. The one that stands down says so.
+   */
+  const anglePaused =
+    referencesEnabled && references.some((reference) => reference.papel === "pose");
+
   // The ceiling belongs to the model, and the character's own sheet occupies one
   // of its places — so the number the strip shows is the number the server will
   // enforce, said before the click instead of after it. Computed by the same
@@ -635,11 +645,21 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
                     className="mb-1 block text-[11px] font-medium text-ink-muted"
                   >
                     {copy.node.cameraAngleLabel}
+                    {anglePaused ? (
+                      <span className="font-normal text-warning">
+                        {" · "}
+                        {copy.node.anglePaused}
+                      </span>
+                    ) : null}
                   </label>
                   <select
                     id={`angle-${id}`}
                     value={anguloKey ?? ""}
-                    disabled={busy}
+                    // Two controls over one axis, and the image outranks the
+                    // word. The selector says so instead of being quietly
+                    // ignored — see buildCanvasPrompt for the rule.
+                    disabled={busy || anglePaused}
+                    title={anglePaused ? copy.node.anglePausedHint : undefined}
                     onChange={(event) =>
                       updateNodeData(id, {
                         anguloKey: event.target.value === "" ? null : event.target.value,

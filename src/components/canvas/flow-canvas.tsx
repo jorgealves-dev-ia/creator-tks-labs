@@ -19,6 +19,8 @@ import { CharacterNode } from "@/components/nodes/character-node";
 import { GeneratorNode } from "@/components/nodes/generator-node";
 import { InputImageNode } from "@/components/nodes/input-image-node";
 import { InputProductNode } from "@/components/nodes/input-product-node";
+import { InputPoseNode } from "@/components/nodes/input-pose-node";
+import { InputSheetNode } from "@/components/nodes/input-sheet-node";
 import { LegacyProductNode } from "@/components/nodes/legacy-product-node";
 import { ResultNode } from "@/components/nodes/result-node";
 import { useImageCatalog } from "@/components/nodes/use-image-catalog";
@@ -47,6 +49,8 @@ const nodeTypes: NodeTypes = {
   result: ResultNode,
   "input-image": InputImageNode,
   "input-product": InputProductNode,
+  "input-pose": InputPoseNode,
+  "input-sheet": InputSheetNode,
 };
 
 type FlowCanvasProps = {

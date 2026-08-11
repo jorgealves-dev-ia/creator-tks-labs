@@ -1318,3 +1318,29 @@ Um `delete` de verdade apagaria **toda geração que ela já protagonizou**, tod
 - **A metade que se superestima é a perda.** A palavra "excluir" faz qualquer pessoa supor que as imagens vão junto. Não vão: galeria, gerações, extrato e versões continuam inteiros — o arquivamento existe exatamente para que o histórico continue apontando para algo que ainda existe.
 
 O card dela no canvas já sabia o que fazer: ele reaproveita o estado "Personagem não encontrada — tire este cartão do canvas", que existe desde o Canvas 1.
+
+### 10/08/2026 — Input de Pose/Ângulo 🧪 EXPERIMENTO, com critério de saída
+
+**A objeção que o barrou no ciclo passado continua de pé, e está aqui em cima da mesa:** a lista de ângulo de câmera (§5.27) e o chip `pose` já cobrem os dois jeitos de dizer onde a câmera está, e um terceiro seria uma terceira chance de contradizer os outros dois.
+
+**A aposta que justifica tentar** é a única coisa que nenhum dos dois carrega. O chip diz "case a posição do corpo"; o seletor nomeia uma *categoria* de ponto de vista. Uma fotografia carrega o ponto de vista **exato** — altura da câmera, distância, inclinação — como fato e não como palavra. A cláusula gasta-se nisso e na proibição que a torna usável: ponto de vista **apenas**, nunca o sujeito, a roupa ou o fundo.
+
+**O conflito foi resolvido de propósito, e não deixado para o modelo.** Input de Pose e seletor de Ângulo são o mesmo eixo, então só um fala: **a imagem vence e o seletor entra em pausa** — desabilitado, dizendo por quê, com a opção escolhida gravada em `prompt_compiled.angulo_em_pausa`. "Perfil" mais uma foto de frente não é um meio-termo que o modelo consiga fazer: ele escolhe um, em silêncio, e a interface não faz ideia de qual. Que era exatamente o que a objeção previa.
+
+**Critério de saída — falsificável, e é para valer:**
+
+1. **Sai se não agregar.** Comparando (a) chip `pose` numa imagem + ângulo no seletor contra (b) o Input de Pose com a mesma imagem, em gerações reais: se o ponto de vista não sair mensuravelmente mais próximo da referência em (b), o card sai e a lista de ângulo fica sozinha.
+2. **Sai imediatamente se contradisser.** Se o "em pausa" incomodar na prática — alguém querendo a foto para a pose *e* o ângulo pela lista —, isso é sinal de que o card está fazendo dois trabalhos, e a resposta é tirá-lo, não somar uma terceira regra.
+3. **Fica se for usado.** Uso repetido sobre imagens diferentes, sem o seletor sendo procurado de volta, é o que prova que ele responde uma pergunta que os outros dois não respondiam.
+
+Enquanto o experimento corre, **o custo dele é uma linha por geração no registro** — `papel`, `papel_en` e `angulo_em_pausa` —, o que quer dizer que a decisão de manter ou tirar vai ser tomada com dado e não com impressão.
+
+### 10/08/2026 — Input de Character Sheet: soma, nunca substitui
+
+Recebe uma folha — canônica ou gerada — e acrescenta um reforço de identidade que **soma com o `@`** do prompt.
+
+A menção já anexa a folha da versão congelada como imagem 1, com as cláusulas de âncora. Este card é para a **segunda** folha: uma gerada depois, uma de outra versão, uma que mostra um ângulo que a grade canônica não tem.
+
+**A cláusula é escrita para ser verdade nos dois mundos** — sozinha, ela é a identidade da chamada; ao lado de uma menção, é uma entre várias referências de identidade. E a segunda frase é o truque inteiro: *"where more than one identity reference is given, they are the same person"*. Ela afirma um **fato**, não uma condição. É isso que permite a um modelo **combinar** duas folhas em vez de tirar a média de dois estranhos — que é o que ele faz quando recebe dois rostos sem ninguém dizer que são o mesmo.
+
+O chip é fixo nos dois cards novos, como no de produto: o papel do card já responde o que a imagem é, e deixar a pergunta aberta permitiria uma folha etiquetada "cenário".

@@ -37,6 +37,8 @@ export type ReferenceEntry = {
   groupId?: string | null;
   /** What to call the group. Rewritten by the store on every edit of the card. */
   groupLabel?: string;
+  /** Which specialised input handed it over: "pose", "folha", or nothing. */
+  papel?: string | null;
 };
 
 /**

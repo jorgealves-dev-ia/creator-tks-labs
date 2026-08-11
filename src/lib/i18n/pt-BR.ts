@@ -625,6 +625,28 @@ export const t = {
       outputHandle: "Liga a um bloco de geração",
       remove: "Tirar este produto do canvas (as fotos ficam na galeria)",
     },
+    pose: {
+      title: "Input de Pose/Ângulo",
+      choose: "Escolher imagem de pose",
+      replace: "Trocar a imagem",
+      loading: "Carregando…",
+      instructionPlaceholder: "o que aproveitar desta pose (opcional)",
+      hint: "Enquanto conectado, o seletor de Ângulo do bloco fica em pausa.",
+      emptyHint: "Escolha uma imagem para poder conectar este input.",
+      outputHandle: "Liga a um bloco de geração",
+      remove: "Tirar este input do canvas (a imagem fica na galeria)",
+    },
+    sheet: {
+      title: "Input de Character Sheet",
+      choose: "Escolher folha",
+      replace: "Trocar a folha",
+      loading: "Carregando…",
+      instructionPlaceholder: "o que reforçar desta folha (opcional)",
+      hint: "Soma com a personagem mencionada por @, não substitui.",
+      emptyHint: "Escolha uma folha para poder conectar este input.",
+      outputHandle: "Liga a um bloco de geração",
+      remove: "Tirar este input do canvas (a folha fica na galeria)",
+    },
     /** A lápide do card antigo de Produto, que saiu do Arsenal em 10/08/2026. */
     legacyProduct: {
       title: "Produto (card antigo)",
@@ -689,6 +711,10 @@ export const t = {
       lightingLabel: "Iluminação",
       expressionLabel: "Expressão",
       adjustmentAuto: "Auto",
+      /** O seletor cala quando um Input de Pose responde pelo mesmo eixo. */
+      anglePaused: "em pausa",
+      anglePausedHint:
+        "Um Input de Pose está conectado, e a imagem dele decide o ponto de vista. Desconecte-o para voltar a escolher aqui.",
       sceneAdjustmentsHint:
         "Auto segue o padrão; o que você escolher aqui sobrescreve só aquele campo.",
       generate: "Gerar Conteúdo",
@@ -875,6 +901,8 @@ export const t = {
         expressao: "Expressão",
       },
       references: "Referências",
+      pausedAngle: "Ângulo em pausa",
+      pausedAngleWhy: "o Input de Pose respondeu por ele",
       mutedReferences: "Referências mudas",
       mutedSingular: "imagem estava conectada e não entrou nesta geração.",
       mutedPlural: "imagens estavam conectadas e não entraram nesta geração.",

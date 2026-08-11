@@ -103,6 +103,12 @@ const referenceSchema = z.object({
    * is not.
    */
   groupLabel: z.string().max(120).default(""),
+  /**
+   * Which specialised input handed this over. A closed list, because it selects
+   * a fixed English clause from the dictionary — the browser names a role, never
+   * a sentence.
+   */
+  papel: z.enum(["pose", "folha"]).nullable().default(null),
 });
 
 const generateSchema = z.object({
@@ -350,6 +356,7 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
     instrucaoPt: reference.instrucao.trim(),
     instrucaoEn: (translation.translations[`ref.${index}`] ?? "").trim(),
     origem: reference.origem,
+    papel: reference.papel,
     grupoId: reference.groupId,
     // The row wins when there is a row. A product in the old Arsenal has a name
     // this side can verify, and a verified name beats a supplied one every time;

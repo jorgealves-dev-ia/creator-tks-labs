@@ -110,6 +110,9 @@ export const structureSchema = z.object({
                 },
           ),
         unidade_en: z.string().nullable().default(null),
+        /** Ausente em toda geração anterior aos inputs especializados. */
+        papel: z.string().nullable().default(null),
+        papel_en: z.string().nullable().default(null),
       }),
     )
     .default([]),
@@ -127,6 +130,8 @@ export const structureSchema = z.object({
     .default(null),
   restricoes: z.array(z.string()).default([]),
   regra_diretor: z.enum(["prompt_dirige", "padroes_da_personagem"]),
+  /** A opção de ângulo que foi escolhida e não entrou. Ausente lê como null. */
+  angulo_em_pausa: z.string().nullable().default(null),
 });
 
 /**

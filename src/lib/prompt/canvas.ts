@@ -11,10 +11,12 @@ import {
 import type { CharacterSheet } from "@/lib/character-sheet/schema";
 import {
   referenceFidelity,
+  referenceRoleClause,
   referenceSubject,
   referenceUnity,
   type ReferenceKind,
   type ReferenceOrigin,
+  type ReferenceRole,
 } from "@/lib/generation/references";
 import { compilePrompt, type CenaPadraoKey, type CompiledPrompt } from "@/lib/prompt/compile";
 
@@ -75,6 +77,8 @@ export type CanvasReferenceInput = {
   grupoId?: string | null;
   /** What to call the group in the audit trail. Never shown to the model. */
   grupoRotulo?: string | null;
+  /** Which specialised input handed it over, when one did. */
+  papel?: ReferenceRole | null;
 };
 
 export type CanvasCharacterInput = {
@@ -178,6 +182,10 @@ export type CanvasReferenceDirective = {
    * a product with more than one, and null everywhere else.
    */
   unidade_en: string | null;
+  /** Which specialised input handed it over, when one did. */
+  papel: ReferenceRole | null;
+  /** The clause that role earns, on top of the chip's own. Null without a role. */
+  papel_en: string | null;
 };
 
 /**
@@ -210,6 +218,12 @@ export type CanvasPromptStructure = {
   restricoes: string[];
   /** Which half of the director rule ran. Recorded, never inferred later. */
   regra_diretor: "prompt_dirige" | "padroes_da_personagem";
+  /**
+   * The camera-angle option that was chosen and did **not** enter, because a
+   * Pose input was attached and an image of a viewpoint outranks a word for one.
+   * Null whenever nothing stood down — which is almost always.
+   */
+  angulo_em_pausa: string | null;
 };
 
 export type CanvasPrompt = {
@@ -327,7 +341,26 @@ export function buildCanvasPrompt({
   // adjustments simply add. The camera angle stands down pose *and* framing —
   // the three are one axis (where the camera is, how much of the body it sees),
   // and the sheet's pose carries a facing that would contradict "profile".
-  const angulo = sceneAdjustment("angulo_camera", ANGULO_CAMERA, anguloKey);
+  /**
+   * A Pose input and the camera-angle selector are the same axis, and only one
+   * of them may speak.
+   *
+   * This was the objection that kept the Pose input out of the last cycle, and
+   * it was a good one: the angle list and the `pose` chip already cover the two
+   * ways of saying where the camera is, and a third would be a third chance to
+   * contradict the other two. "Perfil" plus a photograph taken head-on is not a
+   * compromise the model can make — it picks one, silently, and the interface
+   * has no idea which.
+   *
+   * So the image wins and the word stands down. A photograph of a viewpoint is
+   * unambiguous where a word is a category, and the same reasoning already
+   * governs the sheet's own defaults: the more specific instruction replaces the
+   * more general one, mechanically, and the fact that it did is recorded rather
+   * than left to be inferred. The block says so on screen before the click.
+   */
+  const poseInput = referencias.some((reference) => reference.papel === "pose");
+
+  const angulo = poseInput ? null : sceneAdjustment("angulo_camera", ANGULO_CAMERA, anguloKey);
   const iluminacao = sceneAdjustment("iluminacao", ILUMINACAO, iluminacaoKey);
   const expressao = sceneAdjustment("expressao", EXPRESSAO, expressaoKey);
 
@@ -417,6 +450,8 @@ export function buildCanvasPrompt({
           }
         : null,
       unidade_en: speaks ? referenceUnity(positions) : null,
+      papel: reference.papel ?? null,
+      papel_en: speaks ? referenceRoleClause(reference.papel ?? null, positions) : null,
     };
   });
 
@@ -458,6 +493,7 @@ export function buildCanvasPrompt({
         : null,
     restricoes: compiled?.structure.restricoes ?? [],
     regra_diretor: directed ? "prompt_dirige" : "padroes_da_personagem",
+    angulo_em_pausa: poseInput ? (findOption(ANGULO_CAMERA, anguloKey)?.key ?? null) : null,
   };
 
   return {
@@ -498,7 +534,12 @@ function renderText(structure: CanvasPromptStructure): string {
     // A product's photos put the unifying clause first: "these are one object"
     // has to be settled before "reproduce it exactly" can mean anything.
     ...structure.referencias.flatMap((reference) =>
-      [reference.unidade_en ?? "", reference.diretiva_en, reference.fidelidade_en ?? ""].filter(
+      [
+        reference.unidade_en ?? "",
+        reference.diretiva_en,
+        reference.papel_en ?? "",
+        reference.fidelidade_en ?? "",
+      ].filter(
         Boolean,
       ),
     ),
