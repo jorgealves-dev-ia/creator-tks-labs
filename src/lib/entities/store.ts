@@ -165,9 +165,34 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
       };
     }),
 
-  // Opening an editor always starts on the draft — the notebook, not a frame on
-  // the wall (spec §5).
-  openEditor: (editingId) => set({ editingId, viewingVersionId: null, viewingSheet: null }),
+  /**
+   * Opening an editor starts on the **active frozen version**, read-only —
+   * reversing the "always the notebook, never a frame on the wall" of spec §5
+   * on 11/08/2026.
+   *
+   * The old rule optimised for the act of editing; the reversal optimises for
+   * the question people actually arrive with, which is "who is she right now?".
+   * And "right now" has exactly one answer: the version `@luna` resolves to.
+   * Landing on the draft answered a different question — who she might become —
+   * and answered it silently, so a draft nobody remembered leaving open looked
+   * like the character herself.
+   *
+   * No fetch: the active snapshot already travelled with the character (see
+   * loadCharacters), which is what makes this a change of one line rather than
+   * a loading state.
+   *
+   * A character with no version has nothing frozen to show, so it opens on the
+   * draft, as everything did before.
+   */
+  openEditor: (editingId) => {
+    const active = get().characters[editingId]?.activeVersion ?? null;
+
+    set({
+      editingId,
+      viewingVersionId: active?.id ?? null,
+      viewingSheet: active?.sheet ?? null,
+    });
+  },
   closeEditor: () => set({ editingId: null, viewingVersionId: null, viewingSheet: null }),
 
   forget: (id) =>

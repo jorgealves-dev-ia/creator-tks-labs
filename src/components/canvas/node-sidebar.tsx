@@ -97,12 +97,10 @@ export function NodeSidebar() {
         </div>
 
         <div className="rail-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pb-2">
-          <p className={revealed("px-4 pb-1 text-[11px] font-medium uppercase tracking-wide text-ink-faint")}>
-            {t.characterSheet.sidebar.title}
-          </p>
+          <RailSection label={t.characterSheet.sidebar.title} first />
 
           {order.length === 0 ? (
-            <p className={revealed("px-4 py-1 text-xs leading-relaxed text-ink-faint")}>
+            <p className={onlyWhenOpen("px-4 py-1 text-xs leading-relaxed text-ink-faint")}>
               {t.characterSheet.sidebar.empty}
             </p>
           ) : null}
@@ -192,13 +190,7 @@ export function NodeSidebar() {
             </button>
           </div>
 
-          <p
-            className={revealed(
-              "mt-4 px-4 pb-1 text-[11px] font-medium uppercase tracking-wide text-ink-faint",
-            )}
-          >
-            {t.inputs.sidebarTitle}
-          </p>
+          <RailSection label={t.inputs.sidebarTitle} />
 
           {/*
             A shelf of *types*, not of things.
@@ -237,13 +229,7 @@ export function NodeSidebar() {
             ))}
           </div>
 
-          <p
-            className={revealed(
-              "mt-4 px-4 pb-1 text-[11px] font-medium uppercase tracking-wide text-ink-faint",
-            )}
-          >
-            {t.studio.sidebarBlocks}
-          </p>
+          <RailSection label={t.studio.sidebarBlocks} />
 
           <div className="px-3">
             <button
@@ -273,7 +259,7 @@ export function NodeSidebar() {
             </button>
           </div>
 
-          <p className={revealed("mt-3 px-4 text-[11px] leading-relaxed text-ink-faint")}>
+          <p className={onlyWhenOpen("mt-3 px-4 text-[11px] leading-relaxed text-ink-faint")}>
             {t.studio.sidebarComingSoon}
           </p>
         </div>
@@ -324,8 +310,63 @@ const INPUT_TYPES: readonly { kind: NodeKind; label: string; hint: string }[] = 
 /**
  * Text that only exists once the rail is open. Kept in one place so every label
  * fades in together instead of each remembering its own set of classes.
+ *
+ * Only for text that sits **beside** something — a name next to a portrait, a
+ * badge at the end of a row. It hides by opacity, so whatever it is applied to
+ * keeps its size; on a line whose height comes from an icon that costs nothing,
+ * and on a paragraph of its own it costs the paragraph's whole height. See
+ * `onlyWhenOpen` and `RailSection` for the two cases where that matters.
  */
 function revealed(className: string): string {
   return `${className} whitespace-nowrap opacity-0 transition-opacity duration-150
           group-hover:opacity-100 group-focus-within:opacity-100`;
+}
+
+/**
+ * Block-level text that must take **no room at all** while the rail is shut.
+ *
+ * The difference from `revealed` is the whole of bug 1a. A paragraph faded to
+ * zero opacity is still a paragraph: it keeps its height, and in a rail 56px
+ * wide those invisible lines added up to a column of blank space between the
+ * portraits and the input icons. A gap with no icon in it does not read as
+ * "text you cannot see yet" — it reads as an item that is missing, which is
+ * exactly what somebody who has just archived a character will conclude.
+ *
+ * `hidden` rather than a height animation on purpose: these two are a hint and
+ * an empty state, and neither is worth making the icons below them slide.
+ */
+function onlyWhenOpen(className: string): string {
+  return `${className} hidden group-hover:block group-focus-within:block`;
+}
+
+/**
+ * The band that separates the sections of the rail — "Personagens", "Inputs",
+ * "Blocos".
+ *
+ * The same height open or shut, which is the point: nothing below it moves when
+ * the rail widens. What changes is what the band *is*. Open, it is the name of
+ * the section; shut, it is a hairline — still a separator, still saying "a
+ * different kind of thing starts here", in the 20 pixels a rail of icons can
+ * afford. The title used to say it in both states and be invisible in one of
+ * them, which is a gap doing the work of a divider without looking like one.
+ */
+function RailSection({ label, first = false }: { label: string; first?: boolean }) {
+  return (
+    <div className={`relative mb-1 flex h-5 items-center px-4 ${first ? "" : "mt-3"}`}>
+      <span
+        aria-hidden
+        className="absolute inset-x-4 h-px bg-line transition-opacity duration-150
+                   group-hover:opacity-0 group-focus-within:opacity-0"
+      />
+
+      {/* Above the hairline it replaces, so the two never overlap mid-fade. */}
+      <span
+        className={revealed(
+          "relative text-[11px] font-medium uppercase tracking-wide text-ink-faint",
+        )}
+      >
+        {label}
+      </span>
+    </div>
+  );
 }

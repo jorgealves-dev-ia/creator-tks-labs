@@ -76,8 +76,27 @@ type VersionBannerProps = {
 };
 
 /**
- * Shown while a frozen version is open. Everything below it is read-only, and
- * the two ways forward are spelled out rather than implied.
+ * Shown while a frozen version is open — which, since 11/08/2026, is how the
+ * editor opens. Everything below it is read-only, and the ways forward are
+ * spelled out rather than implied.
+ *
+ * Three buttons that are easy to confuse, so the words do the separating:
+ *
+ *   **Editar** leaves the frozen version and shows the draft *as it already is*.
+ *   Nothing is copied and nothing is lost — which is why it is safe enough to be
+ *   the button a click on any field triggers.
+ *
+ *   **Carregar no rascunho** overwrites the draft with this version. That is the
+ *   rollback path, and it is the only one of the three that can destroy work, so
+ *   it asks first whenever there is work to destroy.
+ *
+ *   **Ativar esta versão** moves the pointer `@luna` resolves to. It touches no
+ *   sheet at all.
+ *
+ * And when the draft holds changes nobody froze, the banner says so *here*,
+ * beside the version being read — because the whole risk of opening on a frozen
+ * version is somebody concluding that the draft they left half-finished last
+ * week is gone.
  */
 export function VersionBanner({
   versionNumber,
@@ -105,7 +124,36 @@ export function VersionBanner({
           {t.characterSheet.versions.readOnlyBannerSuffix}
         </p>
 
+        {/* The draft nobody froze, announced instead of discovered. The shortcut
+            is the same action as "Editar"; what earns it a badge of its own is
+            that here it is news, not an offer. */}
+        {needsLoadConfirmation ? (
+          <button
+            type="button"
+            onClick={onBackToDraft}
+            className="flex items-center gap-1.5 rounded-lg bg-warning/20 px-2 py-1 text-[11px]
+                       font-medium text-warning transition-colors hover:bg-warning/30"
+          >
+            <span className="size-1.5 rounded-full bg-warning" aria-hidden />
+            {t.characterSheet.versions.draftPendingBadge}
+            <span className="font-normal underline underline-offset-2">
+              {t.characterSheet.versions.openDraft}
+            </span>
+          </button>
+        ) : null}
+
         <div className="ml-auto flex shrink-0 items-center gap-2">
+          {/* The primary way out, and the one a click on any field takes. */}
+          <button
+            type="button"
+            onClick={onBackToDraft}
+            title={t.characterSheet.versions.editHint}
+            className="rounded-lg bg-accent px-2.5 py-1 text-xs font-medium text-white
+                       transition-colors hover:bg-accent-hover"
+          >
+            {t.characterSheet.versions.edit}
+          </button>
+
           {isActive ? null : (
             <button
               type="button"
@@ -135,15 +183,6 @@ export function VersionBanner({
                        disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t.characterSheet.versions.loadIntoDraft}
-          </button>
-
-          <button
-            type="button"
-            onClick={onBackToDraft}
-            className="rounded-lg px-2 py-1 text-xs text-ink-muted transition-colors
-                       hover:bg-surface-hover hover:text-ink"
-          >
-            {t.characterSheet.versions.backToDraft}
           </button>
         </div>
       </div>

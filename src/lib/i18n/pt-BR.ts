@@ -405,7 +405,24 @@ export const t = {
         "Isto substitui o rascunho atual, que tem alterações não salvas em versão. Continuar?",
       activating: "Ativando…",
       loading: "Carregando…",
-      backToDraft: "Voltar ao rascunho",
+
+      /**
+       * O item 1d: o editor abre na versão ativa, em leitura.
+       *
+       * "Editar" e "Abrir rascunho" são a mesma ação — o que muda é o que
+       * precisa ser dito antes dela. Sem rascunho pendente, editar é só
+       * continuar; com rascunho pendente, a pessoa precisa saber que vai
+       * encontrar alterações que ela mesma deixou lá e esqueceu.
+       */
+      edit: "Editar",
+      editHint: "Editar abre o rascunho — esta versão continua congelada.",
+      draftPendingBadge: "Há um rascunho com alterações não salvas",
+      openDraft: "Abrir rascunho",
+      nowEditingDraftPrefix: "Agora você está editando o rascunho — a ",
+      nowEditingDraftSuffix: " continua congelada até você salvar uma nova versão.",
+      nowEditingDraftNoVersion:
+        "Agora você está editando o rascunho. Salve uma versão para poder chamá-la por @.",
+      dismissNotice: "Fechar aviso",
       save: "Salvar como nova versão",
       saveDisabledPrefix: "Nada mudou desde a ",
       saveDisabledNoChange: "Nada mudou desde a versão ativa",

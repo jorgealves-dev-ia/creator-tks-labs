@@ -9,9 +9,22 @@ import { useEntitiesStore } from "@/lib/entities/store";
  * The face of every character that has one, by character id.
  *
  * The complete sheet is the character's own picture — the thing the initials in
- * the sidebar were standing in for since the character screen was built. It
- * lives in the draft's `imagens_canonicas`, so it updates the moment a new sheet
- * is generated, without anything having to remember to refresh it.
+ * the sidebar were standing in for since the character screen was built.
+ *
+ * **Read from the frozen version, never from the draft**, and that is a fix
+ * rather than a preference. `sheetAnchorSlots` has always taken the anchor of
+ * an `@` from `activeVersion`, while this hook took the face from the draft —
+ * so a character who generated a new sheet without saving a version showed one
+ * folha in the rail and sent a different one to the model. Luna was in exactly
+ * that state on 11/08/2026: `2c88aadb…` in the draft, `3027e537…` in the v3 the
+ * mention actually resolves to. One image is the identity; two is a screen
+ * disagreeing with the bill.
+ *
+ * It also turns the portrait into a state anyone can read at a glance: a face
+ * means there is a frozen sheet to generate from, initials mean there is not —
+ * either because nothing was ever saved as a version, or because the version
+ * that was saved has no complete sheet yet. Both are honestly "not ready to be
+ * mentioned as a picture", which is the only thing this mark can promise.
  *
  * Signed in one request for every character at once, and re-signed only when the
  * *set of images* changes — not when a name is edited or a field is typed. The
@@ -22,7 +35,13 @@ export function useCharacterPortraits(): Record<string, string> {
   const [urls, setUrls] = useState<Record<string, string>>({});
 
   const pairs = Object.values(characters)
-    .map((character) => [character.id, character.sheet.imagens_canonicas.folha_completa] as const)
+    .map(
+      (character) =>
+        [
+          character.id,
+          character.activeVersion?.sheet.imagens_canonicas.folha_completa ?? null,
+        ] as const,
+    )
     .filter((pair): pair is readonly [string, string] => pair[1] !== null);
 
   // The dependency is the content, not the object: the store hands back a new

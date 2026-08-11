@@ -27,14 +27,59 @@ async function requireSession() {
   return { supabase, userId };
 }
 
+/**
+ * The next "Projeto sem título N" — the highest number already used, plus one.
+ *
+ * Counting the projects instead was the bug: delete the middle tab of three and
+ * the next new project is called "2" again, because there are two of them. The
+ * database this was found on had a *single* project named "Projeto sem título
+ * 2", which is the same arithmetic showing its other face.
+ *
+ * The highest rather than the lowest free number, deliberately: reusing the name
+ * of a project somebody deleted this morning is how two different things end up
+ * with one name in a screenshot, a note or a memory. Numbers only go up.
+ *
+ * Renamed projects are read too, and that is not an accident — if a tab is
+ * called "Projeto sem título 7" today, nothing new may be born with that name,
+ * whoever typed it.
+ */
+function nextUntitledName(names: readonly string[]): string {
+  const prefix = `${t.studio.untitledProject} `;
+
+  const highest = names.reduce((top, name) => {
+    const trimmed = name.trim();
+
+    if (!trimmed.startsWith(prefix)) return top;
+
+    const suffix = trimmed.slice(prefix.length).trim();
+
+    // Six digits is far past any real project list, and it is what keeps a
+    // hand-typed "Projeto sem título 999999999999" from deciding the next name.
+    if (!/^\d{1,6}$/.test(suffix)) return top;
+
+    return Math.max(top, Number(suffix));
+  }, 0);
+
+  return `${prefix}${highest + 1}`;
+}
+
 export async function createProject(): Promise<void> {
   const { supabase, userId } = await requireSession();
 
+  // Two different questions, and they were one before: where the tab goes, and
+  // what it is called. Position is about the tabs on screen, so archived
+  // projects are none of its business; the name has to be unique among every
+  // project that has ever been named, which is why it reads them all.
   const { count } = await supabase
     .from("projects")
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId)
     .is("archived_at", null);
+
+  const { data: existing } = await supabase
+    .from("projects")
+    .select("name")
+    .eq("user_id", userId);
 
   const position = count ?? 0;
 
@@ -42,7 +87,7 @@ export async function createProject(): Promise<void> {
     .from("projects")
     .insert({
       user_id: userId,
-      name: `${t.studio.untitledProject} ${position + 1}`,
+      name: nextUntitledName((existing ?? []).map((project) => project.name)),
       sort_order: position,
     })
     .select("id")

@@ -23,7 +23,7 @@
 
 Compacto, no estilo visual do canvas existente. Mostra:
 
-- **Retrato** — miniatura do turnaround de frente; sem imagem, um placeholder elegante com as iniciais.
+- **Retrato** — a **folha completa da versão congelada ativa**, nunca a do rascunho. Sem folha congelada, as iniciais. A mesma regra vale no trilho lateral, aberto e recolhido, porque é o mesmo componente: retrato significa "há folha pronta para gerar", inicial significa que não há — seja porque nenhuma versão foi salva, seja porque a versão salva ainda não tem folha. Ler do rascunho seria mostrar uma folha diferente da que o `@` manda para o modelo (corrigido em 11/08/2026; ver [`decisoes.md`](./decisoes.md)).
 - **Nome e handle** — "Julia" em destaque, `@julia` discreto abaixo.
 - **Badge da versão ativa** — `v3`; sem nenhuma versão salva, badge `rascunho` em tom de alerta suave.
 - **Indicador de rascunho sujo** — pontinho pulsante + tooltip "alterações não salvas em versão" quando `entities.sheet` difere da versão ativa.
@@ -90,8 +90,13 @@ Regra viva: **editar qualquer campo manualmente muda seu estado para `confirmado
 
 Dropdown no cabeçalho listando **Rascunho** + todas as versões (`v3 — label · data`, ativa marcada com ●).
 
-- Selecionar o **Rascunho**: modo de edição normal (o padrão ao abrir).
-- Selecionar uma **versão**: abre em **somente leitura**, com banner: *"Você está vendo a v1 (congelada). Para evoluir a partir dela, carregue-a no rascunho."* Duas ações no banner: **"Ativar esta versão"** (move o ponteiro — o `@julia` passa a ser ela) e **"Carregar no rascunho"** (copia o snapshot para o rascunho; se o rascunho tiver alterações não salvas em versão, confirma antes: "isto substitui o rascunho atual").
+- **O editor abre na versão ativa, em somente leitura** (item 1d, 11/08/2026 — reverte o "abre no rascunho" original). Quem não tem versão nenhuma abre no rascunho, porque não há nada congelado para mostrar.
+- Selecionar o **Rascunho**: modo de edição normal.
+- Selecionar uma **versão**: abre em **somente leitura**, com banner: *"Você está vendo a v1 (congelada). Para evoluir a partir dela, carregue-a no rascunho."* Três ações no banner:
+  - **"Editar"** — sai da versão e mostra o rascunho **como ele já está**. Não copia nada e não perde nada, e é por isso que é a ação que um clique em qualquer campo dispara: com a versão aberta, uma camada transparente cobre os campos e transforma a tentativa de editar no rascunho aberto, com uma linha dizendo onde a pessoa está. Campo desabilitado não emite evento nenhum — sem essa camada, o gesto honesto seria respondido por nada acontecer.
+  - **"Ativar esta versão"** — move o ponteiro (o `@julia` passa a ser ela). Não toca em ficha nenhuma.
+  - **"Carregar no rascunho"** — copia o snapshot **por cima** do rascunho. É o caminho de rollback e o único dos três que destrói trabalho, então pergunta antes sempre que houver trabalho a destruir.
+- **Selo de rascunho pendente.** Quando o rascunho difere da versão ativa, o banner diz *"Há um rascunho com alterações não salvas"* com atalho **"Abrir rascunho"**. É o contrapeso de abrir na versão: o risco inteiro de mostrar o congelado primeiro é alguém concluir que o rascunho que deixou pela metade sumiu.
 - Nada de editar ou apagar versão — a interface nem oferece; o banco não deixaria.
 
 ---

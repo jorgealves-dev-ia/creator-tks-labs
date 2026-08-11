@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { t } from "@/lib/i18n/pt-BR";
 
 /**
@@ -8,44 +10,71 @@ import { t } from "@/lib/i18n/pt-BR";
  * the editor can never drift into showing the same character differently.
  */
 
-/** Initials until the character has a canonical front portrait. */
+/**
+ * The character's face: the complete sheet of the frozen version, over initials.
+ *
+ * **Over**, not instead of — and that is a fix, from 11/08/2026. The image used
+ * to *replace* the initials the moment its signed URL arrived, which meant the
+ * gap between "the link exists" and "the pixels exist" was drawn as an empty
+ * box: an `<img>` with an empty alt renders as blank space while it downloads,
+ * and blank space is exactly what nobody can interpret. In the 56px rail a
+ * character became a hole between two portraits. The complete sheet is a 2.4 MB
+ * photograph, so that gap is measured in seconds on the first load — and it is
+ * permanent if the link ever 404s.
+ *
+ * Painting the initials underneath costs nothing and answers all three states
+ * with no flag to keep in sync: no image at all, an image on its way, and an
+ * image that failed. In every one of them a character still looks like herself
+ * rather than like an item that went missing.
+ *
+ * Framed from the top (`object-top`) because a reference sheet is a column of
+ * views and the head is at the top of it. And initials are not a placeholder
+ * for a missing feature: a character with no frozen sheet genuinely has no face
+ * to show, and initials say so without pretending otherwise.
+ */
 export function Portrait({
   name,
   src,
   className = "size-10",
 }: {
   name: string;
-  /**
-   * The character's own face, when there is one — the complete sheet.
-   *
-   * Framed from the top (`object-top`) because a reference sheet is a column of
-   * views and the head is at the top of it. Falling back to initials is not a
-   * placeholder for a missing feature: a character with no sheet yet genuinely
-   * has no face to show, and initials say that without pretending otherwise.
-   */
   src?: string | null;
   className?: string;
 }) {
-  if (src) {
-    return (
-      /* Short-lived signed URL for a private bucket. */
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={src}
-        alt=""
-        aria-hidden
-        className={`${className} shrink-0 rounded-lg object-cover object-top`}
-      />
-    );
-  }
+  /**
+   * A link that came back dead — which is a matter of *when*, not *if*: these
+   * URLs are signed for an hour, and a canvas left open over lunch outlives
+   * them. Chrome draws its own broken-image glyph over anything with a size, so
+   * without this the fallback underneath would be showing through a little torn
+   * picture. Taking the image out of the page hands the square back to the
+   * initials, which is the honest thing to show when there is nothing to load.
+   */
+  const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
+
+  // The *link* that failed, not a "it failed" flag — so a different character,
+  // or a freshly signed link for the same one, is a new attempt rather than the
+  // old failure. A boolean would have needed an effect to clear it, and state
+  // that an effect has to reset is state that renders wrong for one frame.
+  const broken = brokenSrc === src;
 
   return (
     <span
       aria-hidden
-      className={`flex ${className} shrink-0 items-center justify-center rounded-lg
-                  bg-accent-soft text-xs font-semibold text-ink-muted`}
+      className={`relative flex ${className} shrink-0 items-center justify-center
+                  overflow-hidden rounded-lg bg-accent-soft text-xs font-semibold text-ink-muted`}
     >
       {initialsOf(name)}
+
+      {src && !broken ? (
+        /* Short-lived signed URL for a private bucket. */
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt=""
+          onError={() => setBrokenSrc(src)}
+          className="absolute inset-0 size-full object-cover object-top"
+        />
+      ) : null}
     </span>
   );
 }

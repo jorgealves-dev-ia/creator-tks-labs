@@ -1412,3 +1412,67 @@ Nenhuma falha cobrou, e por isso nenhuma precisou de estorno. Num livro append-o
 Fica o registro de como este placar ficou limpo, porque a primeira versão dele não estava. Dois itens do Bloco 2 — "os quatro inputs funcionaram" e "o ângulo entrou em pausa" — foram escritos **antes** da consulta, e a consulta os derrubou: Input de Imagem em zero de quarenta gerações, `angulo_em_pausa` nulo nas quarenta. Nenhum dos dois era falso por má-fé; os dois eram plausíveis, coerentes com o que tinha sido construído, e assináveis de memória por qualquer um que tivesse feito o ciclo.
 
 **A resposta certa a um item que não passou não é suavizar a redação, é rodar o teste que falta.** Os dois foram exercitados, e vinte minutos depois o placar era verdade — não porque alguém reescreveu o placar, mas porque o produto passou a fazer o que ele dizia. É a diferença entre um diário que descreve a realidade e um que a maquia, e ela se decide exatamente neste ponto: **quando a consulta contradiz o que se ia escrever, o que cede é o texto ou o mundo?** Aqui cedeu o mundo, que é o único jeito de encerrar um ciclo sem dívida.
+
+
+## Etapa D1 — polimento pós-Canvas 4
+
+> Ciclo curto de 11/08/2026, sem migration por decisão: só interface e compilador. As arestas encontradas na validação do Canvas 4, mais as duas funcionalidades já aprovadas em conceito (Recentes e Galeria). Fatiado em quatro fases, cada uma validada no navegador pelo Jorge antes do commit.
+
+### 11/08/2026 — Fase 1 · o vão do trilho, o retrato certo e o número que se repetia
+
+Três correções pequenas, e duas delas tinham diagnóstico diferente do que a observação sugeria. Fica registrado porque o padrão é o que interessa: **o sintoma apontava para um lugar e a causa estava em outro, nos dois casos.**
+
+**O buraco no trilho recolhido não era filtro.** A hipótese natural — personagem arquivada sobrando numa segunda lista — não se sustentou: a lista tem uma fonte só (`order`, filtrada por `archived_at is null` no servidor, e `forget()` tira dela na hora). A causa era o helper `revealed()`, que esconde por **opacidade**: um título invisível continua sendo um título de altura cheia, e três deles somavam uma coluna de nada entre os retratos e os ícones de input. Como a Natany era a última da lista, o vão que sobrou depois dela ficou exatamente onde ela estava — daí a leitura de que a linha tinha ficado.
+
+**A correção é mais que "esconder direito": o título vira faixa.** Fechado, cada seção é um fio de 1px; aberto, é o nome da seção. Mesma altura nos dois estados, então nada abaixo se move quando o trilho abre. Um vão sem ícone não lê como "texto que você ainda não vê" — lê como item faltando, que é a conclusão de quem acabou de arquivar alguém.
+
+**O retrato lia o rascunho enquanto a âncora do `@` lia a versão.** Essa é a que valia mais do que aparentava. `sheetAnchorSlots` sempre tirou a folha de `activeVersion`; o hook do retrato tirava de `entities.sheet`. A Luna estava exatamente nesse estado no dia: `2c88aadb…` no rascunho, `3027e537…` na v3 que a menção resolve. **A tela mostrava uma folha e o modelo recebia outra.** Agora as duas leem a versão congelada — e o retrato passa a significar uma coisa checável: existe folha pronta para gerar. Inicial significa que não existe, seja por não haver versão, seja por a versão não ter folha ainda; as duas metades são honestamente "ainda não dá para chamar por `@` e ter imagem".
+
+**E o nome do projeto contava em vez de numerar.** `createProject` nomeava por *contagem* + 1: apague a aba do meio de três e a próxima nasce "2" de novo. O banco tinha um único projeto chamado "Projeto sem título 2" — a mesma aritmética pela outra face. Agora o nome é o maior número já usado + 1, lido de **todos** os projetos, inclusive os renomeados. Número não se reaproveita: reusar o nome de um projeto apagado hoje de manhã é como duas coisas diferentes acabam com um nome só numa anotação ou numa lembrança.
+
+### 11/08/2026 — Fase 1 revalidada: o buraco era carregamento, e o avatar era o Next.js
+
+A validação do Jorge derrubou o item 1b com dois sintomas, e **os dois diagnósticos iniciais — o dele e o meu — estavam errados**. Fica registrado inteiro, porque o valor está no método e não no conserto.
+
+**Sintoma 1 · "a Luna vira um slot vazio no trilho fechado, sem foto e sem inicial".** A hipótese natural era deslocamento de índice: a Natany arquivada empurrando os retratos. Não era — o mapa de retratos é por `character.id` e a Luna aparecia na posição certa, entre Aria e Soraia. **O que faltava era o conteúdo, não o lugar.** O `Portrait` trocava as iniciais pelo `<img>` no instante em que a *URL* chegava, não quando a *imagem* chegava, e um `<img alt="">` ainda baixando desenha uma caixa vazia. A folha da v3 tem 2,4 MB e era um arquivo **novo** para o navegador (a de antes vinha do rascunho e já estava em cache), então a janela de nada durou segundos. Fechado ele fotografou durante o download; aberto, um segundo depois, já tinha chegado.
+
+**A correção é pintar as iniciais por baixo, sempre.** Três estados — sem imagem, imagem a caminho, imagem quebrada — passam a ter a mesma resposta, sem nenhuma flag para manter sincronizada. E o terceiro estado não é hipotético: as URLs são assinadas por uma hora, então um canvas aberto no almoço volta com todos os links mortos. Nesse caso o Chrome ainda desenhava o ícone de imagem rasgada por cima das iniciais, então o `<img>` que falha sai da página — guardando **qual link** falhou, não um booleano, para que um link novo seja uma tentativa nova sem precisar de efeito para limpar estado.
+
+**Sintoma 2 · "o ícone do Input de Character Sheet virou um avatar com N".** Minha primeira hipótese foi bundle corrompido — eu tinha rodado `npm run build` com o `npm run dev` do Jorge no ar, e os dois escrevem no mesmo `.next/`. Errado também, e só dava para saber olhando: com dev limpo e build novo, o "N" continuou lá. **Era o indicador de devtools do Next.js**, um círculo fixo no canto inferior esquerdo da janela — que é exatamente onde fica o último item do trilho. A prova foi abrir o trilho: o "N" ficou parado enquanto a barra crescia de 56px para 264px, e passou a cobrir o ícone do *Input de Pose/Ângulo*. O que mudou na Fase 1 foi o ritmo vertical do trilho, então o badge passou a cobrir outro ícone.
+
+Duas evidências mataram a leitura de "avatar" antes mesmo do teste: as iniciais de uma personagem de nome único são **duas** letras (`initialsOf("Natany")` → "NA", como JU, MA, AR, SO, TA), e o badge tinha uma só; e a Natany não está em store nenhum desde que foi arquivada. O badge foi desligado (`devIndicators: false`): uma marca que só existe no ambiente onde a tela é validada é uma marca que só pode atrapalhar a validação.
+
+**O princípio, que vale para além destes dois:** um sintoma visual descreve *onde dói*, nunca *o que quebrou*. As duas hipóteses aqui eram plausíveis, coerentes com o que tinha acabado de mudar, e ambas custariam uma correção inútil se tivessem sido implementadas direto. O que separou uma da outra foi abrir o navegador — que é justamente o que a emenda do ritual abaixo institui.
+
+### 11/08/2026 — Emenda ao ritual: quem valida o que não gera 🔁 mudança de método
+
+Até aqui, todo teste de navegador era do Jorge. A emenda separa por **risco**, não por tipo de tarefa:
+
+- **Tarefa sem geração** — zero Sparks, sem tocar em ledger, compilador ou escrita no banco: **o Claude valida no navegador**, em `localhost:3000`.
+- **Evidência é obrigatória**: um screenshot por item do roteiro de teste, colado no resumo. *"Conferi e passou" sem print não vale* — é exatamente a frase que o placar do Canvas 4 já tinha pegado escrevendo cheque sem fundo.
+- **O commit continua esperando o ok do Jorge**, dado sobre os prints.
+- **Qualquer item que envolva geração ou dado financeiro volta para o Jorge**, como sempre.
+
+O motivo é o custo do ciclo, medido neste mesmo dia: o item 1b voltou com dois sintomas, e nenhum dos dois era o que parecia. Um ciclo de correção às cegas — Claude conserta o que imagina, Jorge revalida, e descobre-se que o alvo era outro — gasta duas rodadas para produzir zero informação. Abrir o navegador custou cinco minutos e matou as duas hipóteses erradas de uma vez.
+
+**A regra de evidência é o que impede a emenda de virar autoindulgência.** Delegar o teste para quem escreveu o código só funciona se o teste produzir algo que outra pessoa possa conferir sem repetir o trabalho. O print é isso: ele não prova que o Claude testou, prova que a tela está do jeito que a frase diz.
+
+### 11/08/2026 — Item 1d: o editor abre no que a `@` resolve 🔁 reversão da §5
+
+A tela da personagem abria no **rascunho** — "o caderno, nunca um quadro na parede". A reversão troca o padrão: abre na **versão ativa, em somente leitura**.
+
+**A regra antiga otimizava para o ato de editar; a nova otimiza para a pergunta com que as pessoas chegam**, que é "quem ela é agora?". E "agora" tem exatamente uma resposta: a versão que o `@luna` resolve. Abrir no rascunho respondia outra coisa — quem ela *pode vir a ser* — e respondia calada, então um rascunho que ninguém lembrava de ter deixado aberto passava por ser a personagem.
+
+Três peças, e a terceira é a que faz a reversão não incomodar:
+
+1. **Abre na versão ativa.** Sem fetch: o snapshot ativo já viaja com a personagem desde `loadCharacters`, o que faz disto uma mudança de uma linha em vez de um estado de carregamento. Personagem sem versão abre no rascunho, como tudo abria antes.
+2. **Clicar em qualquer campo leva ao rascunho, com uma linha dizendo onde você está.** Campo desabilitado não emite evento — sem uma camada por cima, o gesto honesto (ir no campo que se quer mudar) seria respondido por nada acontecer, e nada acontecendo ensina que o editor está quebrado. A camada é um `<button>` de verdade, então o caminho do teclado é o mesmo caminho.
+3. **Selo quando existe rascunho não congelado**, com atalho. Este é o contrapeso: o risco inteiro de mostrar o congelado primeiro é alguém concluir que o trabalho não salvo sumiu. O selo diz que não sumiu, e leva até ele em um clique.
+
+E "Editar" **não copia nada** — mostra o rascunho como ele já está. É por isso que é seguro dispará-lo com um clique perdido: o pior caso é a pessoa olhar o próprio trabalho não salvo, que é justamente o que o item existe para não deixar ninguém perder de vista. Quem copia é o "Carregar no rascunho", que continua sendo o único dos três botões capaz de destruir trabalho — e continua perguntando antes.
+
+### 11/08/2026 — D2 · foto de perfil escolhível por personagem 📌 escopo registrado, exige migration
+
+Aprovado em conceito, **fora da D1** por exigir migration. O padrão continua sendo a folha da versão ativa (a regra que a Fase 1 acabou de instalar); o que a D2 acrescenta é um **override opcional gravado na entidade**: qualquer geração daquela personagem, ou um upload.
+
+**O avatar é da personagem, não da versão** — e é essa frase que decide onde a coluna mora. A folha muda a cada versão porque ela *é* a identidade congelada; o avatar é como a pessoa quer ver a personagem na lista, e trocar de versão não é motivo para o rosto na barra lateral mudar sozinho. Por isso a coluna vai em `entities`, nunca em `entity_versions`.

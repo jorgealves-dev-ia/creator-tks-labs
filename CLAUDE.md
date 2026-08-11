@@ -145,6 +145,10 @@ Versão curta. O porquê de cada uma está em [`docs/arquitetura.md`](docs/arqui
 7. **Invariantes do character sheet.** As regras de compilação da seção 6 de [`docs/character-sheet.md`](docs/character-sheet.md) são invariantes do projeto, com o mesmo status das 7 decisões de arquitetura: **nunca podem ser violadas pelo código sem decisão explícita registrada.**
 8. **Fluxo de encerramento de toda tarefa:** apresentar resumo enxuto do que foi feito → rodar `git status` e mostrar a lista de arquivos a commitar → pedir ok ao Jorge → só então fazer commit e push. Se aparecer qualquer arquivo fora do escopo declarado da tarefa, **parar e avisar antes de commitar**.
 
+   **Quem valida no navegador depende do risco** (emenda de 11/08/2026, com o porquê em [`docs/decisoes.md`](docs/decisoes.md)). Tarefa **sem geração** — zero Sparks, sem tocar em ledger, compilador ou escrita no banco: o Claude valida em `localhost:3000`, com **um screenshot por item do roteiro de teste colado no resumo**. "Conferi e passou" sem print não vale. Qualquer item que envolva **geração ou dado financeiro volta para o Jorge**. O commit continua esperando o ok dele, dado sobre os prints.
+
+   **Nunca rodar `npm run build` com o `npm run dev` no ar** — os dois escrevem no mesmo `.next/`. Parar o dev, buildar, subir o dev de novo.
+
    **O commit de fechamento e o `git push` são a mesma ação, nunca duas.** Commitar sem empurrar deixa a etapa pronta num lugar onde ninguém a vê — o deploy da Vercel sai do `origin/master`, então o que fica só no local não existe para o produto. Não há etapa "commitada mas ainda não empurrada": ou as duas rodaram, ou o fechamento não aconteceu.
 
    **E o resumo da etapa termina provando que o remoto recebeu**, colando a saída de:

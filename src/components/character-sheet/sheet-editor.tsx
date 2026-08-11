@@ -79,6 +79,15 @@ function SheetEditorDialog({ entityId }: { entityId: string }) {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [versionBusy, setVersionBusy] = useState(false);
   const [versionError, setVersionError] = useState<string | null>(null);
+  /**
+   * The line that explains where the user just landed, after leaving the frozen
+   * version to edit (item 1d).
+   *
+   * Set only when the move happened *in this session*, so reopening an editor
+   * that was already on the draft says nothing. Announcing a change of mode is
+   * useful exactly once — the moment it changes.
+   */
+  const [leftVersionNotice, setLeftVersionNotice] = useState<string | null>(null);
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -194,6 +203,29 @@ function SheetEditorDialog({ entityId }: { entityId: string }) {
 
     loadIntoDraft(entityId, viewingSheet);
     setTab("dna");
+  }
+
+  /**
+   * Leaving the frozen version for the draft — item 1d, and the single action
+   * behind three different affordances: the "Editar" button, the badge that
+   * announces a pending draft, and a click on any field.
+   *
+   * It copies nothing. The draft is shown exactly as it already was, which is
+   * what makes it safe to fire from a stray click: the worst case is somebody
+   * looking at their own unsaved work, which is the thing this whole item exists
+   * to stop them from losing track of.
+   */
+  function startEditingDraft() {
+    if (!isViewingVersion) return;
+
+    const activeNumber = character?.activeVersion?.number;
+
+    viewDraft();
+    setLeftVersionNotice(
+      activeNumber === undefined
+        ? t.characterSheet.versions.nowEditingDraftNoVersion
+        : `${t.characterSheet.versions.nowEditingDraftPrefix}${t.characterSheet.card.versionPrefix}${activeNumber}${t.characterSheet.versions.nowEditingDraftSuffix}`,
+    );
   }
 
   /** Returns an error message for the modal, or null when the version was saved. */
@@ -332,8 +364,29 @@ function SheetEditorDialog({ entityId }: { entityId: string }) {
               needsLoadConfirmation={dirty}
               onActivate={() => void handleActivate()}
               onLoadIntoDraft={handleLoadIntoDraft}
-              onBackToDraft={viewDraft}
+              onBackToDraft={startEditingDraft}
             />
+          ) : null}
+
+          {/* Where the user just landed, said once. Not a warning: nothing went
+              wrong and nothing was lost — it is the answer to "wait, am I
+              changing the version?", asked at the only moment it occurs to
+              anybody, which is right after the screen stopped being read-only. */}
+          {leftVersionNotice && !isViewingVersion ? (
+            <div className="flex items-center gap-3 border-b border-accent/30 bg-accent-soft px-6 py-2">
+              <p className="text-xs leading-relaxed text-ink">{leftVersionNotice}</p>
+
+              <button
+                type="button"
+                onClick={() => setLeftVersionNotice(null)}
+                aria-label={t.characterSheet.versions.dismissNotice}
+                title={t.characterSheet.versions.dismissNotice}
+                className="ml-auto shrink-0 rounded px-1.5 py-0.5 text-xs text-ink-faint
+                           transition-colors hover:bg-surface-hover hover:text-ink"
+              >
+                ✕
+              </button>
+            </div>
           ) : null}
 
           <div className="flex min-h-0 flex-1">
@@ -371,33 +424,58 @@ function SheetEditorDialog({ entityId }: { entityId: string }) {
                 role="tabpanel"
                 className="min-h-0 flex-1 overflow-y-auto px-6 py-5"
               >
-                {/* A frozen version is read-only, and a disabled fieldset is how
-                    the platform says that to every control at once. */}
-                <fieldset disabled={isViewingVersion} className="min-w-0">
-                  {tab === "dna" ? (
-                    <DnaTab
-                      sheet={shownSheet}
-                      update={update}
-                      onConfirm={handleConfirm}
-                      // Not offered while a frozen version is on screen: there is
-                      // no draft to fill in, and the fieldset above has already
-                      // disabled every control anyway.
-                      extraction={
-                        isViewingVersion
-                          ? undefined
-                          : {
-                              entityId,
-                              flushDraft: () => saveDraft(entityId),
-                              onExtracted: (extracted) => loadIntoDraft(entityId, extracted),
-                            }
-                      }
+                {/*
+                  A frozen version is read-only, and a disabled fieldset is how
+                  the platform says that to every control at once.
+
+                  Over it, while a version is open, a transparent layer turns the
+                  attempt to edit into the thing the person meant: the draft,
+                  open, with a line saying so (item 1d). A disabled control fires
+                  no events at all, so without this the honest gesture — reaching
+                  for the field you want to change — would be answered by
+                  nothing happening, which teaches people that the editor is
+                  broken rather than that this screen is a photograph.
+
+                  A real button, not a div with a handler: it is reachable by Tab
+                  and announces itself, so the keyboard path is the same path.
+                */}
+                <div className="relative min-w-0">
+                  {isViewingVersion ? (
+                    <button
+                      type="button"
+                      onClick={startEditingDraft}
+                      title={t.characterSheet.versions.editHint}
+                      aria-label={t.characterSheet.versions.editHint}
+                      className="absolute inset-0 z-10 size-full cursor-text"
                     />
                   ) : null}
-                  {tab === "padroes" ? <PadroesTab sheet={shownSheet} update={update} /> : null}
-                  {tab === "narrativa" ? (
-                    <NarrativaTab sheet={shownSheet} update={update} />
-                  ) : null}
-                </fieldset>
+
+                  <fieldset disabled={isViewingVersion} className="min-w-0">
+                    {tab === "dna" ? (
+                      <DnaTab
+                        sheet={shownSheet}
+                        update={update}
+                        onConfirm={handleConfirm}
+                        // Not offered while a frozen version is on screen: there
+                        // is no draft to fill in, and the fieldset has already
+                        // disabled every control anyway.
+                        extraction={
+                          isViewingVersion
+                            ? undefined
+                            : {
+                                entityId,
+                                flushDraft: () => saveDraft(entityId),
+                                onExtracted: (extracted) => loadIntoDraft(entityId, extracted),
+                              }
+                        }
+                      />
+                    ) : null}
+                    {tab === "padroes" ? <PadroesTab sheet={shownSheet} update={update} /> : null}
+                    {tab === "narrativa" ? (
+                      <NarrativaTab sheet={shownSheet} update={update} />
+                    ) : null}
+                  </fieldset>
+                </div>
               </div>
 
               {/* Docked below the tabs rather than inside one: the compiled
