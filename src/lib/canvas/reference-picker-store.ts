@@ -24,7 +24,7 @@ export type PickedImage = {
 };
 
 /** Which screen asked, so the modal can explain the ceiling it enforces. */
-export type PickerScope = "geracao" | "produto";
+export type PickerScope = "geracao" | "produto" | "input";
 
 type ReferencePickerState = {
   /**

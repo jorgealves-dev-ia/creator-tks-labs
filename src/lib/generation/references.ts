@@ -28,7 +28,9 @@ export type ReferenceOrigin =
   | "upload"
   | "galeria"
   | "resultado"
-  | "produto";
+  | "produto"
+  /** Handed in by an input node on the canvas (§7 of the Canvas 4 briefing). */
+  | "input";
 
 export const REFERENCE_POSITION_PLACEHOLDER = "{n}";
 

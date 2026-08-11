@@ -1228,3 +1228,25 @@ Para quem acabou de conectar, um **shimmer** percorre o rótulo e a chave **trê
 *Consequência que vale dizer em voz alta:* blocos salvos antes desta chave reabrem com as referências **mudas**. Não é silencioso — as miniaturas ficam cinzas, o selo amarelo aparece e o contador zera —, e um clique devolve o comportamento antigo. Preferível a abrir ligado por adivinhação e gerar uma cobrança que ninguém pediu.
 
 **E a auditoria trata mudo e ausente como coisas diferentes**, que é o ponto mais importante daqui. `prompt_compiled.structure` grava `referencias_mudas: { quantidade, asset_ids }` ao lado de `referencias: []`, e o "Ver prompt" lê isso de volta em uma frase. **A imagem que sai é a mesma nos dois casos; o motivo de ela ter saído assim não é** — e um registro que só diz "sem referências" não consegue explicar por que alguém anexou quatro fotos e recebeu um rosto sem nenhuma delas.
+
+### 10/08/2026 — A prateleira de Inputs, e o primeiro tipo
+
+**A seção "Inputs" do menu lateral oferece tipos, não coisas.** Ícone e nome, mais nada; clicar ou arrastar faz o node nascer no canvas e **toda** a configuração mora nele.
+
+**O motivo do Jorge é sobre rotatividade.** Um estoque permanente de fotos no menu lateral obriga a **cadastrar antes de usar**: dar nome, subir fotos, escrever instrução — tudo isso *antes* de a primeira imagem existir, em troca de uma lista que continua lá depois que a campanha acabou. Produto é rotativo. O que o canvas precisa é de uma prateleira de **formas de entregar uma imagem**, e as imagens já têm onde morar: a galeria.
+
+**Input de Imagem** é o primeiro tipo e o molde dos outros três: uma imagem, um propósito da lista fechada que a faixa já usa, uma instrução opcional. **Só saída** — um input é algo que você entrega a um bloco; nada é entregue a ele.
+
+**Por que ele existe, se o bloco já sabe anexar imagem pelo "+".** Porque uma imagem anexada mora **dentro de um bloco**: uma foto que você quer testar contra três prompts diferentes precisava ser anexada três vezes. No canvas é um card com três fios — e, mais importante, é uma coisa que se **vê**. Uma referência enterrada numa faixa dentro de um bloco é uma decisão que você precisa lembrar; um card no canvas é uma que você pode olhar.
+
+**O fio é vivo, e essa foi a decisão de engenharia do dia.** Editar um input atualiza todo bloco que já o recebeu. A alternativa — copiar no momento da conexão e nunca mais olhar — faria o card e a miniatura serem duas coisas diferentes, e a segunda venceria na hora de gerar. **Um canvas em que o que você vê não é o que vai acontecer não é um canvas, é um formulário com fio.** A sincronização mora no `updateNodeData` do store e não em cada card, pela razão de sempre: uma regra que cada card precisa lembrar é uma regra que um card vai esquecer.
+
+E o grupo é substituído **na posição em que já estava**. Os números do prompt compilado são posições nessa lista — "the product shown in reference image 2" —, então uma edição que embaralhasse a ordem repontaria em silêncio toda instrução seguinte.
+
+**E o "+" da faixa deixou de ser uma porta** *(ajuste da validação visual, mesmo dia).* Ele anexava uma imagem direto na lista do bloco — o que fazia a faixa ser **porta e espelho ao mesmo tempo**, e produzia referências que não existiam em lugar nenhum do canvas: dava para ver a miniatura e não ver a coisa. Agora o "+" **cria um Input de Imagem já conectado**, à esquerda do bloco, com o seletor aberto.
+
+**Toda referência passa a ter node, sem exceção** — pelo fio de um input, pelo fio de um Resultado ou pelo fio de um Produto. **A faixa é espelho, nunca porta de entrada.** É o que faz o canvas ser a verdade sobre a geração em vez de um resumo dela.
+
+O card nasce antes de ser preenchido, de propósito: o seletor pode ser cancelado, e um input vazio ao lado do bloco é um estado honesto — está conectado, ainda não tem o que dar, e no instante em que tiver o fio leva.
+
+**Todo input carrega `groupId` = o id do próprio node**, mesmo entregando uma imagem só. Para uma imagem isso não muda nada no prompt; compra a única coisa que casar por id de asset não compra: cortar **este** fio desanexa **estas** imagens, mesmo quando a mesma foto chegou duas vezes por dois cards diferentes. E a moldura e o nome do grupo só aparecem a partir de duas imagens — elas dizem "estas várias são uma coisa só", e um grupo de um não é várias.

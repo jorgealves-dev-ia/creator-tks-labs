@@ -294,7 +294,11 @@ export function ReferenceStrip({
                     an attachment you cannot see is one you will forget to turn
                     back on. */}
                 <span className={enabled ? "block" : "block opacity-40 grayscale"}>
-                  {slot.kind === "group" ? (
+                  {/* The frame and the name are what say "these several images
+                      are one thing". A group of one is not several images, so
+                      it wears neither — an input handing over a single picture
+                      should look like a single picture. */}
+                  {slot.kind === "group" && slot.indexes.length > 1 ? (
                     <>
                       <span className="mb-1 block max-w-36 truncate px-0.5 text-left text-[9px] text-ink-faint">
                         {products[slot.groupId]?.displayName ?? copy.productUnknown}

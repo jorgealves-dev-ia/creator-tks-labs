@@ -152,9 +152,44 @@ function wiredPair(
   const generator = nodes.find((node) => node.id === connection.target);
 
   if (!source || generator?.type !== "generator") return null;
-  if (source.type !== "result" && source.type !== "product") return null;
+  if (!ATTACHING_SOURCES.has(source.type ?? "")) return null;
 
   return { source, generator };
+}
+
+/**
+ * The kinds of card whose wire into a generating block means "attach this".
+ *
+ * A set rather than a chain of comparisons because the list is about to grow by
+ * three: the product, pose and sheet inputs are the same gesture with different
+ * cargo, and a condition that has to be edited in four places to add a fourth
+ * is a condition that will be edited in three.
+ */
+const ATTACHING_SOURCES = new Set(["result", "product", "input-image"]);
+
+/**
+ * What an input node contributes, read from its own stored state.
+ *
+ * Every image an input hands over carries `groupId = the input's node id`. For a
+ * single picture that changes nothing about the prompt — a group of one reads
+ * exactly as a lone image — and it buys the one thing matching by asset id
+ * cannot: cutting *this* wire detaches *these* images, even when the same
+ * picture arrived twice from two different cards.
+ */
+function inputReferences(node: Node): StoredReference[] {
+  const assetId = node.data.assetId;
+
+  if (typeof assetId !== "string") return [];
+
+  return [
+    {
+      assetId,
+      kind: typeof node.data.kind === "string" ? node.data.kind : null,
+      instrucao: typeof node.data.instrucao === "string" ? node.data.instrucao : "",
+      origem: "input",
+      groupId: node.id,
+    },
+  ];
 }
 
 /** The photos a wired product contributes, in the order they will be numbered. */
@@ -171,6 +206,62 @@ function productReferences(product: ConnectedProduct): StoredReference[] {
   }));
 }
 
+/** The card types that hand images to a generating block from the canvas. */
+const INPUT_SOURCES = new Set(["input-image"]);
+
+/** Matches `w-56` on the input cards — used only to place one beside a block. */
+const INPUT_NODE_WIDTH = 224;
+
+/**
+ * An input was edited; every block already holding it hears about it.
+ *
+ * Without this, the wire would be a photocopy: change the picture in the input
+ * card and the block would keep generating with the old one, silently, having
+ * been given a copy at the moment of connection. The card on the canvas and the
+ * thumbnail in the strip have to be the same thing or the canvas is lying about
+ * what it is going to do.
+ *
+ * The group is replaced **in place**, keeping the position it already occupied —
+ * the numbers in the compiled prompt are positions in this list ("the product
+ * shown in reference image 2"), and an edit that reshuffled them would silently
+ * repoint every instruction after it.
+ */
+function syncInputInto(nodes: Node[], edges: readonly Edge[], input: Node): Node[] {
+  const contributed = inputReferences(input);
+  let next = nodes;
+
+  for (const edge of edges) {
+    if (edge.source !== input.id) continue;
+
+    const generator = next.find((node) => node.id === edge.target);
+
+    if (generator?.type !== "generator") continue;
+
+    const current = readReferences(generator);
+    const first = current.findIndex((reference) => reference.groupId === input.id);
+
+    // Wired but never attached — a connection drawn while the card was empty.
+    // Now that it has something to give, this is where it gives it.
+    if (first === -1) {
+      if (contributed.length > 0) {
+        next = withReferences(next, generator.id, [...current, ...contributed]);
+      }
+
+      continue;
+    }
+
+    const kept = current.filter((reference) => reference.groupId !== input.id);
+
+    next = withReferences(next, generator.id, [
+      ...kept.slice(0, first),
+      ...contributed,
+      ...kept.slice(first),
+    ]);
+  }
+
+  return next;
+}
+
 function detachReference(nodes: Node[], edge: Edge): Node[] {
   const pair = wiredPair(nodes, edge);
 
@@ -184,10 +275,12 @@ function detachReference(nodes: Node[], edge: Edge): Node[] {
   const next =
     pair.source.type === "product"
       ? current.filter((reference) => reference.groupId !== pair.source.data.entityId)
-      : current.filter(
-          (reference) =>
-            !(reference.assetId === pair.source.data.assetId && reference.origem === "resultado"),
-        );
+      : pair.source.type === "input-image"
+        ? current.filter((reference) => reference.groupId !== pair.source.id)
+        : current.filter(
+            (reference) =>
+              !(reference.assetId === pair.source.data.assetId && reference.origem === "resultado"),
+          );
 
   if (next.length === current.length) return nodes;
 
@@ -239,6 +332,19 @@ type CanvasState = {
   updateNodeData: (id: string, patch: Record<string, unknown>) => void;
   /** Drops a finished image on the canvas, wired to the block that made it. */
   addResultNode: (input: { sourceNodeId: string; data: Record<string, unknown> }) => void;
+  /**
+   * A new input card, to the left of a generating block and already wired to it.
+   *
+   * This is what the "+" in the reference strip does now. It used to attach an
+   * image straight into the block, which made the strip a *door* as well as a
+   * mirror — and a door that produced references no card on the canvas
+   * accounted for. Every reference has a node now, without exception, so the
+   * strip only ever reflects what is already out there.
+   *
+   * The id comes from the caller because the caller needs it: the next thing
+   * that happens is the picker opening for this exact card.
+   */
+  addInputNode: (input: { id: string; type: string; generatorId: string }) => void;
   /**
    * A second copy of a block, beside the first.
    *
@@ -395,6 +501,38 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         };
       }
 
+      if (pair.source.type === "input-image") {
+        const contributed = inputReferences(pair.source);
+
+        // Nothing to hand over, already handed over, or no room. The wire is
+        // drawn and nothing else happens in the first two cases; the third is
+        // refused out loud, in the same words the product wire uses, because
+        // the reason is the same and the moment is the same — before the click.
+        if (contributed.length === 0 || current.some((reference) => reference.groupId === pair.source.id)) {
+          return { ...connected, nodes: state.nodes };
+        }
+
+        if (contributed.length > context.free) {
+          return {
+            nodes: state.nodes,
+            edges: state.edges,
+            revision: state.revision,
+            saveStatus: state.saveStatus,
+            notice: {
+              nodeId: pair.generator.id,
+              reason: "product_over_limit" as const,
+              needed: contributed.length,
+              free: context.free,
+            },
+          };
+        }
+
+        return {
+          ...connected,
+          nodes: withReferences(state.nodes, pair.generator.id, [...current, ...contributed]),
+        };
+      }
+
       const assetId = pair.source.data.assetId;
 
       if (
@@ -414,17 +552,31 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     }),
 
   updateNodeData: (id, patch) =>
-    set((state) => ({
-      nodes: state.nodes.map((node) =>
+    set((state) => {
+      let nodes = state.nodes.map((node) =>
         node.id === id ? { ...node, data: { ...node.data, ...patch } } : node,
-      ),
-      revision: state.revision + 1,
-      saveStatus: "dirty",
-      // Any edit answers the refusal — a shorter prompt, a bigger model, one
-      // reference fewer. Leaving it on screen would be nagging about a problem
-      // the user just solved.
-      notice: null,
-    })),
+      );
+
+      // Editing an input is editing every block it feeds. Done here rather than
+      // in the input card so it cannot be forgotten by the next input type: the
+      // rule is "a wire is live", and a rule that each card has to remember is a
+      // rule that one card will not.
+      const edited = nodes.find((node) => node.id === id);
+
+      if (edited && INPUT_SOURCES.has(edited.type ?? "")) {
+        nodes = syncInputInto(nodes, state.edges, edited);
+      }
+
+      return {
+        nodes,
+        revision: state.revision + 1,
+        saveStatus: "dirty",
+        // Any edit answers the refusal — a shorter prompt, a bigger model, one
+        // reference fewer. Leaving it on screen would be nagging about a problem
+        // the user just solved.
+        notice: null,
+      };
+    }),
 
   addResultNode: ({ sourceNodeId, data }) =>
     set((state) => {
@@ -465,6 +617,35 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         ],
         revision: state.revision + 1,
         saveStatus: "dirty",
+      };
+    }),
+
+  addInputNode: ({ id, type, generatorId }) =>
+    set((state) => {
+      const generator = state.nodes.find((node) => node.id === generatorId);
+
+      if (!generator) return state;
+
+      return {
+        nodes: [
+          ...state.nodes,
+          {
+            id,
+            type,
+            // To the left, because that is the side its wire arrives on. A card
+            // that fed a block from the right would be drawing a line backwards
+            // across the one it feeds.
+            position: freePosition(state.nodes, {
+              x: generator.position.x - INPUT_NODE_WIDTH - 72,
+              y: generator.position.y,
+            }),
+            data: {},
+          },
+        ],
+        edges: [...state.edges, { id: `${id}->${generatorId}`, source: id, target: generatorId }],
+        revision: state.revision + 1,
+        saveStatus: "dirty",
+        notice: null,
       };
     }),
 
@@ -586,7 +767,12 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         const source = state.nodes.find((entry) => entry.id === edge.source);
 
         if (groupId) {
-          return !(source?.type === "product" && source.data.entityId === groupId);
+          // A group came either from a product card, whose id is the entity's,
+          // or from an input node, whose id is the node's own.
+          return !(
+            (source?.type === "product" && source.data.entityId === groupId) ||
+            source?.id === groupId
+          );
         }
 
         return !(

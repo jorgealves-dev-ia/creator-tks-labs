@@ -223,34 +223,43 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
     // render of a parent, which is a request per keystroke in the prompt.
   }, [savedKey]);
 
+  /**
+   * "+" — a new input card, wired in, with its picker already open.
+   *
+   * It used to reach into the gallery and drop the chosen image straight into
+   * this block's list. That made the strip a door as well as a mirror, and the
+   * references that came through it existed nowhere on the canvas: you could
+   * see the thumbnail and not the thing. Now every reference has a card, and
+   * the strip has exactly one job — reflecting what is out there.
+   *
+   * The card is created first and filled second, on purpose. The picker can be
+   * cancelled, and an empty input card beside the block is an honest state: it
+   * is wired, it has nothing to give yet, and the moment it does the wire
+   * carries it (see syncInputInto).
+   */
   function openPicker() {
-    useReferencePicker.getState().open({
-      key: id,
-      scope: "geracao",
-      remaining: capacity.free,
-      limit: capacity.limit,
-      onConfirm: (picked) => {
-        // Read fresh rather than closing over `references`: the modal outlives
-        // the render that opened it, and a wire connected meanwhile is a
-        // reference this block already has.
-        const node = useCanvasStore.getState().nodes.find((entry) => entry.id === id);
-        const current = Array.isArray(node?.data.references)
-          ? (node.data.references as ReferenceEntry[])
-          : [];
+    const inputId = crypto.randomUUID();
 
-        updateNodeData(id, {
-          references: [
-            ...current,
-            ...picked.map(
-              (image): ReferenceEntry => ({
-                assetId: image.assetId,
-                kind: null,
-                instrucao: "",
-                origem: image.source === "upload" ? "upload" : "galeria",
-              }),
-            ),
-          ],
-        });
+    useCanvasStore.getState().addInputNode({
+      id: inputId,
+      type: "input-image",
+      generatorId: id,
+    });
+
+    useReferencePicker.getState().open({
+      key: inputId,
+      scope: "input",
+      remaining: 1,
+      limit: 1,
+      onConfirm: (picked) => {
+        const image = picked[0];
+
+        // Straight into the card, never into this block: the wire is what
+        // delivers it, and going around the wire is the thing this change
+        // exists to stop.
+        if (image) {
+          useCanvasStore.getState().updateNodeData(inputId, { assetId: image.assetId });
+        }
       },
     });
   }

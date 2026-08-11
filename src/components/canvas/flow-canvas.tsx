@@ -17,10 +17,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { HelperLinesOverlay } from "@/components/canvas/helper-lines-overlay";
 import { CharacterNode } from "@/components/nodes/character-node";
 import { GeneratorNode } from "@/components/nodes/generator-node";
+import { InputImageNode } from "@/components/nodes/input-image-node";
 import { ProductNode } from "@/components/nodes/product-node";
 import { ResultNode } from "@/components/nodes/result-node";
 import { useImageCatalog } from "@/components/nodes/use-image-catalog";
 import { defaultModelId, findModel } from "@/components/ui/model-select";
+import { NODE_TYPE_MIME } from "@/lib/canvas/drag";
 import type { CanvasGraph } from "@/lib/canvas/graph";
 import { applyHelperLines, NO_LINES, type HelperLines } from "@/lib/canvas/helper-lines";
 import { useCanvasStore, type ConnectedProduct } from "@/lib/canvas/store";
@@ -43,6 +45,7 @@ const nodeTypes: NodeTypes = {
   product: ProductNode,
   generator: GeneratorNode,
   result: ResultNode,
+  "input-image": InputImageNode,
 };
 
 type FlowCanvasProps = {
@@ -67,8 +70,39 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
   const characters = useEntitiesStore((state) => state.characters);
   const products = useProductsStore((state) => state.products);
 
-  const { getZoom } = useReactFlow();
+  const { getZoom, screenToFlowPosition } = useReactFlow();
   const [helperLines, setHelperLines] = useState<HelperLines>(NO_LINES);
+
+  /**
+   * A type dragged off the Inputs shelf, dropped where the pointer let go.
+   *
+   * The rail also creates the same node on a plain click, which is the path
+   * most people take. This one exists because dragging is what the gesture
+   * *looks* like it should do, and a shelf that refuses the obvious gesture
+   * teaches that the shelf is decoration.
+   */
+  const handleDrop = useCallback(
+    (event: React.DragEvent) => {
+      const type = event.dataTransfer.getData(NODE_TYPE_MIME);
+
+      if (!type) return;
+
+      event.preventDefault();
+
+      useCanvasStore.getState().onNodesChange([
+        {
+          type: "add",
+          item: {
+            id: crypto.randomUUID(),
+            type,
+            position: screenToFlowPosition({ x: event.clientX, y: event.clientY }),
+            data: {},
+          },
+        },
+      ]);
+    },
+    [screenToFlowPosition],
+  );
 
   /**
    * A wire, with the two things the graph itself cannot answer.
@@ -133,7 +167,18 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
   }
 
   return (
-    <div className="size-full">
+    <div
+      className="size-full"
+      onDragOver={(event) => {
+        // Without preventDefault the browser refuses the drop entirely — the
+        // default for a dragover is "this is not a drop target".
+        if (event.dataTransfer.types.includes(NODE_TYPE_MIME)) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+        }
+      }}
+      onDrop={handleDrop}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}

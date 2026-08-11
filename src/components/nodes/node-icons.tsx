@@ -8,7 +8,7 @@
  * it there. Two copies of the same glyph is one copy too many.
  */
 
-export type NodeKind = "character" | "product" | "generator" | "result";
+export type NodeKind = "character" | "product" | "generator" | "result" | "input-image";
 
 export function NodeIcon({ kind, className }: { kind: NodeKind; className?: string }) {
   return (
@@ -57,6 +57,17 @@ const PATHS: Record<NodeKind, React.ReactNode> = {
     <>
       <rect x="1.5" y="2.5" width="13" height="11" rx="2" {...STROKE} />
       <path d="M5 8.2l2.1 2.1L11 6.4" {...STROKE} strokeWidth={1.5} />
+    </>
+  ),
+
+  // The picture frame again, with an arrow going into it. The family of three
+  // frames is deliberate: a generating block, a finished image and an image
+  // being handed in are all the same rectangle, and what separates them is the
+  // one mark inside. Reading the canvas at low zoom is reading those marks.
+  "input-image": (
+    <>
+      <rect x="1.5" y="2.5" width="13" height="11" rx="2" {...STROKE} />
+      <path d="M8 10.4V4.6M5.6 7l2.4-2.4L10.4 7" {...STROKE} />
     </>
   ),
 };

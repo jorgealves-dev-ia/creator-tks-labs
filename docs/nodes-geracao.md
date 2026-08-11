@@ -70,6 +70,20 @@ Três detalhes que a chave não pode errar:
 
 Limite de referências por geração: o máximo que a documentação oficial do modelo permitir (conferido na implementação), com a folha do `@` contando no total e a UI dizendo o limite.
 
+## 3.1 Os nodes de Input *(10/08/2026)*
+
+**A seção "Inputs" do menu lateral é uma prateleira de tipos, não de coisas.** Cada item é só ícone + nome; clicar ou arrastar faz o node nascer no canvas, e **toda** a configuração — imagem, propósito, instrução — acontece no node. O motivo está em [`decisoes.md`](./decisoes.md): produto é rotativo, e um estoque permanente de fotos no menu obrigava a cadastrar antes de usar, em troca de uma lista que ninguém queria.
+
+**Input de Imagem** (o primeiro tipo): uma imagem, um propósito da lista fechada de tipos de referência, e uma instrução opcional em português. Cabeçalho padrão, e **só saída** — um input é algo que você entrega a um bloco; nada é entregue a ele, e por isso não há conector na esquerda.
+
+Três regras que valem para todo tipo de input:
+
+1. **O fio é vivo, não uma fotocópia.** Editar o input — trocar a imagem, mudar o chip, reescrever a instrução — atualiza **todo bloco que já o recebeu**. Sem isso, o card no canvas e a miniatura na faixa seriam duas coisas diferentes, e o canvas estaria mentindo sobre o que vai fazer. O grupo é substituído **na posição em que já estava**, porque os números do prompt compilado são posições nessa lista e uma edição que embaralhasse a ordem repontaria em silêncio toda instrução seguinte.
+2. **Cada input carrega um `groupId` igual ao id do próprio node**, mesmo entregando uma imagem só. Para uma imagem isso não muda nada no prompt — um grupo de um lê igual a uma imagem solta —, e compra a única coisa que casar por id de asset não compra: cortar **este** fio desanexa **estas** imagens, mesmo quando a mesma foto chegou duas vezes por dois cards diferentes.
+3. **A moldura e o nome do grupo só aparecem quando há mais de uma imagem.** São eles que dizem "estas várias são uma coisa só"; um grupo de um não é várias, e um input entregando uma foto deve parecer uma foto.
+
+**O "+" da faixa cria um Input de Imagem conectado**, à esquerda do bloco e com o seletor aberto — não anexa imagem direto. **Toda referência tem node, sem exceção**, e por isso a **faixa é espelho e nunca porta de entrada**: o que ela mostra existe no canvas, sempre.
+
 ## 4. O seletor de referências (a Galeria)
 
 Modal com duas fontes:

@@ -5,7 +5,8 @@ import { useState } from "react";
 
 import { CharacterWizard } from "@/components/character-sheet/character-wizard";
 import { Portrait, VersionBadge } from "@/components/character-sheet/identity";
-import { NodeIcon } from "@/components/nodes/node-icons";
+import { NodeIcon, type NodeKind } from "@/components/nodes/node-icons";
+import { NODE_TYPE_MIME } from "@/lib/canvas/drag";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { useEntitiesStore } from "@/lib/entities/store";
 import { useCharacterPortraits } from "@/lib/entities/use-portraits";
@@ -85,7 +86,7 @@ export function NodeSidebar() {
     <>
       <aside
         aria-label={t.studio.sidebarTitle}
-        className="group absolute bottom-3 left-3 top-20 z-10 flex w-14 flex-col
+        className="rail group absolute bottom-3 left-3 top-20 z-10 flex w-14 flex-col
                    overflow-hidden rounded-xl border border-line bg-surface/70
                    shadow-lg shadow-black/30 backdrop-blur-xl
                    transition-[width] duration-200 ease-out
@@ -107,7 +108,7 @@ export function NodeSidebar() {
           </span>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pb-2">
+        <div className="rail-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pb-2">
           <p className={revealed("px-4 pb-1 text-[11px] font-medium uppercase tracking-wide text-ink-faint")}>
             {t.characterSheet.sidebar.title}
           </p>
@@ -314,6 +315,51 @@ export function NodeSidebar() {
               "mt-4 px-4 pb-1 text-[11px] font-medium uppercase tracking-wide text-ink-faint",
             )}
           >
+            {t.inputs.sidebarTitle}
+          </p>
+
+          {/*
+            A shelf of *types*, not of things.
+            Nothing is configured here: no name, no images, no instruction. The
+            rail offers a kind of card and the card holds everything else —
+            which is the whole reversal of this cycle. A product is rotativo;
+            keeping a permanent shelf of its photos meant registering something
+            before you could use it, for the sake of a list nobody wanted.
+          */}
+          <div className="px-3">
+            {INPUT_TYPES.map((type) => (
+              <button
+                key={type.kind}
+                type="button"
+                draggable
+                onDragStart={(event) => {
+                  event.dataTransfer.setData(NODE_TYPE_MIME, type.kind);
+                  event.dataTransfer.effectAllowed = "move";
+                }}
+                onClick={() => addNode(type.kind, {}, nodes.length)}
+                title={type.hint}
+                className="flex w-full items-center gap-3 rounded-lg py-1.5 text-left
+                           transition-colors hover:bg-surface-hover"
+              >
+                <span
+                  aria-hidden
+                  className="flex size-8 shrink-0 items-center justify-center rounded-lg
+                             border border-line bg-surface text-ink-muted"
+                >
+                  <NodeIcon kind={type.kind} className="size-3.5" />
+                </span>
+                <span className={revealed("truncate text-xs font-medium text-ink")}>
+                  {type.label}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <p
+            className={revealed(
+              "mt-4 px-4 pb-1 text-[11px] font-medium uppercase tracking-wide text-ink-faint",
+            )}
+          >
             {t.studio.sidebarBlocks}
           </p>
 
@@ -363,6 +409,20 @@ export function NodeSidebar() {
     </>
   );
 }
+
+/**
+ * The Inputs shelf, as data.
+ *
+ * One entry per type, and adding the next three is three lines here plus a node
+ * component — which is the point of the shelf being types rather than things.
+ */
+const INPUT_TYPES: readonly { kind: NodeKind; label: string; hint: string }[] = [
+  {
+    kind: "input-image",
+    label: t.inputs.image.title,
+    hint: t.inputs.sidebarHint,
+  },
+];
 
 /**
  * Text that only exists once the rail is open. Kept in one place so every label

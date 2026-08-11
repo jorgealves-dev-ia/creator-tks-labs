@@ -74,6 +74,50 @@ body {
   animation: strip-shimmer 1.15s ease-in-out 3;
 }
 
+/*
+ * The rail's scrollbar: absent when the rail is closed, discreet when it opens.
+ *
+ * Collapsed, the rail is 56px of icons and the browser's scrollbar draws a
+ * track straight through them — a column of grey crossing every glyph, for a
+ * control nobody can use at that width anyway. It appears with the labels,
+ * because that is when there is room for it and when scrolling is a thing
+ * somebody might actually be doing.
+ *
+ * Both vendor spellings: `scrollbar-width` is what Firefox reads and
+ * `::-webkit-scrollbar` is what Chrome and Safari read, and neither falls back
+ * to the other.
+ */
+.rail-scroll {
+  scrollbar-width: none;
+}
+
+.rail-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.rail:hover .rail-scroll,
+.rail:focus-within .rail-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+
+.rail:hover .rail-scroll::-webkit-scrollbar,
+.rail:focus-within .rail-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.rail:hover .rail-scroll::-webkit-scrollbar-track,
+.rail:focus-within .rail-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.rail:hover .rail-scroll::-webkit-scrollbar-thumb,
+.rail:focus-within .rail-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--color-line-strong);
+  border-radius: 3px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

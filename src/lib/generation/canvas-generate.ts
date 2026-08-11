@@ -86,7 +86,7 @@ const referenceSchema = z.object({
   assetId: z.uuid(),
   kind: z.enum(REFERENCE_KINDS.map((kind) => kind.key) as [string, ...string[]]).nullable(),
   instrucao: z.string().max(400),
-  origem: z.enum(["upload", "galeria", "resultado", "produto"]),
+  origem: z.enum(["upload", "galeria", "resultado", "produto", "input"]),
   /**
    * The group this image belongs to, when it arrived with others that count as
    * one thing. Defaulted rather than required: a browser still running
@@ -574,6 +574,12 @@ function galleryLabel(prompt: string, handle: string | null): string {
 
 /**
  * The display name of every product a wire brought in, by id.
+ *
+ * Groups no longer come only from product cards — an input node on the canvas
+ * makes one too, and its id is a node id, not an entity id. Those simply find
+ * nothing here and are recorded nameless, which is correct: there is no row to
+ * ask, and inventing a name from what the browser sent is the one thing this
+ * function exists to avoid.
  *
  * The browser sends ids and this side supplies the words, for the same reason
  * the `@` is resolved here: what goes into the permanent record of a generation

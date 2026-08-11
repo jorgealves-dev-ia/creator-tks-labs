@@ -625,6 +625,24 @@ export const t = {
     },
   },
 
+  /** The Inputs shelf and its nodes — §7 do briefing do Canvas 4. */
+  inputs: {
+    /** O título da seção no menu lateral. */
+    sidebarTitle: "Inputs",
+    sidebarHint: "Arraste para o canvas e conecte no bloco de geração",
+    image: {
+      title: "Input de Imagem",
+      choose: "Escolher imagem",
+      replace: "Trocar a imagem",
+      loading: "Carregando…",
+      instructionPlaceholder: "o que fazer com esta imagem (opcional)",
+      hint: "Conecte na borda esquerda do bloco de geração.",
+      emptyHint: "Escolha uma imagem para poder conectar este input.",
+      outputHandle: "Liga a um bloco de geração",
+      remove: "Tirar este input do canvas (a imagem fica na galeria)",
+    },
+  },
+
   /** The generation blocks on the canvas — docs/nodes-geracao.md. */
   generation: {
     node: {
@@ -773,6 +791,12 @@ export const t = {
           remainingSuffix: "neste produto — o limite é",
           limitPrefix: "Um produto guarda até",
           limitSuffix: "fotos.",
+        },
+        input: {
+          title: "Escolher a imagem do input",
+          remainingSuffix: "neste input — o limite é",
+          limitPrefix: "Um input de imagem guarda",
+          limitSuffix: "imagem.",
         },
       },
       close: "Fechar",
