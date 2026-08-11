@@ -1496,3 +1496,33 @@ O sintoma era um tooltip errado; a causa era mais larga. **Todo card de input ca
 **A folha da menção virou imagem 1 nos dois lugares.** Na faixa, uma miniatura tracejada sem `✕` e sem chip; no "Ver prompt", uma linha própria antes das outras. Ela nunca esteve em `referencias` — mora em `personagem.folha_asset_id`, porque não é input de referência —, e o efeito colateral era uma lista que começava em "Imagem 2" sem nada explicando o 1. O contador já dizia "a folha conta uma"; agora dá para ver a imagem que ele conta. **Um número correto que ninguém consegue conferir é um número em que se acredita, não um que se sabe.**
 
 E o par PT→EN dos ajustes de cena ganhou uma seta. `Sorriso aberto` e `warm open smile` estavam em linhas coladas a 10px, e a leitura — ou o copiar e colar — produzia `Sorriso abertowarm open smile`. Uma seta custa um caractere e diz o que o layout só insinuava: **isto virou aquilo**. Junto veio o passe de legibilidade: corpo de 12–14px no lugar de 10–11px e o diálogo mais largo, porque as cláusulas em inglês são frases longas e a coluna estreita transformava cada uma em quatro linhas irregulares. Um registro que existe para ser conferido tem que ser legível — senão ele é um arquivo, não uma prova.
+
+### 11/08/2026 — Fase 3 · a menção vira sujeito antes de traduzir
+
+A menção era **apagada** da cena antes da tradução, e a justificativa era boa: quem ela é já foi dito, longamente, pelo bloco de identidade; o que sobra é o que ela está fazendo. O que ninguém tinha medido é que sobrava uma frase **sem sujeito** — e um tradutor que recebe frase sem sujeito não devolve frase sem sujeito, ele inventa um.
+
+Três gerações reais, colhidas do banco antes de escrever uma linha de código:
+
+| escrito | o que era traduzido | o que voltou |
+|---|---|---|
+| `@luna está no seu quarto gamer` | "está no seu quarto gamer" | *"is in **their** gamer room"* — e *"in **his**"* noutra rodada |
+| `Duas imagens da @luna mostra ela…` | "Duas imagens **da mostra** ela…" | *"two images from **the exhibition**"* |
+| `a @luna no seu quarto gamer` | "**a** no seu quarto gamer" | *"**at** in her gamer room"* |
+
+O segundo é o mais claro: "da @luna" virou "da mostra", e *mostra* em português também é substantivo. Nada quebrou — o tradutor recebeu uma frase quebrada e fez o melhor que dava.
+
+**A correção separa duas perguntas que estavam sendo respondidas pela mesma frase.** Quem decide se a cena está vazia continua sendo o texto **sem** a menção — é isso que faz `@luna` sozinha significar "me mostra ela", com traje canônico e padrões, e essa metade não podia virar. Quem vai para o tradutor passa a ser o texto **com** o sujeito no lugar da menção. Duas funções, duas perguntas, e nenhuma delas conseguia responder as duas.
+
+**Três formas por gênero, porque o português solda as preposições.** `de + ela = dela`, `em + ela = nela`, e um artigo antes da menção já faz o trabalho que o pronome vai fazer. Pôr o pronome cru depois da contração ("Duas imagens da ela") trocaria uma frase quebrada por uma agramatical, e o tradutor chutaria de novo. O gênero vem da **versão congelada**, como tudo que a menção resolve; sem gênero decidido, o sujeito é `a pessoa` — substantivo e não pronome, porque não há pronome neutro assentado em português e inventar um poria no meio da cena uma palavra que o modelo nunca viu.
+
+**O compilador continua função pura.** Tudo aqui é tabela fechada e consulta: sem rede, sem relógio, sem aleatoriedade. E vale dizer o que isto **não** faz: a tradução continua sendo chamada de modelo e continua não sendo determinística — a prova disso está na primeira linha da tabela acima, a mesma frase virando "their" e "his". O que a substituição remove é a **ambiguidade que obrigava o modelo a chutar**, não o chute.
+
+**Provado antes de gastar Spark.** Dois harnesses `npx tsx` em `scratchpad/evidencias/d1-fase3/`: um exercita a função pura contra as três frases reais mais as contrações (16 casos), outro roda o `buildCanvasPrompt` inteiro e verifica o que mais importava — que `@luna` sozinha **continua** trazendo o traje canônico e os padrões, que a cena dirigida continua sem eles, e que duas compilações da mesma entrada são idênticas. Só depois disso é que uma geração paga foi pedida.
+
+E o registro ganhou `mencao_sujeito: { handle, sujeito }`. A cena compilada não contém mais a menção, então **sem essa linha nada no registro consegue dizer quais palavras da cena eram a personagem** — e um registro que não sabe responder isso é um registro que envelhece em falso. Gerações anteriores leem `null`, que é a verdade sobre elas: naquela época não havia sujeito nenhum para gravar.
+
+**Validado com geração paga, e a medição entregou um achado.** Três gerações do Jorge (150 ⚡, mais uma recusa de política cobrada 0 ⚡) mostram os três estragos mortos: `Ela está…` → *"she is in her gamer room"*, `Duas imagens dela…` → *"two images of her are in her gamer room"*, `Ela no seu quarto gamer` → *"she in her gamer room"*. Nas quatro linhas, `mencao_sujeito` gravado.
+
+**E uma delas mostra o que a Fase 3 não conserta.** Mesma frase, mesmo sujeito substituído, um minuto de diferença: numa rodada saiu *"in **her** gamer room"*, na outra *"in **his** gamer bedroom"*. O sujeito estava certo nas duas (*"two images of her"*) — o que sobrou é o **possessivo "seu"**, que em português é ambíguo (dele / dela / seu de você) e continua sendo chutado pelo tradutor.
+
+O placar honesto, então: **o vazamento de gênero morreu no sujeito e continua vivo, menor, no possessivo.** Não é regressão — é a mesma classe de problema num lugar que esta fase não tocou, e fica escrito aqui ao lado da promessa que ela cumpriu, porque uma medição que contradiz metade do que se ia dizer vale mais do que a metade que confirma.

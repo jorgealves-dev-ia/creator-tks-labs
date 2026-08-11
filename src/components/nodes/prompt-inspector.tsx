@@ -170,17 +170,31 @@ function InspectorDialog({ generationId }: { generationId: string }) {
 
                   <Section title={copy.character}>
                     {structure.personagem ? (
-                      <p className="text-sm leading-relaxed text-ink">
-                        @{structure.personagem.handle} v{structure.personagem.versao}
-                        <span className="text-ink-faint">
-                          {" · "}
-                          {structure.personagem.folha_asset_id
-                            ? copy.anchoredBySheet
-                            : copy.textOnly}
-                        </span>
-                      </p>
+                      <>
+                        <p className="text-sm leading-relaxed text-ink">
+                          @{structure.personagem.handle} v{structure.personagem.versao}
+                          <span className="text-ink-faint">
+                            {" · "}
+                            {structure.personagem.folha_asset_id
+                              ? copy.anchoredBySheet
+                              : copy.textOnly}
+                          </span>
+                        </p>
+
+                        {/* What the `@` became before the sentence was
+                            translated. The compiled Portuguese no longer holds
+                            the mention, so this is the only line that can say
+                            which words in the scene were the character. */}
+                        {structure.mencao_sujeito ? (
+                          <p className="mt-1.5 text-xs leading-relaxed text-ink-faint">
+                            {copy.mentionSubjectPrefix} @{structure.mencao_sujeito.handle}{" "}
+                            {copy.mentionSubjectMiddle} “{structure.mencao_sujeito.sujeito}”{" "}
+                            {copy.mentionSubjectSuffix}
+                          </p>
+                        ) : null}
+                      </>
                     ) : (
-                      <p className="text-xs text-ink-faint">{copy.noCharacter}</p>
+                      <p className="text-sm text-ink-faint">{copy.noCharacter}</p>
                     )}
                   </Section>
 

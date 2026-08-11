@@ -57,6 +57,16 @@ export const structureSchema = z.object({
   cena_padrao: z.array(z.string()).default([]),
   cena_usuario: z.object({ pt: z.string(), en: z.string() }).nullable().default(null),
   /**
+   * Ausente em toda geração anterior a 11/08/2026, e null lê certo para elas:
+   * naquela época a menção era **apagada** da cena em vez de substituída, e não
+   * havia sujeito nenhum para registrar. Uma linha antiga continua dizendo
+   * exatamente o que dizia.
+   */
+  mencao_sujeito: z
+    .object({ handle: z.string(), sujeito: z.string() })
+    .nullable()
+    .default(null),
+  /**
    * Absent on every generation from before the scene adjustments existed.
    * `campo` is a plain string for the same reason `tipo` is: this is history.
    */

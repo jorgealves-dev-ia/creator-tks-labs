@@ -952,6 +952,14 @@ export const t = {
       noCharacter: "Nenhuma personagem foi mencionada.",
       anchoredBySheet: "ancorada na folha completa",
       textOnly: "só por texto, sem folha",
+      /**
+       * O item 3d, lido de volta. A cena compilada não contém mais a menção —
+       * ela virou sujeito antes de traduzir —, então sem esta linha nada no
+       * registro consegue dizer quais palavras da cena eram a personagem.
+       */
+      mentionSubjectPrefix: "Na cena,",
+      mentionSubjectMiddle: "virou",
+      mentionSubjectSuffix: "antes da tradução.",
       director: "Regra do diretor",
       directed: "Você dirigiu a cena — os padrões da personagem não entraram.",
       defaults: "Prompt vazio — entraram os padrões da personagem, inclusive o traje canônico.",

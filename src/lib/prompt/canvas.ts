@@ -93,10 +93,22 @@ export type CanvasCharacterInput = {
 
 export type BuildCanvasPromptOptions = {
   personagem: CanvasCharacterInput | null;
-  /** The scene as the user wrote it. */
+  /**
+   * The scene as it went to the translator: the user's sentence with the
+   * mention replaced by a subject (item 3d), never with a hole where it was.
+   */
   cenaPt: string;
   /** The scene in English. Empty only when there was nothing to translate. */
   cenaEn: string;
+  /**
+   * What the `@` became in that sentence — "@luna" → "ela".
+   *
+   * Recorded rather than inferred: the compiled Portuguese no longer contains
+   * the mention, so without this line nothing downstream can say which words in
+   * the scene *were* the character. Null when no mention was spent on a scene
+   * (an empty prompt, or no mention at all).
+   */
+  mencaoSujeito?: { handle: string; sujeito: string } | null;
   /** The node's style override; null inherits from the character, then default. */
   estiloKey: string | null;
   /**
@@ -208,6 +220,8 @@ export type CanvasPromptStructure = {
   traje_canonico: string | null;
   cena_padrao: string[];
   cena_usuario: { pt: string; en: string } | null;
+  /** The subject the mention was replaced by, before translation (item 3d). */
+  mencao_sujeito: { handle: string; sujeito: string } | null;
   ajustes_cena: CanvasSceneAdjustment[];
   referencias: CanvasReferenceDirective[];
   /**
@@ -312,6 +326,7 @@ export function buildCanvasPrompt({
   personagem,
   cenaPt,
   cenaEn,
+  mencaoSujeito,
   estiloKey,
   anguloKey,
   iluminacaoKey,
@@ -482,6 +497,9 @@ export function buildCanvasPrompt({
     traje_canonico: directed ? null : (compiled?.structure.traje_canonico ?? null),
     cena_padrao: directed ? [] : (compiled?.structure.cena_padrao ?? []),
     cena_usuario: directed ? { pt: cenaPt.trim(), en: cenaEn.trim() } : null,
+    // Only meaningful beside a scene — an empty prompt spends the mention on
+    // the character's own defaults, where no subject was ever substituted.
+    mencao_sujeito: directed ? (mencaoSujeito ?? null) : null,
     ajustes_cena: ajustes,
     referencias: directives,
     referencias_mudas:

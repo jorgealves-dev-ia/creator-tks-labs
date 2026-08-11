@@ -100,6 +100,100 @@ export function sceneWithoutMentions(text: string, mentions: readonly Mention[])
 }
 
 /**
+ * The same scene, with each mention replaced by a subject the sentence can
+ * actually use — item 3d, and the other half of `sceneWithoutMentions`.
+ *
+ * Deleting the mention is right for deciding *whether* the user directed a
+ * scene: `@luna` alone is "show me her", not stage direction. It is wrong for
+ * deciding *what to translate*, because what is left is a sentence missing its
+ * subject — and a translator handed "está no seu quarto gamer" has to invent
+ * one. It invented "their" on one run and "his" on the next, for the same
+ * sentence, about a character whose sheet says feminino.
+ *
+ * So emptiness is still judged on the scene *without* mentions, and only then,
+ * if there is anything left to say, is this used to build the sentence that
+ * travels. The two functions answer two questions and neither can answer both.
+ *
+ * ---------------------------------------------------------------------------
+ * The contraction table, and why it is not optional
+ * ---------------------------------------------------------------------------
+ *
+ * Portuguese welds its prepositions to what follows: `de + ela = dela`,
+ * `em + ela = nela`, and an article before the mention (`a @luna`) is already
+ * doing the job the pronoun is about to do. So the word *before* the mention is
+ * read, and it decides which form goes in and whether that word survives:
+ *
+ *   "@luna está no quarto"        → "Ela está no quarto"
+ *   "Duas imagens da @luna"       → "Duas imagens dela"
+ *   "o cachorro da @luna"         → "o cachorro dela"
+ *   "a @luna no quarto"           → "Ela no quarto"          (o artigo é absorvido)
+ *   "uma foto com @luna"          → "uma foto com ela"       (preposição comum)
+ *
+ * Everything here is a fixed table and a lookup. No network, no clock, no
+ * randomness: the same prompt and the same sheet produce the same sentence
+ * forever, which is what lets the compiler downstream stay a pure function.
+ * (The *translation* of that sentence is still a model call and still not
+ * deterministic — this removes the ambiguity that made it guess, not the model.)
+ */
+export type MentionSubject = {
+  /** "ela" · "ele" · "a pessoa" */
+  sujeito: string;
+  /** After de/da/do: "dela" · "dele" · "da pessoa" */
+  de: string;
+  /** After em/na/no: "nela" · "nele" · "na pessoa" */
+  em: string;
+};
+
+/** Words that swallow the mention and change which form replaces it. */
+const DE_FORMS = new Set(["de", "da", "do"]);
+const EM_FORMS = new Set(["em", "na", "no"]);
+/** An article before the mention is doing the pronoun's job already. */
+const ARTICLES = new Set(["a", "o", "as", "os", "à", "ao", "às", "aos"]);
+
+export function sceneWithSubject(
+  text: string,
+  mentions: readonly Mention[],
+  subject: MentionSubject,
+): string {
+  let scene = text;
+
+  // Back to front, so replacing one span cannot shift the next one's indices.
+  for (const mention of [...mentions].reverse()) {
+    const before = scene.slice(0, mention.start);
+    // The word immediately before, and where it starts — the only context this
+    // decision needs.
+    const previous = /(\S+)(\s*)$/.exec(before);
+    const word = previous?.[1].toLowerCase() ?? "";
+    const wordStart = previous ? before.length - previous[0].length : mention.start;
+
+    let from = mention.start;
+    let replacement = subject.sujeito;
+
+    if (DE_FORMS.has(word)) {
+      from = wordStart;
+      replacement = subject.de;
+    } else if (EM_FORMS.has(word)) {
+      from = wordStart;
+      replacement = subject.em;
+    } else if (ARTICLES.has(word)) {
+      from = wordStart;
+      replacement = subject.sujeito;
+    }
+
+    // A subject that opens the sentence is written like one. Cosmetic for the
+    // model, and not cosmetic at all for the Portuguese saved beside it: that
+    // line is read back by a person asking what was generated.
+    const opensSentence = /(^|[.!?]\s*)$/.test(scene.slice(0, from));
+
+    scene = `${scene.slice(0, from)}${
+      opensSentence ? replacement.charAt(0).toUpperCase() + replacement.slice(1) : replacement
+    }${scene.slice(mention.end)}`;
+  }
+
+  return scene.replace(/[ \t]{2,}/g, " ").trim();
+}
+
+/**
  * The `@…` currently being typed at the caret, if any — what the autocomplete
  * opens on.
  *

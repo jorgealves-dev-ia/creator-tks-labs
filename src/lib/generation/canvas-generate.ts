@@ -3,13 +3,19 @@ import "server-only";
 import { z } from "zod";
 
 import { imageRealCostCents } from "@/lib/ai/pricing";
+import { SUBJECT_BY_GENERO, type GeneroApresentacao } from "@/lib/character-sheet/dictionary";
 import { parseSheet, type CharacterSheet } from "@/lib/character-sheet/schema";
 import { loadImagePayloads } from "@/lib/generation/asset-payloads";
 import type {
   CanvasGenerationFailure,
   CanvasGenerationResult,
 } from "@/lib/generation/canvas-contract";
-import { distinctHandles, findMentions, sceneWithoutMentions } from "@/lib/generation/mentions";
+import {
+  distinctHandles,
+  findMentions,
+  sceneWithoutMentions,
+  sceneWithSubject,
+} from "@/lib/generation/mentions";
 import {
   DEFAULT_IMAGE_SIZE,
   IMAGE_SIZES,
@@ -259,6 +265,34 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
     return { ok: false, reason: "empty_request" };
   }
 
+  /**
+   * 3b. The mention, turned into a subject the sentence can use — item 3d.
+   *
+   * Emptiness is judged above, on the scene with the mention *removed*, because
+   * that is what decides which half of the director rule runs. What gets
+   * translated is built here instead, with the mention *replaced*: deleting it
+   * left "está no seu quarto gamer", and a translator handed a sentence with no
+   * subject invents one — "their" on one run and "his" on the next, for a
+   * character whose sheet says feminino.
+   *
+   * The gender comes from the frozen snapshot, like everything else the mention
+   * resolves to, and an undecided one reads as the neutral noun rather than a
+   * guess. Nothing here is empty that was not already empty, so the director
+   * rule cannot flip: a prompt of nothing but `@luna` still means "show me her".
+   */
+  const generoKey = character?.sheet.dna_visual.genero_apresentacao.valor ?? null;
+  const subject =
+    typeof generoKey === "string" && generoKey in SUBJECT_BY_GENERO
+      ? SUBJECT_BY_GENERO[generoKey as GeneroApresentacao]
+      : SUBJECT_BY_GENERO.androgino;
+
+  const sceneForModel = scene === "" ? "" : sceneWithSubject(request.prompt, mentions, subject);
+
+  // What the `@` became, recorded rather than left to be inferred from a
+  // sentence that no longer contains it.
+  const mencaoSujeito =
+    character && scene !== "" ? { handle: character.handle, sujeito: subject.sujeito } : null;
+
   // 4. The reference ceiling of the chosen model, counting the character's own
   //    sheet — it is an image in the same call and occupies the same room.
   const limit = maxReferences(model.slug);
@@ -326,7 +360,8 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
 
   // 6. Portuguese in, English out — before a single Spark is at risk.
   const items = [
-    ...(scene === "" ? [] : [{ id: "cena", text: scene }]),
+    // The sentence with a subject, never the one with a hole in it.
+    ...(sceneForModel === "" ? [] : [{ id: "cena", text: sceneForModel }]),
     ...heard
       .map((reference, index) => ({
         id: `ref.${index}`,
@@ -377,8 +412,12 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
           folhaAssetId: character.folhaAssetId,
         }
       : null,
-    cenaPt: scene,
+    // The Portuguese recorded is the Portuguese that was translated — the
+    // sentence with the subject in it. What the user actually typed, mention
+    // and all, is in `prompt_user_pt`, which is the other half of the audit.
+    cenaPt: sceneForModel,
     cenaEn: (translation.translations.cena ?? "").trim(),
+    mencaoSujeito,
     estiloKey: request.estiloKey,
     anguloKey: request.anguloKey,
     iluminacaoKey: request.iluminacaoKey,

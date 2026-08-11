@@ -69,6 +69,42 @@ export const PRONOUN_BY_GENERO: Record<GeneroApresentacao, string> = {
   androgino: "their",
 };
 
+/**
+ * The Portuguese subject that stands in for `@luna` before the scene is
+ * translated — item 3d, 11/08/2026.
+ *
+ * The mention used to be *deleted* from the scene, leaving a sentence with a
+ * hole where its subject had been. Three real generations show what that cost:
+ *
+ *   "@luna está no seu quarto gamer"      → "is in their gamer room"
+ *   "Duas imagens da @luna mostra ela…"   → "two images from the exhibition…"
+ *   "a @luna no seu quarto gamer"         → "at in her gamer room"
+ *
+ * The second one is the clearest: "da @luna" became "da mostra", and Portuguese
+ * "mostra" is also the noun *exhibition*. Nothing was broken — the translator
+ * was handed a broken sentence and did its best with it.
+ *
+ * Three forms rather than one because Portuguese contracts its prepositions,
+ * and this substitution happens *inside* a sentence somebody else wrote:
+ * "de + ela" is "dela", "em + ela" is "nela". Putting the plain pronoun after a
+ * contraction ("Duas imagens da ela") would trade a broken sentence for an
+ * ungrammatical one, and the translator would guess again.
+ *
+ * The androgynous row is a noun phrase, not a pronoun, and deliberately: there
+ * is no settled neutral third-person pronoun in Portuguese, and inventing one
+ * here would put a word the model has never seen in the middle of a scene. "A
+ * pessoa" is plain, correct, and translates to "the person" every time — which
+ * is the only property this table needs.
+ */
+export const SUBJECT_BY_GENERO: Record<
+  GeneroApresentacao,
+  { readonly sujeito: string; readonly de: string; readonly em: string }
+> = {
+  feminino: { sujeito: "ela", de: "dela", em: "nela" },
+  masculino: { sujeito: "ele", de: "dele", em: "nele" },
+  androgino: { sujeito: "a pessoa", de: "da pessoa", em: "na pessoa" },
+};
+
 /** §5.2 · Apparent age — the visual one. The real age belongs to the narrative. */
 export const IDADE_APARENTE = [
   { key: "inicio_dos_20", pt: "Início dos 20", en: `in ${PRONOUN_PLACEHOLDER} early twenties` },
