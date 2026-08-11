@@ -1280,3 +1280,19 @@ O editor de produto virou o **corpo de um node**, inteiro: mesmo nome, mesmas at
 **E o nome do grupo passou a viajar do navegador.** Um grupo era uma linha em `entities` cujo nome o servidor consultava; virou um card no canvas, e card não tem linha. Então o navegador manda o rótulo, e a regra fica explícita: **pode nomear, nunca pode alargar.** O nome é cosmético — vai para o registro e nunca para o texto que o modelo lê —, enquanto as duas coisas que precisam ser confiáveis continuam checadas no servidor: quantas vagas o grupo ocupa, contra o teto do modelo, e se as imagens são do usuário, que o RLS responde ao carregá-las do Storage. Onde ainda existe linha — um produto do Arsenal antigo — **a linha vence**: nome verificado ganha de nome fornecido, sempre.
 
 O rótulo é gravado na própria referência em vez de consultado, e isso não o torna cópia velha: o `syncInputInto` já reescreve o grupo a cada edição do card, então renomear chega a todo bloco na mesma passada que carrega as fotos.
+
+### 10/08/2026 — A seção Produtos sai do Arsenal
+
+Saem do código: a seção do menu lateral, o diálogo de edição, o store, as queries, as actions, o schema e o card `product` — toda a pilha que existia para transformar um produto em **cadastro**. O que substitui é o Input de Produto do canvas, com os mesmos campos e o mesmo teto.
+
+**A lápide.** O tipo `product` de node continua registrado, vazio: um grafo salvo ontem pode conter um, e o React Flow diante de um tipo desconhecido **não desenha nada** — o card sumiria, o fio ficaria pendurado e a única pista seria um aviso num console que ninguém tem aberto. Então o tipo fica, dizendo o que aconteceu, apontando onde mora o substituto e oferecendo a única ação que faz sentido. Ele não lê store, nem query, nem foto: a máquina por trás dele é justamente o que este commit apaga. No dia em que nenhum grafo salvo tiver um, o arquivo sai junto com a entrada em `nodeTypes`.
+
+**Arquivar, não apagar** — e a razão aqui foi medida, não estimada. `generations.entity_id` aponta para `entities` com **ON DELETE CASCADE**: apagar um produto apagaria toda geração feita com ele. E `ledger_transactions.generation_id` é **ON DELETE SET NULL**, então o dinheiro ficaria no extrato apontando para o nada — débitos órfãos num livro append-only. Arquivar preserva tudo e só tira das listas, que já filtram por `archived_at is null` desde a Fase 0.
+
+**O que fica de pé.** O valor `product` no enum e o trigger do teto de cinco continuam instalados. Não custam nada em repouso, remover valor de enum no Postgres é caro e irreversível, e a porta continua aberta caso produto volte a ser cidadão do Arsenal com a extração de atributos da N4.
+
+---
+
+**E uma aresta órfã que só ficou visível agora.** Remover um node pelo cabeçalho chamava `applyNodeChanges`, que tira o node e **deixa os fios**. Arestas apontando para o nada não são desenhadas, então isso era invisível e vinha se acumulando no grafo salvo desde sempre.
+
+Deixou de ser invisível quando inputs viraram cards que as pessoas apagam: remover um Input de Produto enquanto as fotos dele continuavam dentro do bloco deixaria **referências que nenhum card do canvas explica** — exatamente o estado que a regra "toda referência tem node" existe para tornar impossível. Agora um card que sai leva os fios dele, e com os fios o que eles tinham anexado.

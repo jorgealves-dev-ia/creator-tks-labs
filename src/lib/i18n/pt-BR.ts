@@ -564,67 +564,6 @@ export const t = {
     },
   },
 
-  /** Products in the Arsenal — the peça a campanha inteira gira em volta. */
-  products: {
-    sidebar: {
-      title: "Produtos",
-      newProduct: "Novo produto",
-      addToCanvas: "Adicionar ao canvas",
-      onCanvas: "No canvas",
-      empty: "Nenhum produto ainda. Crie o primeiro.",
-    },
-
-    card: {
-      editHint: "Clique duas vezes para editar",
-      edit: "Editar",
-      remove: "Recolher para o Arsenal (o produto continua lá)",
-      outputHandle: "Ligar este produto a um bloco de geração",
-      noPhotos: "Sem fotos ainda",
-      /** "3 fotos · ocupa 3 referências" — dito antes do clique, nunca depois. */
-      occupies: "ocupa",
-      photoSingular: "foto",
-      photoPlural: "fotos",
-      referenceSingular: "referência",
-      referencePlural: "referências",
-      missing: "Produto não encontrado",
-      missingHint: "Ele pode ter sido removido. Tire este cartão do canvas.",
-    },
-
-    dialog: {
-      newTitle: "Novo produto",
-      newSubtitle: "Nome primeiro; as fotos e a instrução vêm na tela seguinte.",
-      nameLabel: "Nome",
-      namePlaceholder: "Biquíni cortininha verde",
-      create: "Criar produto",
-      creating: "Criando…",
-      createFailed: "Não foi possível criar o produto.",
-      cancel: "Cancelar",
-      close: "Fechar",
-      done: "Concluir",
-
-      photosLabel: "Fotos",
-      photosOf: "de",
-      photosHint: "Frente, verso, detalhe, etiqueta — cada foto entra na geração.",
-      addPhoto: "Adicionar foto",
-      removePhoto: "Remover foto",
-      full: "Um produto guarda até 5 fotos.",
-      photoFailed: "Não foi possível anexar a foto.",
-      removePhotoHint: "A foto sai do produto e continua na galeria.",
-
-      instructionLabel: "Instrução padrão",
-      instructionPlaceholder: "a modelo veste esta peça exatamente como mostrada",
-      instructionHint:
-        "Opcional, e editável em cada geração. Traduzida na hora de gerar.",
-
-      archive: "Remover do Arsenal",
-      archiveConfirm: "Remover este produto?",
-      archiveHint: "As fotos continuam na galeria e as imagens já geradas não mudam.",
-      archiveFailed: "Não foi possível remover o produto.",
-      yes: "Remover",
-      no: "Cancelar",
-    },
-  },
-
   /** The Inputs shelf and its nodes — §7 do briefing do Canvas 4. */
   inputs: {
     /** O título da seção no menu lateral. */
@@ -663,6 +602,14 @@ export const t = {
       emptyHint: "Adicione as fotos para poder conectar este produto.",
       outputHandle: "Liga a um bloco de geração",
       remove: "Tirar este produto do canvas (as fotos ficam na galeria)",
+    },
+    /** A lápide do card antigo de Produto, que saiu do Arsenal em 10/08/2026. */
+    legacyProduct: {
+      title: "Produto (card antigo)",
+      body:
+        "Este tipo de card saiu. Use Input de Produto na seção Inputs — as fotos " +
+        "continuam na galeria. Pode remover este card.",
+      remove: "Remover este card antigo",
     },
   },
 

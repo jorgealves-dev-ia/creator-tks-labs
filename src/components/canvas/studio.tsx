@@ -7,14 +7,11 @@ import { SheetEditor } from "@/components/character-sheet/sheet-editor";
 import { Lightbox } from "@/components/nodes/lightbox";
 import { PromptInspector } from "@/components/nodes/prompt-inspector";
 import { ReferencePicker } from "@/components/nodes/reference-picker";
-import { ProductDialog } from "@/components/products/product-dialog";
 import { Button } from "@/components/ui/button";
 import type { CanvasGraph } from "@/lib/canvas/graph";
 import { useEntitiesStore } from "@/lib/entities/store";
 import type { CharacterEntity } from "@/lib/entities/types";
 import { t } from "@/lib/i18n/pt-BR";
-import { useProductsStore } from "@/lib/products/store";
-import type { Product } from "@/lib/products/types";
 import { createProject } from "@/lib/projects/actions";
 import { useBalance } from "@/lib/sparks/balance-store";
 
@@ -30,7 +27,6 @@ type StudioProps = {
   version: number;
   balanceCents: number;
   characters: CharacterEntity[];
-  products: Product[];
 };
 
 export function Studio({
@@ -40,9 +36,8 @@ export function Studio({
   version,
   balanceCents,
   characters,
-  products,
 }: StudioProps) {
-  useSeedArsenal(characters, products, balanceCents);
+  useSeedArsenal(characters, balanceCents);
 
   return (
     <ReactFlowProvider>
@@ -71,7 +66,6 @@ export function Studio({
 
         {/* Rendered once, above everything: both the card and the sidebar open it. */}
         <SheetEditor />
-        <ProductDialog />
 
         {/* Also once, and for a harder reason: a modal inside a React Flow node
             sits inside a CSS transform, which would position it against the
@@ -85,8 +79,8 @@ export function Studio({
 }
 
 /**
- * Hands the server's Arsenal — characters, products and the balance — to the
- * client stores, once.
+ * Hands the server's Arsenal — the characters and the balance — to the client
+ * stores, once.
  *
  * In an effect rather than during render on purpose: the stores are module-level
  * singletons, and on the server that module is shared by every request in the
@@ -95,14 +89,12 @@ export function Studio({
  */
 function useSeedArsenal(
   characters: CharacterEntity[],
-  products: Product[],
   balanceCents: number,
 ) {
-  const initial = useRef({ characters, products });
+  const initial = useRef({ characters });
 
   useEffect(() => {
     useEntitiesStore.getState().seed(initial.current.characters);
-    useProductsStore.getState().seed(initial.current.products);
   }, []);
 
   // The balance re-seeds whenever the server sends a new one, unlike the two

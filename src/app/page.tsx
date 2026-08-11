@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { Studio } from "@/components/canvas/studio";
 import { parseGraph, type CanvasGraph } from "@/lib/canvas/graph";
 import { loadCharacters } from "@/lib/entities/queries";
-import { loadProducts } from "@/lib/products/queries";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const EMPTY_GRAPH: CanvasGraph = { nodes: [], edges: [] };
@@ -38,7 +37,7 @@ export default async function StudioPage(props: PageProps<"/">) {
 
   const userId = claims.claims.sub;
 
-  const [projectsResult, walletResult, characters, products] = await Promise.all([
+  const [projectsResult, walletResult, characters] = await Promise.all([
     supabase
       .from("projects")
       .select("id, name, status")
@@ -51,10 +50,9 @@ export default async function StudioPage(props: PageProps<"/">) {
       .select("balance_cents")
       .eq("user_id", userId)
       .maybeSingle(),
-    // Neither characters nor products are scoped to a project: the same
-    // influencer, and the same product, can be placed on the canvas of any of them.
+    // Characters are not scoped to a project: the same influencer can be
+    // placed on the canvas of any of them.
     loadCharacters(userId),
-    loadProducts(userId),
   ]);
 
   const projects = projectsResult.data ?? [];
@@ -90,7 +88,6 @@ export default async function StudioPage(props: PageProps<"/">) {
       version={version}
       balanceCents={walletResult.data?.balance_cents ?? 0}
       characters={characters}
-      products={products}
     />
   );
 }

@@ -11,8 +11,6 @@ import { useCanvasStore } from "@/lib/canvas/store";
 import { useEntitiesStore } from "@/lib/entities/store";
 import { useCharacterPortraits } from "@/lib/entities/use-portraits";
 import { t } from "@/lib/i18n/pt-BR";
-import { useProductsStore } from "@/lib/products/store";
-import { useProductCovers } from "@/lib/products/use-covers";
 
 /**
  * Collapsed rail that widens when the pointer gets close. `focus-within` gives
@@ -28,12 +26,6 @@ export function NodeSidebar() {
   const openEditor = useEntitiesStore((state) => state.openEditor);
   const nodes = useCanvasStore((state) => state.nodes);
   const portraits = useCharacterPortraits();
-
-  const products = useProductsStore((state) => state.products);
-  const productOrder = useProductsStore((state) => state.order);
-  const openProduct = useProductsStore((state) => state.openEditor);
-  const newProduct = useProductsStore((state) => state.openCreator);
-  const covers = useProductCovers();
 
   const [creating, setCreating] = useState(false);
 
@@ -70,10 +62,6 @@ export function NodeSidebar() {
 
   function addToCanvas(entityId: string) {
     addNode("character", { entityId }, onCanvas.size);
-  }
-
-  function addProductToCanvas(entityId: string) {
-    addNode("product", { entityId }, onCanvas.size);
   }
 
   function addGenerator() {
@@ -200,112 +188,6 @@ export function NodeSidebar() {
               </span>
               <span className={revealed("truncate text-xs font-medium text-ink-muted")}>
                 {t.characterSheet.sidebar.newCharacter}
-              </span>
-            </button>
-          </div>
-
-          <p
-            className={revealed(
-              "mt-4 px-4 pb-1 text-[11px] font-medium uppercase tracking-wide text-ink-faint",
-            )}
-          >
-            {t.products.sidebar.title}
-          </p>
-
-          {productOrder.length === 0 ? (
-            <p className={revealed("px-4 py-1 text-xs leading-relaxed text-ink-faint")}>
-              {t.products.sidebar.empty}
-            </p>
-          ) : null}
-
-          {productOrder.map((id) => {
-            const product = products[id];
-            if (!product) return null;
-
-            const count = product.photos.length;
-            const cover = covers[product.id];
-
-            return (
-              <div key={id} className="flex items-center gap-3 px-3 py-1">
-                <button
-                  type="button"
-                  onClick={() => openProduct(id)}
-                  title={product.displayName}
-                  className="flex min-w-0 flex-1 items-center gap-3 rounded-lg py-1 text-left
-                             transition-colors hover:bg-surface-hover"
-                >
-                  <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line bg-canvas">
-                    {cover ? (
-                      /* Short-lived signed URLs for a private bucket. */
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={cover} alt="" className="size-full object-cover" />
-                    ) : (
-                      <NodeIcon kind="product" className="size-3.5 text-ink-faint" />
-                    )}
-                  </span>
-
-                  <span className={revealed("min-w-0 flex-1")}>
-                    <span className="block truncate text-xs font-medium text-ink">
-                      {product.displayName}
-                    </span>
-                    <span className="block truncate text-[11px] text-ink-faint">
-                      {count === 0
-                        ? t.products.card.noPhotos
-                        : `${count} ${
-                            count === 1
-                              ? t.products.card.photoSingular
-                              : t.products.card.photoPlural
-                          }`}
-                    </span>
-                  </span>
-                </button>
-
-                <span className={revealed("shrink-0")}>
-                  {onCanvas.has(id) ? (
-                    <span className="text-[11px] text-ink-faint">
-                      {t.products.sidebar.onCanvas}
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => addProductToCanvas(id)}
-                      title={t.products.sidebar.addToCanvas}
-                      aria-label={t.products.sidebar.addToCanvas}
-                      className="flex size-6 items-center justify-center rounded-md border
-                                 border-line text-ink-muted transition-colors
-                                 hover:border-line-strong hover:text-ink"
-                    >
-                      <svg viewBox="0 0 14 14" className="size-3" aria-hidden>
-                        <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.6"
-                              strokeLinecap="round" />
-                      </svg>
-                    </button>
-                  )}
-                </span>
-              </div>
-            );
-          })}
-
-          <div className="px-3 pt-2">
-            <button
-              type="button"
-              onClick={newProduct}
-              title={t.products.sidebar.newProduct}
-              className="flex w-full items-center gap-3 rounded-lg py-1.5 text-left
-                         transition-colors hover:bg-surface-hover"
-            >
-              <span
-                aria-hidden
-                className="flex size-8 shrink-0 items-center justify-center rounded-lg
-                           border border-dashed border-line-strong text-ink-muted"
-              >
-                <svg viewBox="0 0 14 14" className="size-3" aria-hidden>
-                  <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.6"
-                        strokeLinecap="round" />
-                </svg>
-              </span>
-              <span className={revealed("truncate text-xs font-medium text-ink-muted")}>
-                {t.products.sidebar.newProduct}
               </span>
             </button>
           </div>

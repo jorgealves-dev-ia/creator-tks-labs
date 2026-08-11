@@ -64,35 +64,13 @@ type StoredReference = {
 };
 
 /**
- * What the canvas has to know about a product to wire it in.
- *
- * Handed to the store by the component that has the products at hand, rather
- * than read here: this file is the graph, and the graph has no business holding
- * a second copy of the Arsenal.
- */
-export type ConnectedProduct = {
-  id: string;
-  /** Its photos, in order. Every one of them becomes a numbered reference. */
-  assetIds: string[];
-  /** The sentence the product starts every generation with; editable per block. */
-  instrucao: string;
-  /** Its name, for the strip's frame and the audit trail. */
-  nome: string;
-};
-
-export type ConnectContext = {
-  /** The product on the source end of the wire, when the source is a product card. */
-  product: ConnectedProduct | null;
-};
-
-/**
  * How many more images a given generating block can accept.
  *
  * Registered by the canvas rather than computed here, because the answer needs
  * two things the graph does not contain: the model catalogue (a ceiling belongs
  * to a model) and the Arsenal (a mentioned character's sheet occupies a slot).
- * The same shape `ConnectContext` had, promoted from an argument to a question
- * the store can ask whenever it needs to — which is the point.
+ * It used to be handed in as an argument at the moment of the wire; it is a
+ * question the store can ask whenever it needs to now, which is the point.
  *
  * It became a question because a wire is no longer the only moment the ceiling
  * matters. An input card that already feeds a block can *grow*: a product goes
@@ -165,10 +143,11 @@ function withReferences(nodes: Node[], generatorId: string, references: StoredRe
 /**
  * The two ends of a wire that means "attach something", when it means one.
  *
- * Two sources feed a generating block: a Resultado, which is one image, and a
- * Produto, which is all of its photos at once. Both are the same gesture — a
- * wire — and both end in the same list, which is why they are recognised here
- * together rather than in two places that could disagree about what a wire does.
+ * Two kinds of source feed a generating block: a Resultado, which is one image,
+ * and an input card, which is everything it holds at once. Both are the same
+ * gesture — a wire — and both end in the same list, which is why they are
+ * recognised here together rather than in two places that could disagree about
+ * what a wire does.
  */
 function wiredPair(
   nodes: readonly Node[],
@@ -187,11 +166,11 @@ function wiredPair(
  * The kinds of card whose wire into a generating block means "attach this".
  *
  * A set rather than a chain of comparisons because the list is about to grow by
- * three: the product, pose and sheet inputs are the same gesture with different
- * cargo, and a condition that has to be edited in four places to add a fourth
- * is a condition that will be edited in three.
+ * two: the pose and sheet inputs are the same gesture with different cargo, and
+ * a condition that has to be edited in four places to add a fourth is a
+ * condition that will be edited in three.
  */
-const ATTACHING_SOURCES = new Set(["result", "product", "input-image", "input-product"]);
+const ATTACHING_SOURCES = new Set(["result", "input-image", "input-product"]);
 
 /**
  * What an input node contributes, read from its own stored state.
@@ -239,21 +218,6 @@ function inputReferences(node: Node): StoredReference[] {
       groupId: node.id,
     },
   ];
-}
-
-/** The photos a wired product contributes, in the order they will be numbered. */
-function productReferences(product: ConnectedProduct): StoredReference[] {
-  return product.assetIds.map((assetId) => ({
-    assetId,
-    // A product's photos are products. The chip is not a question the block has
-    // to ask again, and leaving it open would let one photo of a bikini be
-    // labelled "cenário" while the other two stayed "produto".
-    kind: "produto",
-    instrucao: product.instrucao,
-    origem: "produto",
-    groupId: product.id,
-    groupLabel: product.nome,
-  }));
 }
 
 /** The card types that hand images to a generating block from the canvas. */
@@ -319,18 +283,15 @@ function detachReference(nodes: Node[], edge: Edge): Node[] {
 
   const current = readReferences(pair.generator);
 
-  // Only what this wire attached. A picture chosen from the gallery that happens
-  // to be the same file was a separate decision, and stays. A product leaves
-  // whole, for the same reason it arrived whole.
-  const next =
-    pair.source.type === "product"
-      ? current.filter((reference) => reference.groupId !== pair.source.data.entityId)
-      : pair.source.type === "input-image"
-        ? current.filter((reference) => reference.groupId !== pair.source.id)
-        : current.filter(
-            (reference) =>
-              !(reference.assetId === pair.source.data.assetId && reference.origem === "resultado"),
-          );
+  // Only what this wire attached. A picture chosen separately that happens to be
+  // the same file was its own decision, and stays. A group leaves whole, for the
+  // same reason it arrived whole.
+  const next = INPUT_SOURCES.has(pair.source.type ?? "")
+    ? current.filter((reference) => reference.groupId !== pair.source.id)
+    : current.filter(
+        (reference) =>
+          !(reference.assetId === pair.source.data.assetId && reference.origem === "resultado"),
+      );
 
   if (next.length === current.length) return nodes;
 
@@ -372,7 +333,7 @@ type CanvasState = {
    * know — which product this is, and how much room the block has left — and
    * this decides.
    */
-  onConnect: (connection: Connection, context: ConnectContext) => void;
+  onConnect: (connection: Connection) => void;
   /**
    * Teaches the store how to ask for a block's remaining room. Called by the
    * canvas whenever the catalogue or the Arsenal changes, so the answer is
@@ -492,11 +453,44 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       PERSISTED_NODE_CHANGES.has(change.type),
     );
 
-    set((state) => ({
-      nodes: applyNodeChanges(changes, state.nodes),
-      revision: persisted ? state.revision + 1 : state.revision,
-      saveStatus: persisted ? "dirty" : state.saveStatus,
-    }));
+    const removed = new Set(
+      changes
+        .filter((change) => change.type === "remove")
+        .map((change) => change.id),
+    );
+
+    set((state) => {
+      // A card that leaves takes its wires with it — and, with them, whatever
+      // those wires had attached.
+      //
+      // React Flow only removes the node; edges pointing at nothing are simply
+      // not drawn, so this was invisible and accumulated in the saved graph.
+      // It stopped being invisible the moment inputs became cards people
+      // delete: removing an input card while its images stayed in the block
+      // would leave references nothing on the canvas accounts for — exactly
+      // the state "every reference has a node" exists to make impossible.
+      let nodes = state.nodes;
+      let edges = state.edges;
+
+      if (removed.size > 0) {
+        const orphaned = edges.filter(
+          (edge) => removed.has(edge.source) || removed.has(edge.target),
+        );
+
+        for (const edge of orphaned) {
+          nodes = detachReference(nodes, edge);
+        }
+
+        edges = edges.filter((edge) => !orphaned.includes(edge));
+      }
+
+      return {
+        nodes: applyNodeChanges(changes, nodes),
+        edges,
+        revision: persisted ? state.revision + 1 : state.revision,
+        saveStatus: persisted ? "dirty" : state.saveStatus,
+      };
+    });
   },
 
   onEdgesChange: (changes) => {
@@ -542,7 +536,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     return rooms.length === 0 ? null : Math.min(...rooms);
   },
 
-  onConnect: (connection, context) =>
+  onConnect: (connection) =>
     set((state) => {
       // Wiring something into a generating block *is* attaching a reference —
       // the drag is the gesture, the list in the node is the state. Two ways in
@@ -564,53 +558,23 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       // and possibly a render ago.
       const free = state.capacityResolver(pair.generator.id);
 
-      if (pair.source.type === "product") {
-        const product = context.product;
-
-        // No product to attach, or this one is already here: the wire is drawn
-        // and nothing else happens. A second wire is a gesture already made.
-        if (!product || current.some((reference) => reference.groupId === product.id)) {
-          return { ...connected, nodes: state.nodes };
-        }
-
-        // A product arrives whole or not at all. Half of a product is a front
-        // view with no label — a reference that looks attached and cannot say
-        // what the back of the garment looks like. Better refused, in words,
-        // before the wire exists, than discovered as a bad image after paying.
-        if (product.assetIds.length > free) {
-          return {
-            nodes: state.nodes,
-            edges: state.edges,
-            revision: state.revision,
-            saveStatus: state.saveStatus,
-            notice: {
-              nodeId: pair.generator.id,
-              reason: "product_over_limit" as const,
-              needed: product.assetIds.length,
-              free,
-            },
-          };
-        }
-
-        return {
-          ...connected,
-          nodes: withReferences(state.nodes, pair.generator.id, [
-            ...current,
-            ...productReferences(product),
-          ]),
-        };
-      }
-
-      if (pair.source.type === "input-image") {
+      if (INPUT_SOURCES.has(pair.source.type ?? "")) {
         const contributed = inputReferences(pair.source);
 
-        // Nothing to hand over, already handed over, or no room. The wire is
-        // drawn and nothing else happens in the first two cases; the third is
-        // refused out loud, in the same words the product wire uses, because
-        // the reason is the same and the moment is the same — before the click.
-        if (contributed.length === 0 || current.some((reference) => reference.groupId === pair.source.id)) {
+        // Nothing to hand over, or already handed over: the wire is drawn and
+        // nothing else happens. A second wire is a gesture already made, and a
+        // card with no image yet will deliver the moment it has one.
+        if (
+          contributed.length === 0 ||
+          current.some((reference) => reference.groupId === pair.source.id)
+        ) {
           return { ...connected, nodes: state.nodes };
         }
+
+        // A group arrives whole or not at all. Half of a product is a front view
+        // with no label — a reference that looks attached and cannot say what
+        // the back of the garment looks like. Better refused, in words, before
+        // the wire exists, than discovered as a bad image after paying.
 
         if (contributed.length > free) {
           return {
@@ -866,14 +830,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
         const source = state.nodes.find((entry) => entry.id === edge.source);
 
-        if (groupId) {
-          // A group came either from a product card, whose id is the entity's,
-          // or from an input node, whose id is the node's own.
-          return !(
-            (source?.type === "product" && source.data.entityId === groupId) ||
-            source?.id === groupId
-          );
-        }
+        // A group id is the id of the input card that handed it over, so the
+        // wire to cut is the one whose source is that card.
+        if (groupId) return source?.id !== groupId;
 
         return !(
           removed.origem === "resultado" &&

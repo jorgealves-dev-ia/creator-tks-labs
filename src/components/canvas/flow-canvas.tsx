@@ -19,14 +19,14 @@ import { CharacterNode } from "@/components/nodes/character-node";
 import { GeneratorNode } from "@/components/nodes/generator-node";
 import { InputImageNode } from "@/components/nodes/input-image-node";
 import { InputProductNode } from "@/components/nodes/input-product-node";
-import { ProductNode } from "@/components/nodes/product-node";
+import { LegacyProductNode } from "@/components/nodes/legacy-product-node";
 import { ResultNode } from "@/components/nodes/result-node";
 import { useImageCatalog } from "@/components/nodes/use-image-catalog";
 import { defaultModelId, findModel } from "@/components/ui/model-select";
 import { NODE_TYPE_MIME } from "@/lib/canvas/drag";
 import type { CanvasGraph } from "@/lib/canvas/graph";
 import { applyHelperLines, NO_LINES, type HelperLines } from "@/lib/canvas/helper-lines";
-import { useCanvasStore, type ConnectedProduct } from "@/lib/canvas/store";
+import { useCanvasStore } from "@/lib/canvas/store";
 import { useWorkflowAutosave } from "@/lib/canvas/use-autosave";
 import { useEntitiesStore } from "@/lib/entities/store";
 import {
@@ -35,7 +35,6 @@ import {
   sheetAnchorSlots,
 } from "@/lib/generation/capacity";
 import { t } from "@/lib/i18n/pt-BR";
-import { useProductsStore } from "@/lib/products/store";
 
 /**
  * Defined at module scope: a fresh object on every render would make React Flow
@@ -43,7 +42,7 @@ import { useProductsStore } from "@/lib/products/store";
  */
 const nodeTypes: NodeTypes = {
   character: CharacterNode,
-  product: ProductNode,
+  product: LegacyProductNode,
   generator: GeneratorNode,
   result: ResultNode,
   "input-image": InputImageNode,
@@ -70,7 +69,6 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
 
   const providers = useImageCatalog();
   const characters = useEntitiesStore((state) => state.characters);
-  const products = useProductsStore((state) => state.products);
 
   const { getZoom, screenToFlowPosition } = useReactFlow();
   const [helperLines, setHelperLines] = useState<HelperLines>(NO_LINES);
@@ -127,21 +125,13 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
   }, [providers, characters]);
 
   /**
-   * A wire, with the one thing the graph itself cannot answer: which product a
-   * card stands for, which lives in the Arsenal store.
+   * A wire. Nothing has to be handed in with it any more: the graph knows what
+   * every card contributes, and how much room the target has left is a question
+   * the store asks the resolver above.
    */
-  const handleConnect = useCallback(
-    (connection: Connection) => {
-      const source = useCanvasStore
-        .getState()
-        .nodes.find((node) => node.id === connection.source);
-
-      useCanvasStore.getState().onConnect(connection, {
-        product: source?.type === "product" ? productOf(source, products) : null,
-      });
-    },
-    [products],
-  );
+  const handleConnect = useCallback((connection: Connection) => {
+    useCanvasStore.getState().onConnect(connection);
+  }, []);
 
   // Guides live here, not in the store: they are view state of a drag in
   // progress, not part of the saved document — and the zoom that scales the
@@ -241,24 +231,6 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
       {nodes.length === 0 ? <EmptyCanvasHint /> : null}
     </div>
   );
-}
-
-/** The product a card stands for, as the graph needs it. */
-function productOf(
-  card: Node,
-  products: ReturnType<typeof useProductsStore.getState>["products"],
-): ConnectedProduct | null {
-  const entityId = card.data.entityId;
-  const product = typeof entityId === "string" ? products[entityId] : undefined;
-
-  if (!product) return null;
-
-  return {
-    id: product.id,
-    assetIds: product.photos.map((photo) => photo.assetId),
-    instrucao: product.instrucaoPadrao,
-    nome: product.displayName,
-  };
 }
 
 /** How many more images a generating block can take. Zero for anything else. */
