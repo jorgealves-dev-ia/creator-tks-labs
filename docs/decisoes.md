@@ -1526,3 +1526,39 @@ E o registro ganhou `mencao_sujeito: { handle, sujeito }`. A cena compilada não
 **E uma delas mostra o que a Fase 3 não conserta.** Mesma frase, mesmo sujeito substituído, um minuto de diferença: numa rodada saiu *"in **her** gamer room"*, na outra *"in **his** gamer bedroom"*. O sujeito estava certo nas duas (*"two images of her"*) — o que sobrou é o **possessivo "seu"**, que em português é ambíguo (dele / dela / seu de você) e continua sendo chutado pelo tradutor.
 
 O placar honesto, então: **o vazamento de gênero morreu no sujeito e continua vivo, menor, no possessivo.** Não é regressão — é a mesma classe de problema num lugar que esta fase não tocou, e fica escrito aqui ao lado da promessa que ela cumpriu, porque uma medição que contradiz metade do que se ia dizer vale mais do que a metade que confirma.
+
+### 11/08/2026 — Fase 3b · o possessivo, e uma regra que é quase toda recusa
+
+Adendo aprovado à D1, saído da medição da Fase 3: com o sujeito já certo, `Ela está no seu quarto` voltou *"in **her** gamer room"* numa rodada e *"in **his** gamer bedroom"* na seguinte. `Seu` é ambíguo por construção — dele, dela ou seu de você — e **um tradutor diante de ambiguidade não devolve ambiguidade: ele escolhe.** Trocar por `dela`/`dele` tira a escolha da mesa.
+
+**O custo dos dois erros não é simétrico, e é isso que define a regra.** Deixar ambíguo é barato: o modelo às vezes acerta, e quando erra, erra do jeito que já errava. Reescrever errado é caro: o modelo **obedece**. "No quarto do seu namorado" reescrito com o dono trocado não fica estranho — fica bem-formado, convincente e sobre outra pessoa. Por isso a instrução do Jorge era "na dúvida, não reescrever", e por isso a maior parte do arquivo é a definição de dúvida.
+
+Cinco condições, todas obrigatórias, e cada uma existe por um caso concreto:
+
+| condição | o caso que ela impede |
+|---|---|
+| uma pessoa só na frase | `no quarto do seu namorado` — dois donos possíveis |
+| artigo antes do possessivo | `ajeita seu cabelo` → `ajeita cabelo dela`, substantivo pelado; inserir o artigo certo exigiria saber o gênero do substantivo |
+| sintagma que termina onde dá para ver | `no seu quarto grande cheio de luzes` — sem saber onde acaba, o `dela` cai no meio |
+| nada de `de/do/da` logo depois | `na sua casa da praia` — a preposição continua o sintagma |
+| nada de `você` na frase | aí `seu` é de você, e é |
+
+**A lista de substantivos de pessoa é fechada e incompleta, e isso é seguro porque ela só recusa.** Uma palavra que falta nela não vira reescrita errada por isso: ainda precisa passar pelas outras quatro condições. Uma lista incompleta que *permitisse* seria outra história.
+
+**Cobertura medida antes de gastar Spark, contra os prompts reais.** Dos 25 prompts distintos que existem em `generations`, **11 usam possessivo** (44% — não é caso de borda). A regra reescreve **8 dos 11 (73%)**, e as três recusas são o mesmo caso: `vestindo seu biquíni novo`, sem artigo antes. É vocabulário central deste produto — roupa —, então o buraco é conhecido e não é pequeno; fica ambíguo de propósito, porque a alternativa seria adivinhar o gênero de cada substantivo do português.
+
+Três harnesses `npx tsx` em `scratchpad/evidencias/d1-fase3b/`, e **metade dos casos do principal são casos que a função tem que recusar** — um harness que só testa o que a função faz não testa a parte que decide se ela é segura.
+
+**Validado com geração paga, e a prova é estrutural — não estatística.** `@luna está no seu quarto gamer, com cores rosa e azul` gravou `cena_pt = "Ela está no quarto gamer dela, com cores rosa e azul"`, `possessivos: 1`, e voltou *"she is in **her** gamer room"* nas duas rodadas (uma delas recusada pelo provedor, cobrada 0 ⚡ — e o registro é gravado mesmo assim, que é como se lê o inglês dela).
+
+**O que isso prova é que não sobrou escolha para o tradutor fazer**: `no quarto gamer dela` não vira "his" sem o modelo se contradizer dentro da própria frase, enquanto `no seu quarto` admitia "his" legitimamente. A ambiguidade não foi combatida — foi removida da entrada.
+
+**O que isso não prova é queda de taxa de erro.** Foram duas rodadas, e a frase testada já tinha saído "her" na única vez que rodou antes; a frase que de fato virou ("Duas imagens…", que deu *"in **his** gamer bedroom"*) não foi regerada. Duas rodadas não são amostra, e chamar isso de "erro reproduzido e corrigido" seria inventar um dado. O teste extra foi dispensado com motivo: uma rodada a mais também não seria amostra, e **`mencao_sujeito.possessivos` acumula o dado real no uso normal** — se um "his" aparecer numa frase reescrita, a investigação começa com caso concreto em vez de com estatística fabricada.
+
+### 11/08/2026 — Backlog · possessivo N2: dicionário de gênero do domínio 📌 registrado, com critério de saída
+
+As três recusas medidas na 3b são todas o mesmo padrão: **possessivo sem artigo antes** — `vestindo seu biquíni novo`, `de sua casa simples`. A reescrita exigiria inserir o artigo (`vestindo o biquíni novo dela`), e o artigo certo exige o **gênero do substantivo**, que hoje seria adivinhação.
+
+A saída conhecida é um **dicionário fechado e curado dos substantivos deste domínio** — biquíni (m), vestido (m), saia (f), blusa (f), colar (m), bolsa (f), maquiagem (f) — pequeno, específico e verificável, no espírito de todas as outras listas fechadas da casa. Um dicionário curado não é adivinhação; é a mesma decisão que o `SUBJECT_BY_GENERO` já toma, um nível abaixo.
+
+**Critério de saída, para não construir sobre suposição:** vale a pena quando recusas desse padrão estiverem **acumulando nos prompts reais**. Hoje são 3 em 11 — o suficiente para registrar, não o suficiente para gastar um ciclo. O contador está no lugar certo: cada geração grava `mencao_sujeito.possessivos`, e as recusas são a diferença entre prompts com possessivo e possessivos reescritos.

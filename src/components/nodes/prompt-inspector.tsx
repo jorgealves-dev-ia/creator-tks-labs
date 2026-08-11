@@ -7,6 +7,7 @@ import {
   EXPRESSAO,
   ILUMINACAO,
   labelOf,
+  possessiveFormOf,
   type SheetOption,
 } from "@/lib/character-sheet/dictionary";
 import { usePromptInspector } from "@/lib/canvas/prompt-inspector-store";
@@ -190,6 +191,16 @@ function InspectorDialog({ generationId }: { generationId: string }) {
                             {copy.mentionSubjectPrefix} @{structure.mencao_sujeito.handle}{" "}
                             {copy.mentionSubjectMiddle} “{structure.mencao_sujeito.sujeito}”{" "}
                             {copy.mentionSubjectSuffix}
+                            {structure.mencao_sujeito.possessivos > 0 ? (
+                              <>
+                                {" "}
+                                {structure.mencao_sujeito.possessivos}{" "}
+                                {structure.mencao_sujeito.possessivos === 1
+                                  ? copy.mentionPossessiveOne
+                                  : copy.mentionPossessiveMany}{" "}
+                                “{possessiveFormOf(structure.mencao_sujeito.sujeito)}”.
+                              </>
+                            ) : null}
                           </p>
                         ) : null}
                       </>

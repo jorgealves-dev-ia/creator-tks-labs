@@ -960,6 +960,9 @@ export const t = {
       mentionSubjectPrefix: "Na cena,",
       mentionSubjectMiddle: "virou",
       mentionSubjectSuffix: "antes da tradução.",
+      /** O item 3b: quantos "seu/sua" viraram "dela/dele" na mesma passada. */
+      mentionPossessiveOne: "possessivo também virou",
+      mentionPossessiveMany: "possessivos também viraram",
       director: "Regra do diretor",
       directed: "Você dirigiu a cena — os padrões da personagem não entraram.",
       defaults: "Prompt vazio — entraram os padrões da personagem, inclusive o traje canônico.",

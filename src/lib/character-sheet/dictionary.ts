@@ -105,6 +105,18 @@ export const SUBJECT_BY_GENERO: Record<
   androgino: { sujeito: "a pessoa", de: "da pessoa", em: "na pessoa" },
 };
 
+/**
+ * "ela" → "dela" — a forma que os possessivos reescritos usam (item 3b).
+ *
+ * Lida da mesma tabela em vez de gravada de novo no registro: o sujeito já está
+ * lá, e duas cópias da mesma decisão são duas chances de discordarem.
+ */
+export function possessiveFormOf(sujeito: string): string {
+  const row = Object.values(SUBJECT_BY_GENERO).find((entry) => entry.sujeito === sujeito);
+
+  return row?.de ?? sujeito;
+}
+
 /** §5.2 · Apparent age — the visual one. The real age belongs to the narrative. */
 export const IDADE_APARENTE = [
   { key: "inicio_dos_20", pt: "Início dos 20", en: `in ${PRONOUN_PLACEHOLDER} early twenties` },

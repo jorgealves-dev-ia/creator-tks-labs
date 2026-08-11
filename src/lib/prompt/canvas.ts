@@ -108,7 +108,7 @@ export type BuildCanvasPromptOptions = {
    * the scene *were* the character. Null when no mention was spent on a scene
    * (an empty prompt, or no mention at all).
    */
-  mencaoSujeito?: { handle: string; sujeito: string } | null;
+  mencaoSujeito?: { handle: string; sujeito: string; possessivos?: number } | null;
   /** The node's style override; null inherits from the character, then default. */
   estiloKey: string | null;
   /**
@@ -220,8 +220,11 @@ export type CanvasPromptStructure = {
   traje_canonico: string | null;
   cena_padrao: string[];
   cena_usuario: { pt: string; en: string } | null;
-  /** The subject the mention was replaced by, before translation (item 3d). */
-  mencao_sujeito: { handle: string; sujeito: string } | null;
+  /**
+   * The subject the mention was replaced by, before translation (item 3d), and
+   * how many possessives were rewritten with it (item 3b).
+   */
+  mencao_sujeito: { handle: string; sujeito: string; possessivos?: number } | null;
   ajustes_cena: CanvasSceneAdjustment[];
   referencias: CanvasReferenceDirective[];
   /**

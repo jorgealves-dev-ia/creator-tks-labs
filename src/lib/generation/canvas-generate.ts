@@ -16,6 +16,7 @@ import {
   sceneWithoutMentions,
   sceneWithSubject,
 } from "@/lib/generation/mentions";
+import { rewritePossessives } from "@/lib/generation/possessive";
 import {
   DEFAULT_IMAGE_SIZE,
   IMAGE_SIZES,
@@ -286,12 +287,38 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
       ? SUBJECT_BY_GENERO[generoKey as GeneroApresentacao]
       : SUBJECT_BY_GENERO.androgino;
 
-  const sceneForModel = scene === "" ? "" : sceneWithSubject(request.prompt, mentions, subject);
+  const withSubject = scene === "" ? "" : sceneWithSubject(request.prompt, mentions, subject);
+
+  /**
+   * 3c. And the possessive — item 3b, the half the subject substitution does
+   * not reach.
+   *
+   * Measured on this very database: with the subject already fixed, the same
+   * sentence came back "in her gamer room" on one run and "in his gamer
+   * bedroom" on the next. "Seu" is ambiguous in Portuguese by construction, and
+   * a translator facing ambiguity does not return ambiguity — it picks.
+   *
+   * `unicaPessoa` is the caller's half of the contract: only a resolved mention,
+   * and v1 allows exactly one. Everything else the rule refuses on its own, and
+   * refusing is most of what it does — see possessive.ts for the asymmetry that
+   * makes that the right default.
+   */
+  const possessives = rewritePossessives(withSubject, subject, {
+    unicaPessoa: character !== null,
+  });
+
+  const sceneForModel = possessives.text;
 
   // What the `@` became, recorded rather than left to be inferred from a
   // sentence that no longer contains it.
   const mencaoSujeito =
-    character && scene !== "" ? { handle: character.handle, sujeito: subject.sujeito } : null;
+    character && scene !== ""
+      ? {
+          handle: character.handle,
+          sujeito: subject.sujeito,
+          possessivos: possessives.reescritos,
+        }
+      : null;
 
   // 4. The reference ceiling of the chosen model, counting the character's own
   //    sheet — it is an image in the same call and occupies the same room.

@@ -63,7 +63,12 @@ export const structureSchema = z.object({
    * exatamente o que dizia.
    */
   mencao_sujeito: z
-    .object({ handle: z.string(), sujeito: z.string() })
+    .object({
+      handle: z.string(),
+      sujeito: z.string(),
+      /** Ausente nas gerações entre a Fase 3 e a 3b: lê como zero, que é a verdade. */
+      possessivos: z.number().default(0),
+    })
     .nullable()
     .default(null),
   /**
