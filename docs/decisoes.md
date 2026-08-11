@@ -1376,3 +1376,39 @@ A correção tem duas metades, e a segunda é a que importa:
 - **O resumo da etapa passa a carregar a prova.** A saída de `git log origin/master -1` vai colada no resumo, com hash e mensagem. A primeira metade depende de lembrar; a segunda **não deixa o erro passar despercebido**, porque a ausência da linha é visível e um hash antigo denuncia o push que falhou.
 
 Fica o princípio, que vale além deste caso: **quando o sucesso e a falha de uma etapa têm a mesma aparência, o ritual precisa produzir uma evidência que só existe no sucesso.** "Está em produção" era uma suposição confortável porque nada no fechamento a contradizia. Agora é uma linha de log — ou não é nada.
+
+---
+
+### 11/08/2026 — Canvas 4 encerrado: os cinco blocos passaram, e os dois últimos passaram por terem sido testados
+
+**Bloco 1 — anatomia do node: PASSOU.** Ordem correta (cabeçalho → configuração → chave de inputs → prompt → botão → custo e saldo → resultado), a chave "Input Referências" nascendo desligada, custo e saldo sob o botão, saldo semeado antes da primeira geração.
+
+**Bloco 2 — os quatro Inputs: PASSOU.** Na tela: shimmer ao conectar, teto honesto ("4 de 6 — a folha conta uma"), "+" com guarda e fio vivo. No registro, cada um dos quatro tipos com sua diretiva gravada:
+
+| Tipo | Onde está gravado | O que a diretiva diz |
+|---|---|---|
+| Imagem | `1dc18775` | `"Use reference image 2, faithfully"` — sem papel, que é o ponto: imagem crua |
+| Produto | `853838e2` | duas fotos num grupo só, com `"…are the same single object photographed from different angles — show it once, not several times"` |
+| Pose | `f8aaf969`, `1dc18775` | `"…for viewpoint only: do not copy its subject, clothing, background or lighting"` |
+| Character Sheet | `853838e2` | `"Where more than one identity reference is given, they are the same person"`, convivendo com as duas frases de âncora da menção |
+
+**E o conflito de eixo entre o Input de Pose e o seletor de ângulo se resolveu como a decisão previa, com o registro para provar.** Em `1dc18775`, `angulo_em_pausa` guarda `corpo_inteiro` — e `ajustes_cena` carrega **apenas** a expressão. Ou seja: o ângulo foi escolhido, a imagem venceu, o seletor entrou em pausa e a opção preterida ficou gravada em vez de virar frase no prompt. É exatamente a peça que torna o experimento usável, e ela não está mais no campo da confiança.
+
+**Bloco 3 — paralelismo: PASSOU, medido.** `82dc45df` em `16:43:01.008322` e `853838e2` em `16:43:01.355658` — **347 ms de distância**, prova de que são requisições independentes e não um laço dentro de uma. Cada uma com seu débito, no mesmo timestamp da geração: débito e registro numa transação só, por imagem. Dois Resultados no canvas.
+
+**Bloco 4 — auditoria: PASSOU.** Cinco débitos de 50 ⚡ no dia, 250 centavos no total. Custo real 38 contra 50 cobrados: margem **1,32×**. E a cobrança fechou **1:1 com o sucesso**, medido no banco:
+
+| Estado da geração | Gerações | Lançamentos no ledger |
+|---|---|---|
+| `succeeded` | 5 | 5 |
+| `failed` | 3 | **0** |
+
+Nenhuma falha cobrou, e por isso nenhuma precisou de estorno. Num livro append-only, a cobrança que não acontece vale mais que a cobrança estornada: são duas linhas a menos para alguém interpretar daqui a seis meses.
+
+**Bloco 5 — fidelidade: PASSOU.** Produto fiel, pose obedecida e identidade da `@luna` consistente nos dois slots paralelos. A pose obedecida é o **dado nº 1 do experimento do Input de Pose** (critério de saída nº 3, "fica se for usado"), e o "em pausa" gravado do Bloco 2 é o **dado nº 1 do critério nº 2**, o do conflito — que era o critério sem nenhuma medição até hoje.
+
+**Pendência conhecida, e é a única:** a legibilidade do "Ver Prompt" na interface segue no passe de legibilidade da Etapa D.
+
+Fica o registro de como este placar ficou limpo, porque a primeira versão dele não estava. Dois itens do Bloco 2 — "os quatro inputs funcionaram" e "o ângulo entrou em pausa" — foram escritos **antes** da consulta, e a consulta os derrubou: Input de Imagem em zero de quarenta gerações, `angulo_em_pausa` nulo nas quarenta. Nenhum dos dois era falso por má-fé; os dois eram plausíveis, coerentes com o que tinha sido construído, e assináveis de memória por qualquer um que tivesse feito o ciclo.
+
+**A resposta certa a um item que não passou não é suavizar a redação, é rodar o teste que falta.** Os dois foram exercitados, e vinte minutos depois o placar era verdade — não porque alguém reescreveu o placar, mas porque o produto passou a fazer o que ele dizia. É a diferença entre um diário que descreve a realidade e um que a maquia, e ela se decide exatamente neste ponto: **quando a consulta contradiz o que se ia escrever, o que cede é o texto ou o mundo?** Aqui cedeu o mundo, que é o único jeito de encerrar um ciclo sem dívida.
