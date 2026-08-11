@@ -206,6 +206,16 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   });
 
   /**
+   * The image the `@` contributes, for the strip to draw as image 1.
+   *
+   * The same frozen folha `sheetAnchorSlots` counts — so the thumbnail and the
+   * reserved slot can never disagree about whether there is one.
+   */
+  const anchorFolha = mentioned?.activeVersion?.sheet.imagens_canonicas.folha_completa ?? null;
+  const anchorSheet =
+    mentioned && anchorFolha ? { assetId: anchorFolha, handle: mentioned.handle } : null;
+
+  /**
    * The images this block last produced, whatever era the graph was saved in.
    * A block from before the stepper carries one id in the singular field; the
    * plural is what everything writes now.
@@ -742,6 +752,10 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
             references={references}
             limit={capacity.limit}
             reserved={capacity.reserved}
+            // The sheet the mention brings, drawn as image 1 so the numbering
+            // explains itself. Read from the same active version the server
+            // will resolve — advisory here, authoritative there.
+            anchor={anchorSheet}
             disabled={busy}
             enabled={referencesEnabled}
             onEnabledChange={(next) => updateNodeData(id, { referencesEnabled: next })}

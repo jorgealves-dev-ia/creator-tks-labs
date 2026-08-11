@@ -773,6 +773,47 @@ export const t = {
       noVersionTooltip: "Salve a v1 desta personagem para poder chamá-la com @.",
     },
     /** The strip of attached images inside the block (N1). */
+    /**
+     * De onde uma referência veio, nas duas formas que as duas telas pedem.
+     *
+     * A **curta** entra numa lista que já disse "Imagem 2 ·", onde repetir a
+     * palavra "Input" a cada linha só ocupa espaço. A **longa** entra num
+     * tooltip, que aparece sozinho e sem contexto nenhum — ali "Character
+     * Sheet" poderia ser o tipo da imagem, e "Input de Character Sheet" é o
+     * card que está no canvas, com esse nome, a um fio de distância.
+     *
+     * As duas saem da mesma tabela porque são a mesma coisa dita para dois
+     * públicos. Duas tabelas seriam duas chances de a faixa e o histórico
+     * chamarem o mesmo card por nomes diferentes.
+     */
+    referenceSources: {
+      sheet: "Character Sheet",
+      sheetLong: "Input de Character Sheet",
+      product: "Produto",
+      productLong: "Input de Produto",
+      image: "Imagem",
+      imageLong: "Input de Imagem",
+      pose: "Pose/Ângulo",
+      poseLong: "Input de Pose/Ângulo",
+      /** Um Resultado do canvas ligado por fio: não é card de input, mas tem node. */
+      result: "Resultado",
+      resultLong: "Resultado conectado",
+      /** A folha que a menção traz. Não é input de ninguém — é a âncora do @. */
+      anchorPrefix: "Folha da @",
+      anchorSuffix: "âncora",
+
+      /**
+       * As vagas que uma referência ocupa: "Imagem 2", "Imagens 3 e 4".
+       *
+       * Aqui e não em cada tela porque o número é a única coisa que o prompt
+       * compilado e a miniatura têm em comum — "the product shown in reference
+       * image 2" só é conferível se a tela disser 2 nos dois lugares.
+       */
+      imageOne: "Imagem",
+      imageMany: "Imagens",
+      and: "e",
+    },
+
     references: {
       /**
        * As aspas são de propósito: o rótulo nomeia a chave, e a chave se chama
@@ -800,12 +841,16 @@ export const t = {
       remove: "Remover",
       instructionPlaceholder: "desta imagem, pegue apenas o cenário",
       instructionHint: "Opcional. Traduzido na hora de gerar.",
-      /** A product's photos are one thing in the strip, as they are in the prompt. */
-      productPrefix: "Produto:",
-      productUnknown: "Produto",
-      removeProduct: "Remover o produto inteiro",
-      productFixedKind: "Tipo fixo:",
-      productInstructionHint: "Vale para todas as fotos deste produto, só nesta geração.",
+      /** Várias fotos de uma coisa só são uma coisa só na faixa, como no prompt. */
+      groupUnknown: "Sem nome",
+      removeGroup: "Remover o card inteiro",
+      /**
+       * O que veio por um card é decidido **no card** — inclusive o chip. Esta
+       * linha dizia "Tipo fixo: Produto" para tudo, porque todo input carimba o
+       * id do node como id de grupo; agora ela nomeia o card de origem.
+       */
+      fixedByCard: "Definido no card:",
+      groupInstructionHint: "Vale para todas as fotos deste card, só nesta geração.",
     },
 
     /** The gallery modal (§4) — used by a generating block and by the product editor. */
@@ -917,16 +962,18 @@ export const t = {
         iluminacao: "Iluminação",
         expressao: "Expressão",
       },
-      references: "Referências",
+      /**
+       * A folha da menção, lida de volta como a imagem 1 que ela é.
+       *
+       * Ela nunca esteve nesta lista — só em `personagem.folha_asset_id` —, e
+       * por isso a lista começava em "Imagem 2" sem nada explicando o 1.
+       */
+      anchorHint: "Entra como imagem 1 e ancora a identidade. Não é input: vem com a menção.",
       pausedAngle: "Ângulo em pausa",
       pausedAngleWhy: "o Input de Pose respondeu por ele",
       mutedReferences: "Referências mudas",
       mutedSingular: "imagem estava conectada e não entrou nesta geração.",
       mutedPlural: "imagens estavam conectadas e não entraram nesta geração.",
-      imagePrefix: "Imagem",
-      /** A product occupied several slots and gave one instruction: "Imagens 2, 3 e 4". */
-      imagesPrefix: "Imagens",
-      and: "e",
       restrictions: "Restrições",
       sent: "O que foi para o modelo",
       noText: "Sem texto registrado.",

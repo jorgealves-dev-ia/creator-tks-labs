@@ -147,6 +147,8 @@ Versão curta. O porquê de cada uma está em [`docs/arquitetura.md`](docs/arqui
 
    **Quem valida no navegador depende do risco** (emenda de 11/08/2026, com o porquê em [`docs/decisoes.md`](docs/decisoes.md)). Tarefa **sem geração** — zero Sparks, sem tocar em ledger, compilador ou escrita no banco: o Claude valida em `localhost:3000`, com **um screenshot por item do roteiro de teste colado no resumo**. "Conferi e passou" sem print não vale. Qualquer item que envolva **geração ou dado financeiro volta para o Jorge**. O commit continua esperando o ok dele, dado sobre os prints.
 
+   **Evidência tem endereço fixo:** `D:\Z - Meus Projetos DevIA\Creator TKS Labs\scratchpad\evidencias\<etapa>-<fase>\`, um arquivo por item, com **nome que diz o que o print prova** (`trilho-fechado-luna-foto.png`), e a lista de caminhos no resumo. Pasta de temp com timestamp no nome não é evidência — daqui a uma semana ninguém acha, e prova que ninguém acha não prova nada.
+
    **Nunca rodar `npm run build` com o `npm run dev` no ar** — os dois escrevem no mesmo `.next/`. Parar o dev, buildar, subir o dev de novo.
 
    **O commit de fechamento e o `git push` são a mesma ação, nunca duas.** Commitar sem empurrar deixa a etapa pronta num lugar onde ninguém a vê — o deploy da Vercel sai do `origin/master`, então o que fica só no local não existe para o produto. Não há etapa "commitada mas ainda não empurrada": ou as duas rodaram, ou o fechamento não aconteceu.

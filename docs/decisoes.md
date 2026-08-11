@@ -1476,3 +1476,23 @@ E "Editar" **não copia nada** — mostra o rascunho como ele já está. É por 
 Aprovado em conceito, **fora da D1** por exigir migration. O padrão continua sendo a folha da versão ativa (a regra que a Fase 1 acabou de instalar); o que a D2 acrescenta é um **override opcional gravado na entidade**: qualquer geração daquela personagem, ou um upload.
 
 **O avatar é da personagem, não da versão** — e é essa frase que decide onde a coluna mora. A folha muda a cada versão porque ela *é* a identidade congelada; o avatar é como a pessoa quer ver a personagem na lista, e trocar de versão não é motivo para o rosto na barra lateral mudar sozinho. Por isso a coluna vai em `entities`, nunca em `entity_versions`.
+
+### 11/08/2026 — Emenda da emenda: evidência com endereço e nome
+
+A regra do print, um dia depois de existir, ganhou a parte que faltava: **onde ele fica e como se chama**. Os prints da Fase 1 foram parar numa pasta de temp com timestamp no nome — serviram para a conversa daquela hora e são inencontráveis na semana seguinte.
+
+A partir da Fase 2: `scratchpad/evidencias/<etapa>-<fase>/`, um arquivo por item do roteiro, com **nome descritivo do que ele prova** (`trilho-fechado-luna-foto.png`, não `screenshot-1786476894571-11.png`), e a lista de caminhos no resumo. Fora do repositório, como todo artefato de validação, então nunca entra em commit por acidente.
+
+**O nome do arquivo é metade da evidência.** Um print chamado `screenshot-11` obriga quem for conferir a abrir os onze para achar o que interessa — e um print que ninguém abre é indistinguível de um print que não existe, que é exatamente o buraco que a regra do "sem print não vale" veio tapar.
+
+### 11/08/2026 — Fase 2: um vocabulário só para a faixa e o histórico
+
+O sintoma era um tooltip errado; a causa era mais larga. **Todo card de input carimba o id do seu node como id de grupo** — foi assim que "cortar este fio tira estas imagens" ficou confiável, mesmo quando a mesma foto chega por dois cards. Só que a faixa lia `grupo ⇒ produto`, e um grupo de um continua sendo um grupo. Resultado: a folha de um Input de Character Sheet aparecia como **"Produto:" com nome vazio**, a moldura tracejada de "estas várias são uma coisa só" cercava fotos sozinhas, o `✕` oferecia "remover o produto inteiro" para uma imagem só, e o painel anunciava "Tipo fixo: Produto" para qualquer card.
+
+**A correção é uma tabela, não uma cadeia de `if`.** `referenceSourceLabel` responde "de onde isto veio" em duas formas — curta para uma lista que já disse "Imagem 2 ·", longa para um tooltip que aparece sem contexto nenhum — e as duas telas leem dela. Duas tabelas seriam duas chances de a faixa e o histórico chamarem o mesmo card por nomes diferentes, que é exatamente o defeito que a fase veio consertar.
+
+**No canvas a resposta é exata; no histórico ela é reconstruída — e isso é de propósito.** A referência viva carrega `inputType`, o tipo do node que a entregou, reescrito a cada edição pelo mesmo `syncInputInto` que já mantém o rótulo do grupo. Uma geração da semana passada não tem esse campo: ela gravou o que o compilador precisava (`papel`, `tipo`, `grupo`), não o que a interface ia querer dizer depois. Então a mesma tabela lê os quatro tipos das marcas que existem — `papel` nomeia folha e pose, `tipo: "produto"` nomeia o produto, e o que sobra é imagem. **Nada é inventado e nada é reescrito**: uma linha antiga continua dizendo exatamente o que dizia.
+
+**A folha da menção virou imagem 1 nos dois lugares.** Na faixa, uma miniatura tracejada sem `✕` e sem chip; no "Ver prompt", uma linha própria antes das outras. Ela nunca esteve em `referencias` — mora em `personagem.folha_asset_id`, porque não é input de referência —, e o efeito colateral era uma lista que começava em "Imagem 2" sem nada explicando o 1. O contador já dizia "a folha conta uma"; agora dá para ver a imagem que ele conta. **Um número correto que ninguém consegue conferir é um número em que se acredita, não um que se sabe.**
+
+E o par PT→EN dos ajustes de cena ganhou uma seta. `Sorriso aberto` e `warm open smile` estavam em linhas coladas a 10px, e a leitura — ou o copiar e colar — produzia `Sorriso abertowarm open smile`. Uma seta custa um caractere e diz o que o layout só insinuava: **isto virou aquilo**. Junto veio o passe de legibilidade: corpo de 12–14px no lugar de 10–11px e o diálogo mais largo, porque as cláusulas em inglês são frases longas e a coluna estreita transformava cada uma em quatro linhas irregulares. Um registro que existe para ser conferido tem que ser legível — senão ele é um arquivo, não uma prova.

@@ -66,6 +66,22 @@ type StoredReference = {
    * an extra clause — "pose" or "folha". Null for everything else.
    */
   papel?: string | null;
+  /**
+   * The node type of the card that contributed it — "input-image",
+   * "input-product", "input-pose", "input-sheet".
+   *
+   * Written for the interface, never for the model: it is what lets the strip
+   * name the card a thumbnail came from instead of guessing. Guessing is what
+   * it used to do, and it guessed "produto" for everything, because every input
+   * stamps its node id as a group id and a group of one is still a group.
+   *
+   * Denormalised onto the reference for the same reason `groupLabel` is:
+   * `syncInputInto` rewrites it on every edit, so it cannot go stale, and the
+   * strip stays a component that renders what it is handed rather than one that
+   * reaches into the graph. References saved before this field existed simply
+   * have none, and reference-labels.ts reads them from `papel` and `kind`.
+   */
+  inputType?: string | null;
 };
 
 /**
@@ -213,6 +229,7 @@ function inputReferences(node: Node): StoredReference[] {
       origem: "input",
       groupId: node.id,
       groupLabel: nome,
+      inputType: node.type,
     }));
   }
 
@@ -225,13 +242,29 @@ function inputReferences(node: Node): StoredReference[] {
   // gets to ask again — and carries the role that earns it its own clause.
   if (node.type === "input-pose") {
     return [
-      { assetId, kind: "pose", instrucao, origem: "input", groupId: node.id, papel: "pose" },
+      {
+        assetId,
+        kind: "pose",
+        instrucao,
+        origem: "input",
+        groupId: node.id,
+        papel: "pose",
+        inputType: node.type,
+      },
     ];
   }
 
   if (node.type === "input-sheet") {
     return [
-      { assetId, kind: null, instrucao, origem: "input", groupId: node.id, papel: "folha" },
+      {
+        assetId,
+        kind: null,
+        instrucao,
+        origem: "input",
+        groupId: node.id,
+        papel: "folha",
+        inputType: node.type,
+      },
     ];
   }
 
@@ -242,6 +275,7 @@ function inputReferences(node: Node): StoredReference[] {
       instrucao,
       origem: "input",
       groupId: node.id,
+      inputType: node.type,
     },
   ];
 }
@@ -636,7 +670,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         ...connected,
         nodes: withReferences(state.nodes, pair.generator.id, [
           ...current,
-          { assetId, kind: null, instrucao: "", origem: "resultado" },
+          { assetId, kind: null, instrucao: "", origem: "resultado", inputType: "result" },
         ]),
       };
     }),
@@ -812,7 +846,13 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         }),
         data: {
           references: [
-            { assetId, kind: null, instrucao: "", origem: "resultado" } satisfies StoredReference,
+            {
+              assetId,
+              kind: null,
+              instrucao: "",
+              origem: "resultado",
+              inputType: "result",
+            } satisfies StoredReference,
           ],
         },
       };

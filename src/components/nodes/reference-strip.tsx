@@ -3,6 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 
 import { signAssetUrls } from "@/lib/assets/actions";
+import {
+  anchorLabel,
+  positionsLabel,
+  referenceSourceTooltip,
+} from "@/lib/generation/reference-labels";
 import { findReferenceKind, REFERENCE_KINDS, type ReferenceKind, type ReferenceOrigin } from "@/lib/generation/references";
 import { t } from "@/lib/i18n/pt-BR";
 
@@ -39,6 +44,22 @@ export type ReferenceEntry = {
   groupLabel?: string;
   /** Which specialised input handed it over: "pose", "folha", or nothing. */
   papel?: string | null;
+  /** The node type of the card it came from — what the tooltip names. */
+  inputType?: string | null;
+};
+
+/**
+ * The sheet a mentioned character brings with it: image 1, always, and not a
+ * reference input at all.
+ *
+ * It is shown here because the strip is where somebody counts the images that
+ * are about to be sent, and a strip whose first removable thumbnail is numbered
+ * 2 owes an explanation for the 1. It is not removable, not editable and not
+ * silenced by the switch — the mute has no opinion about the `@`.
+ */
+export type ReferenceAnchor = {
+  assetId: string;
+  handle: string;
 };
 
 /**
@@ -93,6 +114,8 @@ type ReferenceStripProps = {
   limit: number;
   /** 1 when a mentioned character brings its own sheet, which occupies a slot. */
   reserved: number;
+  /** That sheet, when there is one — drawn as image 1 and nothing else. */
+  anchor: ReferenceAnchor | null;
   disabled: boolean;
   /**
    * Whether the attached images are heard at all.
@@ -113,6 +136,7 @@ export function ReferenceStrip({
   references,
   limit,
   reserved,
+  anchor,
   disabled,
   enabled,
   onEnabledChange,
@@ -157,7 +181,13 @@ export function ReferenceStrip({
     return () => window.clearTimeout(timer);
   }, [references.length, enabled]);
 
-  const assetIds = references.map((reference) => reference.assetId);
+  // The anchor is signed with the rest: it is one more private image this strip
+  // has to draw, and one more entry in the key means a mention appearing or
+  // disappearing re-signs exactly once.
+  const assetIds = [
+    ...(anchor ? [anchor.assetId] : []),
+    ...references.map((reference) => reference.assetId),
+  ];
   const key = assetIds.join(",");
 
   useEffect(() => {
@@ -256,6 +286,25 @@ export function ReferenceStrip({
       </div>
 
       <div className="flex flex-wrap items-start gap-1.5">
+        {/*
+          Image 1, when a mention brings one.
+
+          Dashed and dimmed because it is not this block's to change: no ✕, no
+          chip, no sentence. It is here to answer the question the numbers
+          raise — why does the first thumbnail you can remove say "2"? — and to
+          make "a folha conta uma" something you can see rather than a claim in
+          a counter. The switch does not grey it either: muting silences the
+          reference inputs, and the anchor of an `@` is not one of them.
+        */}
+        {anchor ? (
+          <div
+            title={anchorLabel(anchor.handle)}
+            className="rounded-md border border-dashed border-line-strong p-px"
+          >
+            <Thumbnail url={urls[anchor.assetId]} position={1} marked={false} />
+          </div>
+        ) : null}
+
         {slots.map((slot, slotIndex) => {
           const entry = references[slot.indexes[0]];
           const selected = openSlot === slotIndex;
@@ -279,13 +328,21 @@ export function ReferenceStrip({
                 type="button"
                 disabled={disabled}
                 onClick={() => setOpenSlot(selected ? null : slotIndex)}
-                title={
-                  slot.kind === "group"
-                    ? `${copy.productPrefix} ${groupNameOf(references, slot) ?? ""}`.trim()
-                    : `${copy.imagePrefix} ${slot.positions[0]}`
-                }
+                /*
+                  Which card this came from, asked rather than assumed.
+                  It used to read "grupo ⇒ produto", and every input card stamps
+                  its node id as a group id — so a character sheet arrived
+                  labelled "Produto:" with an empty name. The thumbnail now says
+                  what is on the canvas a wire away from it.
+                */
+                title={`${positionsLabel(slot.positions)} · ${referenceSourceTooltip(entry)}`}
+                /* The dashed frame says "these several images are one thing", so
+                   it belongs to slots that hold several. Keyed off `kind ===
+                   "group"` it appeared around every input card's single
+                   picture, which said the same thing about one image — and
+                   said it in the visual vocabulary of a product. */
                 className={`nodrag block rounded-md transition-colors disabled:opacity-50 ${
-                  slot.kind === "group"
+                  slot.indexes.length > 1
                     ? `border border-dashed p-1 ${
                         selected ? "border-accent" : "border-line hover:border-line-strong"
                       }`
@@ -300,10 +357,10 @@ export function ReferenceStrip({
                       are one thing". A group of one is not several images, so
                       it wears neither — an input handing over a single picture
                       should look like a single picture. */}
-                  {slot.kind === "group" && slot.indexes.length > 1 ? (
+                  {slot.indexes.length > 1 ? (
                     <>
                       <span className="mb-1 block max-w-36 truncate px-0.5 text-left text-[9px] text-ink-faint">
-                        {groupNameOf(references, slot) ?? copy.productUnknown}
+                        {groupNameOf(references, slot) ?? copy.groupUnknown}
                       </span>
                       <span className="flex gap-1">{thumbs}</span>
                     </>
@@ -327,12 +384,10 @@ export function ReferenceStrip({
                 type="button"
                 disabled={disabled}
                 onClick={() => remove(slot.indexes[0])}
-                title={slot.kind === "group" ? copy.removeProduct : copy.remove}
-                aria-label={
-                  slot.kind === "group"
-                    ? `${copy.removeProduct} — ${groupNameOf(references, slot) ?? ""}`.trim()
-                    : `${copy.remove} — ${copy.imagePrefix} ${slot.positions[0]}`
-                }
+                title={slot.indexes.length > 1 ? copy.removeGroup : copy.remove}
+                aria-label={`${slot.indexes.length > 1 ? copy.removeGroup : copy.remove} — ${positionsLabel(
+                  slot.positions,
+                )} · ${referenceSourceTooltip(entry)}`}
                 className="nodrag absolute -right-1 -top-1 flex size-4 items-center justify-center
                            rounded-full border border-line bg-surface text-[9px] leading-none
                            text-ink-muted opacity-0 transition-opacity
@@ -366,12 +421,19 @@ export function ReferenceStrip({
       {open && openEntry ? (
         <div className="mt-2 rounded-lg border border-line bg-surface p-2">
           {open.kind === "group" ? (
-            /* A product's photos are products — the chip is not a question the
-               block gets to ask again. Leaving it open would let one photo of a
-               bikini be labelled "cenário" while the other two stayed "produto",
-               and the compiled prompt would describe two different things. */
+            /* What arrived through a card is decided on that card — the chip
+               included. Leaving it open here would let one photo of a bikini be
+               labelled "cenário" while the other two stayed "produto", and the
+               compiled prompt would describe two different things.
+               What it says had to change, though: this line announced "Tipo
+               fixo: Produto" for everything, so a character sheet handed over by
+               its own card was introduced as a product. It now names the card
+               and the chip that card actually pinned. */
             <p className="mb-1.5 text-[10px] text-ink-faint">
-              {copy.productFixedKind} {findReferenceKind("produto")?.pt}
+              {copy.fixedByCard} {referenceSourceTooltip(openEntry)}
+              {findReferenceKind(openEntry.kind)
+                ? ` · ${findReferenceKind(openEntry.kind)?.pt}`
+                : ""}
             </p>
           ) : (
             <div className="mb-1.5 flex flex-wrap gap-1">
@@ -412,7 +474,7 @@ export function ReferenceStrip({
 
           <div className="mt-1 flex items-center justify-between gap-2">
             <span className="text-[10px] leading-relaxed text-ink-faint">
-              {open.kind === "group" ? copy.productInstructionHint : copy.instructionHint}
+              {open.indexes.length > 1 ? copy.groupInstructionHint : copy.instructionHint}
             </span>
             <button
               type="button"
@@ -421,7 +483,7 @@ export function ReferenceStrip({
               className="nodrag shrink-0 text-[10px] text-ink-faint transition-colors
                          hover:text-negative disabled:opacity-50"
             >
-              {open.kind === "group" ? copy.removeProduct : copy.remove}
+              {open.indexes.length > 1 ? copy.removeGroup : copy.remove}
             </button>
           </div>
         </div>
@@ -527,10 +589,7 @@ function HelpTip() {
  * the photos. The fallback covers the product cards of the old Arsenal, whose
  * name still lives in their own store; it goes away with them.
  */
-function groupNameOf(
-  references: readonly ReferenceEntry[],
-  slot: Extract<Slot, { kind: "group" }>,
-): string | null {
+function groupNameOf(references: readonly ReferenceEntry[], slot: Slot): string | null {
   const label = references[slot.indexes[0]]?.groupLabel?.trim();
 
   return label ? label : null;
