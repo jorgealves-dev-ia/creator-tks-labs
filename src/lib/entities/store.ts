@@ -45,6 +45,12 @@ type EntitiesState = {
   markDraftSaved: (id: string, revision: number) => void;
   openEditor: (id: string) => void;
   closeEditor: () => void;
+  /**
+   * Takes an archived character out of the lists. The row itself is preserved,
+   * along with every generation, version and image that ever pointed at it —
+   * see archiveCharacter for the measurement behind that.
+   */
+  forget: (id: string) => void;
 
   setVersions: (id: string, versions: VersionSummary[]) => void;
   /** After saving: the new snapshot is added to the list and becomes active. */
@@ -163,6 +169,22 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
   // the wall (spec §5).
   openEditor: (editingId) => set({ editingId, viewingVersionId: null, viewingSheet: null }),
   closeEditor: () => set({ editingId: null, viewingVersionId: null, viewingSheet: null }),
+
+  forget: (id) =>
+    set((state) => {
+      const characters = { ...state.characters };
+      delete characters[id];
+
+      return {
+        characters,
+        order: state.order.filter((entry) => entry !== id),
+        // The editor was open on her; leaving it open would leave a dialog
+        // editing a draft that no list contains any more.
+        editingId: state.editingId === id ? null : state.editingId,
+        viewingVersionId: state.editingId === id ? null : state.viewingVersionId,
+        viewingSheet: state.editingId === id ? null : state.viewingSheet,
+      };
+    }),
 
   setVersions: (id, list) =>
     set((state) => ({ versions: { ...state.versions, [id]: list } })),

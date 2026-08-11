@@ -562,6 +562,28 @@ export const t = {
       nameRequired: "Dê um nome à personagem.",
       notFound: "Personagem não encontrada.",
     },
+
+    /**
+     * A exclusão, que é arquivamento — e a tela diz as duas metades.
+     *
+     * O que se perde é real e precisa estar escrito antes do clique: ela sai do
+     * Arsenal e o `@` para de resolver. O que fica também precisa, porque a
+     * palavra "excluir" faz qualquer pessoa supor que as imagens vão junto — e
+     * elas não vão.
+     */
+    archive: {
+      action: "Excluir personagem",
+      title: "Excluir esta personagem?",
+      lostTitle: "O que você perde",
+      lost: "Ela sai do Arsenal, e @{handle} para de funcionar em gerações novas.",
+      keptTitle: "O que continua existindo",
+      kept: "As imagens na galeria, as gerações já feitas, o extrato e as versões salvas.",
+      irreversible: "Não dá para desfazer pela interface.",
+      confirm: "Excluir",
+      working: "Excluindo…",
+      cancel: "Cancelar",
+      failed: "Não foi possível excluir a personagem.",
+    },
   },
 
   /** The Inputs shelf and its nodes — §7 do briefing do Canvas 4. */

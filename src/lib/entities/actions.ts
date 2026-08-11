@@ -355,3 +355,50 @@ export async function isHandleAvailable(input: unknown): Promise<HandleCheckResu
 
   return { available: !data };
 }
+
+// ---------------------------------------------------------------------------
+// Putting a character away
+// ---------------------------------------------------------------------------
+
+export type ArchiveCharacterResult = { ok: true } | { ok: false; reason: "invalid" | "error" };
+
+/**
+ * Archives a character: it leaves the Arsenal and every list, and everything it
+ * ever touched is preserved.
+ *
+ * **Archived and not deleted**, and the reason here is measured rather than
+ * assumed. `generations.entity_id` references `entities` with ON DELETE CASCADE,
+ * so a real delete would take **every image she was ever in** with her — the
+ * rows, not the files. `entity_versions` cascades the same way, so the frozen
+ * snapshots would go too. And `ledger_transactions.generation_id` is ON DELETE
+ * SET NULL, so the money would stay in the ledger pointing at nothing: orphan
+ * debits in an append-only book, which is the one thing a financial record may
+ * never contain.
+ *
+ * What the user loses is real and is said out loud on the screen that calls
+ * this: she leaves the Arsenal, and `@luna` stops resolving in new generations —
+ * `resolveCharacter` filters on `archived_at is null`, so the mention simply
+ * finds nothing from here on. What they keep is everything already made.
+ *
+ * RLS scopes the update, and `kind` is pinned so this can only ever archive a
+ * character — the same shape every other write in this file has.
+ */
+export async function archiveCharacter(input: unknown): Promise<ArchiveCharacterResult> {
+  const parsed = z.uuid().safeParse(input);
+
+  if (!parsed.success) {
+    return { ok: false, reason: "invalid" };
+  }
+
+  const { supabase } = await requireSession();
+
+  const { data, error } = await supabase
+    .from("entities")
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", parsed.data)
+    .eq("kind", "character")
+    .select("id")
+    .maybeSingle();
+
+  return error || !data ? { ok: false, reason: "error" } : { ok: true };
+}

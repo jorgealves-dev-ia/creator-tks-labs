@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { ArchiveCharacter } from "@/components/character-sheet/archive-character";
 import { CanonicalImagesColumn } from "@/components/character-sheet/canonical-images-column";
 import { CompiledPromptPanel } from "@/components/character-sheet/compiled-prompt-panel";
 import { DnaTab } from "@/components/character-sheet/dna-tab";
@@ -277,6 +278,11 @@ function SheetEditorDialog({ entityId }: { entityId: string }) {
             ) : null}
 
             <div className="ml-auto flex items-center gap-3">
+              {/* Beside the close button, not next to "salvar versão": the two
+                  destructive-looking controls of this header must not sit
+                  shoulder to shoulder with the one people press all day. */}
+              <ArchiveCharacter entityId={entityId} handle={character.handle} />
+
               {isViewingVersion ? null : (
                 <PendingCounter count={pending.length} onJump={() => jumpToNextPending()} />
               )}

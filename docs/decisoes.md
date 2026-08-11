@@ -1296,3 +1296,25 @@ Saem do código: a seção do menu lateral, o diálogo de edição, o store, as 
 **E uma aresta órfã que só ficou visível agora.** Remover um node pelo cabeçalho chamava `applyNodeChanges`, que tira o node e **deixa os fios**. Arestas apontando para o nada não são desenhadas, então isso era invisível e vinha se acumulando no grafo salvo desde sempre.
 
 Deixou de ser invisível quando inputs viraram cards que as pessoas apagam: remover um Input de Produto enquanto as fotos dele continuavam dentro do bloco deixaria **referências que nenhum card do canvas explica** — exatamente o estado que a regra "toda referência tem node" existe para tornar impossível. Agora um card que sai leva os fios dele, e com os fios o que eles tinham anexado.
+
+### 10/08/2026 — Excluir personagem é arquivar, e a tela diz as duas metades
+
+A ação existe no editor de ficha, ao lado do fechar e longe do "salvar versão" — os dois controles de aparência destrutiva do cabeçalho não podem ficar ombro a ombro com o que se aperta o dia inteiro.
+
+**Ela arquiva (`archived_at`), e isso não é preferência arquitetural: é o que as chaves estrangeiras determinam.** Medido no banco antes de escrever a linha:
+
+| De | Para | Ao deletar |
+|---|---|---|
+| `generations.entity_id` | `entities` | **CASCADE** |
+| `entity_versions.entity_id` | `entities` | **CASCADE** |
+| `entity_images.entity_id` | `entities` | **CASCADE** |
+| `ledger_transactions.generation_id` | `generations` | **SET NULL** |
+
+Um `delete` de verdade apagaria **toda geração que ela já protagonizou**, todas as versões congeladas e todos os vínculos de imagem — e o dinheiro ficaria no extrato apontando para o nada. **Débitos órfãos num livro append-only** é a única coisa que um registro financeiro não pode conter. Sem migration: `archived_at` existe desde a Fase 0 e as listas já filtram por ele.
+
+**A confirmação tem dois painéis em vez de um botão**, e a razão é o que ela está testando. Um "tem certeza?" testa coragem; dizer **o que se perde e o que fica** testa entendimento, que é a única coisa que vale testar antes de uma ação que a interface não desfaz.
+
+- **A metade que se subestima é a menção.** `@luna` para de resolver em gerações novas no instante em que isso roda — `resolveCharacter` filtra `archived_at is null`. Essa frase precisa ser lida **antes** do clique, e não descoberta um mês depois, quando um prompt reusado parar de nomear alguém.
+- **A metade que se superestima é a perda.** A palavra "excluir" faz qualquer pessoa supor que as imagens vão junto. Não vão: galeria, gerações, extrato e versões continuam inteiros — o arquivamento existe exatamente para que o histórico continue apontando para algo que ainda existe.
+
+O card dela no canvas já sabia o que fazer: ele reaproveita o estado "Personagem não encontrada — tire este cartão do canvas", que existe desde o Canvas 1.
