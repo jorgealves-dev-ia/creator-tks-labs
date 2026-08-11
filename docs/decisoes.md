@@ -1357,3 +1357,22 @@ O ciclo entregou, em quatro etapas: a anatomia nova do gerador em duas colunas; 
 - **A invariante 1 dizia "geração é sempre assíncrona" e o produto gera imagem de forma síncrona desde a Fase 1.** A exceção estava registrada em `arquitetura.md` e na decisão N5, mas a invariante — que é a versão curta, a que se lê primeiro — afirmava o contrário sem ressalva. Agora ela carrega a exceção **e o motivo dela**: uma imagem cabe no `maxDuration` de 60, quatro imagens são quatro requisições e não quatro gerações num request, e para vídeo o assíncrono continua obrigatório.
 
 Fica o hábito registrado: **quando um ciclo revisa uma decisão, a versão curta tem que ser revisada junto com a longa.** A versão longa é consultada por quem já desconfia; a curta é obedecida por quem não.
+
+---
+
+### 11/08/2026 — Doze commits do Canvas 4 ficaram um dia só no local, e a produção serviu `bebb65d` o ciclo inteiro
+
+O ciclo Canvas 4 foi desenvolvido, documentado e fechado, e **nada disso chegou à Vercel**. Os doze commits — de `7ee9f8e` (o gerador em duas colunas) até `b2ec11a` (o fechamento da documentação) — existiam apenas no `master` local. O `origin/master` parou em `bebb65d`, do ciclo anterior, e foi isso que a produção serviu durante todo o desenvolvimento do Canvas 4.
+
+Descoberto porque a produção não refletia o ciclo. `git status` respondeu em uma linha: *ahead of 'origin/master' by 12 commits*. Working tree limpo, zero commits atrás, fast-forward sem conflito — não havia nada de errado com o código nem com o repositório. **Faltava um comando.**
+
+As duas migrations do ciclo (`image_price_by_resolution` e `archive_arsenal_products`) já estavam aplicadas — o banco é um só para local e produção, e o Jorge as aplicou manualmente durante o desenvolvimento. Ou seja: **o banco estava à frente do código em produção**, que é a direção mais silenciosa de ficar dessincronizado. Nenhuma tela quebrou, porque nenhuma tela nova tinha subido para quebrar.
+
+A causa não é esquecimento pontual, é ambiguidade no ritual. A regra 8 do `CLAUDE.md` dizia "só então fazer commit e push" — uma frase que trata os dois como uma etapa só na leitura, mas que na prática permite parar no commit e considerar a etapa fechada. **Um fechamento que termina no commit parece idêntico a um que termina no push**, e é justamente essa semelhança que fez o erro durar quatro etapas.
+
+A correção tem duas metades, e a segunda é a que importa:
+
+- **Commit de fechamento e `git push` viram a mesma ação.** Não existe estado intermediário legítimo: ou as duas rodaram, ou o fechamento não aconteceu.
+- **O resumo da etapa passa a carregar a prova.** A saída de `git log origin/master -1` vai colada no resumo, com hash e mensagem. A primeira metade depende de lembrar; a segunda **não deixa o erro passar despercebido**, porque a ausência da linha é visível e um hash antigo denuncia o push que falhou.
+
+Fica o princípio, que vale além deste caso: **quando o sucesso e a falha de uma etapa têm a mesma aparência, o ritual precisa produzir uma evidência que só existe no sucesso.** "Está em produção" era uma suposição confortável porque nada no fechamento a contradizia. Agora é uma linha de log — ou não é nada.

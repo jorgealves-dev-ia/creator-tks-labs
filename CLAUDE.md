@@ -144,3 +144,11 @@ Versão curta. O porquê de cada uma está em [`docs/arquitetura.md`](docs/arqui
 6. **Manutenção da documentação.** Toda mudança de arquitetura, de produto ou de especificação deve, **na mesma sessão**, atualizar o doc correspondente em `docs/` e registrar uma entrada datada em [`docs/decisoes.md`](docs/decisoes.md). Ao concluir uma fase, atualizar o roadmap em [`docs/produto.md`](docs/produto.md). Manter este arquivo enxuto: detalhe novo vai para `docs/`, não para cá.
 7. **Invariantes do character sheet.** As regras de compilação da seção 6 de [`docs/character-sheet.md`](docs/character-sheet.md) são invariantes do projeto, com o mesmo status das 7 decisões de arquitetura: **nunca podem ser violadas pelo código sem decisão explícita registrada.**
 8. **Fluxo de encerramento de toda tarefa:** apresentar resumo enxuto do que foi feito → rodar `git status` e mostrar a lista de arquivos a commitar → pedir ok ao Jorge → só então fazer commit e push. Se aparecer qualquer arquivo fora do escopo declarado da tarefa, **parar e avisar antes de commitar**.
+
+   **O commit de fechamento e o `git push` são a mesma ação, nunca duas.** Commitar sem empurrar deixa a etapa pronta num lugar onde ninguém a vê — o deploy da Vercel sai do `origin/master`, então o que fica só no local não existe para o produto. Não há etapa "commitada mas ainda não empurrada": ou as duas rodaram, ou o fechamento não aconteceu.
+
+   **E o resumo da etapa termina provando que o remoto recebeu**, colando a saída de:
+   ```bash
+   git log origin/master -1
+   ```
+   O hash e a mensagem no resumo são a prova. **"Está em produção" nunca mais é suposição: é uma linha de log.** Se essa linha não estiver no resumo, o resumo está incompleto — e se ela mostrar um commit que não é o do fechamento, o push falhou e isso precisa ser dito em vez de assumido.
