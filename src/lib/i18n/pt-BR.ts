@@ -641,6 +641,29 @@ export const t = {
       outputHandle: "Liga a um bloco de geração",
       remove: "Tirar este input do canvas (a imagem fica na galeria)",
     },
+    product: {
+      title: "Input de Produto",
+      nameLabel: "Nome",
+      namePlaceholder: "Biquíni cortininha verde",
+      photosLabel: "Fotos",
+      photosOf: "de",
+      photosHint: "Frente, verso, detalhe, etiqueta — cada foto entra na geração.",
+      addPhoto: "Adicionar foto",
+      removePhoto: "Remover foto",
+      removePhotoHint: "A foto sai do produto e continua na galeria.",
+      full: "Um produto guarda até 5 fotos.",
+      /** A guarda na origem: o bloco conectado é quem não tem mais vaga. */
+      blockFull: "O bloco conectado não tem vaga para mais uma foto.",
+      instructionLabel: "Instrução",
+      instructionPlaceholder: "a modelo veste esta peça exatamente como mostrada",
+      /** "ocupa 3 referências" — o custo do fio, dito antes de ele existir. */
+      occupies: "Ocupa",
+      referenceSingular: "referência no bloco",
+      referencePlural: "referências no bloco",
+      emptyHint: "Adicione as fotos para poder conectar este produto.",
+      outputHandle: "Liga a um bloco de geração",
+      remove: "Tirar este produto do canvas (as fotos ficam na galeria)",
+    },
   },
 
   /** The generation blocks on the canvas — docs/nodes-geracao.md. */

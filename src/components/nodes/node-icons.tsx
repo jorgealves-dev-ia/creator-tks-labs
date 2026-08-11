@@ -8,7 +8,13 @@
  * it there. Two copies of the same glyph is one copy too many.
  */
 
-export type NodeKind = "character" | "product" | "generator" | "result" | "input-image";
+export type NodeKind =
+  | "character"
+  | "product"
+  | "generator"
+  | "result"
+  | "input-image"
+  | "input-product";
 
 export function NodeIcon({ kind, className }: { kind: NodeKind; className?: string }) {
   return (
@@ -68,6 +74,16 @@ const PATHS: Record<NodeKind, React.ReactNode> = {
     <>
       <rect x="1.5" y="2.5" width="13" height="11" rx="2" {...STROKE} />
       <path d="M8 10.4V4.6M5.6 7l2.4-2.4L10.4 7" {...STROKE} />
+    </>
+  ),
+
+  // The same box the product card always wore. It keeps the glyph rather than
+  // joining the frames, because what it hands over is not a picture — it is an
+  // object that several pictures happen to describe.
+  "input-product": (
+    <>
+      <path d="M8 2.4l4.9 2.5v5.7L8 13.1 3.1 10.6V4.9L8 2.4z" {...STROKE} />
+      <path d="M3.1 4.9L8 7.4l4.9-2.5M8 7.4v5.7" {...STROKE} />
     </>
   ),
 };

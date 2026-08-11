@@ -1266,3 +1266,17 @@ O motivo é que o fio deixou de ser o único momento em que o teto importa: um i
 `freeForInput` responde com a **menor** folga entre os blocos que o input alimenta, não a média: um card entregando cinco fotos para dois blocos precisa caber nos **dois**, e quem decide é o mais apertado.
 
 *E o estado acima do teto continua representável por outros caminhos* — trocar o modelo para um que aceita menos, por exemplo. Isso não é buraco novo e já é dito em voz alta: o contador mostra "5 de 1" e o servidor recusa antes de gastar. O que a guarda impede é o caminho em que o próprio produto cresce; o que a honestidade cobre é o resto.
+
+### 10/08/2026 — Input de Produto: o editor sai do diálogo e vai para o canvas
+
+O editor de produto virou o **corpo de um node**, inteiro: mesmo nome, mesmas até cinco fotos, mesma instrução, mesmo teto. **Nada foi simplificado no caminho** — o que mudou é que ele deixou de ser um *cadastro*. Não há linha do Arsenal para criar antes de usar, nome para inventar para uma coisa que se usa uma vez, nem lista que sobrevive à campanha.
+
+**Três consequências que valem estar escritas.**
+
+**O teto de cinco saiu do banco.** Um produto era uma linha, e a linha tinha `enforce_product_image_limit` atrás dela. Agora é estado de node, então o teto é o campo no card mais o Zod da rota de geração — **ainda o servidor, não mais o banco**. Foi a perda declarada quando o modelo de dados foi escolhido, e é aqui que ela acontece. O número não mudou e significa o mesmo: cada foto ocupa uma vaga de referência do modelo, que é o que faz "4 de 6" ser verdade.
+
+**A guarda de crescimento chegou na origem.** O "+" do card fica desabilitado, com o motivo visível, quando o bloco conectado não tem vaga — usando o `freeForInput`, que responde com a **menor** folga entre os blocos alimentados. Um produto entregando cinco fotos para dois blocos precisa caber nos dois.
+
+**E o nome do grupo passou a viajar do navegador.** Um grupo era uma linha em `entities` cujo nome o servidor consultava; virou um card no canvas, e card não tem linha. Então o navegador manda o rótulo, e a regra fica explícita: **pode nomear, nunca pode alargar.** O nome é cosmético — vai para o registro e nunca para o texto que o modelo lê —, enquanto as duas coisas que precisam ser confiáveis continuam checadas no servidor: quantas vagas o grupo ocupa, contra o teto do modelo, e se as imagens são do usuário, que o RLS responde ao carregá-las do Storage. Onde ainda existe linha — um produto do Arsenal antigo — **a linha vence**: nome verificado ganha de nome fornecido, sempre.
+
+O rótulo é gravado na própria referência em vez de consultado, e isso não o torna cópia velha: o `syncInputInto` já reescreve o grupo a cada edição do card, então renomear chega a todo bloco na mesma passada que carrega as fotos.

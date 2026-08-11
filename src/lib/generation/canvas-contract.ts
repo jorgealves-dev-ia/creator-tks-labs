@@ -42,6 +42,21 @@ export type CanvasReferencePayload = {
    * user is a mechanism that gets copied instead of reused.
    */
   groupId?: string | null;
+  /**
+   * What the group is called, for the audit trail only.
+   *
+   * The browser may **name** a group; it may never **widen** one. The name is
+   * cosmetic — it appears in the stored record and never in the text the model
+   * reads — while the two things that have to be trustworthy are checked here:
+   * how many slots the group occupies, against the model's ceiling, and whether
+   * the images belong to this user at all, which RLS answers when they are
+   * loaded from Storage.
+   *
+   * It travels because there is nothing left to ask. A group used to be a row in
+   * `entities` whose name the server looked up; it is a card on the canvas now,
+   * and a card has no row.
+   */
+  groupLabel?: string;
 };
 
 /**

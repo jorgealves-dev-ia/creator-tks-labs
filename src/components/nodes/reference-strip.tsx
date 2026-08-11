@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import { signAssetUrls } from "@/lib/assets/actions";
 import { findReferenceKind, REFERENCE_KINDS, type ReferenceKind, type ReferenceOrigin } from "@/lib/generation/references";
 import { t } from "@/lib/i18n/pt-BR";
-import { useProductsStore } from "@/lib/products/store";
 
 /**
  * The attached references of a generation block — decision N1.
@@ -36,6 +35,8 @@ export type ReferenceEntry = {
   origem: ReferenceOrigin;
   /** Set when this image arrived with others that count as one thing. */
   groupId?: string | null;
+  /** What to call the group. Rewritten by the store on every edit of the card. */
+  groupLabel?: string;
 };
 
 /**
@@ -119,7 +120,6 @@ export function ReferenceStrip({
 }: ReferenceStripProps) {
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [openSlot, setOpenSlot] = useState<number | null>(null);
-  const products = useProductsStore((state) => state.products);
 
   /**
    * The nudge.
@@ -279,7 +279,7 @@ export function ReferenceStrip({
                 onClick={() => setOpenSlot(selected ? null : slotIndex)}
                 title={
                   slot.kind === "group"
-                    ? `${copy.productPrefix} ${products[slot.groupId]?.displayName ?? ""}`.trim()
+                    ? `${copy.productPrefix} ${groupNameOf(references, slot) ?? ""}`.trim()
                     : `${copy.imagePrefix} ${slot.positions[0]}`
                 }
                 className={`nodrag block rounded-md transition-colors disabled:opacity-50 ${
@@ -301,7 +301,7 @@ export function ReferenceStrip({
                   {slot.kind === "group" && slot.indexes.length > 1 ? (
                     <>
                       <span className="mb-1 block max-w-36 truncate px-0.5 text-left text-[9px] text-ink-faint">
-                        {products[slot.groupId]?.displayName ?? copy.productUnknown}
+                        {groupNameOf(references, slot) ?? copy.productUnknown}
                       </span>
                       <span className="flex gap-1">{thumbs}</span>
                     </>
@@ -328,7 +328,7 @@ export function ReferenceStrip({
                 title={slot.kind === "group" ? copy.removeProduct : copy.remove}
                 aria-label={
                   slot.kind === "group"
-                    ? `${copy.removeProduct} — ${products[slot.groupId]?.displayName ?? ""}`.trim()
+                    ? `${copy.removeProduct} — ${groupNameOf(references, slot) ?? ""}`.trim()
                     : `${copy.remove} — ${copy.imagePrefix} ${slot.positions[0]}`
                 }
                 className="nodrag absolute -right-1 -top-1 flex size-4 items-center justify-center
@@ -514,6 +514,24 @@ function HelpTip() {
       </span>
     </span>
   );
+}
+
+/**
+ * What to call a group, from the reference itself.
+ *
+ * Stored on the entry rather than looked up in a store, because the thing being
+ * named is a card on this canvas and the store already rewrites the label on
+ * every edit of that card — so a rename arrives in the same pass that carries
+ * the photos. The fallback covers the product cards of the old Arsenal, whose
+ * name still lives in their own store; it goes away with them.
+ */
+function groupNameOf(
+  references: readonly ReferenceEntry[],
+  slot: Extract<Slot, { kind: "group" }>,
+): string | null {
+  const label = references[slot.indexes[0]]?.groupLabel?.trim();
+
+  return label ? label : null;
 }
 
 /** One attached image, wearing the number it will have in the prompt. */

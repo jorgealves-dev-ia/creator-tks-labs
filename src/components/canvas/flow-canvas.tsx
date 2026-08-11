@@ -18,6 +18,7 @@ import { HelperLinesOverlay } from "@/components/canvas/helper-lines-overlay";
 import { CharacterNode } from "@/components/nodes/character-node";
 import { GeneratorNode } from "@/components/nodes/generator-node";
 import { InputImageNode } from "@/components/nodes/input-image-node";
+import { InputProductNode } from "@/components/nodes/input-product-node";
 import { ProductNode } from "@/components/nodes/product-node";
 import { ResultNode } from "@/components/nodes/result-node";
 import { useImageCatalog } from "@/components/nodes/use-image-catalog";
@@ -46,6 +47,7 @@ const nodeTypes: NodeTypes = {
   generator: GeneratorNode,
   result: ResultNode,
   "input-image": InputImageNode,
+  "input-product": InputProductNode,
 };
 
 type FlowCanvasProps = {
@@ -255,6 +257,7 @@ function productOf(
     id: product.id,
     assetIds: product.photos.map((photo) => photo.assetId),
     instrucao: product.instrucaoPadrao,
+    nome: product.displayName,
   };
 }
 

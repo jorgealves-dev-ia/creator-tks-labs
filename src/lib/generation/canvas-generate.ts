@@ -97,6 +97,12 @@ const referenceSchema = z.object({
    * browser called something is not an audit trail.
    */
   groupId: z.uuid().nullable().default(null),
+  /**
+   * What the group is called. Cosmetic, capped, and never read by anything that
+   * decides behaviour — see the contract for why naming is allowed and widening
+   * is not.
+   */
+  groupLabel: z.string().max(120).default(""),
 });
 
 const generateSchema = z.object({
@@ -345,7 +351,13 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
     instrucaoEn: (translation.translations[`ref.${index}`] ?? "").trim(),
     origem: reference.origem,
     grupoId: reference.groupId,
-    grupoRotulo: reference.groupId ? (productNames.get(reference.groupId) ?? "") : null,
+    // The row wins when there is a row. A product in the old Arsenal has a name
+    // this side can verify, and a verified name beats a supplied one every time;
+    // a card on the canvas has none, so the supplied one is the only name there
+    // is. Naming, never widening.
+    grupoRotulo: reference.groupId
+      ? (productNames.get(reference.groupId) ?? reference.groupLabel.trim())
+      : null,
   }));
 
   const prompt = buildCanvasPrompt({

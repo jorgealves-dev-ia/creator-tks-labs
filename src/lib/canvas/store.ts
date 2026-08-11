@@ -52,6 +52,15 @@ type StoredReference = {
    * the next user ends up with a second copy of it.
    */
   groupId?: string | null;
+  /**
+   * What to call the group, for the audit trail and the strip's frame.
+   *
+   * Stored rather than looked up because the thing it names is a card on this
+   * canvas, and rewriting it is what `syncInputInto` already does on every edit
+   * — so a rename reaches every block that holds it, in the same pass that
+   * carries the photos. A copy that is rewritten is not a stale copy.
+   */
+  groupLabel?: string;
 };
 
 /**
@@ -67,6 +76,8 @@ export type ConnectedProduct = {
   assetIds: string[];
   /** The sentence the product starts every generation with; editable per block. */
   instrucao: string;
+  /** Its name, for the strip's frame and the audit trail. */
+  nome: string;
 };
 
 export type ConnectContext = {
@@ -180,7 +191,7 @@ function wiredPair(
  * cargo, and a condition that has to be edited in four places to add a fourth
  * is a condition that will be edited in three.
  */
-const ATTACHING_SOURCES = new Set(["result", "product", "input-image"]);
+const ATTACHING_SOURCES = new Set(["result", "product", "input-image", "input-product"]);
 
 /**
  * What an input node contributes, read from its own stored state.
@@ -192,6 +203,29 @@ const ATTACHING_SOURCES = new Set(["result", "product", "input-image"]);
  * picture arrived twice from two different cards.
  */
 function inputReferences(node: Node): StoredReference[] {
+  const instrucao = typeof node.data.instrucao === "string" ? node.data.instrucao : "";
+
+  if (node.type === "input-product") {
+    const assetIds = Array.isArray(node.data.assetIds)
+      ? node.data.assetIds.filter((id): id is string => typeof id === "string")
+      : [];
+
+    const nome = typeof node.data.nome === "string" ? node.data.nome.trim() : "";
+
+    // Every photo says "produto", and the chip is not a question the block gets
+    // to ask again — otherwise one photo of a bikini could be labelled "cenário"
+    // while the other two stayed "produto", and the compiled prompt would
+    // describe two different things.
+    return assetIds.map((assetId) => ({
+      assetId,
+      kind: "produto",
+      instrucao,
+      origem: "input",
+      groupId: node.id,
+      groupLabel: nome,
+    }));
+  }
+
   const assetId = node.data.assetId;
 
   if (typeof assetId !== "string") return [];
@@ -200,7 +234,7 @@ function inputReferences(node: Node): StoredReference[] {
     {
       assetId,
       kind: typeof node.data.kind === "string" ? node.data.kind : null,
-      instrucao: typeof node.data.instrucao === "string" ? node.data.instrucao : "",
+      instrucao,
       origem: "input",
       groupId: node.id,
     },
@@ -218,11 +252,12 @@ function productReferences(product: ConnectedProduct): StoredReference[] {
     instrucao: product.instrucao,
     origem: "produto",
     groupId: product.id,
+    groupLabel: product.nome,
   }));
 }
 
 /** The card types that hand images to a generating block from the canvas. */
-const INPUT_SOURCES = new Set(["input-image"]);
+const INPUT_SOURCES = new Set(["input-image", "input-product"]);
 
 /** Matches `w-56` on the input cards — used only to place one beside a block. */
 const INPUT_NODE_WIDTH = 224;

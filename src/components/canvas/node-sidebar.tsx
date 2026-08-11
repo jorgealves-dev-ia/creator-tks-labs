@@ -422,6 +422,11 @@ const INPUT_TYPES: readonly { kind: NodeKind; label: string; hint: string }[] = 
     label: t.inputs.image.title,
     hint: t.inputs.sidebarHint,
   },
+  {
+    kind: "input-product",
+    label: t.inputs.product.title,
+    hint: t.inputs.sidebarHint,
+  },
 ];
 
 /**
