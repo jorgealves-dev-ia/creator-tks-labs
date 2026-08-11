@@ -1562,3 +1562,42 @@ As três recusas medidas na 3b são todas o mesmo padrão: **possessivo sem arti
 A saída conhecida é um **dicionário fechado e curado dos substantivos deste domínio** — biquíni (m), vestido (m), saia (f), blusa (f), colar (m), bolsa (f), maquiagem (f) — pequeno, específico e verificável, no espírito de todas as outras listas fechadas da casa. Um dicionário curado não é adivinhação; é a mesma decisão que o `SUBJECT_BY_GENERO` já toma, um nível abaixo.
 
 **Critério de saída, para não construir sobre suposição:** vale a pena quando recusas desse padrão estiverem **acumulando nos prompts reais**. Hoje são 3 em 11 — o suficiente para registrar, não o suficiente para gastar um ciclo. O contador está no lugar certo: cada geração grava `mencao_sujeito.possessivos`, e as recusas são a diferença entre prompts com possessivo e possessivos reescritos.
+
+### 11/08/2026 — Fase 4 · Recentes e Galeria: o histórico que já existia, com onde olhar
+
+Última fatia da D1, e nenhuma das duas telas guarda dado novo: as gerações estão em `generations` desde a Fase 0, com `project_id` e `node_id` preenchidos desde o Canvas 4. O que faltava era **onde olhar** — e é por isso que o ciclo inteiro fechou sem uma migration.
+
+**A faixa "Recentes" lê do banco, não do grafo.** O bloco guarda apenas a última leva; tudo antes dela existia só como cartão Resultado no canvas. Quem arruma o canvas apagando cartões perdia o rastro **de vista** — nunca de fato. Quatro miniaturas por `project_id + node_id`, e a dependência do carregamento é a própria lista de ids salvos: ela muda exatamente quando este bloco produziu algo, sem um contador à parte que alguém teria de lembrar de incrementar.
+
+**Promover é ver, não gravar** (decisão do Jorge). Clicar numa miniatura põe a imagem na moldura e escreve nada: o projeto continua guardando a última leva, a próxima geração devolve a moldura sozinha, e uma linha na faixa diz em que estado a pessoa está. **Uma tela que reescrevesse o documento a cada olhada obrigaria a pensar antes de olhar** — o contrário do que uma faixa de recentes existe para fazer.
+
+**A Galeria é um modo do seletor, não uma segunda tela.** Mesma grade, mesma rolagem, mesma paginação; muda de onde vem a lista, o que o clique faz e o rodapé. Duas telas iguais menos um botão são duas telas que divergem na primeira vez que alguém mexer numa delas — e este ciclo inteiro nasceu de divergências assim (a faixa chamando tudo de "Produto:", o "Ver prompt" não rotulando nada).
+
+**E ela nasce filtrada por projeto**, que era o pedido do Jorge com um motivo de arquitetura atrás: é o alicerce do escopo por projeto da D2 e do painel futuro. Filtro acrescentado depois é filtro que precisa ser adicionado em toda tela que já existia. Medido na validação: **29 gerações deste projeto na galeria, 3 fora dele** — as folhas canônicas, que nascem no editor da personagem e não têm `project_id`. É o recorte certo: folha é identidade, não trabalho deste projeto, e continua alcançável pelo seletor de referências, que lista `assets` e não gerações.
+
+**Dois bytes NUL no meio de um template literal.** Achados de raspão nesta fase: `reference-picker.tsx` tinha `\0` onde deviam estar espaços, em `` `${filter}\0${query}` ``. Nunca quebrou nada — como separador, um NUL funciona igual — mas é o tipo de coisa que transforma um arquivo em binário para o `git diff` e faz uma busca por texto falhar sem explicar por quê. Varredura no `src/` inteiro: eram os dois únicos.
+
+### 11/08/2026 — Etapa D1 encerrada: quatro fases, dois adendos, nenhuma migration
+
+O ciclo entregou o que abriu para entregar, e o placar cabe numa tabela:
+
+| fase | o que entrou | como foi provado |
+|---|---|---|
+| **1** | vão do trilho, retrato da versão congelada, nome de projeto que não se repete | navegador (Jorge, depois Code) |
+| **1d** 📌 adendo | editor abre na versão ativa, em leitura; clique em campo leva ao rascunho com aviso; selo de rascunho pendente | navegador, três prints |
+| **2** | tooltip por tipo, âncora como imagem 1, "Ver prompt" legível e espelhado | navegador, quatro prints + dump do DOM |
+| **3** | a menção vira sujeito antes de traduzir | 2 harnesses (16/16 e 6/6) + 3 gerações pagas |
+| **3b** 📌 adendo | possessivo determinístico, quase todo recusa | 3 harnesses (25/25, 73% de cobertura real) + 1 geração paga |
+| **4** | faixa "Recentes" e Galeria filtrada por projeto | navegador, seis prints + conferência no banco (29 · 3) |
+
+**Zero migrations, como o ciclo pedia** — e isso não foi sorte: `generations` já tinha `project_id` e `node_id` desde o Canvas 4, e a Fase 4 inteira é dar **onde olhar** para um histórico que já estava gravado. As três colunas novas de comportamento (`inputType` na referência, `mencao_sujeito`, `possessivos`) moram em jsonb que já existia, e linhas antigas leem `null` — que é a verdade sobre elas.
+
+**Custo de validação paga: 200 ⚡ em 4 imagens**, mais 2 recusas de política do provedor cobradas 0 ⚡. Tudo nas fases 3 e 3b, as únicas que tocaram o compilador.
+
+**Duas emendas de ritual nasceram aqui, e as duas nasceram de um erro concreto.**
+
+A primeira: **tarefa sem geração é validada no navegador pelo Code**, com um print por item, em `scratchpad/evidencias/<etapa>-<fase>/`, com nome que diz o que o print prova. Ela nasceu do item 1b, que voltou da validação com dois sintomas — e nenhum dos dois diagnósticos iniciais estava certo, nem o do Jorge nem o meu. Um ciclo de correção às cegas gasta duas rodadas para produzir zero informação; abrir o navegador custou cinco minutos e matou as duas hipóteses erradas de uma vez. A parte do **nome do arquivo** veio uma emenda depois, quando os prints da Fase 1 se provaram inencontráveis na semana seguinte: um print que ninguém acha é indistinguível de um print que não existe.
+
+A segunda: **nunca rodar `npm run build` com o `npm run dev` no ar** — os dois escrevem no mesmo `.next/`. Essa nasceu de eu ter feito exatamente isso e passado a investigação seguinte perseguindo a hipótese errada (bundle corrompido) para um sintoma que era o **badge de devtools do Next.js** parado em cima do último ícone do trilho.
+
+**O que o ciclo ensinou, e vale além dele:** um sintoma visual descreve *onde dói*, nunca *o que quebrou*. Três vezes neste dia a causa estava a um passo de onde a queixa apontava — o vão do trilho era altura invisível e não filtro; o "avatar" era um badge de ferramenta; o "Produto:" em tudo era todo card carimbando id de grupo. E as três só foram encontradas porque alguém abriu a tela em vez de deduzir dela.

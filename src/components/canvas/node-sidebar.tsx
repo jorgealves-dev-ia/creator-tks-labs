@@ -7,6 +7,7 @@ import { CharacterWizard } from "@/components/character-sheet/character-wizard";
 import { Portrait, VersionBadge } from "@/components/character-sheet/identity";
 import { NodeIcon, type NodeKind } from "@/components/nodes/node-icons";
 import { NODE_TYPE_MIME } from "@/lib/canvas/drag";
+import { useReferencePicker } from "@/lib/canvas/reference-picker-store";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { useEntitiesStore } from "@/lib/entities/store";
 import { useCharacterPortraits } from "@/lib/entities/use-portraits";
@@ -25,6 +26,7 @@ export function NodeSidebar() {
   const order = useEntitiesStore((state) => state.order);
   const openEditor = useEntitiesStore((state) => state.openEditor);
   const nodes = useCanvasStore((state) => state.nodes);
+  const projectId = useCanvasStore((state) => state.projectId);
   const portraits = useCharacterPortraits();
 
   const [creating, setCreating] = useState(false);
@@ -228,6 +230,52 @@ export function NodeSidebar() {
               </button>
             ))}
           </div>
+
+          {/*
+            A Galeria (§4b da D1).
+            Fica com os Blocos e não com os Inputs porque não é uma coisa que se
+            arrasta para o canvas: é uma janela para o que este projeto já
+            produziu. Sem projeto aberto não há o que mostrar, e o item some em
+            vez de abrir uma grade vazia.
+          */}
+          {projectId ? (
+            <>
+              <RailSection label={t.generation.gallery.sidebar} />
+
+              <div className="px-3">
+                <button
+                  type="button"
+                  onClick={() => useReferencePicker.getState().browse({ projectId })}
+                  title={t.generation.gallery.sidebarHint}
+                  className="flex w-full items-center gap-3 rounded-lg py-1.5 text-left
+                             transition-colors hover:bg-surface-hover"
+                >
+                  <span
+                    aria-hidden
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg
+                               border border-line bg-surface text-ink-muted"
+                  >
+                    <svg viewBox="0 0 16 16" className="size-3.5" aria-hidden>
+                      <rect x="1.5" y="2.5" width="13" height="11" rx="2" stroke="currentColor"
+                            strokeWidth="1.3" fill="none" />
+                      <path d="M1.5 11l3.2-3.2 2.4 2.4 3-3 4.4 4.4" stroke="currentColor"
+                            strokeWidth="1.3" fill="none" strokeLinecap="round"
+                            strokeLinejoin="round" />
+                      <circle cx="10.4" cy="6" r="1.1" fill="currentColor" />
+                    </svg>
+                  </span>
+                  <span className={revealed("min-w-0 flex-1")}>
+                    <span className="block truncate text-xs font-medium text-ink">
+                      {t.generation.gallery.sidebar}
+                    </span>
+                    <span className="block truncate text-[11px] text-ink-faint">
+                      {t.generation.gallery.sidebarHint}
+                    </span>
+                  </span>
+                </button>
+              </div>
+            </>
+          ) : null}
 
           <RailSection label={t.studio.sidebarBlocks} />
 

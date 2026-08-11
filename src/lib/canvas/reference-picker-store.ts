@@ -26,6 +26,19 @@ export type PickedImage = {
 /** Which screen asked, so the modal can explain the ceiling it enforces. */
 export type PickerScope = "geracao" | "produto" | "input";
 
+/**
+ * What the modal is for this time (§4b da D1).
+ *
+ * `select` é o de sempre: escolher imagens para alguém. `browse` é a Galeria —
+ * a mesma grade, o mesmo jeito de rolar, **sem ação de seleção**: sem contador,
+ * sem confirmar, sem enviar arquivo, e o clique amplia em vez de marcar.
+ *
+ * Um modo e não uma segunda tela porque a diferença entre as duas é justamente
+ * a ação — e duas telas iguais menos um botão são duas telas que vão divergir
+ * na primeira vez que alguém mexer em uma delas.
+ */
+export type PickerMode = "select" | "browse";
+
 type ReferencePickerState = {
   /**
    * Non-null while the modal is open, and the React key that resets it: opening
@@ -33,11 +46,14 @@ type ReferencePickerState = {
    * one caller's choices into another's.
    */
   key: string | null;
+  mode: PickerMode;
   scope: PickerScope;
-  /** How many more images the caller may accept. */
+  /** How many more images the caller may accept. Zero e ignorado em `browse`. */
   remaining: number;
   /** The caller's full ceiling, so the modal can explain the number it enforces. */
   limit: number;
+  /** Qual projeto a Galeria mostra. Null fora do modo `browse`. */
+  projectId: string | null;
   onConfirm: ((picked: PickedImage[]) => void) | null;
 
   open: (input: {
@@ -47,18 +63,35 @@ type ReferencePickerState = {
     limit: number;
     onConfirm: (picked: PickedImage[]) => void;
   }) => void;
+  /** A Galeria: a mesma grade, sem nada para escolher. */
+  browse: (input: { projectId: string }) => void;
   close: () => void;
 };
 
 export const useReferencePicker = create<ReferencePickerState>((set) => ({
   key: null,
+  mode: "select",
   scope: "geracao",
   remaining: 0,
   limit: 0,
+  projectId: null,
   onConfirm: null,
 
   open: ({ key, scope, remaining, limit, onConfirm }) =>
-    set({ key, scope, remaining, limit, onConfirm }),
+    set({ key, mode: "select", scope, remaining, limit, projectId: null, onConfirm }),
 
-  close: () => set({ key: null, remaining: 0, limit: 0, onConfirm: null }),
+  // A chave leva o id do projeto: trocar de aba com a galeria aberta tem que
+  // remontar a grade, e não continuar mostrando as imagens do projeto anterior.
+  browse: ({ projectId }) =>
+    set({
+      key: `galeria:${projectId}`,
+      mode: "browse",
+      remaining: 0,
+      limit: 0,
+      projectId,
+      onConfirm: null,
+    }),
+
+  close: () =>
+    set({ key: null, mode: "select", remaining: 0, limit: 0, projectId: null, onConfirm: null }),
 }));

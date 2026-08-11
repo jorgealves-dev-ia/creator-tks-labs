@@ -786,6 +786,36 @@ export const t = {
      * públicos. Duas tabelas seriam duas chances de a faixa e o histórico
      * chamarem o mesmo card por nomes diferentes.
      */
+    /** §4 da D1 — a faixa de recentes do bloco e a Galeria do projeto. */
+    recent: {
+      title: "Recentes",
+      /** O que a faixa é, dito onde ela some: um bloco que ainda não gerou nada. */
+      empty: "As imagens que este bloco gerar aparecem aqui.",
+      seeAll: "Ver todas",
+      seeAllHint: "Abrir a galeria deste projeto",
+      promoteHint: "Ver esta imagem na moldura",
+      /** O estado promovido é de leitura: o que o projeto guarda não muda. */
+      promoted: "vendo uma imagem anterior",
+      back: "Voltar ao último resultado",
+    },
+
+    gallery: {
+      title: "Galeria do projeto",
+      subtitle: "Tudo que este projeto gerou, mais recente primeiro.",
+      sidebar: "Galeria",
+      sidebarHint: "Ver tudo que este projeto gerou",
+      empty: "Este projeto ainda não gerou nenhuma imagem.",
+      emptyHint:
+        "As folhas das personagens não entram aqui: elas nascem no editor, não no canvas.",
+      loading: "Carregando…",
+      loadMore: "Carregar mais",
+      openHint: "Clique para ampliar",
+      untitled: "Sem legenda",
+      close: "Fechar",
+      countSuffix: "imagens",
+      countOne: "imagem",
+    },
+
     referenceSources: {
       sheet: "Character Sheet",
       sheetLong: "Input de Character Sheet",

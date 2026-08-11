@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { NodeHeader } from "@/components/nodes/node-header";
 import { PromptField } from "@/components/nodes/prompt-field";
+import { RecentStrip } from "@/components/nodes/recent-strip";
 import { ReferenceStrip, type ReferenceEntry } from "@/components/nodes/reference-strip";
 import { ResultPanel, type ResultSlot } from "@/components/nodes/result-panel";
 import { useImageCatalog } from "@/components/nodes/use-image-catalog";
@@ -30,6 +31,7 @@ import {
   mentionedCharacter,
   sheetAnchorSlots,
 } from "@/lib/generation/capacity";
+import { listNodeGenerations, type GenerationThumb } from "@/lib/generation/history";
 import { findMentions, sceneWithoutMentions } from "@/lib/generation/mentions";
 import {
   DEFAULT_IMAGE_SIZE,
@@ -131,6 +133,22 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   const [runSlots, setRunSlots] = useState<ResultSlot[] | null>(null);
   /** Signed links for the saved batch, by asset id. */
   const [urls, setUrls] = useState<Record<string, string>>({});
+  /**
+   * O que este bloco já produziu, do banco — §4a.
+   *
+   * O grafo guarda só a última leva; o histórico das anteriores existia apenas
+   * como cartão Resultado no canvas, e quem arruma o canvas apagando cartões
+   * perdia o rastro de vista. O banco nunca perdeu, e é dele que a faixa lê.
+   */
+  const [recent, setRecent] = useState<GenerationThumb[]>([]);
+  /**
+   * A imagem que a faixa promoveu para a moldura.
+   *
+   * Transitória por decisão (11/08/2026): promover é **ver**, não gravar. O que
+   * o projeto guarda continua sendo a última leva gerada, então olhar uma
+   * imagem antiga nunca marca o canvas como alterado.
+   */
+  const [promotedAssetId, setPromotedAssetId] = useState<string | null>(null);
 
   const prompt = data.prompt ?? "";
   const presetId = data.presetId ?? DEFAULT_PRESET_ID;
@@ -244,6 +262,27 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   }, [savedKey]);
 
   /**
+   * A faixa de recentes, carregada na montagem e depois de cada leva.
+   *
+   * `savedKey` é a dependência porque ele muda exatamente quando este bloco
+   * produziu algo novo — sem um contador à parte que alguém teria de lembrar de
+   * incrementar. Abrir o projeto e olhar não gera requisição nenhuma além desta.
+   */
+  useEffect(() => {
+    if (!projectId) return;
+
+    let cancelled = false;
+
+    void listNodeGenerations({ projectId, nodeId: id }).then((items) => {
+      if (!cancelled) setRecent(items);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, id, savedKey]);
+
+  /**
    * "+" — a new input card, wired in, with its picker already open.
    *
    * It used to reach into the gallery and drop the chosen image straight into
@@ -309,6 +348,8 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
     }
 
     setBusy(true);
+    // Uma leva nova é o resultado da vez: a olhada no passado acaba aqui.
+    setPromotedAssetId(null);
     setRunSlots(Array.from({ length: quantity }, () => ({ status: "pending" })));
 
     const request = {
@@ -425,13 +466,21 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
    * to the saved list only when there is no run is what lets a failed slot stay
    * on screen with its sentence instead of being replaced by yesterday's image.
    */
-  const slots: ResultSlot[] =
-    runSlots ??
-    savedAssetIds.map((assetId) => ({
-      status: "done",
-      assetId,
-      url: urls[assetId] ?? null,
-    }));
+  const promoted = promotedAssetId
+    ? (recent.find((item) => item.assetId === promotedAssetId) ?? null)
+    : null;
+
+  const slots: ResultSlot[] = promoted
+    ? // Uma imagem promovida ocupa a moldura inteira e nada mais: é uma olhada,
+      // não um resultado. A leva salva continua onde estava, e volta com um
+      // clique — ou sozinha, no próximo Gerar.
+      [{ status: "done", assetId: promoted.assetId, url: promoted.url }]
+    : (runSlots ??
+      savedAssetIds.map((assetId) => ({
+        status: "done",
+        assetId,
+        url: urls[assetId] ?? null,
+      })));
 
   return (
     <div
@@ -863,6 +912,15 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
           </p>
 
           <ResultPanel slots={slots} />
+
+          <RecentStrip
+            items={recent}
+            promotedAssetId={promotedAssetId}
+            onPromote={setPromotedAssetId}
+            onSeeAll={() => {
+              if (projectId) useReferencePicker.getState().browse({ projectId });
+            }}
+          />
         </div>
       </div>
 
