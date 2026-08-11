@@ -1250,3 +1250,19 @@ E o grupo é substituído **na posição em que já estava**. Os números do pro
 O card nasce antes de ser preenchido, de propósito: o seletor pode ser cancelado, e um input vazio ao lado do bloco é um estado honesto — está conectado, ainda não tem o que dar, e no instante em que tiver o fio leva.
 
 **Todo input carrega `groupId` = o id do próprio node**, mesmo entregando uma imagem só. Para uma imagem isso não muda nada no prompt; compra a única coisa que casar por id de asset não compra: cortar **este** fio desanexa **estas** imagens, mesmo quando a mesma foto chegou duas vezes por dois cards diferentes. E a moldura e o nome do grupo só aparecem a partir de duas imagens — elas dizem "estas várias são uma coisa só", e um grupo de um não é várias.
+
+### 10/08/2026 — O teto vira pergunta, e a guarda de crescimento fica na origem
+
+**A capacidade deixou de ser argumento e virou pergunta.** Quanta vaga um bloco tem depende de duas coisas que o grafo não contém — o catálogo (o teto pertence ao modelo) e o Arsenal (a folha de uma personagem mencionada ocupa uma vaga) —, então ela era **calculada na tela e passada** para o store no momento do fio. O canvas agora **registra um resolvedor** no store, e o store pergunta quando precisa.
+
+O motivo é que o fio deixou de ser o único momento em que o teto importa: um input já conectado pode **crescer**, quando um produto vai de três fotos para cinco com o fio parado ali. Passar o número como argumento só funciona para o momento em que alguém lembrou de passar.
+
+**E aí veio a correção de desenho.** O plano dizia que a guarda de crescimento moraria no `syncInputInto` — recusar a atualização quando o grupo novo não coubesse.
+
+**Escrevendo, ficou claro que isso estaria errado.** Se o sync recusasse, o card no canvas mostraria cinco fotos e a faixa do bloco continuaria mostrando três. Seria exatamente o *"o card e a miniatura são duas coisas diferentes"* que a regra do fio vivo existe para eliminar — o teto consertado ao preço de quebrar o espelho. E entre um teto furado e um espelho mentiroso, o espelho é o que não dá para ter: um canvas em que o que se vê não é o que vai acontecer não é um canvas.
+
+**Então a guarda mora na origem**, no "+" do input, desabilitado com o motivo visível quando nenhum bloco conectado tem vaga. É o padrão de toda a casa, o mesmo do teto dito antes do clique e do preço dito antes do botão: **dizer não antes, no lugar onde a ação acontece.** O `syncInputInto` continua espelho fiel, sem opinião.
+
+`freeForInput` responde com a **menor** folga entre os blocos que o input alimenta, não a média: um card entregando cinco fotos para dois blocos precisa caber nos **dois**, e quem decide é o mais apertado.
+
+*E o estado acima do teto continua representável por outros caminhos* — trocar o modelo para um que aceita menos, por exemplo. Isso não é buraco novo e já é dito em voz alta: o contador mostra "5 de 1" e o servidor recusa antes de gastar. O que a guarda impede é o caminho em que o próprio produto cresce; o que a honestidade cobre é o resto.

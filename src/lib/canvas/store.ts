@@ -72,9 +72,24 @@ export type ConnectedProduct = {
 export type ConnectContext = {
   /** The product on the source end of the wire, when the source is a product card. */
   product: ConnectedProduct | null;
-  /** How many more images the target block can accept right now. */
-  free: number;
 };
+
+/**
+ * How many more images a given generating block can accept.
+ *
+ * Registered by the canvas rather than computed here, because the answer needs
+ * two things the graph does not contain: the model catalogue (a ceiling belongs
+ * to a model) and the Arsenal (a mentioned character's sheet occupies a slot).
+ * The same shape `ConnectContext` had, promoted from an argument to a question
+ * the store can ask whenever it needs to — which is the point.
+ *
+ * It became a question because a wire is no longer the only moment the ceiling
+ * matters. An input card that already feeds a block can *grow*: a product goes
+ * from three photos to five while the wire sits there. The room has to be
+ * checkable at that moment too, and passing it in as an argument only works for
+ * the moment somebody thought to pass it.
+ */
+export type CapacityResolver = (generatorId: string) => number;
 
 /**
  * Why a wire was refused, for the block it was aimed at.
@@ -302,6 +317,8 @@ type CanvasState = {
    * CanvasNotice. Cleared by the next edit, because an edit is the answer.
    */
   notice: CanvasNotice | null;
+  /** How the store asks a block how much room it has left. See CapacityResolver. */
+  capacityResolver: CapacityResolver;
 
   loadWorkflow: (input: {
     projectId: string;
@@ -321,6 +338,23 @@ type CanvasState = {
    * this decides.
    */
   onConnect: (connection: Connection, context: ConnectContext) => void;
+  /**
+   * Teaches the store how to ask for a block's remaining room. Called by the
+   * canvas whenever the catalogue or the Arsenal changes, so the answer is
+   * never stale.
+   */
+  setCapacityResolver: (resolve: CapacityResolver) => void;
+  /**
+   * The tightest room among the blocks this input card feeds, or null when it
+   * feeds none.
+   *
+   * The tightest and not the average: a card handing five photos to two blocks
+   * has to fit in **both**, and the one with less room is the one that decides.
+   * Read by an input card to refuse a sixth photo *before* it is chosen — which
+   * is where this product always puts a ceiling, because a ceiling discovered
+   * afterwards is not a ceiling.
+   */
+  freeForInput: (inputNodeId: string) => number | null;
   /**
    * Edits a node's own stored state — the prompt someone is typing, the format
    * they picked, the references they attached.
@@ -383,6 +417,16 @@ type CanvasState = {
   markSaved: (input: { version: number; revision: number }) => void;
 };
 
+/**
+ * Until the canvas registers the real one, nothing has room.
+ *
+ * Zero rather than a generous guess: the only moments this is still in place
+ * are before the first render, and refusing an attachment that early is
+ * recoverable in one click while allowing one that turns out not to fit is a
+ * paid refusal from the provider.
+ */
+const NO_CAPACITY: CapacityResolver = () => 0;
+
 export const useCanvasStore = create<CanvasState>((set, get) => ({
   projectId: null,
   nodes: [],
@@ -392,6 +436,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   saveFailure: null,
   revision: 0,
   notice: null,
+  // Deliberately outside everything loadWorkflow resets: this is how the store
+  // asks a question, not part of the document it holds.
+  capacityResolver: NO_CAPACITY,
 
   loadWorkflow: ({ projectId, nodes, edges, version }) =>
     set({
@@ -446,6 +493,20 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     });
   },
 
+  setCapacityResolver: (resolve) => set({ capacityResolver: resolve }),
+
+  freeForInput: (inputNodeId) => {
+    const state = get();
+
+    const rooms = state.edges
+      .filter((edge) => edge.source === inputNodeId)
+      .map((edge) => state.nodes.find((node) => node.id === edge.target))
+      .filter((node): node is Node => node?.type === "generator")
+      .map((generator) => state.capacityResolver(generator.id));
+
+    return rooms.length === 0 ? null : Math.min(...rooms);
+  },
+
   onConnect: (connection, context) =>
     set((state) => {
       // Wiring something into a generating block *is* attaching a reference —
@@ -463,6 +524,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       if (!pair) return { ...connected, nodes: state.nodes };
 
       const current = readReferences(pair.generator);
+      // Asked at the moment of the wire, from the same function every other
+      // caller asks — instead of being handed a number computed somewhere else
+      // and possibly a render ago.
+      const free = state.capacityResolver(pair.generator.id);
 
       if (pair.source.type === "product") {
         const product = context.product;
@@ -477,7 +542,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         // view with no label — a reference that looks attached and cannot say
         // what the back of the garment looks like. Better refused, in words,
         // before the wire exists, than discovered as a bad image after paying.
-        if (product.assetIds.length > context.free) {
+        if (product.assetIds.length > free) {
           return {
             nodes: state.nodes,
             edges: state.edges,
@@ -487,7 +552,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
               nodeId: pair.generator.id,
               reason: "product_over_limit" as const,
               needed: product.assetIds.length,
-              free: context.free,
+              free,
             },
           };
         }
@@ -512,7 +577,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
           return { ...connected, nodes: state.nodes };
         }
 
-        if (contributed.length > context.free) {
+        if (contributed.length > free) {
           return {
             nodes: state.nodes,
             edges: state.edges,
@@ -522,7 +587,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
               nodeId: pair.generator.id,
               reason: "product_over_limit" as const,
               needed: contributed.length,
-              free: context.free,
+              free,
             },
           };
         }

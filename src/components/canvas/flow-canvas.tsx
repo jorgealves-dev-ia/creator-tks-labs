@@ -105,26 +105,40 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
   );
 
   /**
-   * A wire, with the two things the graph itself cannot answer.
+   * How much room a block has left, taught to the store rather than handed to it.
    *
-   * Which product a card stands for lives in the Arsenal store, and how many
-   * images a block may still accept depends on the model catalogue and on the
-   * `@` in its prompt. Both are resolved here, where they are already loaded,
-   * and handed to the store — which stays the single authority on what a wire
-   * does to the graph.
+   * The answer needs the model catalogue and the Arsenal, neither of which the
+   * graph contains — so it is computed here, where both are already loaded. It
+   * became a registration instead of an argument because the wire stopped being
+   * the only moment it matters: an input card that already feeds a block can
+   * grow, and the room has to be checkable then too.
+   *
+   * Re-registered whenever either input changes, so the store never answers with
+   * a catalogue from before the page finished loading.
+   */
+  useEffect(() => {
+    useCanvasStore.getState().setCapacityResolver((generatorId) => {
+      const target = useCanvasStore.getState().nodes.find((node) => node.id === generatorId);
+
+      return freeSlots(target, providers, characters);
+    });
+  }, [providers, characters]);
+
+  /**
+   * A wire, with the one thing the graph itself cannot answer: which product a
+   * card stands for, which lives in the Arsenal store.
    */
   const handleConnect = useCallback(
     (connection: Connection) => {
-      const nodes = useCanvasStore.getState().nodes;
-      const source = nodes.find((node) => node.id === connection.source);
-      const target = nodes.find((node) => node.id === connection.target);
+      const source = useCanvasStore
+        .getState()
+        .nodes.find((node) => node.id === connection.source);
 
       useCanvasStore.getState().onConnect(connection, {
         product: source?.type === "product" ? productOf(source, products) : null,
-        free: freeSlots(target, providers, characters),
       });
     },
-    [providers, characters, products],
+    [products],
   );
 
   // Guides live here, not in the store: they are view state of a drag in
