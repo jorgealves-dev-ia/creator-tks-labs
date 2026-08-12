@@ -222,6 +222,132 @@ export async function listProjectGallery(input: unknown): Promise<ProjectGallery
   };
 }
 
+// ---------------------------------------------------------------------------
+// Tudo que o usuário já gerou — a Galeria geral do dashboard (Fase 2a)
+// ---------------------------------------------------------------------------
+
+/**
+ * De onde uma imagem veio, para o selo do canto.
+ *
+ * **Três casos, e não dois** — e essa é a diferença que a Fase 1 tornou
+ * necessária. Antes dela, "sem projeto" só podia significar folha canônica,
+ * porque nenhum projeto com gerações jamais fora excluído. Agora a exclusão
+ * existe, e o `ON DELETE SET NULL` de `generations_project_id_fkey` produz
+ * gerações sem projeto que são **trabalho de canvas** — a regra ingênua
+ * chamaria de "folha canônica" uma cena que a pessoa dirigiu.
+ *
+ * O que separa os dois é o `node_id`: a folha nasce no editor da personagem e
+ * nunca teve node; a cena nasce num bloco do canvas e carrega o id dele. Medido
+ * neste banco antes de virar código: as 3 folhas têm `project_id` **e**
+ * `node_id` nulos; as 30 do canvas têm os dois preenchidos.
+ */
+export type GenerationOrigin =
+  | { kind: "project"; name: string }
+  | { kind: "canonical" }
+  | { kind: "orphan" };
+
+export type GalleryEntry = GenerationThumb & { origin: GenerationOrigin };
+
+export type GeneralGalleryPage = { items: GalleryEntry[]; hasMore: boolean };
+
+const generalGallerySchema = z.object({
+  /** created_at do último item já mostrado — o cursor do "carregar mais". */
+  before: z.string().optional(),
+});
+
+/**
+ * Todas as imagens do usuário, de todos os projetos — a Galeria do dashboard.
+ *
+ * É `listProjectGallery` **sem o recorte**, e o que entra por causa disso são
+ * justamente as folhas canônicas: elas não têm `project_id` e por isso não
+ * aparecem em galeria de projeto nenhuma. O comentário daquela função registra
+ * que ficam de fora "de propósito, porque são identidade e não trabalho deste
+ * projeto" — e promete que continuam alcançáveis. **Este é o lugar onde essa
+ * promessa é paga.**
+ */
+export async function listGeneralGallery(input: unknown): Promise<GeneralGalleryPage> {
+  const parsed = generalGallerySchema.safeParse(input);
+
+  if (!parsed.success) return { items: [], hasMore: false };
+
+  const supabase = await createSupabaseServerClient();
+  const { data: claims } = await supabase.auth.getClaims();
+
+  if (!claims?.claims) {
+    redirect("/login");
+  }
+
+  // Uma linha a mais que a página, para responder "tem mais?" sem uma segunda
+  // consulta de contagem. Mesmo truque da galeria por projeto.
+  let query = supabase
+    .from("generations")
+    .select("id, created_at, result_asset_id, project_id, node_id")
+    .eq("status", "succeeded")
+    .not("result_asset_id", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(GALLERY_PAGE_SIZE + 1);
+
+  if (parsed.data.before) {
+    query = query.lt("created_at", parsed.data.before);
+  }
+
+  const { data: rows } = await query;
+
+  if (!rows || rows.length === 0) return { items: [], hasMore: false };
+
+  const hasMore = rows.length > GALLERY_PAGE_SIZE;
+  const page = hasMore ? rows.slice(0, GALLERY_PAGE_SIZE) : rows;
+
+  // Os nomes dos projetos numa consulta só, e não um embed: a casa resolve
+  // cruzamento com uma segunda consulta e um Map (ver `loadCharacters`), o que
+  // mantém o código legível sem depender de como o PostgREST nomeia a relação.
+  const projectIds = [
+    ...new Set(page.map((row) => row.project_id).filter((id): id is string => id !== null)),
+  ];
+
+  const projectNames = new Map<string, string>();
+
+  if (projectIds.length > 0) {
+    const { data: projects } = await supabase
+      .from("projects")
+      .select("id, name")
+      .in("id", projectIds);
+
+    for (const project of projects ?? []) {
+      projectNames.set(project.id, project.name);
+    }
+  }
+
+  const thumbs = await withSignedUrls(supabase, page);
+  const originById = new Map(page.map((row) => [row.id, originOf(row, projectNames)]));
+
+  return {
+    items: thumbs.map((thumb) => ({
+      ...thumb,
+      // A miniatura só existe se a geração existe, então o selo sempre está lá;
+      // o `??` é o que o tipo exige, não um caso que aconteça.
+      origin: originById.get(thumb.generationId) ?? { kind: "orphan" },
+    })),
+    hasMore,
+  };
+}
+
+/** A regra dos três casos, num lugar só. */
+function originOf(
+  row: { project_id: string | null; node_id: string | null },
+  projectNames: ReadonlyMap<string, string>,
+): GenerationOrigin {
+  if (row.project_id !== null) {
+    const name = projectNames.get(row.project_id);
+
+    // Projeto que o RLS não devolveu não vira nome inventado: sem nome, a
+    // imagem é órfã para efeito de selo, que é o que ela de fato é na tela.
+    return name ? { kind: "project", name } : { kind: "orphan" };
+  }
+
+  return row.node_id === null ? { kind: "canonical" } : { kind: "orphan" };
+}
+
 /**
  * Os links assinados de uma leva de gerações, numa requisição só.
  *

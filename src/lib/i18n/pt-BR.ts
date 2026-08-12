@@ -57,6 +57,47 @@ export const t = {
     /** A chama do canvas, que agora é o caminho de volta. */
     backHint: "Voltar para os seus projetos",
 
+    nav: {
+      label: "Seções do estúdio",
+      projects: "Projetos",
+      gallery: "Galeria",
+    },
+
+    /**
+     * A Galeria geral — tudo que o usuário já gerou, de todos os projetos.
+     *
+     * Diferente de `generation.gallery`, que é a Galeria **do projeto** aberto
+     * no canvas. As duas mostram miniaturas e param aí: uma responde "o que este
+     * projeto produziu", a outra "o que eu já fiz". O selo de origem só existe
+     * nesta, porque só aqui a pergunta faz sentido.
+     */
+    gallery: {
+      title: "Sua galeria",
+      subtitle: "Tudo que você já gerou, de todos os projetos.",
+      openHint: "Ampliar",
+      untitled: "Sem título",
+      loadMore: "Carregar mais",
+      loading: "Carregando…",
+      emptyTitle: "Nada gerado ainda",
+      emptyBody:
+        "Abra um projeto e gere a primeira imagem: tudo o que sair fica aqui para sempre.",
+      countSuffix: "imagens",
+      countOne: "imagem",
+
+      /**
+       * O selo do canto, nos dois casos que não são um projeto.
+       *
+       * "folha canônica" é a identidade de uma personagem, gerada no editor dela
+       * e sem projeto desde sempre. "projeto excluído" é trabalho de canvas que
+       * perdeu a casa — o `ON DELETE SET NULL` deixa a imagem viva e o vínculo
+       * nulo, que é exatamente o que a confirmação de exclusão promete.
+       */
+      origin: {
+        canonical: "folha canônica",
+        orphan: "projeto excluído",
+      },
+    },
+
     /**
      * O cartão de projeto.
      *

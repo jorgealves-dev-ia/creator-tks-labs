@@ -2025,3 +2025,70 @@ promessa escrita na D1-Fase 1**. Não é regressão — nada que funcionava paro
 funcionar. É fronteira descoberta depois: a promessa foi escrita pensando em
 projetos que continuam existindo, e a exclusão de verdade é o caso que ninguém
 tinha exercitado três vezes seguidas até esta validação.
+
+### 12/08/2026 — Fase 2a · a Galeria geral, e uma promessa antiga sendo paga
+
+A Galeria do dashboard é a Galeria do projeto **sem o recorte**. O que entra por
+causa disso são as folhas canônicas: geradas no editor da personagem, elas nunca
+tiveram `project_id` e por isso não apareciam em galeria de projeto nenhuma.
+`listProjectGallery` sempre registrou que ficavam de fora de propósito — "são
+identidade, não trabalho deste projeto" — e prometia que continuavam alcançáveis.
+**Esta tela é onde a promessa é paga**: 33 imagens aqui contra 30 lá, e a
+diferença são exatamente as três.
+
+**O selo tem três casos, e o terceiro nasceu da Fase 1.** Antes dela, "sem
+projeto" só podia significar folha canônica, porque nenhum projeto com gerações
+jamais fora excluído. A exclusão agora existe, e o `SET NULL` produz gerações sem
+projeto que são **trabalho de canvas** — a regra ingênua chamaria de "folha
+canônica" uma cena que a pessoa dirigiu. O que separa os dois é o `node_id`: a
+folha nasce no editor e nunca teve node; a cena nasce num bloco e carrega o id
+dele.
+
+| `project_id` | `node_id` | selo |
+|---|---|---|
+| preenchido | qualquer | nome do projeto |
+| nulo | **nulo** | folha canônica |
+| nulo | preenchido | projeto excluído |
+
+**A grade virou um componente só.** Ela morava dentro do seletor de referências;
+saiu quando a Galeria geral passou a precisar do mesmo. O argumento é o que o
+próprio seletor já tinha escrito sobre fazer a Galeria do projeto um *modo* em
+vez de uma segunda tela: *"duas telas iguais menos um botão são duas telas que
+vão divergir na primeira vez que alguém mexer em uma delas."* Valia para o modo,
+vale igual para a grade.
+
+Ela é **genérica no item** de propósito: quem chama recebe de volta o seu próprio
+objeto, com os campos que só ele conhece — a `source` que o seletor grava como
+origem, a `origin` que a galeria usa no selo. Uma versão podada obrigaria quem
+chamou a reencontrar o item na lista para recuperar o que a grade descartou.
+
+**O layout do grupo nasceu agora, não na 1a.** Um layout com uma página só é
+indireção sem ninguém para dividir; ele passa a existir no momento em que existe
+a segunda tela — que é também o momento em que repetir o cabeçalho começaria a
+criar duas versões dele. O canvas fica fora do grupo e mantém o header próprio: o
+dele flutua sobre um plano infinito, e isso é diferença de fundo, não de estilo.
+
+#### O que a validação provou, e o caso que ela não pôde provar
+
+Provado na tela: as 33 imagens com o selo do projeto; as **três folhas canônicas
+com o selo "folha canônica"**, que a galeria por projeto esconde; o lightbox
+abrindo; e — a regressão que o refactor exigia — o seletor do canvas **nos dois
+modos**, navegação e seleção, com a marca de selecionado e o contador intactos.
+
+**Não provado, e por quê:** o selo "projeto excluído" tem **zero linhas** para
+exibir. Ele só aparece quando um projeto **com gerações** é excluído, que é
+exatamente o caminho que este ciclo decidiu não exercitar ao vivo para não apagar
+o único projeto com trabalho real dentro. É o mesmo gatilho do `SET NULL`, e por
+isso herda a mesma nota: a regra está numa função só (`originOf`), revisável, e
+**a primeira vez que esse selo aparecer será em produção.** Fica dito, em vez de
+contado como 3/3.
+
+#### ✅ Ratificado: refactor de componente compartilhado prova os clientes antigos
+
+Os prints 04 e 05 da 2a — o seletor do canvas em **navegação** e em **seleção**,
+depois de a grade sair de dentro dele — viram padrão de ritual:
+
+**Ao extrair um componente para compartilhar, a evidência inclui os clientes que
+já existiam, não só o novo.** O código novo é o que se está olhando, e por isso é
+o que menos precisa de prova; quem quebra num refactor é sempre a tela que
+ninguém abriu porque "só mudou de lugar". Um print por cliente e por modo.

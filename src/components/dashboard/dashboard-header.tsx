@@ -1,3 +1,4 @@
+import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { signOut } from "@/lib/auth/actions";
 import { t } from "@/lib/i18n/pt-BR";
 import { formatBRL, formatSparks } from "@/lib/sparks";
@@ -28,6 +29,10 @@ export function DashboardHeader({ balanceCents }: { balanceCents: number }) {
           ⚡
         </span>
         <span className="text-sm font-medium text-ink">{t.app.name}</span>
+
+        <div className="ml-4 h-6 w-px shrink-0 bg-line" />
+
+        <DashboardNav />
 
         <div className="ml-auto flex shrink-0 items-center gap-3">
           <div

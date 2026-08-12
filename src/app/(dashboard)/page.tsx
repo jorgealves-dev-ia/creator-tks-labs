@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 
-import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { ProjectCard } from "@/components/dashboard/project-card";
 import { Button } from "@/components/ui/button";
 import { t } from "@/lib/i18n/pt-BR";
@@ -18,8 +17,11 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  *
  * Nada aqui é conceito novo do banco: são os mesmos `projects` que as abas do
  * header sempre mostraram, numa tela em vez de numa faixa — com a capa, as
- * contagens e a data que a faixa nunca teve espaço para dizer (1b). Renomear e
- * excluir chegam na 1c.
+ * contagens e a data que a faixa nunca teve espaço para dizer (1b), e as ações
+ * que a 1c trouxe.
+ *
+ * O cabeçalho e o saldo vivem no layout do grupo `(dashboard)`, dividido com a
+ * Galeria — esta página cuida só do que é dela.
  */
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
@@ -32,48 +34,35 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const userId = claims.claims.sub;
-
-  const [projects, walletResult] = await Promise.all([
-    loadProjectCards(userId),
-    supabase
-      .from("wallets")
-      .select("balance_cents")
-      .eq("user_id", userId)
-      .maybeSingle(),
-  ]);
+  const projects = await loadProjectCards(claims.claims.sub);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-canvas">
-      <DashboardHeader balanceCents={walletResult.data?.balance_cents ?? 0} />
-
-      <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <h1 className="text-lg font-medium text-ink">{t.dashboard.title}</h1>
-            <p className="mt-1 text-xs text-ink-muted">{t.dashboard.subtitle}</p>
-          </div>
-
-          <form action={createProject} className="shrink-0">
-            <Button type="submit" className="h-9 px-4">
-              {t.studio.newProject}
-            </Button>
-          </form>
+    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <h1 className="text-lg font-medium text-ink">{t.dashboard.title}</h1>
+          <p className="mt-1 text-xs text-ink-muted">{t.dashboard.subtitle}</p>
         </div>
 
-        {projects.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project) => (
-              <li key={project.id}>
-                <ProjectCard project={project} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </main>
-    </div>
+        <form action={createProject} className="shrink-0">
+          <Button type="submit" className="h-9 px-4">
+            {t.studio.newProject}
+          </Button>
+        </form>
+      </div>
+
+      {projects.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {projects.map((project) => (
+            <li key={project.id}>
+              <ProjectCard project={project} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </main>
   );
 }
 

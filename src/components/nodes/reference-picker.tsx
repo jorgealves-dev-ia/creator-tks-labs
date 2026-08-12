@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { useLightbox } from "@/components/nodes/lightbox";
+import { ImageGrid } from "@/components/ui/image-grid";
 import {
   listGalleryAssets,
   registerUploadedAsset,
@@ -403,42 +404,16 @@ function PickerDialog() {
             </div>
           ) : (
             <>
-              <ul className="grid grid-cols-4 gap-3 sm:grid-cols-6">
-                {items.map((item) => {
-                  const picked = selected.some((entry) => entry.assetId === item.assetId);
-
-                  return (
-                    <li key={item.assetId}>
-                      <button
-                        type="button"
-                        onClick={() => toggle(item)}
-                        title={item.label ?? (browsing ? galleryCopy.openHint : undefined)}
-                        className={`block w-full overflow-hidden rounded-lg border transition-colors ${
-                          picked ? "border-accent" : "border-line hover:border-line-strong"
-                        }`}
-                      >
-                        <span className="relative block aspect-square bg-canvas">
-                          {/* Short-lived signed URLs for a private bucket. */}
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={item.url}
-                            alt={item.label ?? copy.untitled}
-                            className="size-full object-cover"
-                          />
-                          {picked ? (
-                            <span className="absolute right-1 top-1 flex size-4 items-center justify-center rounded-full bg-accent text-[9px] font-bold text-canvas">
-                              ✓
-                            </span>
-                          ) : null}
-                        </span>
-                        <span className="block truncate px-1.5 py-1 text-left text-[10px] text-ink-faint">
-                          {item.label ?? copy.untitled}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+              {/* A grade é compartilhada com a Galeria geral do dashboard — ver
+                  components/ui/image-grid.tsx. O que este modal guarda para si é
+                  o que o clique faz e o teto que ele impõe. */}
+              <ImageGrid
+                items={items}
+                onPick={toggle}
+                pickedIds={new Set(selected.map((entry) => entry.assetId))}
+                hint={browsing ? galleryCopy.openHint : undefined}
+                untitled={copy.untitled}
+              />
 
               {hasMore ? (
                 <button
