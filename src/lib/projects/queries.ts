@@ -16,7 +16,19 @@ export type ProjectCard = {
   name: string;
   /** A geração bem-sucedida mais recente. `null` quando o projeto ainda não gerou nada. */
   coverUrl: string | null;
-  /** Quantas personagens trabalham aqui — `project_entities`. */
+  /**
+   * Quantas personagens trabalham aqui — e **só as que a pessoa consegue ver**.
+   *
+   * `project_entities` sozinho contava a mais: um vínculo continua existindo
+   * depois que a personagem é arquivada, de propósito (ver `loadProjectCharacterIds`
+   * — o vínculo não deixa de ser verdadeiro só porque ela saiu do Arsenal).
+   * Medido neste banco: sete vínculos e seis personagens visíveis, porque
+   * "Natany" está arquivada. O cartão diria 7 e o trilho do projeto mostraria 6.
+   *
+   * O filtro é o mesmo de `loadCharacters`, e essa é a regra: **o número no
+   * cartão conta o que a tela mostra.** Foi o que decidiu "imagens e não
+   * tentativas" logo acima, e vale igual aqui.
+   */
   characterCount: number;
   /**
    * Quantas **imagens** saíram daqui — sucessos com arquivo, e não tentativas.
@@ -48,7 +60,7 @@ export type ProjectCard = {
 export async function loadProjectCards(userId: string): Promise<ProjectCard[]> {
   const supabase = await createSupabaseServerClient();
 
-  const [projectsResult, workflowsResult, linksResult, generationsResult] =
+  const [projectsResult, workflowsResult, linksResult, visibleResult, generationsResult] =
     await Promise.all([
       supabase
         .from("projects")
@@ -58,7 +70,15 @@ export async function loadProjectCards(userId: string): Promise<ProjectCard[]> {
         .order("sort_order")
         .order("created_at"),
       supabase.from("workflows").select("project_id, updated_at").eq("user_id", userId),
-      supabase.from("project_entities").select("project_id").eq("user_id", userId),
+      supabase.from("project_entities").select("project_id, entity_id").eq("user_id", userId),
+      // As personagens que a pessoa enxerga — o mesmo recorte de `loadCharacters`,
+      // porque é com o trilho do canvas que o número do cartão precisa concordar.
+      supabase
+        .from("entities")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("kind", "character")
+        .is("archived_at", null),
       supabase
         .from("generations")
         .select("project_id, created_at, status, result_asset_id")
@@ -75,8 +95,12 @@ export async function loadProjectCards(userId: string): Promise<ProjectCard[]> {
     (workflowsResult.data ?? []).map((row) => [row.project_id, row.updated_at]),
   );
 
+  const visibleCharacters = new Set((visibleResult.data ?? []).map((row) => row.id));
+
   const characterCounts = new Map<string, number>();
   for (const link of linksResult.data ?? []) {
+    if (!visibleCharacters.has(link.entity_id)) continue;
+
     characterCounts.set(link.project_id, (characterCounts.get(link.project_id) ?? 0) + 1);
   }
 

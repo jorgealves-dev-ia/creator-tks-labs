@@ -1925,3 +1925,103 @@ do projeto:
    Nenhum `toLocaleDateString` novo espalhado por componente: quem precisa
    mostrar data importa daqui. O fuso é uma decisão de produto, e decisão de
    produto mora num lugar só — o extrato da Fase 2b já nasce usando este módulo.
+
+### 12/08/2026 — Fase 1c · as duas ações do cartão, e um número que contava um fantasma
+
+Renomear e excluir saem do hover do cartão, pequenos, no canto — o mesmo gesto
+que a aba do canvas já ensinou. Renomear abre o nome no lugar, com Enter e Esc
+significando nas duas telas exatamente a mesma coisa.
+
+**Os botões são irmãos do link, não filhos dele.** Um `<button>` dentro de um
+`<a>` é HTML inválido e cada navegador resolve o conflito do jeito dele — em
+alguns, clicar no botão navega junto. Os controles ficam ao lado do link,
+posicionados por cima: o cartão inteiro continua clicável e os dois gestos nunca
+disputam o mesmo clique.
+
+**O redirecionamento é necessidade do canvas, não da exclusão.** Quem exclui a
+aba aberta está olhando para um projeto que deixou de existir, e a tela precisa
+mudar debaixo dele. Quem exclui um cartão está olhando para uma lista: o cartão
+some, a lista continua, e mandar essa pessoa para o canvas de outro projeto seria
+abrir um lugar que ela não pediu. O `from` no formulário escolhe entre **dois
+destinos fixos escritos na action** — o cliente diz de onde veio, jamais para
+onde ir, que é a diferença entre uma escolha de origem e um open redirect.
+
+**A confirmação diz as duas metades**, no mesmo formato do diálogo da personagem:
+o que se perde é o fluxo (o `workflows` cai por cascata, e com ele os blocos e as
+ligações); o que fica são as imagens, o extrato e as personagens. Confirmação que
+só pergunta "tem certeza?" testa coragem; esta testa entendimento.
+
+#### O número que contava um fantasma 🐛 achado na validação
+
+O cartão dizia **7 personagens** onde o trilho do projeto mostra **6**. A causa
+não estava no cartão: `project_entities` guarda o vínculo, e o vínculo continua
+existindo depois que a personagem é arquivada — de propósito, porque ele não
+deixa de ser verdadeiro só porque ela saiu do Arsenal. "Natany" está arquivada
+neste banco, e era ela.
+
+A correção é o filtro de `loadCharacters`, aplicado à contagem. E a regra que
+sai daqui é a mesma que decidiu "imagens e não tentativas" uma fase antes, agora
+com dois casos: **o número no cartão conta o que a tela mostra.** Um número que
+discorda da tela ao lado não é um detalhe de precisão — é a tela chamando o
+usuário de desatento.
+
+#### 📌 Backlog · o número de "Projeto sem título" volta a ser reusado
+
+`nextUntitledName` promete no próprio comentário que "os números só sobem", para
+que ninguém reencontre o nome de um projeto apagado de manhã. A promessa vale
+enquanto os projetos existem: a exclusão é `DELETE` de verdade, então o nome sai
+da tabela e o número volta a ficar livre. Observado três vezes na validação deste
+ciclo — criei e excluí "Projeto sem título 1" três vezes, e as três nasceram com
+o mesmo nome.
+
+Consequência real e pequena, e por isso fica registrado em vez de corrigido às
+pressas: sem `archived_at` em projeto, a única saída honesta é arquivar em vez de
+apagar (como já se faz com personagem e produto), e isso é decisão de produto —
+não conserto de contador.
+
+### 12/08/2026 — Fase 1 encerrada: o produto ganhou porta da frente
+
+Três fatias, três commits, **nenhuma migration** — como a investigação previu, e
+pelo motivo que ela mediu: o dashboard só apresenta o que já existia.
+
+| fatia | o que entrou | como foi provado |
+|---|---|---|
+| **1a** | `/` vira o vestíbulo, canvas para `/studio?p=`, dez pontos de toque | navegador, **12/12 pontos com print**, zero Spark |
+| **1b** | capa, contagens, data da última atividade, estado vazio | prints + conferência cruzada em SQL (capa é a mais recente, por rótulo) |
+| **1c** | renomear e excluir no cartão, confirmação que diz o que fica | prints, mais o `DELETE` conferido no banco linha a linha |
+
+**Custo de validação paga: zero.** O ciclo inteiro é apresentação — nenhuma
+geração, nenhum débito, e o ledger fechou em 36 transações do primeiro print ao
+último.
+
+#### A regra que a fase produziu, com dois casos
+
+**O número na tela conta o que a tela mostra.** Ela nasceu de duas contagens que
+teriam mentido de jeitos diferentes:
+
+| o número | contaria | mostraria | por quê é a mesma regra |
+|---|---|---|---|
+| imagens do projeto | 47 tentativas | 30 miniaturas na Galeria | falha e recusa não são acervo |
+| personagens do projeto | 7 vínculos | 6 no trilho do canvas | vínculo sobrevive ao arquivamento, e deve |
+
+Nos dois casos o dado do banco estava certo e a pergunta é que era outra. Um
+número que discorda da tela ao lado não é imprecisão — é a interface dizendo à
+pessoa que ela contou errado.
+
+#### 📌 Backlog · arquivar projeto em vez de apagar
+
+Hoje excluir projeto é `DELETE`. Trocar por arquivamento resolve três coisas de
+uma vez:
+
+1. **O contador dos "sem título"**, que volta a reusar números assim que a linha
+   sai da tabela — a promessa de `nextUntitledName` sobrevive se nada sair.
+2. **Espelha o desenho que o produto já tem** para personagem e para produto,
+   onde arquivar esconde e nunca apaga.
+3. **É requisito provável do SaaS**: cliente que apaga projeto por engano é
+   suporte, e "restaurar" só existe se houver o que restaurar.
+
+**Nota honesta sobre o achado:** o caso de borda do contador **contradiz a
+promessa escrita na D1-Fase 1**. Não é regressão — nada que funcionava parou de
+funcionar. É fronteira descoberta depois: a promessa foi escrita pensando em
+projetos que continuam existindo, e a exclusão de verdade é o caso que ninguém
+tinha exercitado três vezes seguidas até esta validação.

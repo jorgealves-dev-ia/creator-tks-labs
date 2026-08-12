@@ -136,6 +136,19 @@ export async function renameProject(formData: FormData): Promise<void> {
   revalidateProjectScreens();
 }
 
+/**
+ * Excluir um projeto — e ir, ou não ir, a lugar nenhum.
+ *
+ * **O redirecionamento é necessidade do canvas, não da exclusão.** Quem exclui a
+ * aba aberta está olhando para um projeto que deixou de existir, e a tela precisa
+ * mudar debaixo dele. Quem exclui um cartão no dashboard está olhando para uma
+ * lista: o cartão some, a lista continua, e mandar essa pessoa para o canvas de
+ * outro projeto seria abrir um lugar que ela não pediu.
+ *
+ * O `from` decide entre **dois destinos fixos e escritos aqui** — nunca um
+ * caminho vindo do formulário. É a diferença entre uma escolha de origem e um
+ * open redirect: o cliente diz de onde veio, jamais para onde ir.
+ */
 export async function deleteProject(formData: FormData): Promise<void> {
   const { supabase, userId } = await requireSession();
 
@@ -145,7 +158,15 @@ export async function deleteProject(formData: FormData): Promise<void> {
     return;
   }
 
+  const fromDashboard = formData.get("from") === "dashboard";
+
   await supabase.from("projects").delete().eq("id", id.data);
+
+  revalidateProjectScreens();
+
+  if (fromDashboard) {
+    return;
+  }
 
   const { data: remaining } = await supabase
     .from("projects")
@@ -157,7 +178,6 @@ export async function deleteProject(formData: FormData): Promise<void> {
     .limit(1)
     .maybeSingle();
 
-  revalidateProjectScreens();
   // Sem projeto que sobre, o destino é o vestíbulo — que agora tem o que dizer
   // ("Nenhum projeto ainda" e o botão), em vez do canvas vazio de antes.
   redirect(remaining ? `/studio?p=${remaining.id}` : "/");

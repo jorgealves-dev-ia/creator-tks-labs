@@ -71,6 +71,35 @@ export const t = {
       imageOne: "imagem",
       imageMany: "imagens",
       lastActivity: "Última atividade",
+      rename: "Renomear projeto",
+      renameHint: "Enter salva, Esc cancela",
+
+      /**
+       * A exclusão, com as duas metades — o mesmo formato do diálogo da
+       * personagem (`characterSheet.archive`), e pelo mesmo motivo: "excluir"
+       * faz qualquer pessoa supor que as imagens vão junto, e elas não vão.
+       *
+       * O que se perde é o fluxo: `workflows` cai por cascata, e com ele os
+       * blocos, as ligações e a posição de cada um. Os vínculos com as
+       * personagens também caem — o **vínculo**, nunca a personagem.
+       *
+       * O que fica é o que o banco garante: as gerações passam a ter
+       * `project_id` nulo em vez de sumirem (`ON DELETE SET NULL`), o extrato
+       * nem é tocado, e as personagens vivem em `entities`, que a exclusão de
+       * projeto não alcança.
+       */
+      remove: {
+        action: "Excluir projeto",
+        title: "Excluir este projeto?",
+        lostTitle: "O que você perde",
+        lost: "O fluxo montado no canvas — os blocos, as ligações e onde cada um estava.",
+        keptTitle: "O que continua existindo",
+        kept: "As imagens já geradas e o extrato de Sparks. As personagens são suas e continuam disponíveis para os outros projetos.",
+        irreversible: "Não dá para desfazer pela interface.",
+        confirm: "Excluir",
+        working: "Excluindo…",
+        cancel: "Cancelar",
+      },
     },
   },
 
