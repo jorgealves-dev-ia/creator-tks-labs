@@ -1705,3 +1705,68 @@ O **caminho triste** foi no navegador pelo Code, zero Spark, sete prints em `scr
 O **caminho feliz** foi do Jorge, com Spark de verdade: `@luna` vinculada, 1K, uma imagem — `succeeded`, `sparks_charged: 50`, `@luna v4`, e **exatamente um** lançamento no ledger de 50 centavos. Saldo 7750 → 7700, gerações 49 → 50, lançamentos 35 → 36.
 
 **As duas metades juntas são a prova; separadas, nenhuma das duas seria.** A recusa sozinha provaria que nada é cobrado — o que um botão quebrado também faria. A geração sozinha provaria que o caminho funciona — sem dizer nada sobre o que acontece quando ele não deve funcionar. Uma linha nova em cada tabela no caminho feliz, zero linhas novas em ambas no triste: é o par que mostra que a recusa é uma decisão e não uma falha.
+
+### 11/08/2026 — Etapa D2 · Fase 3: o avatar, e um seletor que abria por baixo
+
+O retrato passa a ser **avatar > folha congelada > iniciais**, e a palavra que rege a fase é *sobreposição*: o avatar não substitui a folha, passa na frente dela. Remover não deixa a personagem sem cara — devolve a folha, sem uma linha de código para lembrar disso, porque quem decide o retrato continua sendo `useCharacterPortraits` e não uma cópia guardada em algum lugar.
+
+**Coluna nenhuma foi criada.** `entities.cover_asset_id` existia desde a Fase 0 e nunca teve leitor; a Fase 0 desta etapa só lhe deu um comentário. E o `on delete set null` que ela já tinha entrega de graça a regra "remover volta ao padrão" para o caso em que a imagem some do acervo.
+
+**Fica em `entities` e não em `entity_versions`, de propósito: avatar é apresentação, não identidade.** Congelar uma v5 muda a folha que a menção ancora e não muda a cara que a pessoa escolheu para reconhecê-la numa lista de seis. As duas coisas mudam por motivos diferentes, então mudam em lugares diferentes.
+
+**A escolha reusa o seletor de referências**, com escopo novo `avatar` e teto 1. Não é economia de código: o que a foto de perfil precisa é literalmente o que aquele modal faz — "envie um arquivo, ou pegue algo que você já tem" —, e um segundo seletor seria um segundo lugar para "10 MB" e "precisa ser imagem" divergirem. É o mesmo motivo pelo qual o editor de produto passou a usá-lo em vez de ganhar o seu.
+
+#### O defeito que só a tela mostrou
+
+Ao clicar em "Escolher foto de perfil" pela primeira vez, **não acontecia nada**. O seletor estava montado, no DOM, funcionando — e sendo pintado por baixo.
+
+A causa: o editor da personagem é um `<dialog>.showModal()`, e um dialog modal vive na **top layer** do navegador, acima de qualquer `z-index` da página. O seletor era um `div` com `fixed inset-0 z-50`, o que bastava enquanto quem o abria era um node do canvas. O primeiro chamador vindo de dentro de um dialog encontrou o teto.
+
+A correção é a receita que o próprio `SheetEditor` já usava: o seletor virou `<dialog>` nativo. A top layer empilha por ordem de abertura, então quem abre depois fica acima. De brinde vieram duas coisas que se faziam à mão — Escape fechando (agora por `onClose`, que cobre qualquer caminho de fechamento) e o foco preso dentro do modal.
+
+**É a terceira vez nesta etapa que um sintoma apontou para o lugar errado**, e a terceira vez que abrir a tela custou minutos onde deduzir custaria rodadas. "O botão não faz nada" descrevia um componente que estava fazendo exatamente o que devia.
+
+#### Validação
+
+Zero Spark, doze prints em `scratchpad/evidencias/d2-fase3/`. A ordem foi provada com uma personagem de cada caso **no mesmo print** — `@julia` com avatar, `@luna` só com folha, `@aria` só com inicial —, nos cinco lugares que mostram retrato: trilho aberto, trilho fechado, cartão do canvas, lista do `@` e galeria de personagens.
+
+Dois deles merecem nota. O **`@luna` é o caso decisivo**: ela tem folha, então dar-lhe um avatar prova que ele vence, e removê-lo prova que o retrato volta para a folha — as duas metades da regra numa personagem só. E a **lista do `@` não estava mostrando retrato nenhum** antes desta fase: chamava `Portrait` sem `src`, então todo mundo aparecia como duas letras, inclusive quem tinha folha. Reconhecer alguém por duas letras é pior justamente onde a escolha é rápida.
+
+Os dois caminhos de escolha foram exercitados: galeria (`@julia`) e upload (`@marina`). Os avatares de teste foram removidos ao final e o banco terminou com `cover_asset_id` nulo nas seis, como começou.
+
+### 11/08/2026 — Etapa D2 encerrada: uma personagem, muitos projetos
+
+O ciclo entregou o escopo por projeto para as personagens sem que nenhuma delas deixasse de ser do usuário. O placar cabe numa tabela:
+
+| fase | o que entrou | como foi provado |
+|---|---|---|
+| **0** | `project_entities` com posse por FK composta; `entities.project_id` derrubada; `cover_asset_id` vira avatar | conferido no banco depois de aplicada: 7 vínculos, coluna inexistente, uniques e índices criados, RLS sem UPDATE, `anon` sem grant |
+| **1** | trilho por projeto, dois vazios, criar vincula, "Adicionar existente" | navegador, **nove prints** — e o rascunho sobrevivendo à troca de aba, provado por um campo que só existe no cliente |
+| **2** | `@` no escopo, recusa no servidor, cartão "não vinculada", desvincular com diálogo que conta | **o par**: recusa com zero linhas novas em `generations` e `ledger_transactions`, geração com exatamente uma em cada. `GN006` aplicado **depois** do deploy, na ordem escrita |
+| **3** | avatar > folha > iniciais, escolha por galeria e upload, retrato em cinco lugares | navegador, **doze prints**, zero Spark — mais a correção da top layer |
+
+**Uma migration de schema e uma de função, nas ordens que a etapa descobriu que importavam.** As duas ordens são a mesma regra vista de dois lados: *o código que torna a regra do banco inalcançável sobe primeiro*. Na Fase 0 isso obrigou um commit preparatório antes do `drop column`; na Fase 2, adiou o `GN006` para depois do deploy. Em nenhum dos dois casos a ordem foi conveniência — nos dois, a ordem errada tinha um custo nomeável (criar personagem quebrada; imagem paga e jogada fora).
+
+**Custo de validação paga: 50 ⚡, uma imagem.** Todo o resto foi navegador e consulta ao banco. O caminho triste da Fase 2 foi rodado com exposição mínima justamente porque o modo de falha dele *era* uma geração paga — e não foi.
+
+#### 📌 Backlog · excluir asset da galeria
+
+**Não existe caminho no produto para apagar uma imagem do acervo** — nem UI, nem ação de servidor. Uma imagem enviada por engano fica.
+
+E não é um botão: **a exclusão precisa medir as referências antes de existir.** Um `asset` pode estar sendo apontado por uma geração (`generations.result_asset_id`), por um avatar (`entities.cover_asset_id`), por uma imagem canônica (`entity_images`, onde há trigger que torna imortal a citada por versão congelada) e pelos nodes de um canvas, que guardam `assetId` dentro do `graph` em jsonb — este último invisível para qualquer FK. Apagar sem medir produz exatamente o tipo de buraco que a coluna `project_id` produziria: molduras vazias em canvas antigos, retratos que somem sem explicação.
+
+O desenho provável é o das personagens e dos produtos: **arquivar em vez de apagar**, com exclusão real só onde nada aponta. Fica registrado, não construído.
+
+**Primeiro cliente:** o `avatar-de-teste-upload` que a validação da Fase 3 deixou. Um resto conhecido, com nome que se identifica, é melhor do que uma exclusão apressada — mas é um resto, e está anotado como tal.
+
+#### A lição que a etapa repetiu, agora com três casos
+
+**Um sintoma visual descreve onde dói, nunca o que quebrou.** A D1 já tinha escrito isso; a D2 acrescentou o terceiro caso e o padrão agora atravessa dois ciclos:
+
+| a queixa | onde estava a causa |
+|---|---|
+| "o trilho tem um vão" | altura invisível de parágrafos com `opacity: 0` — não filtro |
+| "apareceu um avatar estranho" | o badge de devtools do Next.js parado sobre o último ícone |
+| "o botão não faz nada" | o seletor abria certo, e o `<dialog>` do editor o cobria pela **top layer** |
+
+Os três têm a mesma forma: o componente acusado estava fazendo exatamente o que devia. E os três só foram encontrados porque alguém abriu a tela em vez de deduzir dela — o que é, palavra por palavra, o motivo pelo qual a emenda de ritual da D1 existe.

@@ -11,6 +11,7 @@ import {
   type MentionQuery,
 } from "@/lib/generation/mentions";
 import { useEntitiesStore } from "@/lib/entities/store";
+import { useCharacterPortraits } from "@/lib/entities/use-portraits";
 import { t } from "@/lib/i18n/pt-BR";
 
 /**
@@ -53,6 +54,7 @@ export function PromptField({ id, value, onChange, disabled }: PromptFieldProps)
   const characters = useEntitiesStore((state) => state.characters);
   const order = useEntitiesStore((state) => state.order);
   const linkedIds = useEntitiesStore((state) => state.linkedIds);
+  const portraits = useCharacterPortraits();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
@@ -241,7 +243,15 @@ export function PromptField({ id, value, onChange, disabled }: PromptFieldProps)
                                 ${index === highlighted && mentionable ? "bg-surface-hover" : ""}
                                 ${mentionable ? "" : "cursor-not-allowed opacity-50"}`}
                   >
-                    <Portrait name={character.displayName} className="size-6" />
+                    {/* O retrato só chegou aqui na Fase 3 da D2 — esta lista
+                        mostrava iniciais para todo mundo, inclusive para quem
+                        tinha folha. Reconhecer alguém por dois caracteres é
+                        pior justamente onde a escolha é rápida. */}
+                    <Portrait
+                      name={character.displayName}
+                      src={portraits[character.id]}
+                      className="size-6"
+                    />
 
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-xs text-ink">

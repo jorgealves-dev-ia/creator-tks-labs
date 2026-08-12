@@ -113,6 +113,17 @@ export const t = {
       relinkFailed: "Não deu para vincular. Tente de novo.",
     },
 
+    /** A foto de perfil da personagem — sobreposição opcional ao retrato padrão. */
+    avatar: {
+      choose: "Escolher foto de perfil",
+      change: "Trocar foto de perfil",
+      remove: "Remover foto de perfil",
+      /** Diz para onde o retrato volta, em vez de só dizer que sai. */
+      removeHint: "Volta para a folha da versão ativa.",
+      saving: "Salvando…",
+      failed: "Não deu para salvar a foto de perfil.",
+    },
+
     sidebar: {
       title: "Personagens",
       newCharacter: "Nova personagem",
@@ -962,6 +973,12 @@ export const t = {
           title: "Escolher a imagem do input",
           remainingSuffix: "neste input — o limite é",
           limitPrefix: "Um input de imagem guarda",
+          limitSuffix: "imagem.",
+        },
+        avatar: {
+          title: "Escolher a foto de perfil",
+          remainingSuffix: "como foto de perfil — o limite é",
+          limitPrefix: "A foto de perfil é",
           limitSuffix: "imagem.",
         },
       },

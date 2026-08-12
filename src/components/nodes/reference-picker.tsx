@@ -98,6 +98,7 @@ function PickerDialog() {
   const hasMore = page?.key === requestKey && page.hasMore;
 
   const fileRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -127,14 +128,29 @@ function PickerDialog() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestKey]);
 
+  /**
+   * Aberto como `<dialog>` nativo, e isso é uma correção de 11/08/2026.
+   *
+   * Ele era um `div` com `fixed inset-0 z-50`, o que basta enquanto quem o abre
+   * é um node do canvas. Deixou de bastar quando o editor da personagem passou
+   * a chamá-lo (a foto de perfil, Fase 3 da D2): o editor é um
+   * `<dialog>.showModal()`, e um dialog modal vive na **top layer** do
+   * navegador, acima de qualquer `z-index` da página. O seletor abria — estava
+   * no DOM, montado, funcionando — e era pintado por baixo.
+   *
+   * A top layer empilha por ordem de abertura, então um dialog aberto depois
+   * fica acima do anterior. É a mesma receita que o SheetEditor já usava, e o
+   * `p-0` mais o `backdrop:` são o que tiram os estilos que o `<dialog>` traz
+   * de fábrica.
+   *
+   * De brinde vem o que se estava fazendo à mão: Escape fecha nativamente (via
+   * `onClose`, que também cobre o fechamento por qualquer outro caminho) e o
+   * foco fica preso dentro do modal.
+   */
   useEffect(() => {
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") close();
-    }
-
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [close]);
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open) dialog.showModal();
+  }, []);
 
   /** Uma geração, vista como item da grade. A grade não precisa saber a diferença. */
   function toGalleryItem(thumb: {
@@ -268,16 +284,21 @@ function PickerDialog() {
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal
+    <dialog
+      ref={dialogRef}
       aria-label={browsing ? galleryCopy.title : scopeCopy.title}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-canvas/80 p-6 backdrop-blur-sm"
+      onClose={close}
+      // Clicar fora fecha: num `<dialog>`, o clique no vão em volta tem o
+      // próprio dialog como alvo, então comparar com o ref é o que distingue
+      // "cliquei ao lado" de "cliquei dentro". Mesma receita do SheetEditor.
       onClick={(event) => {
-        if (event.target === event.currentTarget) close();
+        if (event.target === dialogRef.current) dialogRef.current?.close();
       }}
+      className="fixed inset-0 m-auto h-[36rem] w-full max-w-3xl overflow-hidden rounded-xl
+                 border border-line bg-surface p-0 text-ink shadow-2xl shadow-black/50
+                 backdrop:bg-canvas/80 backdrop:backdrop-blur-sm"
     >
-      <div className="flex h-[36rem] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/50">
+      <div className="flex h-full w-full flex-col overflow-hidden">
         <div className="flex items-center justify-between border-b border-line px-5 py-3">
           <div>
             <h2 className="text-sm font-medium text-ink">
@@ -466,6 +487,6 @@ function PickerDialog() {
           </div>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

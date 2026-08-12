@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ArchiveCharacter } from "@/components/character-sheet/archive-character";
+import { AvatarPicker } from "@/components/character-sheet/avatar-picker";
 import { CanonicalImagesColumn } from "@/components/character-sheet/canonical-images-column";
 import { CompiledPromptPanel } from "@/components/character-sheet/compiled-prompt-panel";
 import { DnaTab } from "@/components/character-sheet/dna-tab";
-import { Portrait, VersionBadge } from "@/components/character-sheet/identity";
+import { VersionBadge } from "@/components/character-sheet/identity";
 import { NarrativaTab } from "@/components/character-sheet/narrativa-tab";
 import { PadroesTab } from "@/components/character-sheet/padroes-tab";
 import { SaveVersionModal } from "@/components/character-sheet/save-version-modal";
@@ -277,7 +278,7 @@ function SheetEditorDialog({ entityId }: { entityId: string }) {
       >
         <div className="flex h-full flex-col">
           <header className="flex h-16 shrink-0 items-center gap-3 border-b border-line px-4">
-            <Portrait name={character.displayName} />
+            <AvatarPicker entityId={entityId} />
 
             <div className="min-w-0">
               <label htmlFor="character-name" className="sr-only">

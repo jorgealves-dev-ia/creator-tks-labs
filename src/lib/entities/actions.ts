@@ -488,6 +488,74 @@ export async function isHandleAvailable(input: unknown): Promise<HandleCheckResu
 }
 
 // ---------------------------------------------------------------------------
+// O avatar (Etapa D2, Fase 3)
+// ---------------------------------------------------------------------------
+
+const avatarSchema = z.object({
+  entityId: z.uuid(),
+  /** Null remove o avatar e devolve o retrato ao padrão. */
+  assetId: z.uuid().nullable(),
+});
+
+export type SetAvatarResult =
+  | { ok: true; assetId: string | null }
+  | { ok: false; reason: "invalid" | "not_found" | "error" };
+
+/**
+ * Escolhe — ou remove — a imagem que representa a personagem nas telas.
+ *
+ * **Sobreposição, nunca substituição.** Gravar aqui não apaga nada: sem avatar,
+ * o retrato volta a ser a folha completa da versão ativa, porque quem decide
+ * isso é `useCharacterPortraits` e não uma cópia guardada em algum lugar.
+ * Remover é gravar `null`, e é por isso que o parâmetro aceita null em vez de
+ * existir uma segunda ação para desfazer.
+ *
+ * A posse do asset é conferida antes de gravar. O RLS já protegeria a leitura
+ * — um asset de outro usuário nunca renderia URL assinada, então nada vazaria —
+ * mas guardar um id que esta conta não pode ler deixaria uma personagem com um
+ * avatar permanentemente invisível e nenhuma explicação na tela. A checagem é
+ * uma consulta e evita um estado que ninguém saberia diagnosticar.
+ */
+export async function setCharacterAvatar(input: unknown): Promise<SetAvatarResult> {
+  const parsed = avatarSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return { ok: false, reason: "invalid" };
+  }
+
+  const { supabase } = await requireSession();
+
+  if (parsed.data.assetId) {
+    // O RLS escopa ao dono, então um asset de outra conta simplesmente não
+    // aparece — não é preciso comparar user_id à mão.
+    const { data: asset } = await supabase
+      .from("assets")
+      .select("id")
+      .eq("id", parsed.data.assetId)
+      .eq("kind", "image")
+      .maybeSingle();
+
+    if (!asset) {
+      return { ok: false, reason: "not_found" };
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("entities")
+    .update({ cover_asset_id: parsed.data.assetId })
+    .eq("id", parsed.data.entityId)
+    .eq("kind", "character")
+    .select("cover_asset_id")
+    .maybeSingle();
+
+  if (error || !data) {
+    return { ok: false, reason: "error" };
+  }
+
+  return { ok: true, assetId: data.cover_asset_id };
+}
+
+// ---------------------------------------------------------------------------
 // Putting a character away
 // ---------------------------------------------------------------------------
 

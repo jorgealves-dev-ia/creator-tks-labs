@@ -72,6 +72,8 @@ type EntitiesState = {
   /** Applies an edit to the draft. The mutator receives a private copy. */
   updateSheet: (id: string, mutate: (sheet: CharacterSheet) => void) => void;
   setDisplayName: (id: string, displayName: string) => void;
+  /** O avatar escolhido, ou null para voltar ao padrão (folha da versão ativa). */
+  setAvatar: (id: string, assetId: string | null) => void;
   setDraftStatus: (id: string, status: DraftStatus) => void;
   markDraftSaved: (id: string, revision: number) => void;
   openEditor: (id: string) => void;
@@ -186,6 +188,19 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
           },
         },
       };
+    }),
+
+  // Sem `draftStatus: "dirty"` e sem mexer em `revision`, de propósito: o avatar
+  // é gravado direto na sua própria ação e não é campo do sheet. Marcá-lo como
+  // rascunho sujo faria o autosave reescrever o sheet por causa de uma escolha
+  // que não tem nada a ver com ele — e acenderia o selo de "alterações não
+  // salvas" para algo que já está salvo.
+  setAvatar: (id, coverAssetId) =>
+    set((state) => {
+      const current = state.characters[id];
+      if (!current) return state;
+
+      return { characters: { ...state.characters, [id]: { ...current, coverAssetId } } };
     }),
 
   setDraftStatus: (id, draftStatus) =>

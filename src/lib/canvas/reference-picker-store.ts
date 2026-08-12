@@ -23,8 +23,15 @@ export type PickedImage = {
   source: "upload" | "generation";
 };
 
-/** Which screen asked, so the modal can explain the ceiling it enforces. */
-export type PickerScope = "geracao" | "produto" | "input";
+/**
+ * Which screen asked, so the modal can explain the ceiling it enforces.
+ *
+ * `avatar` é o quarto e o mais barato de todos: teto 1, e o que se faz com a
+ * escolha é gravar uma coluna. Ele existe como escopo — em vez de um seletor
+ * próprio — porque o que a tela do avatar precisa é exatamente o que este modal
+ * já sabe fazer: "envie um arquivo, ou pegue algo que você já tem".
+ */
+export type PickerScope = "geracao" | "produto" | "input" | "avatar";
 
 /**
  * What the modal is for this time (§4b da D1).

@@ -8,6 +8,24 @@ import { useEntitiesStore } from "@/lib/entities/store";
 /**
  * The face of every character that has one, by character id.
  *
+ * ---------------------------------------------------------------------------
+ * A ordem: avatar > folha congelada > iniciais (Etapa D2, Fase 3)
+ * ---------------------------------------------------------------------------
+ *
+ * O **avatar** (`entities.cover_asset_id`) é uma sobreposição opcional, e a
+ * palavra é exata: ele não substitui a folha, ele passa na frente dela. Remover
+ * o avatar não deixa a personagem sem cara — devolve a folha, sem uma linha de
+ * código para lembrar disso, porque o padrão continua sendo calculado aqui e
+ * não copiado para lugar nenhum.
+ *
+ * Ele mora em `entities` e não em `entity_versions` de propósito: **avatar é
+ * apresentação, não identidade.** Congelar uma v5 muda a folha que a menção
+ * ancora e não muda a cara que a pessoa escolheu para reconhecê-la na lista.
+ * As duas coisas mudam por motivos diferentes, então mudam em lugares
+ * diferentes.
+ *
+ * Abaixo dele, a regra antiga continua valendo palavra por palavra:
+ *
  * The complete sheet is the character's own picture — the thing the initials in
  * the sidebar were standing in for since the character screen was built.
  *
@@ -39,7 +57,12 @@ export function useCharacterPortraits(): Record<string, string> {
       (character) =>
         [
           character.id,
-          character.activeVersion?.sheet.imagens_canonicas.folha_completa ?? null,
+          // O avatar primeiro; a folha da versão congelada quando não há avatar.
+          // Uma imagem por personagem em qualquer caso, então o custo de
+          // assinatura não muda com esta fase.
+          character.coverAssetId ??
+            character.activeVersion?.sheet.imagens_canonicas.folha_completa ??
+            null,
         ] as const,
     )
     .filter((pair): pair is readonly [string, string] => pair[1] !== null);
