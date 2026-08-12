@@ -1,10 +1,11 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { ProjectCard } from "@/components/dashboard/project-card";
 import { Button } from "@/components/ui/button";
 import { t } from "@/lib/i18n/pt-BR";
 import { createProject } from "@/lib/projects/actions";
+import { loadProjectCards } from "@/lib/projects/queries";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
@@ -16,9 +17,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  * lugar onde se escolhe **em que** trabalhar antes de trabalhar.
  *
  * Nada aqui é conceito novo do banco: são os mesmos `projects` que as abas do
- * header sempre mostraram, numa tela em vez de numa faixa. Esta fatia (1a) lista
- * os projetos pelo nome; capa, contagens e data da última atividade chegam na
- * 1b, e renomear/excluir na 1c.
+ * header sempre mostraram, numa tela em vez de numa faixa — com a capa, as
+ * contagens e a data que a faixa nunca teve espaço para dizer (1b). Renomear e
+ * excluir chegam na 1c.
  */
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
@@ -33,22 +34,14 @@ export default async function DashboardPage() {
 
   const userId = claims.claims.sub;
 
-  const [projectsResult, walletResult] = await Promise.all([
-    supabase
-      .from("projects")
-      .select("id, name")
-      .eq("user_id", userId)
-      .is("archived_at", null)
-      .order("sort_order")
-      .order("created_at"),
+  const [projects, walletResult] = await Promise.all([
+    loadProjectCards(userId),
     supabase
       .from("wallets")
       .select("balance_cents")
       .eq("user_id", userId)
       .maybeSingle(),
   ]);
-
-  const projects = projectsResult.data ?? [];
 
   return (
     <div className="flex min-h-dvh flex-col bg-canvas">
@@ -71,23 +64,10 @@ export default async function DashboardPage() {
         {projects.length === 0 ? (
           <EmptyState />
         ) : (
-          <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => (
               <li key={project.id}>
-                <Link
-                  href={`/studio?p=${project.id}`}
-                  title={t.dashboard.openHint}
-                  className="flex h-24 flex-col justify-end rounded-xl border border-line
-                             bg-surface p-4 transition-colors hover:border-line-strong
-                             hover:bg-surface-hover"
-                >
-                  <span className="truncate text-sm font-medium text-ink">
-                    {project.name}
-                  </span>
-                  <span className="mt-0.5 text-[11px] text-ink-faint">
-                    {t.dashboard.openHint}
-                  </span>
-                </Link>
+                <ProjectCard project={project} />
               </li>
             ))}
           </ul>

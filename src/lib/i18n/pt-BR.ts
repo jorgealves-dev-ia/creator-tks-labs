@@ -56,6 +56,22 @@ export const t = {
     openHint: "Abrir no canvas",
     /** A chama do canvas, que agora é o caminho de volta. */
     backHint: "Voltar para os seus projetos",
+
+    /**
+     * O cartão de projeto.
+     *
+     * "Ainda sem imagens" e não "sem imagens": o advérbio é a diferença entre
+     * relatar um vazio e prometer que ele passa. Um projeto recém-criado está
+     * certo de estar vazio, e a tela não deveria fazer isso parecer defeito.
+     */
+    card: {
+      noCover: "Ainda sem imagens",
+      characterOne: "personagem",
+      characterMany: "personagens",
+      imageOne: "imagem",
+      imageMany: "imagens",
+      lastActivity: "Última atividade",
+    },
   },
 
   studio: {

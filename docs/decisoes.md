@@ -1866,3 +1866,62 @@ Vale também como leitura das telas que este ciclo entrega: o dashboard é
 deliberadamente sóbrio. **Não é o estado final, é o estado honesto** — a forma
 certa, esperando o acabamento que virá de uma vez, com o produto inteiro à vista
 e um vocabulário visual só.
+
+### 12/08/2026 — Fase 1b · o cartão, e duas mentiras de data evitadas
+
+O cartão responde as três perguntas que alguém faz olhando um projeto: **o que
+saiu daqui** (a capa, que é a geração bem-sucedida mais recente), **quem trabalha
+aqui** e **quando mexi nisto pela última vez**. Nome sozinho não reconhece nada —
+"Projeto sem título 3" com a foto da Luna dentro é reconhecível, e sem ela não é.
+
+**A primeira mentira era a coluna.** O achado da investigação se confirmou e
+ficou pior do que o registrado: `projects.updated_at` marcava 19:03 do dia 11,
+enquanto a última geração era 01:28 do dia 12 **e o último salvamento do canvas
+era 02:04**. Ou seja, o sinal mais recente de todos não era gerar — era arrumar
+os blocos. A data do cartão é o **maior de três**: salvar o canvas
+(`workflows.updated_at`), gerar (`generations.created_at`) e nascer
+(`projects.created_at`, o piso, que responde por projeto criado e nunca aberto).
+
+**A segunda mentira era o fuso, e essa apareceu na validação.** A atividade mais
+recente é `2026-08-12 02:04 UTC`, que em São Paulo é `11/08 23:04`. O servidor da
+Vercel roda em UTC: formatar com o relógio dele faria o cartão dizer **12/08**
+sobre um trabalho de terça à noite — um dia que a pessoa ainda não tinha vivido
+quando fez aquilo. Por isso `lib/format/date.ts` nasceu com o fuso **explícito** e
+num arquivo só: é lá que isso vira preferência de perfil no dia em que houver
+usuário fora do Brasil, em vez de num `toLocaleDateString` solto por componente.
+O print da validação mostra `11/08/2026` ao lado de um banco que diz `12/08` —
+é a prova de que o formatador está fazendo o trabalho dele.
+
+**A contagem conta imagens, não tentativas.** O cartão diz "30 imagens" onde o
+projeto tem 47 gerações, e a diferença é deliberada: 30 é exatamente o que a
+Galeria daquele projeto mostra. Contar tentativas faria o cartão e a galeria
+discordarem em dezessete, e falha ou recusa não é acervo — não é coisa que se
+exiba como patrimônio de um projeto.
+
+**Quatro consultas e uma assinatura, independente de quantos projetos existam.**
+A alternativa natural — contar e buscar capa por cartão — cresce com a lista e
+transforma a tela inicial em dez viagens ao banco. O preço dessa escolha está
+escrito em `loadProjectCards`: `generations` é lida inteira, com quatro colunas
+pequenas, para ser agrupada em memória. Barato em dezenas ou milhares de linhas,
+caro em centenas de milhares — e nesse dia a resposta é uma view que agrupe no
+banco, não mais uma consulta na página. Fica registrado para não ser
+redescoberto sob pressão.
+
+**Validação:** capa conferida como a **mais recente** por rótulo (a última
+geração é "cores orange e black", e é essa que está no cartão, não a "rosa e
+azul" anterior); contagens conferidas contra SQL (30 e 7); cartão vazio com
+"Ainda sem imagens" num projeto recém-criado. Zero Spark, e o banco de volta a 1
+projeto, 50 gerações, 36 transações.
+
+#### ✅ Ratificado pelo fundador (12/08/2026)
+
+Três escolhas da 1b deixaram de ser julgamento do implementador e viraram regra
+do projeto:
+
+1. **A contagem conta imagens, não tentativas.**
+2. **A data da última atividade é o maior de três sinais** — salvar o canvas,
+   gerar, nascer —, nunca `projects.updated_at`.
+3. **`lib/format/date.ts` é o caminho único para formatar data ao usuário.**
+   Nenhum `toLocaleDateString` novo espalhado por componente: quem precisa
+   mostrar data importa daqui. O fuso é uma decisão de produto, e decisão de
+   produto mora num lugar só — o extrato da Fase 2b já nasce usando este módulo.
