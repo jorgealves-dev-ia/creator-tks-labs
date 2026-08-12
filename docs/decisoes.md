@@ -1664,3 +1664,44 @@ Então são **duas semeaduras com dois tempos de vida**, e isso é o vocabulári
 **Validado no navegador, zero Spark, nove prints em `scratchpad/evidencias/d2-fase1/`.** O caso que mais importava foi o do rascunho, e ele tem um sinal que não admite dúvida: `lastSavedAt` ("rascunho salvo às 21:42") é estado **só do cliente** e o `seed()` o zeraria. Ele sobreviveu à troca de aba enquanto a lista ia de 1 para 6 — ou seja, os vínculos foram re-semeados e a lista não. As duas metades da tese numa observação só.
 
 Conferido no banco ao fim: `@luna` vinculada aos **dois** projetos, `@teste-vinculo-d2` só onde nasceu. Uma personagem, dois vínculos — que é a etapa inteira em uma linha de SQL.
+
+### 11/08/2026 — Etapa D2 · Fase 2: o `@` no escopo do projeto, e a recusa que não custa nada
+
+Cinco itens, e o segundo é o que a etapa inteira vinha construindo.
+
+**A lista de sugestões do `@` filtra, e isso não é suficiente.** A interface **não é fronteira de segurança**: uma menção digitada à mão, um prompt copiado de outro projeto ou uma aba aberta desde antes de um desvincular chegam ao servidor exatamente iguais a uma escolhida na lista. Então a recusa mora no servidor, e a lista existe para dizer "ela não está aqui" **antes** de a pessoa escrever a cena — não depois de clicar em Gerar.
+
+**A recusa fica no passo 2 do `runCanvasGeneration`, e o lugar é aritmético.** Ali é antes da leitura do saldo, antes da tradução (que custa fração de centavo) e antes do provedor. Uma menção recusada não escreve linha em `generations`, não toca no ledger e não chama ninguém — **zero Spark, e não "quase zero"**. É o mesmo raciocínio que fez o preço por resolução ser conferido na aplicação em vez de deixado para o `GN005`: descobrir depois é descobrir com a imagem já paga.
+
+**Medido, não suposto.** O teste rodou com exposição mínima (1K, quantidade 1, 50 ⚡ em risco) e os números de antes e depois são idênticos:
+
+| | antes | depois |
+|---|---|---|
+| `generations` | 49 | **49** |
+| `ledger_transactions` | 35 | **35** |
+| `wallets.balance_cents` | 7750 | **7750** |
+| `max(created_at)` das duas tabelas | 22:56:56 | **22:56:56** |
+
+A frase que apareceu na tela ensina o conserto em vez de só dizer não: *"A personagem @luna não está vinculada a este projeto. Traga-a por 'Adicionar existente', no menu lateral — ela continua nos outros projetos."* As três coisas que alguém precisa saber, na ordem em que precisa: o que houve, o que fazer, e que não perdeu nada.
+
+**Desvincular e arquivar são duas UIs porque são dois pesos.** Arquivar é global e não se desfaz pela tela: mora no editor, em vermelho, com dois painéis. Desvincular é local e se desfaz com um clique: mora na linha do trilho, sem vermelho, e o texto diz que é reversível. Apresentar as duas com a mesma cara faria a leve parecer a pesada — e o custo disso não é estético: quem hesita em desvincular por achar que vai perder a personagem simplesmente não usa o escopo por projeto, e a etapa vira uma tabela que ninguém preenche.
+
+**O diálogo conta, e só conta o que existe.** A varredura é local e usa o `findMentions` que o servidor usa — o número na tela e a menção que o servidor recusa são uma leitura só da mesma frase. Na validação ele disse "1 cartão(ões) dela, 2 bloco(s) com @luna no prompt", e antes de a personagem ter cartão dizia só os blocos. "0 cartões e 0 blocos" seria ruído com cara de aviso: ensinaria a ignorar a frase justamente nas vezes em que ela traz um número que importa.
+
+**E o cartão do canvas ganhou o terceiro estado que a Fase 1 tornou possível.** "Não encontrada" é o que uma personagem **arquivada** produz, e não tem volta pela tela. "Não vinculada" tem volta, e é um botão no próprio cartão. O cartão **fica** onde estava, com nome, retrato e fio: sumir com ele seria a segunda coisa que desvincular não faz — o desenho do fluxo é do usuário, e mexer nele por causa de um vínculo seria o produto reorganizando a mesa de trabalho de alguém sem pedir.
+
+#### O `GN006` e a ordem de aplicação
+
+O backstop no `record_generation` é o item 2.5, em **arquivo de migration próprio**, e sobe **depois** do deploy desta fase. A regra é a mesma da Fase 0, virada: *o código que torna a regra do banco inalcançável sobe primeiro.*
+
+O motivo é que o `GN006` recusa no passo 11 — depois de o provedor ter gerado e sido pago. Com a checagem da aplicação no ar, ele nunca dispara. Sem ela, ele passa a ser a única checagem que existe, e vira exatamente o defeito que foi escrito para cobrir. **Um suspensório que sobe antes do cinto não é suspensório — é o cinto, no pior lugar possível.**
+
+Detalhe que barateia a migration: a assinatura da função **não muda**, então é `create or replace` puro e as concessões sobrevivem — diferente de `20260809180000` e `20260810180000`, que acrescentaram parâmetros e tiveram de derrubar e reconceder.
+
+**Validado nas duas metades, que é o que dá sentido a cada uma.**
+
+O **caminho triste** foi no navegador pelo Code, zero Spark, sete prints em `scratchpad/evidencias/d2-fase2/`. Ele terminou com o banco onde começou: 7 vínculos, os mesmos 7 handles, 49 gerações, 35 lançamentos, saldo 7750.
+
+O **caminho feliz** foi do Jorge, com Spark de verdade: `@luna` vinculada, 1K, uma imagem — `succeeded`, `sparks_charged: 50`, `@luna v4`, e **exatamente um** lançamento no ledger de 50 centavos. Saldo 7750 → 7700, gerações 49 → 50, lançamentos 35 → 36.
+
+**As duas metades juntas são a prova; separadas, nenhuma das duas seria.** A recusa sozinha provaria que nada é cobrado — o que um botão quebrado também faria. A geração sozinha provaria que o caminho funciona — sem dizer nada sobre o que acontece quando ele não deve funcionar. Uma linha nova em cada tabela no caminho feliz, zero linhas novas em ambas no triste: é o par que mostra que a recusa é uma decisão e não uma falha.

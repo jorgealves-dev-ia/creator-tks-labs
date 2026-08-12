@@ -1002,6 +1002,8 @@ function failureMessage(result: Extract<CanvasGenerationResult, { ok: false }>):
       return errors.emptyCharacter;
     case "unknown_handle":
       return `${errors.unknownHandlePrefix} @${result.handle ?? ""} ${errors.unknownHandleSuffix}`;
+    case "not_linked":
+      return `${errors.notLinkedPrefix} @${result.handle ?? ""} ${errors.notLinkedSuffix}`;
     case "no_version":
       return `${errors.noVersionPrefix} @${result.handle ?? ""} ${errors.noVersionSuffix}`;
     case "unknown_version":

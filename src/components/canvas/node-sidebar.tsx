@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { CharacterPicker } from "@/components/character-sheet/character-picker";
 import { CharacterWizard } from "@/components/character-sheet/character-wizard";
+import { UnlinkCharacter } from "@/components/character-sheet/unlink-character";
 import { Portrait, VersionBadge } from "@/components/character-sheet/identity";
 import { NodeIcon, type NodeKind } from "@/components/nodes/node-icons";
 import { NODE_TYPE_MIME } from "@/lib/canvas/drag";
@@ -33,6 +34,8 @@ export function NodeSidebar() {
 
   const [creating, setCreating] = useState(false);
   const [picking, setPicking] = useState(false);
+  /** Quem está no diálogo de desvincular, se alguém. */
+  const [unlinking, setUnlinking] = useState<string | null>(null);
 
   /**
    * Quem trabalha **neste** projeto (Etapa D2).
@@ -42,6 +45,11 @@ export function NodeSidebar() {
    * vínculo mudaria esse mapa a cada vez que ela trouxesse alguém.
    */
   const visible = order.filter((id) => linkedIds.has(id));
+
+  // Resolvida aqui e não guardada no estado: um objeto copiado para dentro do
+  // useState envelheceria no primeiro rename, e o diálogo mostraria o nome
+  // antigo de quem ele está prestes a tirar.
+  const unlinkingCharacter = unlinking ? characters[unlinking] : undefined;
 
   const onCanvas = new Set(
     nodes
@@ -167,7 +175,7 @@ export function NodeSidebar() {
                   </span>
                 </button>
 
-                <span className={revealed("shrink-0")}>
+                <span className={revealed("flex shrink-0 items-center gap-1")}>
                   {isOnCanvas ? (
                     <span className="text-[11px] text-ink-faint">
                       {t.characterSheet.sidebar.onCanvas}
@@ -188,6 +196,24 @@ export function NodeSidebar() {
                       </svg>
                     </button>
                   )}
+
+                  {/* Desvincular mora aqui, e não no editor, porque o editor é a
+                      casa do arquivar. Duas ações com dois pesos não podem ter a
+                      mesma vizinhança: quem procura "tirar daqui" olha para a
+                      lista do projeto, não para a ficha da personagem. */}
+                  <button
+                    type="button"
+                    onClick={() => setUnlinking(id)}
+                    title={t.characterSheet.sidebar.unlink}
+                    aria-label={`${t.characterSheet.sidebar.unlink}: ${character.displayName}`}
+                    className="flex size-6 items-center justify-center rounded-md text-ink-faint
+                               transition-colors hover:bg-surface-hover hover:text-ink"
+                  >
+                    <svg viewBox="0 0 14 14" className="size-3" aria-hidden>
+                      <path d="M2 7h10" stroke="currentColor" strokeWidth="1.6"
+                            strokeLinecap="round" />
+                    </svg>
+                  </button>
                 </span>
               </div>
             );
@@ -382,6 +408,17 @@ export function NodeSidebar() {
 
       {picking && projectId ? (
         <CharacterPicker projectId={projectId} onClose={() => setPicking(false)} />
+      ) : null}
+
+      {/* Fora do <aside>, de propósito: o trilho tem `overflow-hidden` para o
+          seu próprio scroll, e um popover desenhado lá dentro seria cortado na
+          borda de 56px. */}
+      {unlinkingCharacter ? (
+        <UnlinkCharacter
+          entityId={unlinkingCharacter.id}
+          handle={unlinkingCharacter.handle}
+          onDone={() => setUnlinking(null)}
+        />
       ) : null}
     </>
   );

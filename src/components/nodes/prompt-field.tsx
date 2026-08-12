@@ -52,6 +52,7 @@ type PromptFieldProps = {
 export function PromptField({ id, value, onChange, disabled }: PromptFieldProps) {
   const characters = useEntitiesStore((state) => state.characters);
   const order = useEntitiesStore((state) => state.order);
+  const linkedIds = useEntitiesStore((state) => state.linkedIds);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
@@ -75,6 +76,12 @@ export function PromptField({ id, value, onChange, disabled }: PromptFieldProps)
   const suggestions = order
     .map((id) => characters[id])
     .filter((character) => character !== undefined)
+    // Só quem trabalha neste projeto (Etapa D2, item 2.1). Oferecer as outras
+    // seria oferecer uma menção que o servidor recusa — e o lugar de dizer
+    // "ela não está aqui" é antes de a pessoa escrever a cena, não depois de
+    // clicar em Gerar. O servidor recusa de novo, porque esta lista é
+    // conveniência e nunca fronteira: ver resolveCharacter.
+    .filter((character) => linkedIds.has(character.id))
     .filter((character) =>
       query === null ? true : character.handle.startsWith(query.term),
     )

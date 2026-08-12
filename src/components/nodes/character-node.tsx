@@ -7,6 +7,7 @@ import { DirtyDot, Portrait, VersionBadge } from "@/components/character-sheet/i
 import { NodeHeader } from "@/components/nodes/node-header";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { isDraftDirty } from "@/lib/character-sheet/diff";
+import { linkCharacterToProject } from "@/lib/entities/actions";
 import { useEntitiesStore } from "@/lib/entities/store";
 import { useCharacterPortraits } from "@/lib/entities/use-portraits";
 import { t } from "@/lib/i18n/pt-BR";
@@ -28,10 +29,33 @@ export type CharacterNodeType = Node<CharacterNodeData, "character">;
 export function CharacterNode({ id, data, selected }: NodeProps<CharacterNodeType>) {
   const character = useEntitiesStore((state) => state.characters[data.entityId]);
   const seeded = useEntitiesStore((state) => state.seeded);
+  const linkedIds = useEntitiesStore((state) => state.linkedIds);
+  const link = useEntitiesStore((state) => state.link);
   const openEditor = useEntitiesStore((state) => state.openEditor);
+  const projectId = useCanvasStore((state) => state.projectId);
   const portraits = useCharacterPortraits();
 
   const [collapsing, setCollapsing] = useState(false);
+  const [relinking, setRelinking] = useState(false);
+  const [relinkFailed, setRelinkFailed] = useState(false);
+
+  async function relink() {
+    if (!projectId) return;
+
+    setRelinking(true);
+    setRelinkFailed(false);
+
+    const result = await linkCharacterToProject({ entityId: data.entityId, projectId });
+
+    setRelinking(false);
+
+    if (!result.ok) {
+      setRelinkFailed(true);
+      return;
+    }
+
+    link(data.entityId);
+  }
 
   /**
    * Puts the card away — back into the Arsenal, where it has been all along.
@@ -63,6 +87,86 @@ export function CharacterNode({ id, data, selected }: NodeProps<CharacterNodeTyp
         <p className="mt-1 text-[11px] leading-relaxed text-ink-faint">
           {t.characterSheet.card.missingHint}
         </p>
+      </div>
+    );
+  }
+
+  /**
+   * Ela existe, é sua, e não trabalha aqui — item 2.3.
+   *
+   * Um estado **diferente** do de cima, e a diferença é o conserto. "Não
+   * encontrada" é o que uma personagem arquivada produz, e não tem volta pela
+   * tela: a única saída é tirar o cartão. "Não vinculada" tem volta, e é um
+   * botão — porque desvincular é reversível por definição, e uma tela que
+   * apresentasse as duas coisas com a mesma cara transformaria a ação leve na
+   * ação pesada aos olhos de quem lê.
+   *
+   * O cartão fica no canvas, com o nome e o retrato dela. Sumir com ele seria
+   * a segunda coisa que desvincular não faz: o desenho do fluxo é do usuário,
+   * e mexer nele por causa de um vínculo seria o produto reorganizando a mesa
+   * de trabalho de alguém sem pedir.
+   */
+  if (!linkedIds.has(character.id)) {
+    return (
+      <div
+        className={`w-56 rounded-xl border border-dashed border-warning/50 bg-surface-raised
+                    ${selected ? "ring-1 ring-accent" : ""}`}
+      >
+        <NodeHeader
+          nodeId={id}
+          kind="character"
+          title={character.displayName}
+          removeHint={t.characterSheet.card.collapse}
+          onRemove={collapse}
+        />
+
+        <div className="flex items-center gap-2.5 p-3">
+          <Portrait
+            name={character.displayName}
+            src={portraits[character.id]}
+            className="size-11 opacity-60"
+          />
+
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium leading-tight text-warning">
+              {t.characterSheet.card.unlinked}
+            </p>
+            <p className="truncate text-[11px] text-ink-faint">@{character.handle}</p>
+          </div>
+        </div>
+
+        <p className="px-3 pb-2 text-[11px] leading-relaxed text-ink-faint">
+          {t.characterSheet.card.unlinkedHint}
+        </p>
+
+        <div className="border-t border-line p-2">
+          <button
+            type="button"
+            disabled={relinking || !projectId}
+            onClick={() => void relink()}
+            className="w-full rounded-lg bg-accent py-1.5 text-xs font-medium text-canvas
+                       transition-colors hover:bg-accent-hover
+                       disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {relinking ? t.characterSheet.card.relinking : t.characterSheet.card.relink}
+          </button>
+
+          {relinkFailed ? (
+            <p className="mt-1.5 text-center text-[10px] text-warning">
+              {t.characterSheet.card.relinkFailed}
+            </p>
+          ) : null}
+        </div>
+
+        {/* O fio continua existindo: o cartão está mudo para a geração, não
+            desconectado do desenho. Tirar o handle apagaria as arestas que o
+            usuário desenhou, por causa de algo que um clique desfaz. */}
+        <Handle
+          type="source"
+          position={Position.Right}
+          title={t.characterSheet.card.outputHandle}
+          className="!size-2.5 !border-2 !border-canvas !bg-ink-faint"
+        />
       </div>
     );
   }

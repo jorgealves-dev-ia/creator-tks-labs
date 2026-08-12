@@ -103,6 +103,14 @@ export const t = {
       outputHandle: "Conectar esta personagem a um bloco de geração",
       missing: "Personagem não encontrada",
       missingHint: "Ela pode ter sido removida. Tire este cartão do canvas.",
+      // Estado diferente do de cima, e a diferença é o conserto: "não
+      // encontrada" não tem volta pela tela; "não vinculada" tem, e é um botão.
+      unlinked: "Não vinculada a este projeto",
+      unlinkedHint:
+        "Ela continua no seu arsenal e nos outros projetos. Traga-a de volta para usá-la aqui.",
+      relink: "Vincular a este projeto",
+      relinking: "Vinculando…",
+      relinkFailed: "Não deu para vincular. Tente de novo.",
     },
 
     sidebar: {
@@ -121,6 +129,30 @@ export const t = {
       openProjectFirst: "Abra um projeto para criar uma personagem.",
       addExisting: "Adicionar existente",
       addExistingHint: "Trazer uma personagem sua para este projeto",
+      unlink: "Tirar deste projeto",
+    },
+
+    /**
+     * O diálogo de desvincular. Testa entendimento, não coragem — como o de
+     * arquivar —, mas num tom mais leve, porque a ação é mais leve: aqui o
+     * texto conta o que muda e diz, em voz alta, que se desfaz com um clique.
+     */
+    unlink: {
+      title: "Tirar do projeto?",
+      changesTitle: "O QUE MUDA AQUI",
+      changes: "@{handle} sai desta lista, e a menção @{handle} para de funcionar neste projeto.",
+      keptTitle: "O QUE NÃO MUDA",
+      kept: "Ela continua no seu arsenal, nos outros projetos, e tudo que já foi gerado com ela segue igual.",
+      /** Só aparece quando há o que contar — um número inventado ensina errado. */
+      inUsePrefix: "Neste canvas:",
+      inUseCards: "cartão(ões) dela",
+      inUseMentions: "bloco(s) com @{handle} no prompt",
+      inUseSuffix: "Os cartões ficam, com estado claro e um botão para trazê-la de volta.",
+      reversible: "Dá para desfazer com um clique, por “Adicionar existente”.",
+      cancel: "Cancelar",
+      confirm: "Tirar do projeto",
+      working: "Tirando…",
+      failed: "Não deu para tirar. Tente de novo.",
     },
 
     /** A galeria de personagens do usuário — de onde se traz uma para o projeto. */
@@ -1057,6 +1089,11 @@ export const t = {
         "Esta versão não tem folha completa nem campos confirmados — não há o que ancorar. Confirme campos ou gere a folha antes.",
       unknownHandlePrefix: "Não existe personagem",
       unknownHandleSuffix: "no seu arsenal.",
+      // Diz as duas coisas que a pessoa precisa: ela não sumiu, e onde fica o
+      // conserto. Uma recusa que só diz não obriga a adivinhar.
+      notLinkedPrefix: "A personagem",
+      notLinkedSuffix:
+        "não está vinculada a este projeto. Traga-a por “Adicionar existente”, no menu lateral — ela continua nos outros projetos.",
       noVersionPrefix: "A personagem",
       noVersionSuffix: "ainda não tem versão salva. Salve a v1 para poder chamá-la.",
       unknownVersionPrefix: "A personagem",

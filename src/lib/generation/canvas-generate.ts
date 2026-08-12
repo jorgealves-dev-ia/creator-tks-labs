@@ -243,7 +243,10 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
   let character: ResolvedCharacter | null = null;
 
   if (mention) {
-    const resolved = await resolveCharacter(supabase, userId, mention.handle, mention.versionNumber);
+    const resolved = await resolveCharacter(supabase, userId, mention.handle, {
+      versionNumber: mention.versionNumber,
+      projectId: request.projectId,
+    });
 
     if (!resolved.ok) {
       return {
@@ -714,18 +717,40 @@ type ResolvedCharacter = {
 
 /**
  * `@luna` → the active version; `@luna@v2` → that one; the draft → never
- * (decision D2). A character with no saved version cannot be mentioned at all,
- * and the interface says so in the one sentence that fixes it.
+ * (decision D2 do versionamento). A character with no saved version cannot be
+ * mentioned at all, and the interface says so in the one sentence that fixes it.
+ *
+ * ---------------------------------------------------------------------------
+ * E ela tem de trabalhar **neste** projeto — Etapa D2, item 2.2
+ * ---------------------------------------------------------------------------
+ *
+ * A lista de sugestões do `@` já esconde quem não está vinculada, e isso não é
+ * suficiente: **a interface não é fronteira de segurança.** Uma menção digitada
+ * à mão, um prompt copiado de outro projeto ou uma aba aberta desde antes de um
+ * desvincular chegam aqui exatamente iguais a uma escolhida na lista.
+ *
+ * A recusa mora neste passo por um motivo aritmético: aqui é antes da leitura
+ * do saldo, antes da tradução (que custa uma fração de centavo) e antes do
+ * provedor. Uma menção recusada não escreve linha em `generations`, não toca no
+ * ledger e não chama ninguém — **zero Spark, e não "quase zero"**. O mesmo
+ * raciocínio que fez o preço por resolução ser conferido aqui em vez de deixado
+ * para o GN005: descobrir depois é descobrir com a imagem já paga.
+ *
+ * Há um segundo cadeado no banco (GN006, em record_generation), e ele existe
+ * para o dia em que um caminho novo esquecer desta linha. Este é o que
+ * dispara; aquele é o que não deveria precisar disparar nunca.
  */
 async function resolveCharacter(
   supabase: Supabase,
   userId: string,
   handle: string,
-  versionNumber: number | null,
+  scope: { versionNumber: number | null; projectId: string },
 ): Promise<
   | { ok: true; character: ResolvedCharacter }
-  | { ok: false; reason: "unknown_handle" | "no_version" | "unknown_version" }
+  | { ok: false; reason: "unknown_handle" | "not_linked" | "no_version" | "unknown_version" }
 > {
+  const { versionNumber, projectId } = scope;
+
   const { data: entity } = await supabase
     .from("entities")
     .select("id, handle, active_version_id")
@@ -737,6 +762,20 @@ async function resolveCharacter(
 
   if (!entity) {
     return { ok: false, reason: "unknown_handle" };
+  }
+
+  // Antes da versão, de propósito: "ela não está neste projeto" e "ela não tem
+  // versão salva" são dois problemas com dois consertos, e quem não está aqui
+  // não deve receber a instrução de salvar uma v1 que não resolveria nada.
+  const { data: link } = await supabase
+    .from("project_entities")
+    .select("entity_id")
+    .eq("project_id", projectId)
+    .eq("entity_id", entity.id)
+    .maybeSingle();
+
+  if (!link) {
+    return { ok: false, reason: "not_linked" };
   }
 
   const query = supabase

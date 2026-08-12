@@ -206,6 +206,41 @@ export async function linkCharacterToProject(input: unknown): Promise<LinkCharac
 }
 
 /**
+ * Tira uma personagem de um projeto — e **só** isso.
+ *
+ * Desvincular não é arquivar, e a distância entre as duas é a etapa inteira.
+ * Nada é apagado: a personagem segue no arsenal, nos outros projetos, nas
+ * gerações que já fez e no rastro financeiro delas. As gerações antigas
+ * continuam apontando para ela e continuam certas — história é história, e um
+ * vínculo que mudou hoje não muda o que foi gerado ontem.
+ *
+ * O que muda daqui para a frente é uma coisa só: `@luna` para de resolver
+ * **neste** projeto (ver resolveCharacter). Nos outros, resolve igual.
+ *
+ * Idempotente pelo mesmo motivo do irmão acima: apagar uma linha que já não
+ * existe é sucesso, não erro — o estado pedido é o estado obtido.
+ */
+export async function unlinkCharacterFromProject(input: unknown): Promise<LinkCharacterResult> {
+  const parsed = linkSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return { ok: false, reason: "invalid" };
+  }
+
+  const { supabase } = await requireSession();
+
+  // O RLS limita ao dono; o par é a chave primária, então isto apaga no máximo
+  // uma linha e nunca a de outro projeto.
+  const { error } = await supabase
+    .from("project_entities")
+    .delete()
+    .eq("project_id", parsed.data.projectId)
+    .eq("entity_id", parsed.data.entityId);
+
+  return error ? { ok: false, reason: "error" } : { ok: true };
+}
+
+/**
  * Saves the draft — the notebook that stays open. Called by the editor's
  * autosave, so it is deliberately cheap and has no side effects beyond the row:
  * no revalidation, no redirect, nothing that would yank the canvas around while

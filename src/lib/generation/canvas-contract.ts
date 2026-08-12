@@ -100,6 +100,12 @@ export type CanvasGenerationFailure =
   | "empty_request"
   | "empty_character"
   | "unknown_handle"
+  /**
+   * A personagem existe e é do usuário, mas não trabalha **neste** projeto
+   * (Etapa D2). Recusa antes do provedor, então não custa nada — e a mensagem
+   * ensina o conserto em vez de só dizer não, porque a tela é o manual.
+   */
+  | "not_linked"
   | "no_version"
   | "unknown_version"
   | "multiple_characters"
