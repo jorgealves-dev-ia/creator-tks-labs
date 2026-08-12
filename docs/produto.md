@@ -176,6 +176,16 @@ Especificações: [`character-sheet.md`](./character-sheet.md), [`versionamento-
 
 **Pendências de refinamento registradas** (a avaliar com mais gerações reais): fidelidade da posição de tatuagens no prompt; variedade das células de expressão da folha; e o fatiamento automático da grade da folha em slots individuais.
 
+### O vestíbulo — dashboard, galeria e conta ✅ concluído (12/08/2026)
+
+Até aqui, entrar no produto era cair direto num canvas infinito. Para quem já sabe o que está fazendo, é o atalho ideal; para quem chega, é uma tela sem nada para ler cuja primeira pergunta é "arraste um bloco" — o oposto do princípio de "simplicidade de leigo". O canvas foi para `/studio?p=`, e `/` passou a ser a porta da frente:
+
+- **Projetos em cartões**, com a capa sendo a geração bem-sucedida mais recente — uma imagem reconhece um projeto que um nome digitado às pressas não reconhece. Contagens discretas, data da última atividade, e as ações de renomear e excluir no próprio cartão. A confirmação de exclusão diz **o que se perde e o que fica**, porque "excluir" faz qualquer pessoa supor que as imagens vão junto — e elas não vão.
+- **Galeria geral**: tudo que o usuário já gerou, de todos os projetos, com selo de origem. É onde as **folhas canônicas** finalmente aparecem — elas não têm projeto, e por isso nenhuma galeria de projeto as mostrava.
+- **Conta**: saldo em Sparks e o extrato do ledger, só leitura. Sem recarga nem pagamento, e a ausência é a verdade do produto — não existe billing ainda, e uma tela que oferecesse "comprar mais" sem ter para onde levar o clique seria pior do que uma que informa e cala.
+
+**Nenhuma migration, nenhum conceito novo no banco:** o vestíbulo só apresenta o que a Fase 2 já produzia.
+
 ### Fase 2.5 — Storyboard + Vídeos 📌 conversa dedicada
 
 Registrada a pedido do Jorge, **depois dos nodes de geração**: storyboard cena a cena e geração de vídeo, que chegam junto com a estreia do **padrão assíncrono** (fila → webhook → Realtime). A geração canônica pôde ser síncrona porque uma imagem 2K leva de 20 a 40 segundos e cabe no tempo de função; vídeo não cabe, e é ali que o assíncrono deixa de ser opcional.

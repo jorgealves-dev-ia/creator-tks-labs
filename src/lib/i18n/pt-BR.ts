@@ -61,6 +61,40 @@ export const t = {
       label: "Seções do estúdio",
       projects: "Projetos",
       gallery: "Galeria",
+      account: "Conta",
+    },
+
+    /**
+     * A Conta — saldo e extrato, só leitura.
+     *
+     * Não há recarga nem pagamento aqui, e a ausência é a verdade do produto:
+     * não existe billing ainda. Uma tela que mostra o saldo e oferece "comprar
+     * mais" sem ter para onde levar o clique é pior do que uma que só informa.
+     */
+    account: {
+      title: "Sua conta",
+      subtitle: "Seu saldo e tudo que já foi cobrado.",
+      balanceLabel: "Saldo disponível",
+      /** O mesmo número em reais, para o Spark não virar moeda de brinquedo. */
+      balanceInBRL: "equivalente a",
+      statementTitle: "Extrato",
+      statementSubtitle: "Mais recente primeiro. O registro é definitivo — nada aqui é editado.",
+      colDate: "Data",
+      colDescription: "Descrição",
+      colAmount: "Valor",
+      noDescription: "Sem descrição",
+      loadMore: "Carregar mais",
+      loading: "Carregando…",
+      emptyTitle: "Nenhuma movimentação ainda",
+      emptyBody: "Quando você gerar a primeira imagem, a cobrança aparece aqui.",
+
+      /** O que cada tipo de linha é, em português. */
+      kinds: {
+        deposit: "Crédito",
+        debit: "Cobrança",
+        refund: "Estorno",
+        adjustment: "Ajuste",
+      },
     },
 
     /**

@@ -2092,3 +2092,94 @@ depois de a grade sair de dentro dele — viram padrão de ritual:
 já existiam, não só o novo.** O código novo é o que se está olhando, e por isso é
 o que menos precisa de prova; quem quebra num refactor é sempre a tela que
 ninguém abriu porque "só mudou de lugar". Um print por cliente e por modo.
+
+### 12/08/2026 — Fase 2b · a Conta, e o extrato que fecha com a carteira
+
+Saldo em destaque e o extrato do ledger, **só leitura** — e a ausência é o
+conteúdo: não há recarga nem pagamento porque não existe billing no produto. Uma
+tela que oferecesse "comprar mais" sem ter para onde levar o clique seria pior do
+que uma que informa e cala.
+
+**O saldo e o extrato vêm de lugares diferentes de propósito.** O número grande é
+`wallets.balance_cents`; as linhas são `ledger_transactions`. A carteira é
+**projeção** do ledger, mantida por trigger — mostrar os dois lados na mesma tela
+é o que permite alguém notar, um dia, que discordam. Se isso acontecer, o errado
+é o saldo, e a verdade é a lista embaixo dele.
+
+**Cursor, não `offset`.** O ledger cresce pela frente, então paginar por posição
+faria uma transação nova empurrar tudo para baixo no meio da leitura e a mesma
+linha apareceria duas vezes. Num extrato, linha duplicada não é incômodo visual —
+é alguém achando que pagou duas vezes. O cursor tem a fraqueza simétrica (duas
+linhas no mesmo instante ficam na fronteira), e ela foi medida antes de ser
+aceita: 36 transações, 36 instantes distintos, zero repetição, porque cada débito
+nasce de uma requisição própria. Se um dia houver gravação em lote, a saída é
+ordenar por `(created_at, id)` — não voltar para offset.
+
+**O sinal é explícito nos dois lados.** "50" sozinho não diz se entrou ou saiu, e
+a cor não pode ser a única a dizer.
+
+#### A validação que a própria tela fez
+
+A prova mais forte não veio de comparar com SQL, e sim de somar o que estava na
+tela: carregadas as **36 linhas**, elas somam **7.700 Sparks** — exatamente o
+número grande em cima e exatamente `wallets.balance_cents`. Projeção e verdade
+concordando, verificado pela interface.
+
+Conferido também o fuso, de novo e agora com dinheiro: a transação mais recente é
+`12/08 01:28 UTC` e a tela diz **11/08, 22:28**. Um extrato que datasse a
+cobrança no dia seguinte seria a pior versão possível do erro que a 1b evitou.
+
+### 12/08/2026 — Ciclo Dashboard encerrado: o produto tem porta da frente
+
+| fase | o que entrou | como foi provado |
+|---|---|---|
+| **1a** | `/` vira o vestíbulo, canvas para `/studio?p=` | 12/12 pontos de navegação com print |
+| **1b** | capa, contagens, data da última atividade | prints + conferência cruzada em SQL |
+| **1c** | renomear e excluir no cartão | prints, mais o `DELETE` conferido linha a linha |
+| **2a** | galeria geral, selo em três casos, grade compartilhada | prints, **incluindo a regressão dos clientes antigos** |
+| **2b** | saldo e extrato | as 36 linhas da tela somando o saldo da tela |
+
+**Cinco fatias, cinco commits, nenhuma migration, zero Spark.** A previsão da
+investigação se manteve do primeiro ao último dia: o dashboard só apresenta o que
+já existia, e apresentar não precisou de nenhum conceito novo no banco.
+
+#### As quatro regras que o ciclo deixa
+
+1. **O número na tela conta o que a tela mostra** — imagens e não tentativas,
+   personagens visíveis e não vínculos.
+2. **Formatar data ao usuário passa por `lib/format/date.ts`**, com fuso
+   explícito. Duas mentiras de data foram evitadas por isso, e uma delas era
+   sobre dinheiro.
+3. **Refactor de componente compartilhado prova os clientes antigos.** O código
+   novo é o que menos precisa de prova; quem quebra é a tela que ninguém abriu
+   porque "só mudou de lugar".
+4. **Reconciliação da Conta: saldo e extrato vêm de fontes distintas de
+   propósito — e se discordarem, o errado é o saldo.**
+
+   O número grande é `wallets.balance_cents`; as linhas são
+   `ledger_transactions`. Seria mais simples somar o ledger e mostrar um número
+   só, ou confiar na carteira e nunca listar nada — e as duas simplificações
+   custariam a mesma coisa: **ninguém jamais notaria uma divergência.** A
+   carteira é projeção mantida por trigger, o ledger é append-only e é o
+   registro primário; mostrar os dois na mesma tela é o que transforma um bug de
+   saldo em algo que se enxerga em vez de algo que se descobre por reclamação.
+
+   A direção da regra importa tanto quanto ela: **não se conserta o extrato para
+   bater com o saldo.** Corrigir dinheiro é transação nova de estorno
+   (invariante 5), nunca reescrever o que já foi registrado.
+
+   Provado nesta fase pela própria interface: as 36 linhas da tela somam 7.700
+   Sparks, que é o número grande em cima delas.
+
+#### O que fica sem prova, dito em vez de contado
+
+Dois caminhos deste ciclo **nunca rodaram ao vivo**, e os dois têm o mesmo
+gatilho — excluir um projeto que tenha gerações:
+
+- o `ON DELETE SET NULL` de `generations.project_id`, provado pela definição em
+  `pg_constraint`;
+- o selo **"projeto excluído"** da galeria, que tem zero linhas para exibir.
+
+A primeira vez que qualquer um dos dois aparecer será em produção, com dado real.
+Está escrito aqui para que, quando acontecer, ninguém precise descobrir de novo
+que era esperado.

@@ -15,6 +15,7 @@ import { t } from "@/lib/i18n/pt-BR";
 const LINKS = [
   { href: "/", label: t.dashboard.nav.projects },
   { href: "/galeria", label: t.dashboard.nav.gallery },
+  { href: "/conta", label: t.dashboard.nav.account },
 ] as const;
 
 export function DashboardNav() {
