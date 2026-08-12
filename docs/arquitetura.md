@@ -242,7 +242,7 @@ A única exceção prevista: a exclusão da conta. Durante o cascade, a linha em
 
 ## 4. Modelo de dados
 
-**Postgres no Supabase, RLS habilitado em todas as 14 tabelas, com política default-deny.**
+**Postgres no Supabase, RLS habilitado em todas as 15 tabelas, com política default-deny.**
 
 ### O que "default-deny" significa aqui
 
@@ -250,7 +250,7 @@ Com RLS ligado e nenhuma política que case, o Postgres **nega** a operação. N
 
 Verificado na Fase 0: sem sessão, as 9 tabelas de então respondiam `42501 permission denied`. A décima (`entity_versions`) segue o mesmo padrão e é verificada junto com a migration que a cria.
 
-### As 14 tabelas
+### As 15 tabelas
 
 | Tabela | O que guarda |
 |---|---|
@@ -261,6 +261,7 @@ Verificado na Fase 0: sem sessão, as 9 tabelas de então respondiam `42501 perm
 | `workflows` | o grafo do canvas por projeto — `graph jsonb` no formato React Flow (nodes + edges + viewport), com `version` |
 | `entities` | a **identidade** mencionável por `@`: `kind` (character/product/scene/outfit/accessory), `handle` (único por usuário), `sheet jsonb` (o **rascunho vivo**), `active_version_id` (o ponteiro da versão ativa), `archived_at`, `cover_asset_id` |
 | `entity_versions` | os **snapshots congelados** do sheet: `entity_id`, `user_id`, `version_number` (sequencial por entidade), `sheet jsonb` (cópia integral, nunca um diff), `label` |
+| `project_entities` | o **vínculo** projeto ↔ personagem: quais personagens trabalham em qual aba. PK `(project_id, entity_id)` — o par *é* a linha —, `user_id` desnormalizado e duas FKs compostas que o compartilham. Projeto novo nasce sem vínculos; excluir projeto leva os vínculos e **não** as personagens |
 | `entity_images` | join entre `entities` e `assets`: as imagens de uma entidade — as canônicas de uma personagem (turnaround, expressões) e as **fotos de um produto** —, com `role` e ordenação |
 | `assets` | arquivos no Storage: `kind` (image/video/audio), `source` (upload/generation), mime, dimensões, duração, `label` (nome humano — o nome do arquivo enviado ou as palavras do prompt; alimenta a galeria e a busca dela, e é nulo para tudo que nasceu antes dela) |
 | `generations` | cada execução: workflow/node de origem, `entity_id`, `model_id`, provedor, modelo, `params jsonb`, `prompt_user_pt`, `prompt_compiled jsonb`, status, tokens, `cost_real_cents`, `sparks_charged`, `result_asset_id`, `entity_version_id`, `sheet_source`, `summary jsonb`, `error_message` |
@@ -269,7 +270,17 @@ Verificado na Fase 0: sem sessão, as 9 tabelas de então respondiam `42501 perm
 | `ai_model_image_prices` | preço em Sparks por **resolução** (`model_id`, `image_size`, `sparks`, ordenação) — e, por consequência, **quais resoluções cada modelo oferece**: não se oferece um tamanho que não se sabe cobrar. Lida por `record_generation` para decidir o preço e pela tela para desabilitar as opções indisponíveis com o motivo à vista |
 | `extractions` | o diário do motor de extração: `entity_id`, `model_id`, `source` (photo/text), `status`, tokens consumidos, `real_cost_cents`, `sparks_charged`, `reference_asset_id` (a foto lida), `source_text` (o texto colado), `summary jsonb` (o placar) |
 
-Sobre `entities.project_id`: **nulo = a entidade vale em todos os projetos do usuário**; preenchido = escopo daquele projeto. O `handle` é um slug minúsculo, único por usuário, validado por constraint no formato `^[a-z0-9][a-z0-9_-]{0,47}$`.
+O `handle` é um slug minúsculo, **único por usuário**, validado por constraint no formato `^[a-z0-9][a-z0-9_-]{0,47}$`.
+
+#### A personagem é do usuário; o vínculo é do projeto *(11/08/2026, Etapa D2)*
+
+`entities` teve uma coluna `project_id` da Fase 0 até aqui, com a semântica "nulo = vale em todos os projetos". Ela **nunca foi usada** — todas as linhas nulas — e foi derrubada em `20260811140000_project_entities.sql`, porque escopo por projeto numa coluna de `entities` é uma armadilha medida: o FK era `on delete cascade`, `deleteProject` apaga de verdade, e a cascata levaria a personagem → suas `entity_versions` → todas as `generations` em que ela apareceu → deixando `ledger_transactions.generation_id` (que é `set null`) como **débitos órfãos num livro append-only**.
+
+O modelo correto já estava escrito no resto do schema: `entities_handle_unique_per_user` faz do `handle` um nome do **usuário**. Não existem duas `@luna`. Logo "esta personagem trabalha neste projeto" só pode ser uma tabela de ligação — `project_entities`.
+
+A consequência de produto vem junto e é o coração da etapa: **desvincular não é arquivar**. Desvincular é leve e reversível (ela segue viva na galeria e nos outros projetos); arquivar continua sendo o ato global que preserva tudo. Duas ações, dois pesos, duas UIs.
+
+E `entities.cover_asset_id`, que existia desde a Fase 0 sem nenhum leitor, ganhou o papel que estava esperando: é o **avatar** da personagem — sobreposição opcional ao retrato padrão, que continua sendo a folha completa da versão ativa. Fica em `entities` e não em `entity_versions` de propósito: avatar é apresentação, não identidade, e congelar uma versão nova não muda a cara dela.
 
 #### Produto é uma entidade, não uma tabela nova *(10/08/2026)*
 
@@ -297,6 +308,7 @@ Esta é a linha divisória mais importante da arquitetura: as regras abaixo **n�
 - `entity_versions` recusa UPDATE e DELETE por trigger — uma versão salva é um retrato congelado. Como consequência, apagar fisicamente uma entidade que tenha versões também falha: entidade se arquiva (`archived_at`), nunca se deleta
 - `entity_versions.version_number` é atribuído **pelo banco**, sob bloqueio da linha da entidade, com `UNIQUE (entity_id, version_number)` de rede de segurança — dois salvamentos simultâneos jamais produzem dois "v3"
 - `entities.active_version_id` usa **FK composta** `(active_version_id, id) → entity_versions (id, entity_id)`: é o banco que impede o `@julia` de apontar, por bug, para uma versão da `@carla`
+- `project_entities` usa a **mesma técnica** para a posse: as duas FKs compostas — `(project_id, user_id) → projects (id, user_id)` e `(entity_id, user_id) → entities (id, user_id)` — compartilham a coluna `user_id`, então é o Postgres que recusa, sozinho, um vínculo entre o projeto de um usuário e a personagem de outro. Sem trigger, sem código que precise lembrar. E as duas são `on delete cascade`: excluir o projeto leva os vínculos junto, e a cascata de exclusão de conta (LGPD) leva os dois lados
 - Imagem citada no bloco `imagens_canonicas` de qualquer versão **não pode ser deletada** (trigger em `entity_images`) — deletá-la quebraria um retrato congelado. Imagem referenciada só pelo rascunho continua deletável
 - Um produto guarda **no máximo 5 fotos** (trigger em `entity_images`) — o número que o bloco de geração conta em voz alta ao dizer "4 de 6", porque cada foto ocupa uma vaga de referência do modelo
 - Salvar versão é **atômico**: a função `public.save_entity_version(entity_id, label)` faz o INSERT do retrato e o UPDATE do ponteiro ativo na mesma transação. Ou as duas escritas acontecem, ou nenhuma — nunca um `@julia` apontando para o retrato errado

@@ -1601,3 +1601,44 @@ A primeira: **tarefa sem geração é validada no navegador pelo Code**, com um 
 A segunda: **nunca rodar `npm run build` com o `npm run dev` no ar** — os dois escrevem no mesmo `.next/`. Essa nasceu de eu ter feito exatamente isso e passado a investigação seguinte perseguindo a hipótese errada (bundle corrompido) para um sintoma que era o **badge de devtools do Next.js** parado em cima do último ícone do trilho.
 
 **O que o ciclo ensinou, e vale além dele:** um sintoma visual descreve *onde dói*, nunca *o que quebrou*. Três vezes neste dia a causa estava a um passo de onde a queixa apontava — o vão do trilho era altura invisível e não filtro; o "avatar" era um badge de ferramenta; o "Produto:" em tudo era todo card carimbando id de grupo. E as três só foram encontradas porque alguém abriu a tela em vez de deduzir dela.
+
+### 11/08/2026 — Etapa D2 · Fase 0: a personagem é do usuário, o vínculo é do projeto
+
+A D1 fechou com a Galeria já filtrada por `project_id`. A D2 estende o escopo por projeto às personagens — e o princípio que rege a etapa inteira é o que decidiu a forma da tabela: **a personagem é entidade do usuário, única. Nunca do projeto.** Uma `@luna`, uma folha, um histórico de versões, um rastro financeiro. O que nasce agora é o **vínculo**.
+
+Isso não é preferência de modelagem; é o que o schema já afirmava. `entities_handle_unique_per_user` faz do handle um nome do **usuário**, não do projeto: não existem duas `@luna`. Logo "esta personagem trabalha neste projeto" só pode ser uma tabela de ligação.
+
+E a consequência de produto é o coração da etapa: **desvincular não é arquivar.** Desvincular é leve e reversível — ela segue viva na galeria e nos outros projetos; arquivar continua sendo o ato global, com a confirmação em dois painéis que já existe. Duas ações, dois pesos, duas UIs.
+
+**A investigação encontrou a coluna que parecia ser a resposta, e era a armadilha.** `entities.project_id` existia desde a Fase 0, com o comentário oficial "nulo = vale em todos os projetos; preenchido = escopo daquele projeto". Nunca foi usada: todas as linhas nulas, e `createCharacter` escrevia `null` de propósito. Implementar a D2 com ela era o caminho de menor esforço aparente — e o FK dela é `on delete cascade`, enquanto `deleteProject` apaga de verdade. A cascata medida:
+
+| passo | o que some |
+|---|---|
+| `delete from projects` | a personagem, pela coluna `project_id` |
+| cascata em `entity_versions` | os retratos congelados, v1…vN |
+| cascata em `generations.entity_id` | **todas as imagens em que ela apareceu** |
+| `ledger_transactions.generation_id` é `set null` | o dinheiro fica no livro apontando para o nada |
+
+**Débitos órfãos num livro append-only** — a única coisa que um registro financeiro nunca pode ter, e exatamente o cenário que o comentário de `archiveCharacter` já descrevia como impensável. A coluna foi derrubada, sem DEPRECATED: duas maneiras de dizer a mesma coisa, uma delas com esse buraco, a um `git grep` de distância de quem for escrever a próxima tela.
+
+**A posse é garantida por chave composta, não por trigger.** `project_entities` tem `user_id` desnormalizado e duas FKs que o compartilham — `(project_id, user_id) → projects (id, user_id)` e `(entity_id, user_id) → entities (id, user_id)`. É o Postgres que recusa vincular o projeto de um ao personagem de outro. É o precedente exato do `entities.active_version_id`, que usa a mesma técnica pelo mesmo motivo.
+
+**Sem política de UPDATE**, de propósito: não há o que atualizar numa linha que *é* o vínculo. Revincular é inserir de novo — e a diferença importa, porque um UPDATE deixaria aberta a única operação que esta tabela não deve saber fazer, que é mover um vínculo de projeto.
+
+**Backfill all↔all, incluindo a arquivada.** Seis personagens × um projeto = seis linhas. É exatamente o comportamento de hoje, então nada some de nenhuma tela e nenhum canvas existente quebra. A alternativa considerada — inferir o vínculo pelas gerações reais — deixaria `@aria` e `@soraia` de fora, porque nunca geraram nada, sumindo-as do único projeto que existe. **O erro barato vence o caro:** um vínculo a mais é um clique; uma personagem desaparecendo de um canvas que a usa é uma investigação.
+
+**E `cover_asset_id` ganhou o dono que faltava.** A coluna existia desde a Fase 0 e nunca teve leitor. Vira o **avatar** da Fase 3 — em `entities` e não em `entity_versions`, porque avatar é apresentação e congelar uma versão nova não deve mudar a cara dela. O `on delete set null` que ela já tinha entrega de graça a regra "remover o avatar volta ao padrão".
+
+#### A ordem de aplicação, e por que ela é a metade que importa
+
+Duas travas desta etapa moram no banco, e **as duas só são seguras se subirem depois do código que as torna inalcançáveis.** É a mesma regra, aplicada duas vezes.
+
+**1. O `drop column` exigiu commit preparatório.** `createCharacter` escrevia `project_id: null`; escrever em coluna que não existe é erro do PostgREST, ou seja, criar personagem pararia de funcionar. A janela foi fechada pela ordem — código sobe, Vercel publica, migration é aplicada — e o que a torna segura é que a mudança é **correta nos dois esquemas**: a coluna era nullable e sem default, então omiti-la grava o mesmo null. Não existe estado em que o código novo esteja errado; existe uma única combinação proibida, *banco novo com código velho no ar*, e a ordem a elimina.
+
+**2. O backstop `GN006` foi adiado para a Fase 2 — e o adiamento é a decisão, não o atraso.** Ele estava aprovado para esta migration ("cinto e suspensório") e foi retirado dela ao ser escrito. `supabase db push` aplica todos os arquivos pendentes de uma vez, então um `GN006` escrito agora sobe agora — quando a checagem da aplicação ainda não existe. Nessa janela, um projeto novo (que nasce sem vínculos, e é o que a etapa quer) faria qualquer `@` bater no `GN006`. Só que `GN006` mora no `record_generation`, chamado no **passo 11** do `runCanvasGeneration`: **depois de o provedor ter gerado e sido pago.** O código destrói o asset e o arquivo, então o usuário não é cobrado — mas a imagem foi paga e foi para o lixo.
+
+É a mesma armadilha que o comentário do `GN005` já documentava: *"a recusa chega depois de a imagem existir, ou seja, depois de o Google ter sido pago por ela."* **Um suspensório que sobe antes do cinto não é suspensório — é o cinto, no pior lugar possível.**
+
+**A janela sem enforcement fica registrada aqui, porque ela existe de verdade:** entre esta migration e o deploy da Fase 2, o `@` continua resolvendo qualquer personagem do usuário, vinculada ou não. Nada quebra e nada é cobrado errado — é o comportamento de hoje, que ninguém prometeu ter mudado ainda. O que muda em Fase 2 é a recusa, e ela nasce onde é de graça (passo 2, antes do saldo, antes da tradução, antes do provedor). O `GN006` entra como **item 2.5**, arquivo de migration próprio, aplicado **depois** do deploy da Fase 2.
+
+**A invariante do `CLAUDE.md` também espera a Fase 2.** O texto que promete "`@` só resolve personagem vinculada ao projeto da geração" só pode ser escrito quando for verdade — uma invariante que descreve código que não existe é a pior linha que um documento pode ter.

@@ -83,8 +83,12 @@ export async function createCharacter(input: unknown): Promise<CreateCharacterRe
     .insert({
       user_id: userId,
       kind: "character",
-      // Null on purpose: a character belongs to the user, not to one project.
-      project_id: null,
+      // No project here, and there is no longer a column for one: a character
+      // belongs to the user, and which projects she works in is a row in
+      // project_entities. See 20260811140000_project_entities.sql, which drops
+      // entities.project_id — this line has to be gone before that lands, and it
+      // was already a no-op before it, because the column was nullable with no
+      // default. Correct in both schemas is what makes the order safe.
       handle: parsed.data.handle,
       display_name: parsed.data.displayName,
       sheet: sheetToJson(sheet),
