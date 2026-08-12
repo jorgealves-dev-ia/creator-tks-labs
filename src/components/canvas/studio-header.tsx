@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { signOut } from "@/lib/auth/actions";
 import { t } from "@/lib/i18n/pt-BR";
 import { createProject } from "@/lib/projects/actions";
@@ -29,14 +31,19 @@ export function StudioHeader({
                  border border-line bg-surface/70 px-3 shadow-lg shadow-black/30
                  backdrop-blur-xl"
     >
-      <span
-        aria-hidden
+      {/* A chama é o caminho de volta ao vestíbulo. Era enfeite (`aria-hidden`)
+          enquanto o canvas era a única tela; virou navegação no dia em que
+          passou a existir um lugar para onde voltar. */}
+      <Link
+        href="/"
+        title={t.dashboard.backHint}
         className="flex size-7 shrink-0 items-center justify-center rounded-lg
-                   bg-accent text-xs font-semibold text-white"
+                   bg-accent text-xs font-semibold text-white transition-colors
+                   hover:bg-accent-hover"
       >
-        ⚡
-      </span>
-      <span className="sr-only">{t.app.name}</span>
+        <span aria-hidden>⚡</span>
+        <span className="sr-only">{t.dashboard.backHint}</span>
+      </Link>
 
       <div className="h-6 w-px shrink-0 bg-line" />
 

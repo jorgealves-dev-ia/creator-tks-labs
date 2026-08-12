@@ -94,7 +94,7 @@ export function ProjectTab({
       <StatusDot status={project.status} />
 
       <Link
-        href={`/?p=${project.id}`}
+        href={`/studio?p=${project.id}`}
         onDoubleClick={(event) => {
           event.preventDefault();
           setMode("renaming");

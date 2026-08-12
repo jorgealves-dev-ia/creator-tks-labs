@@ -391,10 +391,15 @@ As 18 migrations existentes, em ordem de dependência:
 ```
 src/
   app/                    # rotas (App Router)
+    page.tsx              # `/` — o dashboard: a porta da frente depois do login
+    studio/               # `/studio?p=<id>` — o canvas (é aqui que mora o maxDuration)
+    login/
+    auth/callback/
     api/
       generations/        # criar e consultar gerações
       webhooks/           # callbacks dos provedores (validação de segredo obrigatória)
   components/
+    dashboard/            # a concha do vestíbulo — cartões de projeto, galeria geral, conta
     canvas/               # canvas, header de abas, sidebar, minimapa
     character-sheet/      # editor em overlay, wizard, selos, versões, imagens
     nodes/                # um componente por tipo de node

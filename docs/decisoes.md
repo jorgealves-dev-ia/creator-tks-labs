@@ -1770,3 +1770,99 @@ O desenho provável é o das personagens e dos produtos: **arquivar em vez de ap
 | "o botão não faz nada" | o seletor abria certo, e o `<dialog>` do editor o cobria pela **top layer** |
 
 Os três têm a mesma forma: o componente acusado estava fazendo exatamente o que devia. E os três só foram encontrados porque alguém abriu a tela em vez de deduzir dela — o que é, palavra por palavra, o motivo pelo qual a emenda de ritual da D1 existe.
+
+---
+
+## Ciclo Dashboard — a tela inicial do sistema
+
+### 12/08/2026 — Fase 1a · a rota decidida: `/` é o vestíbulo, o canvas muda para `/studio`
+
+Até hoje, entrar no produto era cair num canvas infinito. Para quem já sabe o que
+está fazendo, isso é o atalho ideal; para quem chega, é uma tela sem nada para
+ler cuja primeira pergunta é "arraste um bloco". O ciclo abre a porta da frente:
+`/` passa a ser o dashboard, e o canvas vai para `/studio?p=<id>`.
+
+**A alternativa foi medida antes de ser descartada.** A opção conservadora —
+dashboard numa rota nova, canvas intocado em `/` — parecia mais barata e não é:
+para o dashboard receber quem entra, os quatro pontos de autenticação
+(`signIn`, `signUp`, o proxy e o callback de e-mail) mudam de destino de
+qualquer jeito. Ela pouparia três pontos e deixaria `/` sendo o canvas, ou seja,
+pagaria quase o preço inteiro sem entregar o benefício: quem digita o endereço
+puro continuaria caindo no plano infinito. **Dez pontos de toque, seis arquivos**,
+foi o custo real da opção limpa.
+
+O `?p=` continua sendo query param em vez de virar `/p/[id]`: assim a troca de
+aba é uma string trocada, e a regra "`?p=` desconhecido cai na primeira aba"
+segue onde sempre esteve.
+
+**A armadilha, que era a única cara de verdade.** O `export const maxDuration = 60`
+não era do canvas — é **configuração de rota**, e o comentário no próprio arquivo
+registra que ele governa o tempo de toda Server Action usada naquela página. É
+dali que vem o orçamento do motor de extração. Deixá-lo para trás teria devolvido
+a extração ao padrão de dez segundos, e o estrago só apareceria numa extração
+real, que custa Sparks, morrendo no meio sem explicação. A linha viajou junto com
+o canvas, e o porquê ficou escrito ao lado dela.
+
+**Um `revalidatePath` virou dois.** A lista de projetos agora aparece em dois
+lugares — os cartões de `/` e as abas de `/studio`. Criar, renomear ou excluir
+muda as duas, e invalidar só a rota do `redirect()` deixaria a outra servindo
+cache: criar um projeto e voltar pela chama mostraria um dashboard sem ele.
+
+**A chama ⚡ virou navegação.** Era enfeite (`aria-hidden`) enquanto o canvas era
+a única tela. Passou a existir um lugar para onde voltar, então ela é o caminho.
+
+#### O que a investigação achou e ainda não foi construído
+
+Três achados que mudam as fases seguintes, registrados agora para não serem
+redescobertos:
+
+- **`projects.updated_at` mente.** Medido no banco: a última geração é de
+  `12/08 01:28` e o `updated_at` do projeto é de `11/08 19:03`. Gerar não toca a
+  linha do projeto. A "data da última atividade" do cartão (Fase 1b) sai do
+  `created_at` da geração mais recente, com o do projeto como reserva.
+- **O selo de origem da galeria erraria depois da exclusão.** A regra óbvia
+  ("sem projeto = folha canônica") quebra assim que a exclusão existir, porque o
+  `SET NULL` produz gerações sem projeto que são trabalho de canvas. A diferença
+  é limpa no banco: as 3 folhas canônicas têm `project_id` **e** `node_id` nulos;
+  as 30 do canvas têm os dois preenchidos. São três casos, não dois.
+- **Zero migrations, confirmado item a item.** Capa, contagens, galeria geral,
+  selo, saldo e extrato saem todos de tabela, coluna, FK e índice que já existem.
+
+#### 📌 O `SET NULL` da exclusão: provado pela definição no catálogo
+
+A trava que preserva as gerações de um projeto excluído está verificada em
+`pg_constraint`: `generations_project_id_fkey … ON DELETE SET NULL`. **É essa a
+prova, e é só essa.** Registrado com o placar honesto: as exclusões da D1 e da D2
+foram todas de projetos vazios, e o `SET NULL` **nunca disparou ao vivo** — não
+há gerações órfãs no banco porque nenhum projeto com gerações foi jamais
+excluído. Disparar de verdade custaria apagar o único projeto com trabalho real
+dentro, o que não se faz para produzir um print.
+
+Placar honesto vale para prova também: a definição no catálogo é uma garantia do
+banco, não um teste que passou.
+
+#### A validação: 12/12, e o único ponto que precisou de outra pessoa
+
+Os dez pontos de toque mais dois extras (`/?p=` digitado à mão e a chama),
+todos com print. Zero Spark — o ledger tinha 36 transações antes e 36 depois, e o
+projeto descartável que a validação criou e excluiu não deixou geração órfã.
+
+**Um ponto não podia ser meu.** O login exige digitar uma senha, e o Claude não
+digita senhas — a regra não tem exceção por conveniência de teste. O "Sair" do
+ponto 8 deslogou o navegador, e o Jorge fechou o ponto 6 ao vivo no login
+seguinte. Vale como método: quando a prova exige uma credencial, ela é da pessoa,
+e o roteiro se organiza para que isso caia no fim em vez de travar o meio.
+
+### 12/08/2026 — 📌 Backlog · Passe de UI/UX 🎨 ciclo próprio, ao final
+
+**Efeitos, microinterações e uma identidade visual mais tecnológica ficam para um
+ciclo dedicado, depois que o desenvolvimento funcional terminar.** Decisão do
+fundador, e o porquê é o que a torna útil: polir tela a tela, enquanto as telas
+ainda estão nascendo, é pagar duas vezes — a primeira num acabamento que o
+próximo ciclo vai mexer, a segunda na hesitação de quem para para escolher uma
+animação no meio de uma decisão de produto.
+
+Vale também como leitura das telas que este ciclo entrega: o dashboard é
+deliberadamente sóbrio. **Não é o estado final, é o estado honesto** — a forma
+certa, esperando o acabamento que virá de uma vez, com o produto inteiro à vista
+e um vocabulário visual só.

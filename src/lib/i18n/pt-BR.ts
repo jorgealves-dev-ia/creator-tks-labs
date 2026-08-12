@@ -43,6 +43,21 @@ export const t = {
     },
   },
 
+  /**
+   * O vestíbulo — a tela que recebe depois do login (Ciclo Dashboard).
+   *
+   * O vazio e o nome do botão "Novo projeto" **não** moram aqui: são os mesmos
+   * de `studio`, porque são a mesma situação e a mesma ação vistas de outra
+   * tela. Repetir a frase seria criar duas que vão divergir.
+   */
+  dashboard: {
+    title: "Seus projetos",
+    subtitle: "Abra um projeto para trabalhar no canvas, ou comece um novo.",
+    openHint: "Abrir no canvas",
+    /** A chama do canvas, que agora é o caminho de volta. */
+    backHint: "Voltar para os seus projetos",
+  },
+
   studio: {
     newProject: "Novo projeto",
     untitledProject: "Projeto sem título",

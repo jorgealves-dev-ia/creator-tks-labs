@@ -1,46 +1,42 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { Studio } from "@/components/canvas/studio";
-import { parseGraph, type CanvasGraph } from "@/lib/canvas/graph";
-import { loadCharacters, loadProjectCharacterIds } from "@/lib/entities/queries";
+import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { Button } from "@/components/ui/button";
+import { t } from "@/lib/i18n/pt-BR";
+import { createProject } from "@/lib/projects/actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const EMPTY_GRAPH: CanvasGraph = { nodes: [], edges: [] };
-
 /**
- * Reading a photo takes a provider tens of seconds, and the extraction engine is
- * a Server Action of this page. Route segment config set on a page changes the
- * timeout of every Server Action used on it, so this is where the engine's budget
- * lives — the default ten seconds would cut a perfectly good analysis in half.
+ * O vestíbulo — a porta da frente do estúdio.
  *
- * Sixty seconds is the ceiling of the Vercel plan this project is on. The adapter
- * gives up at fifty (see lib/providers/anthropic.ts) so the failure is our own
- * clear message rather than the platform killing the request mid-flight.
+ * Até 12/08/2026 esta rota era o canvas, e cair direto num plano infinito é
+ * hostil para quem chega: não há o que ler, e a primeira decisão pedida é
+ * "arraste um bloco". O canvas mudou para `/studio?p=`, e `/` passou a ser o
+ * lugar onde se escolhe **em que** trabalhar antes de trabalhar.
  *
- * If generation later needs longer than this, the answer is not a bigger number:
- * it is the asynchronous pattern of architecture decision 1 — queue, webhook,
- * Realtime.
+ * Nada aqui é conceito novo do banco: são os mesmos `projects` que as abas do
+ * header sempre mostraram, numa tela em vez de numa faixa. Esta fatia (1a) lista
+ * os projetos pelo nome; capa, contagens e data da última atividade chegam na
+ * 1b, e renomear/excluir na 1c.
  */
-export const maxDuration = 60;
-
-export default async function StudioPage(props: PageProps<"/">) {
-  const searchParams = await props.searchParams;
+export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
 
   const { data: claims } = await supabase.auth.getClaims();
 
-  // The proxy already turns anonymous visitors away; this keeps the page from
-  // ever rendering without a verified session if that ever changes.
+  // O proxy já barra visitante anônimo; isto impede a página de renderizar sem
+  // sessão verificada caso aquilo mude. Mesma guarda do canvas, pelo mesmo motivo.
   if (!claims?.claims) {
     redirect("/login");
   }
 
   const userId = claims.claims.sub;
 
-  const [projectsResult, walletResult, characters] = await Promise.all([
+  const [projectsResult, walletResult] = await Promise.all([
     supabase
       .from("projects")
-      .select("id, name, status")
+      .select("id, name")
       .eq("user_id", userId)
       .is("archived_at", null)
       .order("sort_order")
@@ -50,53 +46,76 @@ export default async function StudioPage(props: PageProps<"/">) {
       .select("balance_cents")
       .eq("user_id", userId)
       .maybeSingle(),
-    // Todas as personagens do usuário, e não as deste projeto: a personagem é
-    // dele, e o vínculo com o projeto vem logo abaixo, em separado.
-    loadCharacters(userId),
   ]);
 
   const projects = projectsResult.data ?? [];
 
-  // An unknown or missing ?p= falls back to the first tab rather than showing
-  // an empty canvas the user cannot explain.
-  const requested = searchParams.p;
-  const requestedId = typeof requested === "string" ? requested : undefined;
-  const activeProject =
-    projects.find((project) => project.id === requestedId) ?? projects[0];
-
-  let graph = EMPTY_GRAPH;
-  let version = 1;
-  // Projeto novo nasce sem vínculos — canvas limpo E lista limpa, que é a
-  // origem da etapa inteira. Sem projeto aberto, não há vínculo a ter.
-  let linkedCharacterIds: string[] = [];
-
-  if (activeProject) {
-    const [workflowResult, linkedIds] = await Promise.all([
-      supabase
-        .from("workflows")
-        .select("graph, version")
-        .eq("project_id", activeProject.id)
-        .maybeSingle(),
-      loadProjectCharacterIds(activeProject.id),
-    ]);
-
-    if (workflowResult.data) {
-      graph = parseGraph(workflowResult.data.graph);
-      version = workflowResult.data.version;
-    }
-
-    linkedCharacterIds = linkedIds;
-  }
-
   return (
-    <Studio
-      projects={projects}
-      activeProjectId={activeProject?.id ?? null}
-      graph={graph}
-      version={version}
-      balanceCents={walletResult.data?.balance_cents ?? 0}
-      characters={characters}
-      linkedCharacterIds={linkedCharacterIds}
-    />
+    <div className="flex min-h-dvh flex-col bg-canvas">
+      <DashboardHeader balanceCents={walletResult.data?.balance_cents ?? 0} />
+
+      <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h1 className="text-lg font-medium text-ink">{t.dashboard.title}</h1>
+            <p className="mt-1 text-xs text-ink-muted">{t.dashboard.subtitle}</p>
+          </div>
+
+          <form action={createProject} className="shrink-0">
+            <Button type="submit" className="h-9 px-4">
+              {t.studio.newProject}
+            </Button>
+          </form>
+        </div>
+
+        {projects.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {projects.map((project) => (
+              <li key={project.id}>
+                <Link
+                  href={`/studio?p=${project.id}`}
+                  title={t.dashboard.openHint}
+                  className="flex h-24 flex-col justify-end rounded-xl border border-line
+                             bg-surface p-4 transition-colors hover:border-line-strong
+                             hover:bg-surface-hover"
+                >
+                  <span className="truncate text-sm font-medium text-ink">
+                    {project.name}
+                  </span>
+                  <span className="mt-0.5 text-[11px] text-ink-faint">
+                    {t.dashboard.openHint}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
+    </div>
+  );
+}
+
+/**
+ * Conta vazia, e a mesma frase que o canvas já dizia.
+ *
+ * Reaproveitada de `t.studio` em vez de reescrita: são a mesma situação vista de
+ * duas telas, e duas cópias da mesma frase divergem na primeira vez que alguém
+ * melhorar uma delas.
+ */
+function EmptyState() {
+  return (
+    <div className="mt-6 rounded-xl border border-dashed border-line bg-surface/40 px-6 py-12 text-center">
+      <p className="text-sm font-medium text-ink">{t.studio.noProjectsTitle}</p>
+      <p className="mx-auto mt-1.5 max-w-xs text-xs leading-relaxed text-ink-faint">
+        {t.studio.noProjectsBody}
+      </p>
+      <form action={createProject} className="mt-5">
+        <Button type="submit" className="h-9 px-4">
+          {t.studio.newProject}
+        </Button>
+      </form>
+    </div>
   );
 }

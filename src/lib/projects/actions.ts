@@ -28,6 +28,21 @@ async function requireSession() {
 }
 
 /**
+ * As duas telas que mostram a lista de projetos, invalidadas juntas.
+ *
+ * Era uma só — `revalidatePath("/")` — enquanto o canvas era `/` e a lista de
+ * projetos existia apenas como as abas do header dele. Desde 12/08/2026 a mesma
+ * lista aparece em dois lugares: os cartões do dashboard (`/`) e as abas do
+ * canvas (`/studio`). Criar, renomear ou excluir muda as duas, e invalidar
+ * apenas a rota para onde o `redirect()` vai deixaria a outra servindo cache:
+ * criar um projeto e voltar pela chama mostraria um dashboard sem ele.
+ */
+function revalidateProjectScreens() {
+  revalidatePath("/");
+  revalidatePath("/studio");
+}
+
+/**
  * The next "Projeto sem título N" — the highest number already used, plus one.
  *
  * Counting the projects instead was the bug: delete the middle tab of three and
@@ -99,8 +114,8 @@ export async function createProject(): Promise<void> {
 
   // The workflow row is created by a database trigger, so the canvas is ready
   // as soon as this redirect lands.
-  revalidatePath("/");
-  redirect(`/?p=${data.id}`);
+  revalidateProjectScreens();
+  redirect(`/studio?p=${data.id}`);
 }
 
 export async function renameProject(formData: FormData): Promise<void> {
@@ -118,7 +133,7 @@ export async function renameProject(formData: FormData): Promise<void> {
     .update({ name: name.data })
     .eq("id", id.data);
 
-  revalidatePath("/");
+  revalidateProjectScreens();
 }
 
 export async function deleteProject(formData: FormData): Promise<void> {
@@ -142,6 +157,8 @@ export async function deleteProject(formData: FormData): Promise<void> {
     .limit(1)
     .maybeSingle();
 
-  revalidatePath("/");
-  redirect(remaining ? `/?p=${remaining.id}` : "/");
+  revalidateProjectScreens();
+  // Sem projeto que sobre, o destino é o vestíbulo — que agora tem o que dizer
+  // ("Nenhum projeto ainda" e o botão), em vez do canvas vazio de antes.
+  redirect(remaining ? `/studio?p=${remaining.id}` : "/");
 }
