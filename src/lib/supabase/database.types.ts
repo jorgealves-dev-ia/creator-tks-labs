@@ -187,7 +187,6 @@ export type Database = {
           handle: string
           id: string
           kind: Database["public"]["Enums"]["entity_kind"]
-          project_id: string | null
           sheet: Json
           updated_at: string
           user_id: string
@@ -202,7 +201,6 @@ export type Database = {
           handle: string
           id?: string
           kind: Database["public"]["Enums"]["entity_kind"]
-          project_id?: string | null
           sheet?: Json
           updated_at?: string
           user_id: string
@@ -217,7 +215,6 @@ export type Database = {
           handle?: string
           id?: string
           kind?: Database["public"]["Enums"]["entity_kind"]
-          project_id?: string | null
           sheet?: Json
           updated_at?: string
           user_id?: string
@@ -236,13 +233,6 @@ export type Database = {
             columns: ["cover_asset_id"]
             isOneToOne: false
             referencedRelation: "assets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "entities_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -616,6 +606,42 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      project_entities: {
+        Row: {
+          created_at: string
+          entity_id: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_entities_entity_belongs_to_user"
+            columns: ["entity_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id", "user_id"]
+          },
+          {
+            foreignKeyName: "project_entities_project_belongs_to_user"
+            columns: ["project_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
       }
       projects: {
         Row: {

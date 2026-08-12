@@ -35,6 +35,15 @@ const createCharacterSchema = z.object({
   displayName: displayNameSchema,
   handle: handleSchema,
   genero: z.enum(["feminino", "masculino", "androgino"]).optional(),
+  /**
+   * Onde ela nasce. Criar uma personagem dentro de um projeto **vincula**: é o
+   * único lugar do produto em que a intenção é evidente sem perguntar nada.
+   *
+   * Opcional porque criar sem projeto aberto continua sendo possível — a
+   * personagem é do usuário, não da aba. Nesse caso ela nasce sem vínculo
+   * nenhum, e a galeria é como ela entra em algum lugar.
+   */
+  projectId: z.uuid().optional(),
 });
 
 const saveDraftSchema = z.object({
@@ -44,7 +53,21 @@ const saveDraftSchema = z.object({
 });
 
 export type CreateCharacterResult =
-  | { ok: true; character: CharacterEntity }
+  | {
+      ok: true;
+      character: CharacterEntity;
+      /**
+       * Se ela já entrou neste projeto. Falso quando não havia projeto aberto —
+       * e também quando o vínculo falhou, que é o caso que esta flag existe para
+       * conseguir dizer em voz alta.
+       *
+       * A personagem **não** é desfeita nesse caso, de propósito: ela existe, é
+       * do usuário, e um rollback aqui destruiria o que a pessoa acabou de
+       * nomear por causa de uma segunda escrita que se conserta com um clique
+       * na galeria. Meio-caminho honesto vence tudo-ou-nada caro.
+       */
+      linked: boolean;
+    }
   | { ok: false; reason: "invalid" | "handle_taken" | "error" };
 
 export type SaveDraftResult = { ok: true } | { ok: false; reason: "invalid" | "error" };
@@ -67,6 +90,13 @@ async function requireSession() {
  * Creates a character with an empty sheet: honest defaults on layer 2, an
  * untouched DNA, and no version at all. A character with no saved version
  * cannot be mentioned with @ yet — that is the point of "save as v1".
+ *
+ * Criada dentro de um projeto, ela **já nasce vinculada** a ele (Etapa D2).
+ * São duas escritas e não uma transação, e isso é uma escolha: o precedente de
+ * `save_entity_version` existe porque um meio-caminho lá deixaria `@handle`
+ * apontando para o retrato errado — risco de correção. Aqui o meio-caminho
+ * deixa uma personagem que se traz de volta com um clique na galeria, e a
+ * resposta diz `linked: false` em vez de fingir que deu certo.
  */
 export async function createCharacter(input: unknown): Promise<CreateCharacterResult> {
   const parsed = createCharacterSchema.safeParse(input);
@@ -100,8 +130,24 @@ export async function createCharacter(input: unknown): Promise<CreateCharacterRe
     return { ok: false, reason: error.code === UNIQUE_VIOLATION ? "handle_taken" : "error" };
   }
 
+  let linked = false;
+
+  if (parsed.data.projectId) {
+    const { error: linkError } = await supabase.from("project_entities").insert({
+      project_id: parsed.data.projectId,
+      entity_id: data.id,
+      user_id: userId,
+    });
+
+    // A posse das duas pontas é garantida pelas FKs compostas da tabela, então
+    // um projeto que não é deste usuário é recusado pelo banco e chega aqui
+    // como erro — não como um vínculo torto que ninguém veria.
+    linked = !linkError;
+  }
+
   return {
     ok: true,
+    linked,
     character: {
       id: data.id,
       handle: data.handle,
@@ -111,6 +157,52 @@ export async function createCharacter(input: unknown): Promise<CreateCharacterRe
       coverAssetId: data.cover_asset_id,
     },
   };
+}
+
+// ---------------------------------------------------------------------------
+// O vínculo com o projeto (Etapa D2)
+// ---------------------------------------------------------------------------
+
+const linkSchema = z.object({
+  entityId: z.uuid(),
+  projectId: z.uuid(),
+});
+
+export type LinkCharacterResult = { ok: true } | { ok: false; reason: "invalid" | "error" };
+
+/**
+ * Traz uma personagem para um projeto.
+ *
+ * Idempotente por construção: a chave primária é o par `(project_id, entity_id)`,
+ * então clicar duas vezes não cria dois vínculos — o segundo conflita e é
+ * absorvido. Um clique repetido numa lista é acidente comum, e transformar
+ * acidente em erro na tela seria punir a pessoa por a rede estar lenta.
+ *
+ * A posse das duas pontas é do banco, não daqui: as FKs compostas de
+ * `project_entities` recusam o par em que o projeto é de um usuário e a
+ * personagem é de outro. O RLS faz o resto.
+ */
+export async function linkCharacterToProject(input: unknown): Promise<LinkCharacterResult> {
+  const parsed = linkSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return { ok: false, reason: "invalid" };
+  }
+
+  const { supabase, userId } = await requireSession();
+
+  const { error } = await supabase
+    .from("project_entities")
+    .upsert(
+      {
+        project_id: parsed.data.projectId,
+        entity_id: parsed.data.entityId,
+        user_id: userId,
+      },
+      { onConflict: "project_id,entity_id", ignoreDuplicates: true },
+    );
+
+  return error ? { ok: false, reason: "error" } : { ok: true };
 }
 
 /**

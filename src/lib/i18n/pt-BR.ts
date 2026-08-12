@@ -112,7 +112,31 @@ export const t = {
       addToCanvas: "Adicionar ao canvas",
       onCanvas: "No canvas",
       empty: "Nenhuma personagem ainda. Crie a primeira.",
+      // Dois vazios diferentes, porque são dois problemas diferentes. Quem não
+      // tem personagem nenhuma precisa criar; quem tem seis e abriu um projeto
+      // novo precisa **trazer** — e dizer "crie a primeira" para essa pessoa é
+      // a tela contradizendo o que ela sabe que tem.
+      emptyInProject: "Nenhuma personagem neste projeto.",
+      emptyInProjectHint: "Crie uma, ou traga uma que você já tem.",
       openProjectFirst: "Abra um projeto para criar uma personagem.",
+      addExisting: "Adicionar existente",
+      addExistingHint: "Trazer uma personagem sua para este projeto",
+    },
+
+    /** A galeria de personagens do usuário — de onde se traz uma para o projeto. */
+    picker: {
+      title: "Suas personagens",
+      subtitle: "Escolha quem trabalha neste projeto. Um clique vincula.",
+      loading: "Carregando…",
+      empty: "Você ainda não tem personagens.",
+      emptyHint: "Crie a primeira pelo item acima, no menu lateral.",
+      allLinked: "Todas as suas personagens já estão neste projeto.",
+      allLinkedHint: "Nada a trazer — o que existe já está aqui.",
+      linked: "Neste projeto",
+      add: "Adicionar",
+      adding: "Adicionando…",
+      failed: "Não deu para vincular. Tente de novo.",
+      close: "Fechar",
     },
 
     newCharacter: {

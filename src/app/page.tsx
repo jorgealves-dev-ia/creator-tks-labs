@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { Studio } from "@/components/canvas/studio";
 import { parseGraph, type CanvasGraph } from "@/lib/canvas/graph";
-import { loadCharacters } from "@/lib/entities/queries";
+import { loadCharacters, loadProjectCharacterIds } from "@/lib/entities/queries";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const EMPTY_GRAPH: CanvasGraph = { nodes: [], edges: [] };
@@ -50,8 +50,8 @@ export default async function StudioPage(props: PageProps<"/">) {
       .select("balance_cents")
       .eq("user_id", userId)
       .maybeSingle(),
-    // Characters are not scoped to a project: the same influencer can be
-    // placed on the canvas of any of them.
+    // Todas as personagens do usuário, e não as deste projeto: a personagem é
+    // dele, e o vínculo com o projeto vem logo abaixo, em separado.
     loadCharacters(userId),
   ]);
 
@@ -66,18 +66,26 @@ export default async function StudioPage(props: PageProps<"/">) {
 
   let graph = EMPTY_GRAPH;
   let version = 1;
+  // Projeto novo nasce sem vínculos — canvas limpo E lista limpa, que é a
+  // origem da etapa inteira. Sem projeto aberto, não há vínculo a ter.
+  let linkedCharacterIds: string[] = [];
 
   if (activeProject) {
-    const { data: workflow } = await supabase
-      .from("workflows")
-      .select("graph, version")
-      .eq("project_id", activeProject.id)
-      .maybeSingle();
+    const [workflowResult, linkedIds] = await Promise.all([
+      supabase
+        .from("workflows")
+        .select("graph, version")
+        .eq("project_id", activeProject.id)
+        .maybeSingle(),
+      loadProjectCharacterIds(activeProject.id),
+    ]);
 
-    if (workflow) {
-      graph = parseGraph(workflow.graph);
-      version = workflow.version;
+    if (workflowResult.data) {
+      graph = parseGraph(workflowResult.data.graph);
+      version = workflowResult.data.version;
     }
+
+    linkedCharacterIds = linkedIds;
   }
 
   return (
@@ -88,6 +96,7 @@ export default async function StudioPage(props: PageProps<"/">) {
       version={version}
       balanceCents={walletResult.data?.balance_cents ?? 0}
       characters={characters}
+      linkedCharacterIds={linkedCharacterIds}
     />
   );
 }

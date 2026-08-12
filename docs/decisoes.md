@@ -1625,7 +1625,7 @@ E a consequência de produto é o coração da etapa: **desvincular não é arqu
 
 **Sem política de UPDATE**, de propósito: não há o que atualizar numa linha que *é* o vínculo. Revincular é inserir de novo — e a diferença importa, porque um UPDATE deixaria aberta a única operação que esta tabela não deve saber fazer, que é mover um vínculo de projeto.
 
-**Backfill all↔all, incluindo a arquivada.** Seis personagens × um projeto = seis linhas. É exatamente o comportamento de hoje, então nada some de nenhuma tela e nenhum canvas existente quebra. A alternativa considerada — inferir o vínculo pelas gerações reais — deixaria `@aria` e `@soraia` de fora, porque nunca geraram nada, sumindo-as do único projeto que existe. **O erro barato vence o caro:** um vínculo a mais é um clique; uma personagem desaparecendo de um canvas que a usa é uma investigação.
+**Backfill all↔all, incluindo a arquivada.** **Sete** personagens × um projeto = **sete linhas** — as seis ativas mais a arquivada `@natany`; o produto legado `@pijama` ficou de fora, como manda o `where kind = 'character'`. (O plano dizia "seis", contando só as ativas e dizendo "incluindo a arquivada" na mesma frase: a migration estava certa, a aritmética do resumo é que não somou. Conferido no banco depois de aplicada.) É exatamente o comportamento de hoje, então nada some de nenhuma tela e nenhum canvas existente quebra. A alternativa considerada — inferir o vínculo pelas gerações reais — deixaria `@aria` e `@soraia` de fora, porque nunca geraram nada, sumindo-as do único projeto que existe. **O erro barato vence o caro:** um vínculo a mais é um clique; uma personagem desaparecendo de um canvas que a usa é uma investigação.
 
 **E `cover_asset_id` ganhou o dono que faltava.** A coluna existia desde a Fase 0 e nunca teve leitor. Vira o **avatar** da Fase 3 — em `entities` e não em `entity_versions`, porque avatar é apresentação e congelar uma versão nova não deve mudar a cara dela. O `on delete set null` que ela já tinha entrega de graça a regra "remover o avatar volta ao padrão".
 
@@ -1642,3 +1642,25 @@ Duas travas desta etapa moram no banco, e **as duas só são seguras se subirem 
 **A janela sem enforcement fica registrada aqui, porque ela existe de verdade:** entre esta migration e o deploy da Fase 2, o `@` continua resolvendo qualquer personagem do usuário, vinculada ou não. Nada quebra e nada é cobrado errado — é o comportamento de hoje, que ninguém prometeu ter mudado ainda. O que muda em Fase 2 é a recusa, e ela nasce onde é de graça (passo 2, antes do saldo, antes da tradução, antes do provedor). O `GN006` entra como **item 2.5**, arquivo de migration próprio, aplicado **depois** do deploy da Fase 2.
 
 **A invariante do `CLAUDE.md` também espera a Fase 2.** O texto que promete "`@` só resolve personagem vinculada ao projeto da geração" só pode ser escrito quando for verdade — uma invariante que descreve código que não existe é a pior linha que um documento pode ter.
+
+### 11/08/2026 — Etapa D2 · Fase 1: o trilho passa a ser deste projeto
+
+Cinco itens, e o primeiro era um pré-requisito que a investigação achou antes de a fase começar: **a lista de personagens não acompanhava a troca de aba.**
+
+`Studio` não tem `key` e `useSeedArsenal` semeava com `useRef` + `useEffect(…, [])`. Trocar de aba é um `<Link href="/?p=…">`: o Server Component roda de novo e manda `props` novas, mas o `Studio` **não desmonta** — então o efeito nunca mais rodaria. Sem isso, a Fase 1 entregaria uma barra lateral mostrando as personagens do projeto anterior, e o defeito só apareceria na validação, disfarçado de "filtro que não funciona".
+
+**A correção não foi re-semear a lista.** Re-semear resolveria a lista e quebraria outra coisa: `characters` carrega `draftStatus`, `revision` e `lastSavedAt`, e o editor é um overlay que sobrevive à troca de aba. Quem estivesse escrevendo perderia o rascunho no meio da frase.
+
+Então são **duas semeaduras com dois tempos de vida**, e isso é o vocabulário da etapa virando código: a **lista é do usuário** e é semeada uma vez; o **conjunto de vínculos é do projeto** e é semeado a cada troca. O conjunto não carrega estado de ninguém — ele é só a resposta a "quem trabalha aqui" —, então re-semear sai de graça.
+
+**E essa separação paga um segundo dividendo, que é o cartão do canvas.** Com uma lista só, "não está aqui" seria indistinguível de "não existe". Com as duas, o cartão de uma personagem desvinculada sabe dizer que ela tem conserto de um clique, em vez de dizer que sumiu. É a Fase 2 que escreve essa tela — mas ela só é escrevível por causa desta escolha.
+
+**Dois vazios, porque são dois problemas.** Sem personagem nenhuma, o conserto é criar. Com seis e um projeto novo, o conserto é **trazer** — e dizer "crie a primeira" para quem tem seis é a tela contradizendo o que a pessoa sabe que tem.
+
+**Criar dentro de um projeto vincula** (1.3), porque é o único momento em que a intenção é evidente sem perguntar nada. São duas escritas e não uma transação, de propósito: o precedente do `save_entity_version` existe porque um meio-caminho lá deixaria `@handle` apontando para o retrato errado — risco de correção. Aqui o meio-caminho deixa uma personagem que se traz de volta com um clique, e a resposta devolve `linked: false` em vez de fingir que deu certo.
+
+**"Adicionar existente" (1.4) não lê nada do servidor**, e é o mesmo princípio de novo: a lista do usuário já está no navegador, porque a personagem não é do projeto. Buscar de novo criaria uma segunda cópia da mesma pessoa para as duas telas discordarem sobre qual está certa. A grade mostra **todas**, com as já vinculadas marcadas e sem ação — quem abre esse modal está perguntando "quem está neste projeto?" tanto quanto "quem falta?", e esconder metade da resposta obrigaria a fechar o modal para conferir o trilho.
+
+**Validado no navegador, zero Spark, nove prints em `scratchpad/evidencias/d2-fase1/`.** O caso que mais importava foi o do rascunho, e ele tem um sinal que não admite dúvida: `lastSavedAt` ("rascunho salvo às 21:42") é estado **só do cliente** e o `seed()` o zeraria. Ele sobreviveu à troca de aba enquanto a lista ia de 1 para 6 — ou seja, os vínculos foram re-semeados e a lista não. As duas metades da tese numa observação só.
+
+Conferido no banco ao fim: `@luna` vinculada aos **dois** projetos, `@teste-vinculo-d2` só onde nasceu. Uma personagem, dois vínculos — que é a etapa inteira em uma linha de SQL.

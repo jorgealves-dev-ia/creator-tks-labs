@@ -27,6 +27,8 @@ type StudioProps = {
   version: number;
   balanceCents: number;
   characters: CharacterEntity[];
+  /** Quais delas trabalham no projeto aberto — `project_entities`. */
+  linkedCharacterIds: string[];
 };
 
 export function Studio({
@@ -36,8 +38,9 @@ export function Studio({
   version,
   balanceCents,
   characters,
+  linkedCharacterIds,
 }: StudioProps) {
-  useSeedArsenal(characters, balanceCents);
+  useSeedArsenal(characters, linkedCharacterIds, balanceCents);
 
   return (
     <ReactFlowProvider>
@@ -79,16 +82,36 @@ export function Studio({
 }
 
 /**
- * Hands the server's Arsenal — the characters and the balance — to the client
- * stores, once.
+ * Hands the server's Arsenal — the characters, their project links and the
+ * balance — to the client stores.
  *
  * In an effect rather than during render on purpose: the stores are module-level
  * singletons, and on the server that module is shared by every request in the
  * process. Seeding while rendering would let one visitor's characters — or one
  * visitor's balance — end up in another visitor's page.
+ *
+ * ---------------------------------------------------------------------------
+ * Três semeaduras, três tempos de vida — e o do meio era um bug esperando
+ * ---------------------------------------------------------------------------
+ *
+ * A lista de personagens é do **usuário** e é semeada uma vez: trocar de aba
+ * não muda quem ela conhece. Os **vínculos** são do projeto e são semeados a
+ * cada troca. O saldo já se recomportava assim.
+ *
+ * Essa separação não é elegância — é o que faz a Etapa D2 funcionar. Trocar de
+ * aba é um `<Link href="/?p=…">`: o Server Component roda de novo e manda
+ * `props` novas, mas o `Studio` **não desmonta**, então um efeito com `[]` nunca
+ * mais rodaria. Semear a lista inteira de novo aqui resolveria a lista e
+ * quebraria outra coisa — `characters` carrega `draftStatus`, `revision` e
+ * `lastSavedAt`, e o editor é um overlay que sobrevive à troca de aba. Quem
+ * estivesse escrevendo perderia o rascunho no meio da frase.
+ *
+ * Semear só o conjunto de vínculos não tem esse custo, porque o conjunto não
+ * carrega estado de ninguém: ele é uma resposta a "quem trabalha aqui".
  */
 function useSeedArsenal(
   characters: CharacterEntity[],
+  linkedCharacterIds: string[],
   balanceCents: number,
 ) {
   const initial = useRef({ characters });
@@ -96,6 +119,15 @@ function useSeedArsenal(
   useEffect(() => {
     useEntitiesStore.getState().seed(initial.current.characters);
   }, []);
+
+  // A dependência é o conteúdo, não o array: o servidor devolve uma lista nova a
+  // cada render, e comparar por identidade re-semearia a cada tecla. Mesmo
+  // truque de use-portraits, pelo mesmo motivo.
+  const linkKey = linkedCharacterIds.join(",");
+
+  useEffect(() => {
+    useEntitiesStore.getState().seedLinks(linkKey === "" ? [] : linkKey.split(","));
+  }, [linkKey]);
 
   // The balance re-seeds whenever the server sends a new one, unlike the two
   // lists above. That is what makes the optimistic subtraction after a batch

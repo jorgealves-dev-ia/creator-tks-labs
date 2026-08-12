@@ -48,11 +48,16 @@ const STEPS: readonly { id: WizardStep; label: string }[] = [
 
 type CharacterWizardProps = {
   onClose: () => void;
+  /**
+   * Onde ela nasce. Criar dentro de um projeto vincula — é o único momento em
+   * que a intenção é evidente sem perguntar (Etapa D2, item 1.3).
+   */
+  projectId: string | null;
   /** Fired as soon as the character exists, so the canvas can show its card. */
   onCreated: (character: CharacterEntity) => void;
 };
 
-export function CharacterWizard({ onClose, onCreated }: CharacterWizardProps) {
+export function CharacterWizard({ onClose, projectId, onCreated }: CharacterWizardProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [entityId, setEntityId] = useState<string | null>(null);
 
@@ -126,6 +131,7 @@ export function CharacterWizard({ onClose, onCreated }: CharacterWizardProps) {
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           {step.id === "identidade" ? (
             <IdentityStep
+              projectId={projectId}
               onCreated={(created) => {
                 setEntityId(created.id);
                 onCreated(created);
@@ -261,8 +267,15 @@ type HandleState = "idle" | "checking" | "available" | "taken" | "invalid";
 
 const HANDLE_CHECK_DELAY_MS = 400;
 
-function IdentityStep({ onCreated }: { onCreated: (character: CharacterEntity) => void }) {
+function IdentityStep({
+  projectId,
+  onCreated,
+}: {
+  projectId: string | null;
+  onCreated: (character: CharacterEntity) => void;
+}) {
   const addCharacter = useEntitiesStore((state) => state.addCharacter);
+  const link = useEntitiesStore((state) => state.link);
 
   const [displayName, setDisplayName] = useState("");
   const [handle, setHandle] = useState("");
@@ -318,6 +331,7 @@ function IdentityStep({ onCreated }: { onCreated: (character: CharacterEntity) =
       displayName: displayName.trim(),
       handle: effectiveHandle,
       genero,
+      projectId: projectId ?? undefined,
     });
 
     if (!result.ok) {
@@ -331,6 +345,12 @@ function IdentityStep({ onCreated }: { onCreated: (character: CharacterEntity) =
     }
 
     addCharacter(result.character);
+
+    // Só marca o vínculo que o servidor confirmou ter escrito. Marcar por
+    // otimismo poria no trilho uma personagem que o próximo carregamento não
+    // encontraria — a tela discordando do banco no silêncio de um F5.
+    if (result.linked) link(result.character.id);
+
     onCreated(result.character);
   }
 

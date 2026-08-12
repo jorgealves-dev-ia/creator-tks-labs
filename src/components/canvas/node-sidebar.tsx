@@ -3,6 +3,7 @@
 import { useReactFlow } from "@xyflow/react";
 import { useState } from "react";
 
+import { CharacterPicker } from "@/components/character-sheet/character-picker";
 import { CharacterWizard } from "@/components/character-sheet/character-wizard";
 import { Portrait, VersionBadge } from "@/components/character-sheet/identity";
 import { NodeIcon, type NodeKind } from "@/components/nodes/node-icons";
@@ -24,12 +25,23 @@ export function NodeSidebar() {
   const { screenToFlowPosition } = useReactFlow();
   const characters = useEntitiesStore((state) => state.characters);
   const order = useEntitiesStore((state) => state.order);
+  const linkedIds = useEntitiesStore((state) => state.linkedIds);
   const openEditor = useEntitiesStore((state) => state.openEditor);
   const nodes = useCanvasStore((state) => state.nodes);
   const projectId = useCanvasStore((state) => state.projectId);
   const portraits = useCharacterPortraits();
 
   const [creating, setCreating] = useState(false);
+  const [picking, setPicking] = useState(false);
+
+  /**
+   * Quem trabalha **neste** projeto (Etapa D2).
+   *
+   * A ordem continua sendo a da lista do usuário, não a dos vínculos: a pessoa
+   * aprendeu onde cada personagem fica no trilho, e reordenar por data de
+   * vínculo mudaria esse mapa a cada vez que ela trouxesse alguém.
+   */
+  const visible = order.filter((id) => linkedIds.has(id));
 
   const onCanvas = new Set(
     nodes
@@ -101,13 +113,26 @@ export function NodeSidebar() {
         <div className="rail-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pb-2">
           <RailSection label={t.characterSheet.sidebar.title} first />
 
-          {order.length === 0 ? (
-            <p className={onlyWhenOpen("px-4 py-1 text-xs leading-relaxed text-ink-faint")}>
-              {t.characterSheet.sidebar.empty}
-            </p>
+          {/* Dois vazios, dois problemas. Sem personagem nenhuma, o conserto é
+              criar; com seis e um projeto novo, o conserto é trazer — e dizer
+              "crie a primeira" para quem tem seis é a tela contradizendo o que
+              a pessoa sabe que tem. */}
+          {visible.length === 0 ? (
+            <div className={onlyWhenOpen("px-4 py-1")}>
+              <p className="text-xs leading-relaxed text-ink-faint">
+                {order.length === 0
+                  ? t.characterSheet.sidebar.empty
+                  : t.characterSheet.sidebar.emptyInProject}
+              </p>
+              {order.length > 0 ? (
+                <p className="mt-0.5 text-[11px] leading-relaxed text-ink-faint">
+                  {t.characterSheet.sidebar.emptyInProjectHint}
+                </p>
+              ) : null}
+            </div>
           ) : null}
 
-          {order.map((id) => {
+          {visible.map((id) => {
             const character = characters[id];
             if (!character) return null;
 
@@ -188,6 +213,36 @@ export function NodeSidebar() {
               </span>
               <span className={revealed("truncate text-xs font-medium text-ink-muted")}>
                 {t.characterSheet.sidebar.newCharacter}
+              </span>
+            </button>
+
+            {/* A outra metade do "de onde vem uma personagem": criar, ou trazer
+                uma que já existe. Sem esta porta, um projeto novo só poderia
+                receber gente nova — e a personagem voltaria a ser do projeto,
+                que é exatamente o que esta etapa desfaz. */}
+            <button
+              type="button"
+              onClick={() => setPicking(true)}
+              title={t.characterSheet.sidebar.addExistingHint}
+              className="flex w-full items-center gap-3 rounded-lg py-1.5 text-left
+                         transition-colors hover:bg-surface-hover"
+            >
+              <span
+                aria-hidden
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg
+                           border border-dashed border-line-strong text-ink-muted"
+              >
+                <svg viewBox="0 0 16 16" className="size-3.5" aria-hidden>
+                  <circle cx="6" cy="5.5" r="2.6" stroke="currentColor" strokeWidth="1.3"
+                          fill="none" />
+                  <path d="M1.6 13.4c0-2.4 2-4 4.4-4s4.4 1.6 4.4 4" stroke="currentColor"
+                        strokeWidth="1.3" fill="none" strokeLinecap="round" />
+                  <path d="M12.4 5.2v4M10.4 7.2h4" stroke="currentColor" strokeWidth="1.3"
+                        strokeLinecap="round" />
+                </svg>
+              </span>
+              <span className={revealed("truncate text-xs font-medium text-ink-muted")}>
+                {t.characterSheet.sidebar.addExisting}
               </span>
             </button>
           </div>
@@ -316,11 +371,17 @@ export function NodeSidebar() {
       {creating ? (
         <CharacterWizard
           onClose={() => setCreating(false)}
+          // Nasce vinculada ao projeto onde foi criada (item 1.3).
+          projectId={projectId}
           // The card appears as soon as the character exists, not only at the
           // end: the wizard can be abandoned, and a draft character is a
           // legitimate state that must not be invisible.
           onCreated={(character) => addToCanvas(character.id)}
         />
+      ) : null}
+
+      {picking && projectId ? (
+        <CharacterPicker projectId={projectId} onClose={() => setPicking(false)} />
       ) : null}
     </>
   );
