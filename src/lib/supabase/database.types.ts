@@ -49,6 +49,47 @@ export type Database = {
           },
         ]
       }
+      ai_model_video_prices: {
+        Row: {
+          created_at: string
+          duration_seconds: number
+          id: string
+          model_id: string
+          real_cost_cents: number
+          resolution: string
+          sort_order: number
+          sparks: number
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds: number
+          id?: string
+          model_id: string
+          real_cost_cents: number
+          resolution: string
+          sort_order?: number
+          sparks: number
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          model_id?: string
+          real_cost_cents?: number
+          resolution?: string
+          sort_order?: number
+          sparks?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_model_video_prices_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "ai_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_models: {
         Row: {
           capabilities: string[]
@@ -404,6 +445,7 @@ export type Database = {
           error_message: string | null
           id: string
           input_tokens: number | null
+          media_kind: Database["public"]["Enums"]["media_kind"]
           model: string
           model_id: string | null
           node_id: string | null
@@ -434,6 +476,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           input_tokens?: number | null
+          media_kind?: Database["public"]["Enums"]["media_kind"]
           model: string
           model_id?: string | null
           node_id?: string | null
@@ -464,6 +507,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           input_tokens?: number | null
+          media_kind?: Database["public"]["Enums"]["media_kind"]
           model?: string
           model_id?: string | null
           node_id?: string | null
@@ -740,7 +784,98 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      attach_video_job: {
+        Args: {
+          p_generation_id: string
+          p_provider_job_id: string
+          p_provider_urls?: Json
+        }
+        Returns: {
+          completed_at: string | null
+          cost_charged_cents: number
+          cost_real_cents: number
+          created_at: string
+          entity_id: string | null
+          entity_version_id: string | null
+          error_message: string | null
+          id: string
+          input_tokens: number | null
+          media_kind: Database["public"]["Enums"]["media_kind"]
+          model: string
+          model_id: string | null
+          node_id: string | null
+          output_tokens: number | null
+          params: Json
+          project_id: string | null
+          prompt_compiled: Json | null
+          prompt_user_pt: string | null
+          provider: string
+          provider_job_id: string | null
+          result_asset_id: string | null
+          sheet_source: string | null
+          sparks_charged: number
+          started_at: string | null
+          status: Database["public"]["Enums"]["generation_status"]
+          summary: Json | null
+          updated_at: string
+          user_id: string
+          workflow_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "generations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cents_per_spark: { Args: never; Returns: number }
+      complete_video_generation: {
+        Args: {
+          p_error_message?: string
+          p_generation_id: string
+          p_provider_job_id: string
+          p_real_cost_cents?: number
+          p_result_asset_id?: string
+          p_status: Database["public"]["Enums"]["generation_status"]
+        }
+        Returns: {
+          completed_at: string | null
+          cost_charged_cents: number
+          cost_real_cents: number
+          created_at: string
+          entity_id: string | null
+          entity_version_id: string | null
+          error_message: string | null
+          id: string
+          input_tokens: number | null
+          media_kind: Database["public"]["Enums"]["media_kind"]
+          model: string
+          model_id: string | null
+          node_id: string | null
+          output_tokens: number | null
+          params: Json
+          project_id: string | null
+          prompt_compiled: Json | null
+          prompt_user_pt: string | null
+          provider: string
+          provider_job_id: string | null
+          result_asset_id: string | null
+          sheet_source: string | null
+          sparks_charged: number
+          started_at: string | null
+          status: Database["public"]["Enums"]["generation_status"]
+          summary: Json | null
+          updated_at: string
+          user_id: string
+          workflow_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "generations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       record_extraction: {
         Args: {
           p_entity_id: string
@@ -809,6 +944,7 @@ export type Database = {
           error_message: string | null
           id: string
           input_tokens: number | null
+          media_kind: Database["public"]["Enums"]["media_kind"]
           model: string
           model_id: string | null
           node_id: string | null
@@ -854,6 +990,56 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      submit_video_generation: {
+        Args: {
+          p_duration_seconds: number
+          p_model_id: string
+          p_node_id: string
+          p_params?: Json
+          p_project_id: string
+          p_prompt_compiled?: Json
+          p_prompt_user_pt?: string
+          p_resolution: string
+          p_summary?: Json
+        }
+        Returns: {
+          completed_at: string | null
+          cost_charged_cents: number
+          cost_real_cents: number
+          created_at: string
+          entity_id: string | null
+          entity_version_id: string | null
+          error_message: string | null
+          id: string
+          input_tokens: number | null
+          media_kind: Database["public"]["Enums"]["media_kind"]
+          model: string
+          model_id: string | null
+          node_id: string | null
+          output_tokens: number | null
+          params: Json
+          project_id: string | null
+          prompt_compiled: Json | null
+          prompt_user_pt: string | null
+          provider: string
+          provider_job_id: string | null
+          result_asset_id: string | null
+          sheet_source: string | null
+          sparks_charged: number
+          started_at: string | null
+          status: Database["public"]["Enums"]["generation_status"]
+          summary: Json | null
+          updated_at: string
+          user_id: string
+          workflow_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "generations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       asset_kind: "image" | "video" | "audio"
@@ -868,6 +1054,7 @@ export type Database = {
         | "failed"
         | "canceled"
       ledger_kind: "deposit" | "debit" | "refund" | "adjustment"
+      media_kind: "image" | "video"
       project_status: "idle" | "generating" | "generated" | "error"
     }
     CompositeTypes: {
@@ -1009,6 +1196,7 @@ export const Constants = {
         "canceled",
       ],
       ledger_kind: ["deposit", "debit", "refund", "adjustment"],
+      media_kind: ["image", "video"],
       project_status: ["idle", "generating", "generated", "error"],
     },
   },

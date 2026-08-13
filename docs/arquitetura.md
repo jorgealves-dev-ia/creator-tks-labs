@@ -250,7 +250,7 @@ Com RLS ligado e nenhuma política que case, o Postgres **nega** a operação. N
 
 Verificado na Fase 0: sem sessão, as 9 tabelas de então respondiam `42501 permission denied`. A décima (`entity_versions`) segue o mesmo padrão e é verificada junto com a migration que a cria.
 
-### As 15 tabelas
+### As 16 tabelas
 
 | Tabela | O que guarda |
 |---|---|
@@ -264,10 +264,11 @@ Verificado na Fase 0: sem sessão, as 9 tabelas de então respondiam `42501 perm
 | `project_entities` | o **vínculo** projeto ↔ personagem: quais personagens trabalham em qual aba. PK `(project_id, entity_id)` — o par *é* a linha —, `user_id` desnormalizado e duas FKs compostas que o compartilham. Projeto novo nasce sem vínculos; excluir projeto leva os vínculos e **não** as personagens |
 | `entity_images` | join entre `entities` e `assets`: as imagens de uma entidade — as canônicas de uma personagem (turnaround, expressões) e as **fotos de um produto** —, com `role` e ordenação |
 | `assets` | arquivos no Storage: `kind` (image/video/audio), `source` (upload/generation), mime, dimensões, duração, `label` (nome humano — o nome do arquivo enviado ou as palavras do prompt; alimenta a galeria e a busca dela, e é nulo para tudo que nasceu antes dela) |
-| `generations` | cada execução: workflow/node de origem, `entity_id`, `model_id`, provedor, modelo, `params jsonb`, `prompt_user_pt`, `prompt_compiled jsonb`, status, tokens, `cost_real_cents`, `sparks_charged`, `result_asset_id`, `entity_version_id`, `sheet_source`, `summary jsonb`, `error_message` |
+| `generations` | cada execução: workflow/node de origem, `entity_id`, `model_id`, provedor, modelo, `media_kind` (image/video), `params jsonb`, `prompt_user_pt`, `prompt_compiled jsonb`, status, `provider_job_id` (o protocolo do provedor assíncrono), tokens, `cost_real_cents`, `sparks_charged`, `result_asset_id`, `entity_version_id`, `sheet_source`, `summary jsonb`, `error_message`. **`media_kind` é explícito e não derivado de `result_asset_id`**: uma linha `queued` ainda não tem asset e uma `failed` nunca terá, e são esses dois estados que a tela mais precisa saber desenhar |
 | `ai_providers` | catálogo de fornecedores de IA: `slug`, `display_name`, `env_var_name` (**qual variável guarda a chave — nunca a chave**), `enabled`, ordenação |
-| `ai_models` | catálogo de modelos: `provider_id`, `slug` (o identificador oficial na API do fornecedor), `capabilities text[]` (`{extraction}`, `{translation}`, `{image_gen}`; `{video_gen}` depois), `extraction_sparks`, `image_sparks` (preço-base, de quem não nomeia tamanho), `is_default`, `enabled` |
+| `ai_models` | catálogo de modelos: `provider_id`, `slug` (o identificador oficial na API do fornecedor — **e, na fal, esse identificador é a própria rota do endpoint**, o que faz um modelo novo dela caber numa linha desta tabela sem tocar no motor), `capabilities text[]` (`{extraction}`, `{translation}`, `{image_gen}`, `{video_gen}`), `extraction_sparks`, `image_sparks` (preço-base, de quem não nomeia tamanho), `is_default`, `enabled` |
 | `ai_model_image_prices` | preço em Sparks por **resolução** (`model_id`, `image_size`, `sparks`, ordenação) — e, por consequência, **quais resoluções cada modelo oferece**: não se oferece um tamanho que não se sabe cobrar. Lida por `record_generation` para decidir o preço e pela tela para desabilitar as opções indisponíveis com o motivo à vista |
+| `ai_model_video_prices` | preço em Sparks por **modelo × duração × resolução** (`model_id`, `duration_seconds`, `resolution`, `sparks`, `real_cost_cents`, ordenação) — e, pela mesma lógica da irmã de imagem, **quais durações cada modelo oferece**: é a ausência de uma linha de 10s que trava a v1 do vídeo em 5 segundos, não uma constante na tela. Guarda também `real_cost_cents`, o que a de imagem não faz, porque o custo de vídeo é determinístico por segundo — fato de catálogo em vez de conta de tokens, e por isso margem conferível linha a linha contra a fatura |
 | `extractions` | o diário do motor de extração: `entity_id`, `model_id`, `source` (photo/text), `status`, tokens consumidos, `real_cost_cents`, `sparks_charged`, `reference_asset_id` (a foto lida), `source_text` (o texto colado), `summary jsonb` (o placar) |
 
 O `handle` é um slug minúsculo, **único por usuário**, validado por constraint no formato `^[a-z0-9][a-z0-9_-]{0,47}$`.
@@ -314,8 +315,12 @@ Esta é a linha divisória mais importante da arquitetura: as regras abaixo **n�
 - Salvar versão é **atômico**: a função `public.save_entity_version(entity_id, label)` faz o INSERT do retrato e o UPDATE do ponteiro ativo na mesma transação. Ou as duas escritas acontecem, ou nenhuma — nunca um `@julia` apontando para o retrato errado
 - Registrar e cobrar uma extração é **atômico e com preço do catálogo**: `public.record_extraction(...)` grava a linha em `extractions` e insere o débito no ledger na mesma transação, lendo o preço de `ai_models.extraction_sparks` — a função **não aceita valor do chamador**, porque quem pudesse dizer o preço poderia dizer zero. É `security definer` e valida a posse da personagem contra `auth.uid()`, o que faz esta feature inteira **não precisar da service role**. Recusa com `EX001` (saldo insuficiente), `EX002` (personagem não é do chamador) e `EX003` (modelo não habilitado para extração). Falha da API grava `status = 'failed'` e não cobra — garantido também por constraint
 - Registrar e cobrar uma **geração** é atômico pelo mesmo desenho: `public.record_generation(...)` é a gêmea da anterior, trava a carteira com `for update`, debita só no sucesso e recusa com `GN001` / `GN002` / `GN003` / `GN004` / `GN005`. O preço sai do catálogo em dois níveis: de `ai_model_image_prices` quando a chamada **nomeia um tamanho**, e de `ai_models.image_sparks` quando não nomeia (a geração canônica). Nomear um tamanho não é nomear um preço — e um tamanho sem linha de preço é **recusado** (`GN005`), nunca cobrado pelo preço-base, senão pedir 4K e pagar 2K seria possível. `generations` já era somente-leitura para o usuário desde a Fase 0, então esta função é o único caminho por onde uma linha nasce — que é o que a torna o único lugar capaz de decidir um preço
+- **Vídeo é assíncrono, e por isso a cobrança se parte em duas funções** *(13/08/2026)*. `public.submit_video_generation(...)` cria a linha como `queued` **antes** de a fal ser chamada e **não cobra nada** — confere o saldo só para a recusa ser barata, pela mesma regra que a fila de imagens deixou escrita: *fila é intenção, ledger é fato*. `public.attach_video_job(...)` guarda o `request_id` e as URLs que a fal devolveu, e passa a linha para `running`. `public.complete_video_generation(...)` é quem cobra, e só quando existe vídeo. Recusam com `VD001`–`VD007`
+- **A conclusão é idempotente por `for update`, não por convenção** — a fal reentrega até **31 vezes** quando o endpoint não responde 2xx, então duas entregas da mesma geração são o caso normal. A trava serializa entregas **simultâneas**, não só repetidas: a segunda espera, encontra a linha terminal e devolve sem tocar em nada. Sem ela, duas transações leriam `running` juntas e escreveriam dois débitos pelo mesmo vídeo, num livro onde a correção é um estorno e não um DELETE. O índice **único** em `(provider, provider_job_id)` é a mesma garantia pelo outro lado
+- **`complete_video_generation` é a primeira função concedida só à `service_role`** — o webhook chega sem sessão nenhuma, então `auth.uid()` é nulo e o `user_id` vem da própria linha. Concedê-la a `anon` deixaria qualquer um marcar uma geração como concluída, então o `EXECUTE` é revogado de todos e devolvido só àquele papel
+- **Saldo que acaba durante a geração marca `failed` e não levanta exceção.** Levantar desfaria a transação inteira, a linha ficaria `running`, o webhook responderia 500 e as 31 reentregas receberiam o mesmo erro — um node preso para sempre. O vídeo existe do lado da fal e foi pago por nós; o usuário não recebe nem paga. É raro por construção, porque o saldo é conferido na submissão
 - Preço e capacidade andam juntos por constraint: `('image_gen' = any(capabilities)) = (image_sparks is not null)`, gêmea da que já valia para `extraction_sparks`. Sem ela, uma linha mal cadastrada daria imagens de graça ou ofereceria um modelo que a função de cobrança não sabe precificar — e imagem custa dinheiro de verdade por clique
-- O catálogo de IA (`ai_providers`, `ai_models`, `ai_model_image_prices`) tem `SELECT` para `authenticated` e **nenhuma política de escrita**: nesta fase se gerencia por SQL direto, depois pelo painel admin. Um trigger recusa preço de imagem para modelo sem a capability `image_gen` — o espelho, entre tabelas, do CHECK que já existia dentro de `ai_models`. `extractions` tem só leitura do próprio usuário — as linhas são escritas exclusivamente pela função acima
+- O catálogo de IA (`ai_providers`, `ai_models`, `ai_model_image_prices`, `ai_model_video_prices`) tem `SELECT` para `authenticated` e **nenhuma política de escrita**: nesta fase se gerencia por SQL direto, depois pelo painel admin. Dois triggers gêmeos recusam preço de imagem para modelo sem `image_gen` e preço de vídeo para modelo sem `video_gen` — o espelho, entre tabelas, do CHECK que já existia dentro de `ai_models`. `extractions` tem só leitura do próprio usuário — as linhas são escritas exclusivamente pela função acima
 
 **A exceção comum a todas as travas de apagamento**: quando a linha correspondente em `auth.users` já não existe, o delete passa. É o sinal de que se trata da cascata de exclusão de conta, e não de reescrita de história. O cadeado protege o passado; não impede o usuário de apagar a própria conta (LGPD). O padrão nasceu na `reject_ledger_delete` e vale hoje para o ledger, para `entity_versions` e para `entity_images`.
 
@@ -439,16 +444,24 @@ SUPABASE_SERVICE_ROLE_KEY=     # SOMENTE servidor — ignora RLS
 # Provedores de IA — somente servidor.
 # O nome de cada uma está registrado em ai_providers.env_var_name; a existência
 # da variável é o que faz o fornecedor aparecer aceso no seletor de modelos.
-GOOGLE_AI_API_KEY=
+GEMINI_API_KEY=                # em uso: geração de imagem (Nano Banana Pro / 2)
 OPENAI_API_KEY=
-ANTHROPIC_API_KEY=             # em uso: motor de extração
+ANTHROPIC_API_KEY=             # em uso: motor de extração e tradução
 XAI_API_KEY=
-FAL_KEY=
+FAL_KEY=                       # em uso: geração de vídeo (Kling, via fila)
 ELEVENLABS_API_KEY=
 
 # Webhooks
-FAL_WEBHOOK_SECRET=            # segredo gerado por nós, validado em app/api/webhooks/
+FAL_WEBHOOK_URL=               # URL absoluta e pública do nosso endpoint de retorno
 ```
+
+**Sobre a `FAL_WEBHOOK_URL`, e por que ela é variável em vez de derivada do request** *(13/08/2026)*. Ela precisa ser absoluta e alcançável da internet. Derivá-la do `x-forwarded-host`, como o `siteOrigin()` da autenticação faz, produziria `http://localhost:3000` em desenvolvimento — uma URL que a fal nunca alcança, e que falharia **em silêncio**, com o trabalho enfileirado e nenhum retorno. Sendo variável, a ausência dela é detectável: a submissão é recusada antes de gastar.
+
+Ela carrega também o **Protection Bypass for Automation** da Vercel como query param. O projeto está com *Vercel Authentication* ligada em `all_except_custom_domains` e **não tem domínio customizado**, então produção e previews respondem a tela de login da Vercel a qualquer POST de fora — e a fal trata `3xx` como falha permanente, sem retry. O bypass é o método que a própria documentação da Vercel indica para webhook de terceiro. Ele **não é a fechadura**: passa só pela borda da Vercel, e o endpoint continua exigindo a assinatura ED25519 da fal. É por isso que o segredo pode viver numa URL guardada no sistema de outra empresa.
+
+> **É ponte, não solução definitiva.** No dia em que `creatortkslabs.com.br` for plugado na Vercel, o bypass deixa de ser necessário **por natureza** — a proteção é `all_except_custom_domains`, e um domínio customizado simplesmente não passa por ela.
+
+**Não existe `FAL_WEBHOOK_SECRET`** *(correção de 13/08/2026)*. Ela esteve nesta lista descrita como "segredo gerado por nós", escrita antes de alguém ler a mecânica da fal — e **a fal não oferece segredo compartilhado: ela assina**. Cada entrega traz `X-Fal-Webhook-Signature` (ED25519), verificável contra o JWKS público deles. A regra 5 da segurança pede "assinatura **ou** segredo compartilhado", e a assinatura é o que este produto usa.
 
 Em produção, os mesmos nomes vivem nas Environment Variables da Vercel, marcadas como *Sensitive*. As variáveis públicas são validadas com Zod na importação, em `lib/env.ts` — falta de variável quebra no boot, não no meio de um fluxo do usuário.
 

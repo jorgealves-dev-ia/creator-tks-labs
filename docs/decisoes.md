@@ -2271,3 +2271,258 @@ O que sustenta o item no lugar da prova ao vivo: a conferência de saldo é o **
 Nasceu de um achado da Fase 4. Um `next dev` **sobrevivente** de uma etapa anterior continuava ouvindo a 3000; o `npm run dev` novo viu a porta ocupada, subiu na 3001 e **morreu** avisando — e o navegador, apontado para a 3000, teria validado o código antigo com toda a aparência de estar validando o novo.
 
 **Um servidor velho valida o que não vai ser commitado** — e falha do jeito mais caro possível, porque a validação *passa*. Entrou na Regra 8 do `CLAUDE.md`: antes de toda validação no navegador, conferir quem está na 3000 e matar o sobrevivente.
+
+---
+
+## Frente Vídeo — Ciclo 1: o motor assíncrono
+
+> O ciclo que faz a invariante 1 deixar de ser promessa. Imagem é a exceção medida
+> (cabe no `maxDuration`); vídeo não cabe, e é aqui que fila → webhook → Realtime
+> deixa de ser desenho e vira código. Um modelo só: Kling image-to-video, 5
+> segundos, na configuração mais barata. **Erro barato primeiro.**
+
+### 13/08/2026 — Fase 0 · a chave provada sem gastar um centavo
+
+O probe é o endpoint de status da fila perguntando por um `request_id` que não
+existe. Nada é gerado, então nada custa — e a resposta é lida por
+**triangulação**, que é a diferença entre "recebi um 404" e "a chave foi aceita":
+
+| chamada | resposta |
+|---|---|
+| sem chave | `401 {"detail":"Authentication is required"}` |
+| chave falsa | `401 {"detail":"invalid key credentials"}` |
+| **nossa chave** | **`404 {"status":"NOT_FOUND"}`** |
+
+Um 404 sozinho poderia ser rota errada. Um 404 onde as outras duas dão 401 é a
+fal dizendo *"eu sei quem é você, mas esse trabalho não existe"*. É o método de
+sabotagem de 08/08 aplicado à conectividade: **o que prova o caminho feliz são os
+caminhos tristes ao lado.**
+
+**Quatro achados que valem mais que o placar:**
+
+1. **O path de `requests/` usa o app base id, não o endpoint versionado.** Medido:
+   `queue.fal.run/fal-ai/kling-video/requests/<id>/status` responde 401 (shape
+   certo), e `…/kling-video/v2.1/standard/image-to-video/requests/…` responde
+   **405**. Ou seja, a URL óbvia é a errada. Daí a regra que virou código:
+   **guardar `status_url`/`response_url` como a fal devolve, nunca construir.**
+   Montá-las a partir do slug funcionaria em todo lugar menos onde importa, e a
+   reconciliação quebraria em silêncio — sintoma de node parado para sempre,
+   causa de uma string.
+2. **Nenhuma dependência nova.** O Node 22 importou as duas chaves Ed25519 reais
+   do JWKS com `crypto.createPublicKey({format:'jwk'})` e o `crypto.verify(null,…)`
+   aceitou assinatura boa e recusou adulterada. Nada de libsodium.
+3. **A fal publica o `x` do JWKS em base64 padrão (com `=`), e o import de JWK
+   exige base64url.** Sem normalizar, `createPublicKey` falha. É o tipo de detalhe
+   que só aparece com a chave real na mão, e teria custado uma hora na Fase 2.
+4. **15 faixas de IP** capturadas de `api.fal.ai/v1/meta`. Registradas, não usadas:
+   a lista muda e a fechadura é a assinatura.
+
+**O que a Fase 0 não provou, dito em vez de contado.** O caminho do **403 — conta
+travada por saldo mínimo da fal**, que é o erro nomeado do briefing — está mapeado
+e tem veredito próprio no probe, mas **nenhum 403 apareceu**. Isso prova que a
+conta está destravada hoje, não que sabemos tratá-lo. Exercitá-lo exigiria drenar
+o saldo da fal, o que não se faz para produzir uma linha de log. Mesmo precedente
+do `ON DELETE SET NULL` do Ciclo Dashboard: **caso conhecido, não exercitado.**
+
+Evidências em `scratchpad/evidencias/video-fase0/`. Custo: **zero**.
+
+---
+
+### 13/08/2026 — Fase 1 · os 5 segundos são fato de catálogo, não constante de tela
+
+**A decisão.** `ai_model_video_prices` não tem linha de 10 segundos — e a ausência
+*é* a funcionalidade. Sem preço, a duração não é oferecível nem cobrável.
+
+Ela herda o segundo papel que a tabela de imagem já tinha e que é o mais
+importante: **é o catálogo que diz o que um modelo oferece, porque não se oferece
+o que não se sabe cobrar.** A alternativa seria um `DURATION = 5` no componente,
+com o banco aceitando 10 caso alguém mandasse — a trava moraria no lugar onde ela
+é uma lembrança, em vez de no lugar onde é uma regra. Destravar 10s depois é uma
+linha de SQL, não um deploy.
+
+---
+
+### 13/08/2026 — Fase 1 · a tabela de vídeo guarda `real_cost_cents` e a de imagem não
+
+**Não é inconsistência, é a natureza do que cada provedor cobra.** O Google cobra
+por imagem **e** por token, então lá o custo real é uma conta feita em
+`lib/ai/pricing.ts` a partir do que a resposta reportou. A fal cobra **por segundo
+de vídeo**, de forma determinística: o custo é um fato tão fixo quanto o preço.
+
+Guardá-lo na linha de preço é o que faz a margem ser conferível **linha a linha
+contra a fatura**, sem depender de contagem nenhuma — que é exatamente para o que
+`cost_real_cents` existe desde a Fase 0, e o que permitiu calibrar o Sonnet de 10
+para 20 ⚡ com dados em vez de chute.
+
+**Preço semeado: 210 ⚡**, pela régua da casa (US$ 0,28 × 550 × 1,35, arredondado
+a 5 → 207,9 → 210), com `real_cost_cents = 154`.
+
+> ⚠️ **Divergência registrada, a ser arbitrada pela fatura.** A página do modelo
+> diz, na caixa de pricing, *"For 5s video your request will cost $0.28"*; o readme
+> da **mesma página** diz *"5-second video: $0.25"*. O seed segue a caixa de
+> pricing. **A Fase 4 arbitra contra a fatura real e o veredito é registrado aqui** —
+> se disser 0,25, o preço muda por migration, como o do Sonnet mudou.
+
+---
+
+### 13/08/2026 — Fase 1 · saldo que acaba durante a geração marca `failed` sem cobrar e sem entregar
+
+**O caso.** O saldo é conferido na submissão, mas o Kling leva de um a três
+minutos. Se o usuário gastar tudo nesse intervalo, a cobrança não cabe quando o
+vídeo fica pronto.
+
+**A decisão, e ela é sobre a forma de falhar, não sobre o valor.** Este caso
+**não levanta exceção**. Levantar desfaria a transação inteira, a linha ficaria
+`running`, o webhook responderia 500 — e a fal reentregaria **31 vezes** para
+receber o mesmo erro. O resultado seria um node preso para sempre e trinta e uma
+tentativas para não chegar a lugar nenhum.
+
+Então a função marca a linha como `failed` com o motivo escrito, não cobra, e
+retorna normalmente — o webhook responde 2xx e a fal para. **O vídeo existe do
+lado da fal e foi pago por nós; o usuário não recebe nem paga.** É a doutrina de
+09/08 aplicada ao assíncrono: *"cobrança que falha derruba a imagem junto — ninguém
+fica com algo que acabou de ser informado que não podia ter"*, agora com a nota de
+que quem come o custo somos nós.
+
+É raro **por construção**: é justamente para isso que o saldo é conferido na
+submissão. E é honesto quando acontece, que é mais do que um 500 silencioso seria.
+
+---
+
+### 13/08/2026 — Fase 1 · o que o banco ganhou, e o que ele já tinha
+
+**Quase tudo já estava aqui, e não foi sorte.** A Fase 0 escreveu `generations`
+para o vídeo antes de existir imagem — o comentário da tabela diz, desde 07/08,
+palavra por palavra: *"a server route creates the row as queued, the provider
+webhook updates it, and Realtime pushes the status to the canvas."*
+
+| Já existia | Nasceu agora |
+|---|---|
+| `provider_job_id` e seu índice | o índice virou **único** (idempotência) |
+| `generation_status` com `queued`/`running` | `media_kind` (image/video) |
+| `assets.kind = 'video'`, `assets.duration_ms` | `ai_model_video_prices` |
+| `ledger_transactions.generation_id` | provedor `fal` + modelo Kling 2.1 |
+| Realtime já publicando `generations` | as três funções `VD001`–`VD007` |
+
+**A cobrança se parte em duas funções porque o vídeo é assíncrono.**
+`submit_video_generation` cria a linha `queued` **antes** de a fal ser chamada e
+não cobra nada — a doutrina do motor de extração (*"foto registrada antes da
+chamada"*) e a invariante 5 do Ciclo Fila (*fila é intenção, ledger é fato*) dizem
+a mesma coisa aqui. `complete_video_generation` é quem cobra, e só quando existe
+vídeo.
+
+**A idempotência é `for update`, não convenção** — e o detalhe importa: a trava
+serializa entregas **simultâneas**, não só repetidas. Sem ela, duas entregas
+concorrentes leriam `running` ao mesmo tempo e escreveriam **dois débitos pelo
+mesmo vídeo**, num livro append-only onde a correção é um estorno e não um DELETE.
+
+**E é o primeiro uso da service role neste produto.** O webhook chega sem sessão
+nenhuma, então `auth.uid()` é nulo e o `user_id` vem da própria linha. Conceder
+essa função a `anon` deixaria qualquer um marcar uma geração como concluída, então
+o `EXECUTE` é revogado de todos e devolvido só à `service_role`. É o uso que a
+invariante de segurança 2 sempre previu: exclusivamente em código de servidor.
+
+**Ordem de aplicação: segura antes do código, e isso foi medido.** Tudo é aditivo,
+a coluna tem default, e nada que já roda alcança o que nasceu. **Não há aqui a
+armadilha do `GN006`** — na Etapa D2 um backstop de banco teria subido antes da
+checagem da aplicação e virado a única checagem, no pior lugar possível. Aqui não
+existe trava que possa disparar sobre caminho existente.
+
+**Conferido no banco depois de aplicada:** catálogo e seed corretos, `media_kind`
+com default e **55/55 linhas antigas como `image`**, o índice antigo **removido**
+(há exatamente um índice sobre `(provider, provider_job_id)`, e ele é `UNIQUE`),
+RLS ligada com política só de `SELECT`, trigger de capability instalado, as três
+funções `security definer` com `search_path` vazio — e os perfis certos:
+`submit`/`attach` para `authenticated`, **`complete` só para `service_role`**.
+As duas peças novas batem **byte a byte em forma** com as irmãs de imagem já
+auditadas, o que confirma que o `service_role` que aparece nas concessões é o
+default do Supabase e não algo introduzido aqui.
+
+---
+
+### 13/08/2026 — Não existe `FAL_WEBHOOK_SECRET` 🔁 correção de documentação
+
+A variável estava em `arquitetura.md` §6 e era citada **nominalmente na regra 5 de
+segurança do `CLAUDE.md`**, descrita como *"segredo gerado por nós"*. Ela foi
+escrita antes de alguém ler a mecânica da fal.
+
+**A fal não oferece segredo compartilhado: ela assina.** Cada entrega traz
+`X-Fal-Webhook-Signature` (ED25519) sobre `requestId \n userId \n timestamp \n
+hex(sha256(corpo bruto))`, verificável contra o JWKS público deles. A regra 5 pede
+"assinatura **ou** segredo compartilhado", então nada na postura muda — só a frase
+que descrevia como.
+
+Corrigida nos dois arquivos pelo precedente do `config/models.json`: **uma
+instrução errada no arquivo lido em toda sessão não é documentação velha, é uma
+armadilha** — e essa em particular mandava conferir uma variável que ninguém
+poderia criar.
+
+No lugar dela nasce **`FAL_WEBHOOK_URL`**, e ela é variável em vez de derivada do
+request por um motivo: derivá-la do `x-forwarded-host`, como o `siteOrigin()` da
+autenticação faz, produziria `http://localhost:3000` em desenvolvimento — uma URL
+que a fal nunca alcança, e que falharia **em silêncio**, com o trabalho enfileirado
+e nenhum retorno. Sendo variável, a ausência é detectável e a submissão é recusada
+antes de gastar.
+
+---
+
+### 13/08/2026 — O bypass da Vercel é ponte, não solução 📌 registrado
+
+**Medido pelo MCP da Vercel, e é maior do que "webhook não alcança localhost":** o
+projeto está com *Vercel Authentication* em `all_except_custom_domains` e **não
+tem domínio customizado** — os três domínios são `*.vercel.app`. Ou seja, **a
+produção também não alcança**: a POST da fal receberia a tela de login da Vercel, e
+o Route Handler nunca rodaria. E como a fal trata `3xx` como **falha permanente sem
+retry**, nem as 31 tentativas salvariam.
+
+A ponte é o **Protection Bypass for Automation** — o método que a documentação da
+Vercel indica literalmente para *"webhook URL verification for third-party
+services"* —, com o segredo como query param da `FAL_WEBHOOK_URL`. Ele **não é a
+fechadura**: passa só pela borda da Vercel, e o endpoint continua exigindo a
+assinatura ED25519. É por isso que esse segredo pode viver numa URL guardada no
+sistema de outra empresa, e é por isso que ele não poderia ser a única defesa.
+
+> **Quando `creatortkslabs.com.br` for plugado na Vercel, o bypass deixa de ser
+> necessário por natureza** — a proteção é `all_except_custom_domains`, e um
+> domínio customizado simplesmente não passa por ela. Fica registrado para que
+> ninguém, naquele dia, herde um parâmetro de URL sem saber por que ele existia.
+
+Em desenvolvimento a resposta é outra e é um túnel (`cloudflared tunnel --url
+http://localhost:3000`), porque nenhum bypass faz a internet alcançar uma porta
+local.
+
+---
+
+### 13/08/2026 — `@` recusado no node de vídeo, com gancho de volta 📌 decidido
+
+O Kling image-to-video recebe **uma** imagem, e ela já é a personagem. Uma menção
+anexaria uma segunda folha que não tem para onde ir, então o node recusa `@` com
+mensagem clara em vez de aceitar e ignorar — silenciar uma menção seria cobrar por
+uma geração que não fez o que a frase pedia.
+
+**O gancho, escrito agora para não depender de lembrança:** se a Fase 4 mostrar
+**deriva de rosto** no vídeo em relação à imagem de entrada, *"a menção contribui
+só o texto de identidade"* volta como candidato de ciclo próprio. O critério é
+falsificável e o dado aparece na primeira geração real.
+
+---
+
+### 13/08/2026 — 📌 Backlog · Imagem via fal — comparativo de rotas
+
+Gerar **imagem** pela fal (ex.: Nano Banana pela fal) para comparar qualidade,
+latência e custo contra a API direta do Google. Hoje a Decisão 2 manda pegar direto
+na fonte quando há conta de desenvolvedor viável, e o Google tem; o comparativo
+existe para que essa escolha continue sendo uma decisão medida em vez de uma
+herança.
+
+**A estrutura já responde, e isso foi conferido em vez de suposto.** A "rota
+discreta do provedor" que o adendo do ciclo pedia **já existe**: `ai_providers.slug`
+(`google`, `fal`) é a rota, e `findImageProvider(providerRow.slug)` já resolve o
+adaptador por ela. O mesmo modelo por duas rotas seriam **duas linhas em
+`ai_models` sob providers diferentes** — o que funciona hoje, sem coluna nova.
+Nenhuma migration foi feita para isso, de propósito.
+
+**O que faltará naquele dia é só a tela:** dois modelos com o mesmo `display_name`
+e providers diferentes ficariam indistinguíveis no seletor. É problema de
+`display_name`, não de schema, e fica anotado aqui para não ser redescoberto como
+se fosse de banco.
