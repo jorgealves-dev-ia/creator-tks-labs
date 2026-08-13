@@ -2526,3 +2526,180 @@ Nenhuma migration foi feita para isso, de propósito.
 e providers diferentes ficariam indistinguíveis no seletor. É problema de
 `display_name`, não de schema, e fica anotado aqui para não ser redescoberto como
 se fosse de banco.
+
+---
+
+### 13/08/2026 — Fase 2 · o laço fechou, e uma cobrança para três entregas
+
+**A validação em uma linha:** uma geração de 5s, entregue três vezes (a real mais
+duas reentregas em paralelo), produziu **um lançamento, um asset e um arquivo**.
+
+| | |
+|---|---|
+| enfileirada em | 5,17s · saldo **intocado** em 7.375 |
+| linha logo após | `running` · `sparks_charged 0` · `lançamentos 0` |
+| webhook | ~60s · assinatura válida · Next respondeu **200** |
+| geração no provedor | 1m31s |
+| resultado | `video/mp4` · 4,30 MB · `ftypisom`/`isomiso2avc1mp41` (H.264 real) |
+| cobrança | 210 ⚡ · custo real 154 ¢ · **margem 1,36×** |
+| saldo | 7375 → 7165, exatamente −210 · lançamentos 41 → 42, exatamente +1 |
+
+**O achado da Fase 0 confirmado pelo provedor real, e é o que mais valeu.** A
+`status_url` que a fal devolveu — e que nós guardamos em vez de construir — é:
+
+```
+https://queue.fal.run/fal-ai/kling-video/requests/019ffcab…/status
+                      ^^^^^^^^^^^^^^^^^ app base id, não o endpoint versionado
+```
+
+Construí-la a partir do slug do modelo é o caminho óbvio, é o que qualquer um
+escreveria, e responde **405**. A reconciliação existiria e nunca funcionaria; o
+sintoma seria um node parado para sempre e a causa, uma string.
+
+---
+
+### 13/08/2026 — Fase 2 · a idempotência tem dois casos, e só um é fácil
+
+Provada duas vezes, de propósito, porque **são dois mecanismos vistos de ângulos
+diferentes** e nenhum dos dois cobre o outro.
+
+**Reentrega em linha terminal** — o caso das 31 tentativas da fal depois de um
+trabalho concluído. Reenviei o webhook capturado **duas vezes em paralelo**, com
+a assinatura genuína, 55s depois da entrega real: as duas voltaram
+`{"ok":true,"outcome":"already"}`, e o banco terminou com um lançamento e um
+asset. Fácil, porque a linha já acabou e a saída antecipada é uma leitura.
+
+**Disputa em linha viva** — o caso difícil, e o que de fato custa dinheiro. Duas
+conexões reais, A segurando a trava sem commitar e B chegando com o trabalho
+ainda `running`:
+
+```
+b_esperou_na_trava ...... 15,54s  ✓
+a_primeira_ganhou ....... sim ✓   (a mensagem gravada é a da entrega A)
+lancamentos_no_ledger ... 0
+saldo ................... 7165 -> 7165
+```
+
+**Os 15,54s são a evidência, não o placar.** Se B tivesse voltado em
+milissegundos, as duas transações teriam rodado juntas e os números finais
+poderiam estar certos por sorte. Sem o `for update`, as duas leriam `running` ao
+mesmo tempo, as duas decidiriam cobrar, e o mesmo vídeo geraria **dois débitos**
+num livro append-only onde a correção é um estorno e não um DELETE.
+
+**O teste roda no caminho de falha de propósito.** Falha não escreve no ledger,
+então ele não mexe em dinheiro e não deixa lançamento para estornar — e o portão
+é o mesmo nos dois caminhos, conferido no banco por
+`position('for update') < position('insert into ledger_transactions')`. Testar o
+caminho pago exigiria sujar permanentemente o lugar onde o produto guarda
+dinheiro para provar algo que a ordem das linhas já garante.
+
+E a linha sintética **é apagada** ao final, não arquivada. Personagem e produto se
+arquivam porque outras linhas apontam para elas; aqui não aponta nada (falha não
+tem asset nem lançamento), então apagar é completo. O motivo positivo é a regra do
+Ciclo Dashboard: **o número na tela conta o que a tela mostra** — uma tentativa de
+vídeo inventada ficaria para sempre no histórico do projeto e no cartão.
+
+---
+
+### 13/08/2026 — Fase 2 · o bug que a sabotagem achou: "b-locked"
+
+A bateria de 34 verificações rodou antes de qualquer geração paga, com chave
+Ed25519 própria e o `fetch` interceptado servindo um JWKS — **código de produção
+inteiro no caminho**, inclusive a normalização de base64, exercitada de propósito
+publicando o `x` em base64 padrão com `=`, como a fal faz.
+
+Ela derrubou uma verificação na primeira execução, e o defeito era real:
+**`"blocked by safety policy"` era classificado como conta travada**, porque o
+marcador `"locked"` casa dentro de **b-locked**. A tela mandaria avisar o
+administrador quando o conserto era reformular a cena.
+
+Corrigido com fronteira de palavra (`/\blocked\b/`) e travado com três asserções
+que têm de valer **juntas**: `blocked` → recusa, `account locked` → conta,
+`top up` → conta. Uma fronteira que consertasse o falso positivo às custas do
+verdadeiro seria a mesma classe de erro pelo outro lado.
+
+É a terceira ocorrência do mesmo padrão neste projeto, depois do
+`"reference image image 1"` de 10/08 e dos dois bytes NUL de 11/08:
+**nenhum typecheck pega, e é o argumento inteiro a favor de verificações que
+comparam texto de verdade em vez de estrutura.**
+
+No mesmo passe, as **duas** listas de recusa que eu tinha escrito — uma no motor,
+outra no adaptador — viraram uma só, exportada. Duas seriam duas chances de a
+mesma recusa ser lida de dois jeitos conforme a porta por onde chegou.
+
+---
+
+### 13/08/2026 — Fase 2 · a fechadura provada pela internet, de graça
+
+Antes de existir dinheiro no jogo, três POSTs forjados de fora contra o endpoint
+público, pelo túnel:
+
+| tentativa | resposta | motivo no log |
+|---|---|---|
+| sem cabeçalho de assinatura | **401** | `missing_headers` |
+| assinatura forjada | **401** | `bad_signature` |
+| timestamp de 2001 | **401** | `stale_timestamp` |
+
+Nenhum tocou o banco, cada um nomeou a própria causa, e a rota respondeu em
+15–29ms. Fecha a cadeia inteira — internet → Cloudflare → Next → rota → fechadura
+— sem gastar um Spark.
+
+**O motivo vai para o log e nunca para a resposta.** Quem está sondando não
+precisa saber se errou o relógio ou a chave; quem está investigando uma entrega
+legítima recusada precisa saber exatamente isso.
+
+---
+
+### 13/08/2026 — Fase 2 · o captador, e por que a rota não foi instrumentada
+
+O replay exige a assinatura **genuína** da fal, e só a fal produz uma. Como a
+assinatura cobre `sha256(corpo bruto)`, guardar o JSON parseado e reserializar
+daria um hash diferente — provado na bateria: `JSON.parse` + `JSON.stringify`
+derruba a verificação. Ou seja: **ou se captura na hora, ou não se reenvia.**
+
+A saída foi um proxy no scratchpad que grava cabeçalhos e corpo em base64 e
+repassa. A alternativa era um log dentro da rota — e aí a evidência provaria um
+código que **não é o que está commitado**, além de deixar instrumentação para
+alguém lembrar de tirar depois.
+
+Custo declarado: o túnel mudou de endereço e o `FAL_WEBHOOK_URL` teve de ser
+colado duas vezes. Vale registrar como preço conhecido de qualquer replay futuro.
+
+---
+
+### 13/08/2026 — Fase 2 · três coisas que o motor decidiu, e o porquê de cada uma
+
+**`maxDuration = 60` nas três rotas.** Sem a linha, a do webhook herdaria dez
+segundos — e ela baixa um vídeo e o sobe ao Storage. Morreria no meio, em
+silêncio, e as 31 reentregas da fal esconderiam o sintoma por horas antes de
+alguém desconfiar. É o irmão gêmeo do achado da Fase 1a do Dashboard, quando o
+`maxDuration` do canvas quase ficou para trás numa mudança de rota.
+
+**O caminho no Storage é determinístico pelo id da geração.** Com um
+`randomUUID()`, como faz a geração de imagem, duas entregas escreveriam dois
+arquivos e criariam dois assets — o segundo passaria pelo unique de
+`(bucket, path)` sem esbarrar em nada, porque os caminhos seriam diferentes. O
+vídeo apareceria duas vezes na galeria e um arquivo ficaria órfão para sempre.
+Determinístico, a segunda sobrescreve os mesmos bytes e o `upsert` devolve o
+asset que já existia. Na imagem isso nunca foi necessário porque cada clique é uma
+geração nova; aqui **a mesma geração pode chegar trinta e uma vezes**.
+
+**Um caminho de conclusão, três gatilhos:** webhook, reconciliação e submissão que
+falhou. Duas cópias divergiriam, e a segunda a divergir seria a que ninguém testa
+— o mesmo argumento que fez a Galeria ser um *modo* do seletor de referências em
+vez de uma segunda tela.
+
+---
+
+### 13/08/2026 — Fase 2 · o que **não** ficou provado
+
+- **Realtime → tela.** O canal existe e escuta `INSERT`; o vídeo termina por
+  **UPDATE**, e o node que escutaria não existe. É trabalho da Fase 3, e sem ele
+  o laço provado aqui termina no banco, não na tela.
+- **A reconciliação nunca disparou.** O webhook chegou de primeira, então os três
+  caminhos (abrir projeto · botão · teto de 15 min) estão escritos e não
+  exercitados. Provocar uma perda de webhook de propósito é trabalho da Fase 4.
+- **O 403 de conta travada** segue mapeado e não visto — a classificação foi
+  testada contra uma mensagem que eu escrevi, não contra a fal.
+- **A galeria desenha o vídeo como `<img>`** hoje, o que confirmei na tela. É
+  esperado e é da Fase 3.

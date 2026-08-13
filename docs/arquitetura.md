@@ -109,13 +109,18 @@ O que **não** vai para o banco é a chave secreta (decisão E5). O catálogo gu
 
 `lib/providers/types.ts` declara as interfaces; `lib/providers/registry.ts` mapeia o slug do fornecedor para o adaptador; `lib/providers/anthropic.ts` é a primeira implementação. O produto conversa só com a interface, então fornecedor novo é arquivo novo mais uma linha no registry.
 
-São **três interfaces**, uma por capacidade, e não uma só com métodos opcionais — porque um fornecedor pode perfeitamente saber ler uma foto e ainda não saber desenhar uma:
+São **quatro interfaces**, uma por capacidade, e não uma só com métodos opcionais — porque um fornecedor pode perfeitamente saber ler uma foto e ainda não saber desenhar uma:
 
 | Interface | Capability | Implementações |
 |---|---|---|
 | `ExtractionProvider` | `extraction` | `anthropic.ts` |
 | `TranslationProvider` | `translation` | `anthropic.ts` — plumbing interna do compilador, sem preço e sem seletor |
 | `ImageGenerationProvider` | `image_gen` | `google.ts` (Nano Banana Pro / Nano Banana 2) |
+| `VideoGenerationProvider` | `video_gen` | `fal.ts` (Kling 2.1 standard image-to-video) |
+
+**A quarta é a primeira assíncrona, e por isso tem outra forma.** As três de cima devolvem **o resultado**, porque cabe no request. `VideoGenerationProvider` devolve **um número de protocolo** — `submitVideo` enfileira e volta na hora, `readWebhook` lê o retorno assinado, `checkVideo` pergunta à fila do provedor e `downloadVideo` traz o arquivo antes de o link deles expirar. A invariante 1 inteira mora nessa diferença de formato.
+
+E ela se parte em dois arquivos, o que as outras não precisaram: `fal-queue.ts` guarda a mecânica **do fornecedor** — fila, assinatura ED25519, status, download — e não sabe o que é Kling; `fal.ts` guarda o mapeamento de entrada e o leitor de saída **do modelo**, e mesmo esses são tabela. É o que sustenta o critério declarado no ciclo: *um segundo modelo da fal é uma linha em `ai_models` mais, no máximo, uma entrada em `ENDPOINT_OVERRIDES` — nunca uma mudança no motor.* Esse mapa nasceu **vazio**, e o vazio é a afirmação de que o contrato padrão da fal cobre o Kling inteiro.
 
 `lib/providers/google.ts` usa o **SDK oficial** `@google/genai`, que cobre a Interactions API a partir da 2.3.0 — mesmo padrão do `@anthropic-ai/sdk`, e a fonte mais confiável dos formatos, já que os tipos do pacote são a documentação. Ele **não repete tentativa**: uma geração repetida é uma segunda imagem faturada pelo Google, que não tem como saber que a primeira pode ter dado certo do lado dele. A única retentativa do produto é o fallback de traje do §5.22, que é decisão de uma camada acima, registrada no histórico e visível na tela.
 
