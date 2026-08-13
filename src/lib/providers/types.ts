@@ -153,12 +153,124 @@ export type ImageGenerationProvider = {
   }): Promise<ImageGenerationResult>;
 };
 
+// ---------------------------------------------------------------------------
+// Video generation — the fourth capability, and the first asynchronous one
+// ---------------------------------------------------------------------------
+
+/**
+ * What a video generation is asked for.
+ *
+ * The source image travels **inline**, as bytes, not as a URL. That is a
+ * security decision and not a convenience: our Storage bucket is private, and
+ * handing a provider a signed URL would publish, however briefly, a file that
+ * belongs to a user. The adapter turns these bytes into whatever its provider
+ * accepts — for fal, a base64 data URI.
+ *
+ * There is no aspect ratio here, and its absence is correct: in image-to-video
+ * the proportion comes from the source image. Asking for one would be asking the
+ * model to crop or letterbox something the user already framed.
+ */
+export type VideoGenerationInput = {
+  /** The compiled prompt, already in English. Adapters never translate. */
+  prompt: string;
+  /** The still the motion starts from. */
+  image: ImagePayload;
+  /** Priced by the catalogue, never chosen by the adapter. */
+  durationSeconds: number;
+};
+
+/**
+ * The receipt of an enqueued job — everything needed to find it again.
+ *
+ * The URLs are carried rather than rebuilt, and that is the hard-won part.
+ * Measured on 2026-08-13: fal's `requests/` path uses the **app base id**, not
+ * the versioned endpoint, so the obvious URL is the wrong one. A reconciliation
+ * that constructs its own address works everywhere except where it matters.
+ */
+export type VideoSubmission = {
+  requestId: string;
+  statusUrl: string | null;
+  responseUrl: string | null;
+  cancelUrl: string | null;
+};
+
+/**
+ * What the provider says when asked about a job it was given.
+ *
+ * `unknown` is its own state and not an error: a provider that has forgotten a
+ * request id (results expire) is telling us something different from a provider
+ * that cannot be reached, and only one of the two justifies giving up on a job.
+ */
+export type VideoJobState =
+  | { state: "pending" }
+  | { state: "succeeded"; videoUrl: string }
+  | { state: "failed"; detail: string; refused: boolean }
+  | { state: "unknown" };
+
+/**
+ * A provider able to enqueue a video and be asked about it later.
+ *
+ * It is deliberately **not** shaped like `ImageGenerationProvider`. That one
+ * returns the picture, because an image fits inside a request; this one returns
+ * a *protocol number*, because a video does not. The whole of invariant 1 lives
+ * in that difference.
+ *
+ * One implementation: fal. And the split inside it is the point — the queue,
+ * the signature, the download and the reconciliation are generic to fal, while
+ * the model is a line of configuration. Adding a second fal model must not
+ * touch the engine.
+ */
+export type VideoGenerationProvider = {
+  readonly slug: string;
+  /** Enqueues and returns immediately. Never waits for the video. */
+  submitVideo(request: {
+    model: { slug: string };
+    input: VideoGenerationInput;
+    /** Where the provider should call back. Absolute, public, https. */
+    webhookUrl: string;
+  }): Promise<VideoSubmission>;
+  /** Asks the provider's queue what became of a job — the reconciliation path. */
+  checkVideo(request: {
+    model: { slug: string };
+    requestId: string;
+    statusUrl: string | null;
+    responseUrl: string | null;
+  }): Promise<VideoJobState>;
+  /**
+   * Reads a delivered webhook body and says what it means.
+   *
+   * Separate from `checkVideo` because the two arrive by different roads and
+   * only one of them can be trusted without asking: a webhook body is signed,
+   * a poll answer is fetched. Same vocabulary out, so the code above cannot
+   * tell them apart — which is exactly what lets one function serve both.
+   */
+  readWebhook(body: unknown): VideoJobState;
+  /** Downloads the finished file before the provider's URL expires. */
+  downloadVideo(videoUrl: string): Promise<VideoPayload>;
+};
+
+/** The finished file, on its way to our Storage. */
+export type VideoPayload = {
+  mimeType: string;
+  bytes: Uint8Array;
+};
+
 /**
  * Every way a provider call can fail that the interface must speak about. A
  * refusal by content policy is an *expected* error in this product (architecture
  * decision 7), not a bug, so it has its own kind.
+ *
+ * `account` is the asynchronous era's addition: an aggregator locks the account
+ * when its own balance drops below a minimum and starts rejecting calls. That is
+ * neither a bad request nor a refusal of *this* content — it is nobody's fault
+ * but ours, and the only sentence that helps says so.
  */
-export type ProviderErrorKind = "not_configured" | "refused" | "invalid_answer" | "provider";
+export type ProviderErrorKind =
+  | "not_configured"
+  | "refused"
+  | "invalid_answer"
+  | "provider"
+  | "account";
 
 /**
  * The provider's own sentence about a failure, not our summary of it.

@@ -9,8 +9,12 @@ import type { Database } from "./database.types";
  * Route Handlers.
  *
  * Still uses the anon key, so Row Level Security applies — this client acts
- * as the signed-in user, never as an administrator. A separate service-role
- * client will be added later, only for webhook handlers that must bypass RLS.
+ * as the signed-in user, never as an administrator.
+ *
+ * The service-role client this comment used to promise now exists, in
+ * `./admin.ts`, and its scope is exactly the one that was foreseen: the fal
+ * webhook, which arrives with nobody's session. Everything else — including
+ * every charging path — still comes through here.
  *
  * A new client is created per request because it is bound to that request's
  * cookies. Never hoist it into a module-level variable.

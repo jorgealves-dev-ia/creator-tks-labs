@@ -5,12 +5,14 @@ import {
   anthropicTranslationProvider,
 } from "@/lib/providers/anthropic";
 import type { ProviderStatus } from "@/lib/ai/catalog-types";
+import { falVideoProvider } from "@/lib/providers/fal";
 import { googleImageProvider } from "@/lib/providers/google";
 import { isProviderConfigured } from "@/lib/providers/keys";
 import type {
   ExtractionProvider,
   ImageGenerationProvider,
   TranslationProvider,
+  VideoGenerationProvider,
 } from "@/lib/providers/types";
 
 /**
@@ -55,6 +57,38 @@ export function findTranslationProvider(slug: string): TranslationProvider | nul
 
 export function findImageProvider(slug: string): ImageGenerationProvider | null {
   return IMAGE_PROVIDERS[slug] ?? null;
+}
+
+/**
+ * E para vídeo — a quarta capacidade, e a primeira assíncrona.
+ *
+ * A fal é a única entrada, e é o **primeiro agregador** deste catálogo. Ela está
+ * aqui pelo critério da Decisão 2: acesso direto ao Kling exigiria conta de
+ * desenvolvedor chinesa, o que é fricção real. Agregador de infraestrutura é
+ * aceitável; revendedor de camada de produto continua vetado.
+ */
+const VIDEO_PROVIDERS: Record<string, VideoGenerationProvider> = {
+  [falVideoProvider.slug]: falVideoProvider,
+};
+
+export function findVideoProvider(slug: string): VideoGenerationProvider | null {
+  return VIDEO_PROVIDERS[slug] ?? null;
+}
+
+/** Whether a video adapter exists at all — the second half of "usable". */
+export function hasVideoAdapter(slug: string): boolean {
+  return slug in VIDEO_PROVIDERS;
+}
+
+/**
+ * Por que um fornecedor de vídeo está ou não usável. Mesma resposta em duas
+ * partes das outras duas capacidades, e separada delas pela mesma razão: saber
+ * ler uma foto, saber desenhar uma e saber animá-la são três coisas.
+ */
+export function videoProviderStatus(slug: string, envVarName: string): ProviderStatus {
+  if (!hasVideoAdapter(slug)) return "no_adapter";
+
+  return isProviderConfigured(envVarName) ? "ready" : "missing_key";
 }
 
 /** Whether an image adapter exists at all — the second half of "usable". */
