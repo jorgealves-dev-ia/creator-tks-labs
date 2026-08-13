@@ -31,6 +31,7 @@ import {
   mentionedCharacter,
   sheetAnchorSlots,
 } from "@/lib/generation/capacity";
+import { useGenerationTick } from "@/lib/generation/generation-feed";
 import {
   listNodeGenerations,
   loadResultCard,
@@ -179,6 +180,14 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
    */
   const [historyKey, setHistoryKey] = useState(0);
   /**
+   * O aviso do banco: nasceu uma geração deste bloco.
+   *
+   * O contador do canal do projeto (§5.4). Ele muda quando o histórico deste
+   * bloco mudou **sem que este bloco tenha feito nada** — que é exatamente o
+   * caso de uma página recarregada no meio de uma fila.
+   */
+  const feedTick = useGenerationTick(id);
+  /**
    * A imagem que a grade promoveu para a moldura, de propósito.
    *
    * Transitória por decisão (11/08/2026): promover é **ver**, não gravar. Olhar
@@ -313,7 +322,10 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
     return () => {
       cancelled = true;
     };
-  }, [projectId, id, historyKey]);
+    // `feedTick` é o aviso do banco (§5.4), e é ele que fecha o buraco do
+    // reload: depois de recarregar, este bloco não sabe que havia uma fila, e
+    // por isso não tem o que esperar. Quem sabe é o banco — e é ele que avisa.
+  }, [projectId, id, historyKey, feedTick]);
 
   /**
    * A fila esvaziou: relê o banco e atualiza o saldo do cabeçalho — **uma vez**.

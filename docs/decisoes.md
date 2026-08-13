@@ -2238,3 +2238,36 @@ Não é urgente porque a opção selecionada trunca com reticências e o menu ab
 **Um item ficou provado por estrutura, e o motivo importa mais que o item.** "Saldo estourando no meio da fila" é impraticável ao vivo com 7.600 ⚡ — seriam mais de cem imagens pagas para chegar ao zero. **A saída óbvia seria ajustar a carteira à mão, e ela foi recusada:** `wallets.balance_cents` é projeção mantida por trigger sobre um ledger append-only, e mexer no número quebraria exatamente a reconciliação que a tela de Conta acabou de estabelecer (as 36 linhas somando o saldo). *Trocar uma prova por um dado inventado no lugar onde o produto guarda dinheiro é um mau negócio, mesmo quando o dado é temporário.*
 
 O que sustenta o item no lugar da prova ao vivo: a conferência de saldo é o **passo 5 de `runCanvasGeneration`**, roda em **toda** requisição e não foi tocada por este ciclo — e o caminho de "slot recusado sem lançamento, fila segue" foi exercitado **seis vezes** no teste grátis, por outro motivo de recusa. O que não foi exercitado é o código de recusa; é a **causa** dela.
+
+---
+
+### 13/08/2026 — Ciclo Fila de Gerações encerrado: o botão parou de travar
+
+| fase | o que entrou | como foi provado |
+|---|---|---|
+| **1** | moldura única + grade de 16, a caixinha como visual da fila, inversão do cartão | 6 evidências minhas, zero Spark |
+| **2** | harmonização — bloco 42rem, coluna de resultados 291px, divisor vertical | 2 evidências + medições por JS |
+| **3** | a fila: store efêmero, retrato congelado, escalonador, teto e profundidade | 3 evidências minhas (59 chamadas, 0 cobranças) + roteiro pago do Jorge |
+| **4** | Realtime: o banco avisa a tela, e o reload no meio se recupera | canal `SUBSCRIBED` por mim; entrega provada pelo Jorge |
+
+**Quatro fases, quatro commits, nenhuma migration.** A previsão da investigação se manteve do primeiro ao último dia.
+
+#### As cinco regras que o ciclo deixa
+
+1. **Fila é intenção; ledger é fato.** Já é emenda da invariante 5. O débito acontece quando a imagem entra em execução, e o saldo é conferido de novo na vez de cada trabalho — as duas coisas já eram verdade do lado do servidor, e o trabalho foi **não atrapalhá-las**, não inventá-las.
+2. **O canvas é o desenho do fluxo, não o arquivo das tentativas.** Por isso a geração deixou de nascer como cartão. E o efeito colateral vale a regra inteira: **gerar deixou de alterar o documento.**
+3. **Estado transitório não mora no documento nem no componente.** No documento vira arquivo de ontem (autosave); no componente morre na troca de aba, com trabalho em voo ainda cobrando — cobrado e invisível é o pior estado possível.
+4. **Quando a animação é a informação, removê-la remove a informação.** A regra global de `prefers-reduced-motion` apagava a barra de "gerando" para fora da caixa. Sem movimento, mas presente.
+5. **O que falha em silêncio ganha uma linha de log.** Vale para o canal Realtime e para qualquer peça cujo mau funcionamento seja indistinguível de não existir.
+
+#### Três coisas ditas em vez de contadas
+
+- **"Saldo estourando no meio da fila"** ficou provado por estrutura, e a recusa de ajustar a carteira à mão está registrada acima, com o motivo.
+- **O caso "cabe, mas não este clique inteiro"** — a outra frase do tudo-ou-nada — nunca apareceu ao vivo: os slots terminam em grupos de quatro e não consegui segurar a fila em 13–15 vivas de propósito. É a mesma função do "fila cheia", com outro número.
+- **O seletor de formato trunca desde antes deste ciclo**, e a harmonização o piorou em 4px de propósito, com os números medidos. Conserto no Passe de UI/UX.
+
+#### Emenda de ritual: conferir de quem é a porta 3000
+
+Nasceu de um achado da Fase 4. Um `next dev` **sobrevivente** de uma etapa anterior continuava ouvindo a 3000; o `npm run dev` novo viu a porta ocupada, subiu na 3001 e **morreu** avisando — e o navegador, apontado para a 3000, teria validado o código antigo com toda a aparência de estar validando o novo.
+
+**Um servidor velho valida o que não vai ser commitado** — e falha do jeito mais caro possível, porque a validação *passa*. Entrou na Regra 8 do `CLAUDE.md`: antes de toda validação no navegador, conferir quem está na 3000 e matar o sobrevivente.

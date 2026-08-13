@@ -166,6 +166,20 @@ Agora o produto é **entidade do Arsenal**, ao lado das personagens.
 
 **O transporte é a única peça trocável, e é ela que o vídeo herda.** Hoje um slot é `fetch → resposta`, porque uma imagem cabe no `maxDuration` (a exceção medida da invariante 1). No dia do vídeo vira `fetch → linha queued → webhook → Realtime`, com o **provedor** como trabalhador — e nada acima disso muda: nem os estados, nem o teto, nem a grade, nem o botão. *A maquinaria da tela é agnóstica de transporte; era isso, e não uma fila-com-worker, o que valia construir agora.*
 
+## 5.4 O aviso do banco, e o reload no meio da fila *(13/08/2026)*
+
+A coluna de resultados lê o banco **na montagem e quando a fila esvazia** — os dois momentos são do próprio bloco. **Recarregar a página no meio de uma fila cai fora dos dois:** as requisições em voo morrem com a aba, mas o servidor não para; ele termina, grava e cobra. A página recarregada consulta uma vez, pega o que já terminou, e as retardatárias caem no banco segundos depois sem ninguém para escutar.
+
+O bloco não pode resolver isso sozinho: depois de um reload ele **não sabe que havia uma fila**, então não tem o que esperar nem o que perguntar. Quem sabe é o banco — e por isso a resposta certa é ele avisar.
+
+**Uma assinatura Realtime por projeto**, no canvas e não em cada bloco: seis geradores abririam seis canais para ouvir a mesma tabela com o mesmo filtro. O que chega é convertido num **contador por `node_id`**; o bloco avisado **relê** pela consulta de sempre. Um contador e não a linha, porque empurrar a linha do Realtime direto para a tela seria uma segunda maneira de montar a mesma lista, com uma segunda chance de divergir — e a releitura é o que garante links assinados frescos.
+
+A publicação existe desde a Fase 0 (`20260807140600_enable_realtime.sql`), e o comentário dela já dizia para que era: *"as duas tabelas que o canvas escuta"*. **Realtime honra RLS**, então o filtro por projeto é recorte de produto, não de segurança.
+
+**Um canal que não sobe falha em silêncio** — nada quebra, nada aparece, e a tela volta a não se atualizar sozinha, com código novo por cima. É a única peça deste ciclo cujo mau funcionamento é indistinguível de não existir, e por isso é a única que ganhou uma linha de log (dev-only) dizendo o status da assinatura.
+
+**E é esta a peça que a frente de vídeo herda inteira:** lá o webhook do provedor grava a linha e é este mesmo canal que avisa a tela. Aqui ele cobre o reload — o que o põe no ar e exercitado antes de haver vídeo para depender dele.
+
 ## 6. Compilação de canvas (o contrato)
 
 Ordem do prompt final: **estilo** (do node; herdado da personagem quando não sobrescrito) → **bloco de identidade** da versão mencionada (o compilador de sempre) → **cena do usuário** (o prompt em PT, traduzido na geração) → **ajustes de cena** (quando houver) → **diretivas das referências** (tipo + instrução, traduzidas) → **restrições** (sempre, ao final).

@@ -151,6 +151,8 @@ Versão curta. O porquê de cada uma está em [`docs/arquitetura.md`](docs/arqui
 
    **Nunca rodar `npm run build` com o `npm run dev` no ar** — os dois escrevem no mesmo `.next/`. Parar o dev, buildar, subir o dev de novo.
 
+   **E antes de toda validação no navegador, conferir que a porta 3000 está servindo o código novo** *(emenda de 13/08/2026, nascida de um achado da Fase 4 do Ciclo Fila)*. Um `next dev` sobrevivente de uma etapa anterior continua ouvindo a 3000; o `npm run dev` novo vê a porta ocupada, sobe na 3001 e **morre** avisando que já existe outro servidor — e o navegador, apontado para a 3000, valida o código antigo com toda a aparência de estar validando o novo. **Um servidor velho valida o que não vai ser commitado.** Matar o sobrevivente (`netstat -ano | grep :3000` → `taskkill //PID <pid> //T //F`) e só então validar.
+
    **O commit de fechamento e o `git push` são a mesma ação, nunca duas.** Commitar sem empurrar deixa a etapa pronta num lugar onde ninguém a vê — o deploy da Vercel sai do `origin/master`, então o que fica só no local não existe para o produto. Não há etapa "commitada mas ainda não empurrada": ou as duas rodaram, ou o fechamento não aconteceu.
 
    **E o resumo da etapa termina provando que o remoto recebeu**, colando a saída de:

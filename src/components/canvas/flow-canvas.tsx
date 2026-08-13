@@ -36,6 +36,7 @@ import {
   mentionedCharacter,
   sheetAnchorSlots,
 } from "@/lib/generation/capacity";
+import { useGenerationFeed } from "@/lib/generation/generation-feed";
 import { t } from "@/lib/i18n/pt-BR";
 
 /**
@@ -170,6 +171,10 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
   }, []);
 
   useWorkflowAutosave();
+
+  // Um canal para o projeto inteiro, aqui e não em cada bloco: seis geradores
+  // abririam seis conexões para ouvir a mesma tabela com o mesmo filtro.
+  useGenerationFeed(projectId);
 
   // One frame while the store catches up with the newly opened project.
   if (loadedProjectId !== projectId) {

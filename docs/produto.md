@@ -186,9 +186,22 @@ Até aqui, entrar no produto era cair direto num canvas infinito. Para quem já 
 
 **Nenhuma migration, nenhum conceito novo no banco:** o vestíbulo só apresenta o que a Fase 2 já produzia.
 
+### A fila de gerações ✅ concluída (13/08/2026)
+
+O bloco Gerar Imagem parou de travar no botão. Um clique **enfileira e volta**: dá para reconfigurar e disparar de novo enquanto o anterior corre, com teto de 4 imagens simultâneas e profundidade de 16 — que é o tamanho da grade de resultados.
+
+- **A caixinha virou o visual da fila.** A coluna de resultados é uma moldura única no topo e 16 caixinhas abaixo, e a mesma caixinha percorre vazia → na fila → gerando → pronta → recusada. O painel de 4 slots se aposentou: o estado por imagem não sumiu, mudou de lugar.
+- **A geração deixou de nascer como cartão no canvas.** O canvas é o desenho do fluxo, não o arquivo das tentativas; o cartão virou ato deliberado ("Usar no fluxo"), idempotente por imagem. Efeito colateral que vale mais do que parece: **gerar deixou de alterar o documento**.
+- **Fila é intenção, ledger é fato** — virou emenda da invariante 5. O débito acontece quando a imagem **entra em execução**, nunca no enfileirar, e o saldo é conferido de novo na vez de cada trabalho.
+- **O banco passou a avisar a tela** (Realtime), o que fecha o reload no meio de uma fila.
+
+**Nenhuma migration.** E o que este ciclo constrói de verdade para a frente de vídeo é a **maquinaria da tela**, que é agnóstica de transporte — não uma fila-com-worker, que o vídeo não vai usar. O porquê está em [`decisoes.md`](./decisoes.md).
+
 ### Fase 2.5 — Storyboard + Vídeos 📌 conversa dedicada
 
 Registrada a pedido do Jorge, **depois dos nodes de geração**: storyboard cena a cena e geração de vídeo, que chegam junto com a estreia do **padrão assíncrono** (fila → webhook → Realtime). A geração canônica pôde ser síncrona porque uma imagem 2K leva de 20 a 40 segundos e cabe no tempo de função; vídeo não cabe, e é ali que o assíncrono deixa de ser opcional.
+
+> **Meio caminho andado desde 13/08/2026.** A fila de gerações já pôs no ar os estados por trabalho, o escalonador com teto, a recuperação lendo do banco e o **canal Realtime** — tudo exercitado com imagem. O que falta para o vídeo é o transporte: linha `queued` e webhook do provedor no lugar de `fetch → resposta`. **O trabalhador do vídeo é o provedor**, e é só essa peça que resta.
 
 ### Fase 3 — Vídeo e voz
 
