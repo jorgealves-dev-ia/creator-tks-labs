@@ -2228,3 +2228,13 @@ A opção mais longa do seletor de **formato** — "Instagram Feed · Retrato ·
 Não é urgente porque a opção selecionada trunca com reticências e o menu aberto mostra o texto inteiro — ninguém fica sem a informação, fica sem ela *de relance*.
 
 **O conserto é dar a linha inteira ao formato**, como o modelo já tem. Isso reorganiza a grade de configuração (formato sozinho, estilo e qualidade lado a lado, quantidade sobrando) e muda a altura do bloco — **é trabalho do Passe de UI/UX**, não de uma harmonização que se propôs a mexer só em larguras.
+
+#### A fila, validada — e um item provado por estrutura *(13/08/2026)*
+
+**Grátis, por mim:** o teto contando imagens entre trabalhos (4 barras + 2 pontinhos depois de três disparos reconfigurando entre eles), a fila cheia comunicando antes do clique (16 vivas, botão cinza, frase), seis recusas sem nenhuma derrubar as outras, e **a não-contaminação de forma estrita** — gravador de corpos zerado *antes* da troca do prompt, com dois slots ainda na fila: só saiu o texto congelado. **59 chamadas à rota, 0 `record_generation`, saldo intacto.**
+
+**Pago, pelo Jorge:** retrato congelado com três configurações distintas conferidas no "Ver Prompt", débito por imagem **executada** no extrato, recusa no meio da fila sem derrubá-la, e a inversão do cartão.
+
+**Um item ficou provado por estrutura, e o motivo importa mais que o item.** "Saldo estourando no meio da fila" é impraticável ao vivo com 7.600 ⚡ — seriam mais de cem imagens pagas para chegar ao zero. **A saída óbvia seria ajustar a carteira à mão, e ela foi recusada:** `wallets.balance_cents` é projeção mantida por trigger sobre um ledger append-only, e mexer no número quebraria exatamente a reconciliação que a tela de Conta acabou de estabelecer (as 36 linhas somando o saldo). *Trocar uma prova por um dado inventado no lugar onde o produto guarda dinheiro é um mau negócio, mesmo quando o dado é temporário.*
+
+O que sustenta o item no lugar da prova ao vivo: a conferência de saldo é o **passo 5 de `runCanvasGeneration`**, roda em **toda** requisição e não foi tocada por este ciclo — e o caminho de "slot recusado sem lançamento, fila segue" foi exercitado **seis vezes** no teste grátis, por outro motivo de recusa. O que não foi exercitado é o código de recusa; é a **causa** dela.

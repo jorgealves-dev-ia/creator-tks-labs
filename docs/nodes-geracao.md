@@ -147,6 +147,25 @@ Agora o produto é **entidade do Arsenal**, ao lado das personagens.
 
 **Fora do escopo deste ciclo, registrado:** versão de produto; extração de dados do produto a partir das fotos (a pendência da N4 continua pendente); `@produto` no prompt (o fio resolve a v1, e o `handle` já nasce único no mesmo namespace das personagens para o dia em que chegar); reordenar as fotos (a ordem é a de inclusão); desarquivar um produto.
 
+## 5.3 A fila de gerações *(13/08/2026)*
+
+**O botão parou de travar.** Um clique **enfileira e volta**: dá para reconfigurar o bloco e disparar de novo enquanto o anterior corre. Quem decide a hora de cada imagem é um escalonador, e o que ele conta são **imagens, não trabalhos** — um clique de quantidade 4 ocupa o teto sozinho, e dois cliques de 2 ocupam o mesmo tanto, porque o que satura é o provedor e a atenção de quem olha, e nenhum dos dois sabe o que é um clique.
+
+**As quatro regras, e onde cada uma mora:**
+
+1. **Débito por imagem, no momento em que ela entra em execução.** O slot só vira requisição quando o escalonador o solta — e é dentro dessa requisição que `record_generation` cobra, depois de a imagem existir. **Enfileirar não chama ninguém e não reserva um centavo.**
+2. **Saldo conferido de novo na vez de cada slot.** Não é código novo: a conferência de saldo já roda no início de *toda* requisição. Quem sai da fila sem saldo volta `insufficient_balance`, **sem lançamento**, e a fila segue.
+3. **Recusa não derruba a fila.** `requestGeneration` nunca lança; cada slot recebe a própria frase, na própria caixinha.
+4. **Teto de 4 imagens simultâneas; profundidade de 16 vivas.** Dezesseis é a grade — a fila é exatamente o que a coluna consegue mostrar. O clique é **tudo ou nada**: pedir três e receber duas em silêncio seria a tela decidindo por quem clicou. O botão **comunica antes**, com o número que falta.
+
+**O teto de 4 é do cliente, e vale dizer o que ele não é.** Um navegador adulterado dispararia mais; o prejuízo seria dele, em Sparks próprios, e cada imagem continuaria cobrada pelo catálogo. **O dinheiro está travado no banco, não aqui** — este número protege o ritmo.
+
+**A fila mora fora do componente e fora do grafo.** Fora do componente porque o estúdio monta o canvas com `key={activeProjectId}`: trocar de aba remontaria o node e mataria a fila da tela enquanto os trabalhos em voo continuassem correndo e cobrando — cobrado e invisível é o pior estado possível. Fora do grafo porque `updateNodeData` marca o canvas como sujo e o autosave grava: a fila de hoje viraria parte do documento e reapareceria amanhã (a mesma razão que fez a recusa de um fio virar `notice` efêmero).
+
+**O retrato é congelado no clique** (`structuredClone` do payload inteiro). É o que permite reconfigurar enquanto a fila anda sem contaminar o que já foi pedido — e é também por isso que um slot pedido em 2K continua custando 2K depois de alguém trocar o seletor.
+
+**O transporte é a única peça trocável, e é ela que o vídeo herda.** Hoje um slot é `fetch → resposta`, porque uma imagem cabe no `maxDuration` (a exceção medida da invariante 1). No dia do vídeo vira `fetch → linha queued → webhook → Realtime`, com o **provedor** como trabalhador — e nada acima disso muda: nem os estados, nem o teto, nem a grade, nem o botão. *A maquinaria da tela é agnóstica de transporte; era isso, e não uma fila-com-worker, o que valia construir agora.*
+
 ## 6. Compilação de canvas (o contrato)
 
 Ordem do prompt final: **estilo** (do node; herdado da personagem quando não sobrescrito) → **bloco de identidade** da versão mencionada (o compilador de sempre) → **cena do usuário** (o prompt em PT, traduzido na geração) → **ajustes de cena** (quando houver) → **diretivas das referências** (tipo + instrução, traduzidas) → **restrições** (sempre, ao final).

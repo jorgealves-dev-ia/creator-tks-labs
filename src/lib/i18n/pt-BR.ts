@@ -937,7 +937,23 @@ export const t = {
       sceneAdjustmentsHint:
         "Auto segue o padrão; o que você escolher aqui sobrescreve só aquele campo.",
       generate: "Gerar Conteúdo",
-      generating: "Gerando…",
+      /**
+       * O botão não diz mais "Gerando…", e não fica mais desabilitado enquanto
+       * a fila anda: gerar deixou de ser uma espera. Quem mostra o progresso são
+       * as caixinhas, que sabem mostrar quatro de uma vez.
+       */
+      /** A fila cheia, dita **antes** do clique — teto descoberto depois não é teto. */
+      queueFull:
+        "A fila está cheia: 16 imagens esperando ou gerando. Assim que uma terminar, dá para enfileirar outra.",
+      /** Cabe alguma coisa, mas não este clique inteiro — a fila é tudo ou nada. */
+      queueNoRoomPrefix: "Ainda cabe",
+      queueNoRoomSingular: "imagem na fila, e este clique pede",
+      queueNoRoomPlural: "imagens na fila, e este clique pede",
+      queueNoRoomSuffix: "Diminua a quantidade ou espere uma terminar.",
+      /** O que a fila já compromete, quando o saldo pode não alcançar. */
+      queueCommittedPrefix: "A fila já compromete",
+      queueCommittedSuffix:
+        "— as últimas podem ser recusadas por saldo, sem cobrança e sem derrubar as outras.",
       // Sem citar resolução desde que existem três: dizer "2K" era exato quando
       // 2K era a única, e viraria errado nas outras duas.
       generatingHint: "Uma imagem leva de 20 a 40 segundos — em 4K, um pouco mais.",
@@ -1018,6 +1034,14 @@ export const t = {
       promoteHint: "Ver esta imagem na moldura",
       /** O que a caixinha com a barra está dizendo, para quem passa o mouse. */
       runningHint: "Gerando esta imagem…",
+      /**
+       * A caixinha reservada.
+       *
+       * "Ainda não começou" é a metade que interessa a quem olha; a outra metade
+       * — que por isso ainda não custou nada — é a regra da casa dita em cinco
+       * palavras, no único lugar onde ela é visível.
+       */
+      queuedHint: "Na fila — ainda não começou, e ainda não custou nada.",
       /** O estado promovido é de leitura: o que o projeto guarda não muda. */
       promoted: "vendo uma imagem anterior",
       back: "Voltar ao último resultado",

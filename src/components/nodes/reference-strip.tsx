@@ -116,7 +116,6 @@ type ReferenceStripProps = {
   reserved: number;
   /** That sheet, when there is one — drawn as image 1 and nothing else. */
   anchor: ReferenceAnchor | null;
-  disabled: boolean;
   /**
    * Whether the attached images are heard at all.
    *
@@ -137,7 +136,6 @@ export function ReferenceStrip({
   limit,
   reserved,
   anchor,
-  disabled,
   enabled,
   onEnabledChange,
   onChange,
@@ -254,7 +252,6 @@ export function ReferenceStrip({
           <span className="relative flex min-w-0 items-center gap-1.5 overflow-hidden rounded">
             <InputsSwitch
               on={enabled}
-              disabled={disabled}
               onToggle={() => onEnabledChange(!enabled)}
             />
 
@@ -326,7 +323,6 @@ export function ReferenceStrip({
             <div key={`${entry.assetId}-${slot.indexes[0]}`} className="group/ref relative">
               <button
                 type="button"
-                disabled={disabled}
                 onClick={() => setOpenSlot(selected ? null : slotIndex)}
                 /*
                   Which card this came from, asked rather than assumed.
@@ -382,7 +378,6 @@ export function ReferenceStrip({
               */}
               <button
                 type="button"
-                disabled={disabled}
                 onClick={() => remove(slot.indexes[0])}
                 title={slot.indexes.length > 1 ? copy.removeGroup : copy.remove}
                 aria-label={`${slot.indexes.length > 1 ? copy.removeGroup : copy.remove} — ${positionsLabel(
@@ -403,7 +398,7 @@ export function ReferenceStrip({
 
         <button
           type="button"
-          disabled={disabled || full}
+          disabled={full}
           onClick={onAdd}
           title={full ? `${copy.fullPrefix} ${limit} ${copy.fullSuffix}` : copy.add}
           aria-label={copy.add}
@@ -441,7 +436,6 @@ export function ReferenceStrip({
                 <button
                   key={kind.key}
                   type="button"
-                  disabled={disabled}
                   onClick={() =>
                     patch(open.indexes, {
                       kind: openEntry.kind === kind.key ? null : kind.key,
@@ -462,7 +456,6 @@ export function ReferenceStrip({
           <input
             type="text"
             value={openEntry.instrucao}
-            disabled={disabled}
             maxLength={400}
             placeholder={copy.instructionPlaceholder}
             onChange={(event) => patch(open.indexes, { instrucao: event.target.value })}
@@ -478,7 +471,6 @@ export function ReferenceStrip({
             </span>
             <button
               type="button"
-              disabled={disabled}
               onClick={() => remove(open.indexes[0])}
               className="nodrag shrink-0 text-[10px] text-ink-faint transition-colors
                          hover:text-negative disabled:opacity-50"
@@ -514,11 +506,9 @@ export function ReferenceStrip({
  */
 function InputsSwitch({
   on,
-  disabled,
   onToggle,
 }: {
   on: boolean;
-  disabled: boolean;
   onToggle: () => void;
 }) {
   return (
@@ -526,7 +516,6 @@ function InputsSwitch({
       type="button"
       role="switch"
       aria-checked={on}
-      disabled={disabled}
       title={copy.switchHint}
       aria-label={copy.switchLabel}
       onClick={onToggle}

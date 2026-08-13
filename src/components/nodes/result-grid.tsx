@@ -11,12 +11,20 @@ import { t } from "@/lib/i18n/pt-BR";
  * pronta mostra, um instante antes, o trabalho que a estava gerando — e, quando
  * dá errado, mostra a recusa em vez de sumir e deixar a pessoa contando imagens.
  *
- * Quatro estados, e nenhum deles muda a altura do bloco:
+ * Cinco estados, e nenhum deles muda a altura do bloco:
  *
  *   vazia      um lugar que existe e ainda não foi ocupado
+ *   na fila    pedida, ainda não começou — e por isso ainda não custa nada
  *   gerando    barra indeterminada — ver o comentário da animação abaixo
  *   pronta     a miniatura, que se clica para promover à moldura
  *   recusada   discreta, com o motivo no hover
+ *
+ * **"Na fila" precisa ser diferente de "vazia"**, e o briefing desenhava as duas
+ * iguais. Se um trabalho esperando parecesse um lugar livre, a grade estaria
+ * escondendo justamente a fila que ela existe para mostrar — e três cliques
+ * enfileirados não teriam nenhuma marca na tela até o primeiro começar. A
+ * diferença é quieta de propósito: borda inteira em vez de tracejada, e um ponto
+ * no meio. É "reservado", não "acontecendo".
  *
  * **A grade é sempre de dezesseis, cheia ou vazia.** É a mesma decisão que mantém
  * a moldura quadrada de tamanho fixo: um bloco que crescesse a cada imagem que
@@ -50,6 +58,7 @@ export const RESULT_GRID_SIZE = 16;
  * imagem, o que passou é o que aconteceu com o pedido.
  */
 export type ResultBoxState =
+  | { status: "queued" }
   | { status: "running" }
   | { status: "failed"; message: string }
   | {
@@ -142,6 +151,18 @@ function ResultBox({
   promoted: boolean;
   onPromote: (assetId: string | null) => void;
 }) {
+  if (item.status === "queued") {
+    return (
+      <div
+        className={`${BOX_CLASS} flex items-center justify-center border-line bg-surface/50`}
+        title={copy.queuedHint}
+      >
+        <span className="size-1.5 rounded-full bg-ink-faint" />
+        <span className="sr-only">{copy.queuedHint}</span>
+      </div>
+    );
+  }
+
   if (item.status === "running") {
     return (
       <div

@@ -2,7 +2,7 @@
 
 import { Handle, Position, useReactFlow, type Node, type NodeProps } from "@xyflow/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { NodeHeader } from "@/components/nodes/node-header";
 import { PromptField } from "@/components/nodes/prompt-field";
@@ -25,10 +25,7 @@ import {
 import { useReferencePicker } from "@/lib/canvas/reference-picker-store";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { useEntitiesStore } from "@/lib/entities/store";
-import {
-  requestGeneration,
-  type CanvasGenerationResult,
-} from "@/lib/generation/canvas-contract";
+import type { CanvasGenerationResult } from "@/lib/generation/canvas-contract";
 import {
   generatorCapacity,
   mentionedCharacter,
@@ -47,6 +44,12 @@ import {
   IMAGE_SIZES,
   findPreset,
 } from "@/lib/generation/presets";
+import {
+  freeSlots,
+  liveCount,
+  useQueue,
+  type QueueSlot,
+} from "@/lib/generation/queue";
 import { t } from "@/lib/i18n/pt-BR";
 import { useBalance } from "@/lib/sparks/balance-store";
 
@@ -138,26 +141,26 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   // it lives outside the saved graph, and the next edit clears it.
   const refusedWire = useCanvasStore((state) => (state.notice?.nodeId === id ? state.notice : null));
 
-  const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   // Seeded by the page, not by this block: the price under the button has to be
   // able to say the balance before anything has been generated.
   const balance = useBalance((state) => state.sparks);
   /**
-   * A leva que está rodando, ou a que acabou de rodar — uma entrada por imagem
-   * pedida, cada uma com o seu estado.
+   * A fila deste bloco — o que está esperando, o que está gerando e o que
+   * acabou de sair.
    *
-   * Transitória por construção, e nula até o primeiro clique da sessão: o que
-   * sobrevive a um recarregamento são as imagens, que o banco guarda; o que uma
-   * requisição fez é notícia, e notícia não se grava no documento. Um slot
-   * recusado não tem o que fazer num arquivo que se reabre amanhã.
+   * Vem de um store de módulo, não de `useState`, e a razão é dura: o estúdio
+   * monta o canvas com `key={activeProjectId}`, então **trocar de aba remonta
+   * este componente** e mataria a fila da tela enquanto os trabalhos em voo
+   * continuassem correndo e cobrando no servidor. Ver `lib/generation/queue.ts`.
    *
    * Estas entradas ocupam o **topo** da grade, porque são as mais novas — é
-   * assim que a caixinha vazia vira barra e a barra vira miniatura sem nada
+   * assim que a caixinha reservada vira barra e a barra vira miniatura sem nada
    * saltar de lugar.
    */
-  const [liveSlots, setLiveSlots] = useState<ResultBoxState[] | null>(null);
+  const slots = useQueue((state) => state.byNode[id]);
+  const enqueue = useQueue((state) => state.enqueue);
   /**
    * O que este bloco já produziu, do banco — §4a.
    *
@@ -191,7 +194,6 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
    * faz cada imagem ocupar a moldura no momento em que existe, que é o que a
    * pessoa está esperando para ver.
    */
-  const [arrivedAssetId, setArrivedAssetId] = useState<string | null>(null);
   /** "Usar no fluxo" está buscando a legenda do cartão. */
   const [attaching, setAttaching] = useState(false);
 
@@ -246,6 +248,17 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
 
   const references = data.references ?? [];
   const referencesEnabled = data.referencesEnabled === true;
+
+  /**
+   * Quantas imagens deste bloco estão vivas, e quantas ainda cabem.
+   *
+   * `free` é o número que o botão comunica **antes** do clique. Um teto que só
+   * aparece depois não é teto, é surpresa — a mesma regra que já vale para o
+   * produto que não cabe na faixa de referências.
+   */
+  const live = liveCount(slots);
+  const free = freeSlots(slots);
+  const queueBlocked = quantity > free;
 
   /**
    * A Pose input is connected and heard, so the angle selector is standing down.
@@ -303,6 +316,35 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   }, [projectId, id, historyKey]);
 
   /**
+   * A fila esvaziou: relê o banco e atualiza o saldo do cabeçalho — **uma vez**.
+   *
+   * Na drenagem e não a cada imagem, e as duas metades têm o mesmo motivo. O
+   * `router.refresh()` re-renderiza a página inteira do servidor, e dezesseis
+   * deles mostrariam dezesseis vezes o mesmo número final. A releitura do
+   * histórico é a mesma economia: as imagens da leva já estão na grade, vindas
+   * das próprias respostas; a consulta existe para reconciliar, e reconciliar
+   * cedo demais é reconciliar de novo depois.
+   *
+   * `live` é a dependência porque a transição que importa é ele chegar a zero.
+   * O guarda de `live > 0` no fecho evita o disparo da montagem, quando não
+   * houve fila nenhuma para drenar.
+   */
+  const draining = useRef(false);
+
+  useEffect(() => {
+    if (live > 0) {
+      draining.current = true;
+      return;
+    }
+
+    if (!draining.current) return;
+
+    draining.current = false;
+    setHistoryKey((current) => current + 1);
+    router.refresh();
+  }, [live, router]);
+
+  /**
    * "+" — a new input card, wired in, with its picker already open.
    *
    * It used to reach into the gallery and drop the chosen image straight into
@@ -344,19 +386,24 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   }
 
   /**
-   * The click.
+   * O clique — que agora **enfileira e volta**.
    *
-   * `quantity` images means `quantity` independent requests, fired together —
-   * technically identical to pressing the button that many times, which is
-   * exactly what it is meant to replace. Each one has its own row in
-   * `generations`, its own debit in the ledger and its own way of failing, so
-   * each one lands in its own slot as it arrives rather than everything
-   * appearing at the end.
+   * `quantity` imagens são `quantity` requisições independentes, cada uma com a
+   * sua linha em `generations`, o seu débito e o seu jeito de falhar. O que
+   * mudou em 13/08/2026 é que elas deixaram de sair todas juntas e de segurar o
+   * botão até a última voltar: quem decide quando cada uma sai é o escalonador,
+   * que respeita o teto de quatro imagens simultâneas.
    *
-   * Nothing here waits for the batch before showing anything: the first image
-   * back is on screen while the fourth is still drawing.
+   * **Enfileirar não custa nada.** A requisição — e com ela a conferência de
+   * saldo e o débito — só acontece quando o slot entra em execução. Fila é
+   * intenção; ledger é fato.
+   *
+   * Nada aqui espera: a função devolve, o botão continua clicável, e a pessoa
+   * pode reconfigurar o bloco e pedir de novo. O que já foi pedido viaja com o
+   * retrato congelado do pedido, então reconfigurar nunca contamina o que está
+   * na fila.
    */
-  async function handleGenerate() {
+  function handleEnqueue() {
     setMessage(null);
     setNotice(null);
 
@@ -367,11 +414,8 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
       return;
     }
 
-    setBusy(true);
     // Uma leva nova é o resultado da vez: a olhada no passado acaba aqui.
     setPromotedAssetId(null);
-    setArrivedAssetId(null);
-    setLiveSlots(Array.from({ length: quantity }, () => ({ status: "running" })));
 
     const request = {
       projectId,
@@ -388,101 +432,11 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
       referencesEnabled,
     };
 
-    const results = await Promise.all(
-      Array.from({ length: quantity }, (_unused, slot) =>
-        requestGeneration(request).then((result) => {
-          applyResult(slot, result);
-          return result;
-        }),
-      ),
-    );
-
-    setBusy(false);
-
-    const succeeded = results.filter(
-      (result): result is Extract<CanvasGenerationResult, { ok: true }> => result.ok,
-    );
-
-    // The whole batch failed and every slot already says why in its own words.
-    // A sentence under the button repeating the first of them would be the same
-    // complaint twice — except when there was only one, where the slot is small
-    // and the sentence is the only room to explain properly.
-    if (succeeded.length === 0 && quantity === 1) {
-      const failure = results[0];
-
-      if (failure && !failure.ok) setMessage(failureMessage(failure));
+    // Tudo ou nada: a fila recusa o clique inteiro quando ele não cabe, e o
+    // botão já disse isso antes — este `false` é o cinto, não o aviso.
+    if (!enqueue({ nodeId: id, request, quantity })) {
+      setMessage(queueRoomMessage(free, quantity));
     }
-
-    if (succeeded.length > 0) {
-      // O banco é quem guarda o que este bloco produziu, então a leva nova entra
-      // relendo — não gravando no grafo. É o que faz gerar deixar de sujar o
-      // documento: a imagem existe no acervo, e o canvas só muda quando alguém
-      // pede um cartão.
-      setHistoryKey((current) => current + 1);
-
-      // Both of these are honesty, not decoration: the proportion that was really
-      // drawn, and an identity that had to travel as text alone. Read off the
-      // first image back — they all asked the same question, so they all have
-      // the same answer.
-      const first = succeeded[0];
-
-      if (first.approximated && preset) {
-        setNotice(
-          `${copy.node.approximatedPrefix} ${preset.ratio} ${copy.node.approximatedMiddle} ${first.aspectRatio}.`,
-        );
-      } else if (first.character && !first.character.hasSheetImage) {
-        setNotice(
-          `${copy.node.noSheetImagePrefix} v${first.character.versionNumber} de @${first.character.handle} ${copy.node.noSheetImageSuffix}`,
-        );
-      }
-    }
-
-    // Once, at the end, not once per image: the balance in the header belongs to
-    // the server-rendered page, and four refreshes would re-render it four times
-    // to show the same final number.
-    router.refresh();
-  }
-
-  /**
-   * Uma resposta, na caixinha dela — desenhada no instante em que chega.
-   *
-   * **E não cria mais cartão nenhum** *(13/08/2026 — a inversão do cartão)*. Era
-   * aqui que toda geração bem-sucedida plantava um Resultado no canvas, sem que
-   * ninguém tivesse pedido: quatro imagens plantavam quatro caixas, e quem
-   * gerasse a manhã inteira encontrava o desenho do fluxo enterrado sob as
-   * tentativas. A imagem não se perde por não virar cartão — ela está no acervo,
-   * na grade logo abaixo e na Galeria. O cartão passou a ser o que ele sempre
-   * significou: *esta* imagem alimenta o próximo bloco.
-   */
-  function applyResult(slot: number, result: CanvasGenerationResult) {
-    setLiveSlots((current) => {
-      if (!current) return current;
-
-      const next = [...current];
-
-      next[slot] = result.ok
-        ? {
-            status: "ready",
-            assetId: result.assetId,
-            generationId: result.generationId,
-            url: result.url,
-            label: null,
-          }
-        : { status: "failed", message: failureMessage(result) };
-
-      return next;
-    });
-
-    if (!result.ok) return;
-
-    // A imagem que acabou de chegar toma a moldura. Cada uma na sua vez, na
-    // ordem em que o provedor devolve — que é a ordem em que elas existem.
-    setArrivedAssetId(result.assetId);
-
-    // What this image charged, taken off as it lands. Subtracting the charges
-    // rather than trusting each answer's `balanceSparks` is what makes four at
-    // once add up — see the balance store for the arithmetic.
-    useBalance.getState().spend(result.sparksCharged);
   }
 
   /**
@@ -558,12 +512,14 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
    * nos dois lugares: viva com o link que a resposta trouxe, e no banco com o
    * link que a consulta assinou. A viva ganha, e a troca é invisível.
    */
+  const liveBoxes = (slots ?? []).map(boxOf);
+
   const liveAssetIds = new Set(
-    (liveSlots ?? []).flatMap((slot) => (slot.status === "ready" ? [slot.assetId] : [])),
+    liveBoxes.flatMap((box) => (box.status === "ready" ? [box.assetId] : [])),
   );
 
   const boxes: ResultBoxState[] = [
-    ...(liveSlots ?? []),
+    ...liveBoxes,
     ...recent
       .filter((item) => !liveAssetIds.has(item.assetId))
       .map((item) => ({
@@ -579,13 +535,69 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
    * O que a moldura mostra, em três degraus.
    *
    * A promoção manual ganha de tudo — é alguém dizendo "quero olhar esta". Em
-   * seguida a última que chegou, que é a razão de a moldura existir logo depois
-   * de um clique em Gerar. E por fim a primeira da grade, que é a mais recente
-   * que este bloco tem.
+   * seguida **a última que chegou**, que é a razão de a moldura existir logo
+   * depois de um clique em Gerar; numa fila que anda por minutos, cada imagem
+   * ocupa a moldura no momento em que passa a existir. E por fim a primeira da
+   * grade, que é a mais recente que este bloco tem.
    */
+  const arrived = [...(slots ?? [])]
+    .filter((slot) => slot.status === "ready" && slot.settledOrder !== null)
+    .sort((a, b) => (b.settledOrder ?? 0) - (a.settledOrder ?? 0))[0];
+
+  const arrivedAssetId =
+    arrived?.result?.ok === true ? arrived.result.assetId : null;
+
   const promotedImage = findImage(boxes, promotedAssetId);
   const frameImage =
     promotedImage ?? findImage(boxes, arrivedAssetId) ?? findImage(boxes, null);
+
+  /**
+   * A recusa mais recente, dita por extenso sob o botão.
+   *
+   * A caixinha guarda o motivo no hover, que serve para conferir depois; a frase
+   * serve para entender agora, e cabe onde a caixinha não cabe. Antes da fila
+   * ela só aparecia quando a leva inteira falhava **e** a quantidade era 1 — com
+   * quantidade 4, quatro recusas não produziam frase nenhuma. Derivada e não
+   * guardada em estado: some sozinha no próximo clique, que é quando ela deixa
+   * de ser sobre alguma coisa.
+   */
+  const lastFailure = [...(slots ?? [])]
+    .filter((slot) => slot.status === "failed")
+    .sort((a, b) => (b.settledOrder ?? 0) - (a.settledOrder ?? 0))[0];
+
+  const failureNote =
+    lastFailure?.result && !lastFailure.result.ok ? failureMessage(lastFailure.result) : null;
+
+  /**
+   * As duas honestidades da imagem que chegou: a proporção que saiu de verdade e
+   * a identidade que viajou só como texto. Lidas do slot que ocupa a moldura,
+   * porque é dele que a pessoa está olhando o resultado.
+   */
+  const arrivedResult = arrived?.result?.ok === true ? arrived.result : null;
+
+  const arrivedNote =
+    arrivedResult?.approximated && preset
+      ? `${copy.node.approximatedPrefix} ${preset.ratio} ${copy.node.approximatedMiddle} ${arrivedResult.aspectRatio}.`
+      : arrivedResult?.character && !arrivedResult.character.hasSheetImage
+        ? `${copy.node.noSheetImagePrefix} v${arrivedResult.character.versionNumber} de @${arrivedResult.character.handle} ${copy.node.noSheetImageSuffix}`
+        : null;
+
+  /**
+   * O que a fila já compromete, quando o saldo pode não alcançar.
+   *
+   * Cada slot vivo é cobrado pelo preço do **retrato dele**, não pela
+   * configuração de agora — por isso o preço sai da requisição congelada de cada
+   * um. "Podem ser recusadas" e não "serão": quem decide é o saldo no instante
+   * em que cada slot entra em execução, e até lá pode ter entrado crédito.
+   */
+  const committedSparks = (slots ?? [])
+    .filter((slot) => slot.status === "queued" || slot.status === "running")
+    .reduce((total, slot) => total + (slotPrice(providers, slot.request) ?? 0), 0);
+
+  const shortOnBalance =
+    balance !== null &&
+    committedSparks > 0 &&
+    committedSparks + quantity * (sizePrice?.sparks ?? 0) > balance;
 
   return (
     <div
@@ -652,7 +664,6 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
                 id={`model-${id}`}
                 providers={providers}
                 value={modelId}
-                disabled={busy}
                 // Priced at the chosen resolution, so this field and the line
                 // under the button can never show two different numbers.
                 imageSize={imageSize}
@@ -670,7 +681,6 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
               <select
                 id={`format-${id}`}
                 value={presetId}
-                disabled={busy}
                 onChange={(event) => updateNodeData(id, { presetId: event.target.value })}
                 className={SELECT_CLASS}
               >
@@ -705,7 +715,6 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
               <select
                 id={`style-${id}`}
                 value={estiloKey ?? ""}
-                disabled={busy}
                 onChange={(event) =>
                   updateNodeData(id, { estiloKey: event.target.value === "" ? null : event.target.value })
                 }
@@ -732,7 +741,6 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
               <select
                 id={`quality-${id}`}
                 value={imageSize}
-                disabled={busy}
                 onChange={(event) => updateNodeData(id, { imageSize: event.target.value })}
                 className={SELECT_CLASS}
               >
@@ -768,7 +776,7 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
                 <StepperButton
                   label={copy.node.quantityFewer}
                   glyph="−"
-                  disabled={busy || quantity <= MIN_QUANTITY}
+                  disabled={quantity <= MIN_QUANTITY}
                   onClick={() => updateNodeData(id, { quantity: quantity - 1 })}
                 />
 
@@ -782,7 +790,7 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
                 <StepperButton
                   label={copy.node.quantityMore}
                   glyph="+"
-                  disabled={busy || quantity >= MAX_QUANTITY}
+                  disabled={quantity >= MAX_QUANTITY}
                   onClick={() => updateNodeData(id, { quantity: quantity + 1 })}
                 />
               </div>
@@ -839,7 +847,7 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
                     // Two controls over one axis, and the image outranks the
                     // word. The selector says so instead of being quietly
                     // ignored — see buildCanvasPrompt for the rule.
-                    disabled={busy || anglePaused}
+                    disabled={anglePaused}
                     title={anglePaused ? copy.node.anglePausedHint : undefined}
                     onChange={(event) =>
                       updateNodeData(id, {
@@ -867,7 +875,6 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
                   <select
                     id={`lighting-${id}`}
                     value={iluminacaoKey ?? ""}
-                    disabled={busy}
                     onChange={(event) =>
                       updateNodeData(id, {
                         iluminacaoKey: event.target.value === "" ? null : event.target.value,
@@ -894,7 +901,6 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
                   <select
                     id={`expression-${id}`}
                     value={expressaoKey ?? ""}
-                    disabled={busy}
                     onChange={(event) =>
                       updateNodeData(id, {
                         expressaoKey: event.target.value === "" ? null : event.target.value,
@@ -927,7 +933,6 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
             // explains itself. Read from the same active version the server
             // will resolve — advisory here, authoritative there.
             anchor={anchorSheet}
-            disabled={busy}
             enabled={referencesEnabled}
             onEnabledChange={(next) => updateNodeData(id, { referencesEnabled: next })}
             onAdd={openPicker}
@@ -957,7 +962,6 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
           <PromptField
             id={`prompt-${id}`}
             value={prompt}
-            disabled={busy}
             onChange={(value) => updateNodeData(id, { prompt: value })}
           />
 
@@ -969,17 +973,30 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
                 : copy.node.promptHint}
           </p>
 
-          {/* ── O botão, e logo abaixo o que ele custa ───────────────────── */}
+          {/* ── O botão, e logo abaixo o que ele custa ─────────────────────
+
+              **Ele não trava mais enquanto a fila anda** *(13/08/2026)*. Não
+              fica desabilitado, não vira "Gerando…" e não espera nada: quem
+              mostra o progresso são as caixinhas, que sabem mostrar quatro de
+              uma vez. Ele só recusa quando o clique **não cabe** na fila — e
+              nesse caso diz o número, antes do clique, porque um teto que só
+              aparece depois não é teto. */}
           <button
             type="button"
-            disabled={busy || nothingToDo || !modelId || !projectId || !sizeOffered}
-            title={nothingToDo ? copy.node.emptyPromptAlone : undefined}
-            onClick={() => void handleGenerate()}
+            disabled={queueBlocked || nothingToDo || !modelId || !projectId || !sizeOffered}
+            title={
+              queueBlocked
+                ? queueRoomMessage(free, quantity)
+                : nothingToDo
+                  ? copy.node.emptyPromptAlone
+                  : undefined
+            }
+            onClick={handleEnqueue}
             className="nodrag mt-3 h-9 w-full rounded-lg bg-accent text-xs font-medium text-canvas
                        transition-colors hover:bg-accent-hover disabled:cursor-not-allowed
                        disabled:bg-surface-hover disabled:text-ink-faint"
           >
-            {busy ? copy.node.generating : copy.node.generate}
+            {copy.node.generate}
           </button>
 
           {/* Under the button, in the future tense, with the balance beside it.
@@ -1012,18 +1029,41 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
             )
           ) : null}
 
-          {busy ? (
+          {/* O que a fila já compromete, quando o saldo pode não alcançar.
+              "Podem" e não "vão": quem decide é o saldo no instante em que cada
+              slot entra em execução, e até lá pode ter entrado crédito. */}
+          {shortOnBalance ? (
+            <p className="mt-1.5 text-center text-[10px] leading-relaxed text-warning">
+              {copy.node.queueCommittedPrefix} {committedSparks.toLocaleString("pt-BR")} ⚡{" "}
+              {copy.node.queueCommittedSuffix}
+            </p>
+          ) : null}
+
+          {/* A fila cheia, dita onde a decisão é tomada. */}
+          {queueBlocked ? (
+            <p className="mt-2 text-[10px] leading-relaxed text-warning">
+              {queueRoomMessage(free, quantity)}
+            </p>
+          ) : null}
+
+          {live > 0 ? (
             <p className="mt-2 text-[10px] leading-relaxed text-ink-faint">
               {copy.node.generatingHint}
             </p>
           ) : null}
 
-          {notice ? (
-            <p className="mt-2 text-[10px] leading-relaxed text-ink-muted">{notice}</p>
+          {notice ?? arrivedNote ? (
+            <p className="mt-2 text-[10px] leading-relaxed text-ink-muted">
+              {notice ?? arrivedNote}
+            </p>
           ) : null}
 
-          {message ? (
-            <p className="mt-2 text-[10px] leading-relaxed text-warning">{message}</p>
+          {/* A recusa mais recente, por extenso. A caixinha guarda o motivo no
+              hover, para conferir depois; esta frase é para entender agora. */}
+          {message ?? failureNote ? (
+            <p className="mt-2 text-[10px] leading-relaxed text-warning">
+              {message ?? failureNote}
+            </p>
           ) : null}
         </div>
 
@@ -1118,6 +1158,54 @@ const RESULT_CARD_HEIGHT = 320;
  * Caixinhas gerando ou recusadas são puladas: elas não são uma imagem, e a
  * moldura só sabe mostrar imagem.
  */
+/** Um slot da fila, do jeito que a grade desenha. */
+function boxOf(slot: QueueSlot): ResultBoxState {
+  if (slot.status === "queued") return { status: "queued" };
+  if (slot.status === "running") return { status: "running" };
+
+  if (slot.result?.ok) {
+    return {
+      status: "ready",
+      assetId: slot.result.assetId,
+      generationId: slot.result.generationId,
+      url: slot.result.url,
+      label: null,
+    };
+  }
+
+  return {
+    status: "failed",
+    message: slot.result ? failureMessage(slot.result) : copy.errors.failed,
+  };
+}
+
+/**
+ * O preço de um slot, pelo retrato dele.
+ *
+ * Do catálogo, como todo preço nesta casa — e da requisição **congelada**, não
+ * da configuração de agora: um slot pedido em 2K continua custando 2K depois de
+ * alguém trocar o seletor para 1K. Null quando o catálogo ainda não carregou ou
+ * quando o modelo não vende aquele tamanho, e null soma zero: a linha existe
+ * para avisar sobre saldo, e um aviso que chuta um número é pior que nenhum.
+ */
+function slotPrice(
+  providers: ReturnType<typeof useImageCatalog>,
+  request: { modelId: string; imageSize: string },
+): number | null {
+  const model = findModel(providers, request.modelId);
+
+  return model?.sizes.find((entry) => entry.size === request.imageSize)?.sparks ?? null;
+}
+
+/** Por que este clique não coube — com os dois números que explicam. */
+function queueRoomMessage(free: number, quantity: number): string {
+  if (free <= 0) return copy.node.queueFull;
+
+  const unidade = free === 1 ? copy.node.queueNoRoomSingular : copy.node.queueNoRoomPlural;
+
+  return `${copy.node.queueNoRoomPrefix} ${free} ${unidade} ${quantity}. ${copy.node.queueNoRoomSuffix}`;
+}
+
 function findImage(
   boxes: readonly ResultBoxState[],
   assetId: string | null,
