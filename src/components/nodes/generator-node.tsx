@@ -1,17 +1,20 @@
 "use client";
 
-import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
+import { Handle, Position, useReactFlow, type Node, type NodeProps } from "@xyflow/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { NodeHeader } from "@/components/nodes/node-header";
 import { PromptField } from "@/components/nodes/prompt-field";
-import { RecentStrip } from "@/components/nodes/recent-strip";
 import { ReferenceStrip, type ReferenceEntry } from "@/components/nodes/reference-strip";
-import { ResultPanel, type ResultSlot } from "@/components/nodes/result-panel";
+import { ResultFrame, type FrameImage } from "@/components/nodes/result-frame";
+import {
+  RESULT_GRID_SIZE,
+  ResultGrid,
+  type ResultBoxState,
+} from "@/components/nodes/result-grid";
 import { useImageCatalog } from "@/components/nodes/use-image-catalog";
 import { defaultModelId, findModel, ModelSelect } from "@/components/ui/model-select";
-import { signAssetUrls } from "@/lib/assets/actions";
 import {
   ANGULO_CAMERA,
   ESTILO_RENDERIZACAO,
@@ -31,7 +34,11 @@ import {
   mentionedCharacter,
   sheetAnchorSlots,
 } from "@/lib/generation/capacity";
-import { listNodeGenerations, type GenerationThumb } from "@/lib/generation/history";
+import {
+  listNodeGenerations,
+  loadResultCard,
+  type GenerationThumb,
+} from "@/lib/generation/history";
 import { findMentions, sceneWithoutMentions } from "@/lib/generation/mentions";
 import {
   DEFAULT_IMAGE_SIZE,
@@ -86,13 +93,27 @@ export type GeneratorNodeData = {
    * treat the exception as the rule.
    */
   referencesEnabled?: boolean;
-  /** The last batch, in slot order — one entry per image that came back. */
+  /**
+   * O que o bloco produziu, como o grafo guardava — **legado desde 13/08/2026**.
+   *
+   * Nem escrito nem lido daqui em diante. A coluna de resultados passou a ler do
+   * banco, por `project_id + node_id`, que sempre foi a autoridade: o grafo
+   * guardava só a última leva, e tudo que veio antes dependia de cartões que
+   * quem arruma o canvas apaga. Duas cópias de um mesmo fato, uma delas parcial.
+   *
+   * Continuam declarados porque grafos salvos os carregam — e `duplicateNode`
+   * continua limpando-os do clone, para uma cópia nunca herdar o resultado do
+   * original.
+   *
+   * O efeito colateral é bem-vindo e vale registrar: **gerar deixou de alterar o
+   * documento.** Uma imagem nova não marca mais o canvas como sujo, não dispara
+   * autosave e não muda o que o projeto guarda. O canvas só muda quando alguém
+   * mexe nele — inclusive por "Usar no fluxo", que é a única porta pela qual uma
+   * geração entra no grafo agora.
+   */
   lastAssetIds?: string[];
   lastGenerationIds?: string[];
-  /**
-   * What a block saved before quantity existed. Read on load and never written
-   * again: one fact, one field, and the plural above is the field.
-   */
+  /** Idem, de antes de a quantidade existir: um fato, um campo. */
   lastAssetId?: string | null;
   lastGenerationId?: string | null;
 };
@@ -108,8 +129,10 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   const providers = useImageCatalog();
   const projectId = useCanvasStore((state) => state.projectId);
   const updateNodeData = useCanvasStore((state) => state.updateNodeData);
-  const addResultNode = useCanvasStore((state) => state.addResultNode);
+  const attachResultCard = useCanvasStore((state) => state.attachResultCard);
   const removeReference = useCanvasStore((state) => state.removeReference);
+  // Para levar a tela até o cartão que "Usar no fluxo" acabou de pôr no canvas.
+  const { setCenter, getZoom } = useReactFlow();
   const characters = useEntitiesStore((state) => state.characters);
   // A wire the canvas refused, aimed at this block. Ephemeral by construction —
   // it lives outside the saved graph, and the next edit clears it.
@@ -122,33 +145,55 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   // able to say the balance before anything has been generated.
   const balance = useBalance((state) => state.sparks);
   /**
-   * The batch that is running, or the one that just ran — one entry per image
-   * asked for, each with its own state.
+   * A leva que está rodando, ou a que acabou de rodar — uma entrada por imagem
+   * pedida, cada uma com o seu estado.
    *
-   * Transient by construction, and null until the first click of this session:
-   * while it is null the panel is drawn from what the graph saved, and a failed
-   * slot has no business being written into a document that gets reopened
-   * tomorrow. What survives a reload is the images; what a request did is news.
+   * Transitória por construção, e nula até o primeiro clique da sessão: o que
+   * sobrevive a um recarregamento são as imagens, que o banco guarda; o que uma
+   * requisição fez é notícia, e notícia não se grava no documento. Um slot
+   * recusado não tem o que fazer num arquivo que se reabre amanhã.
+   *
+   * Estas entradas ocupam o **topo** da grade, porque são as mais novas — é
+   * assim que a caixinha vazia vira barra e a barra vira miniatura sem nada
+   * saltar de lugar.
    */
-  const [runSlots, setRunSlots] = useState<ResultSlot[] | null>(null);
-  /** Signed links for the saved batch, by asset id. */
-  const [urls, setUrls] = useState<Record<string, string>>({});
+  const [liveSlots, setLiveSlots] = useState<ResultBoxState[] | null>(null);
   /**
    * O que este bloco já produziu, do banco — §4a.
    *
-   * O grafo guarda só a última leva; o histórico das anteriores existia apenas
+   * O grafo guardava só a última leva; o histórico das anteriores existia apenas
    * como cartão Resultado no canvas, e quem arruma o canvas apagando cartões
-   * perdia o rastro de vista. O banco nunca perdeu, e é dele que a faixa lê.
+   * perdia o rastro de vista. O banco nunca perdeu, e desde 13/08/2026 é a
+   * **única** fonte da coluna de resultados — a moldura inclusive.
    */
   const [recent, setRecent] = useState<GenerationThumb[]>([]);
   /**
-   * A imagem que a faixa promoveu para a moldura.
+   * Muda quando há motivo para reler o banco: a montagem e o fim de uma leva.
    *
-   * Transitória por decisão (11/08/2026): promover é **ver**, não gravar. O que
-   * o projeto guarda continua sendo a última leva gerada, então olhar uma
-   * imagem antiga nunca marca o canvas como alterado.
+   * Era `savedKey` — os ids que o grafo guardava —, o que amarrava a releitura a
+   * uma escrita no documento que não existe mais. Um contador diz a mesma coisa
+   * sem precisar que a tela grave algo para poder se atualizar.
+   */
+  const [historyKey, setHistoryKey] = useState(0);
+  /**
+   * A imagem que a grade promoveu para a moldura, de propósito.
+   *
+   * Transitória por decisão (11/08/2026): promover é **ver**, não gravar. Olhar
+   * uma imagem antiga nunca marca o canvas como alterado.
    */
   const [promotedAssetId, setPromotedAssetId] = useState<string | null>(null);
+  /**
+   * A última imagem que chegou, que toma a moldura ao chegar.
+   *
+   * Numa leva de quatro disparadas juntas, a ordem de chegada é a do provedor e
+   * não a dos slots. Deixar a moldura com "a primeira da lista" a faria trocar de
+   * imagem quando a slot 0 finalmente voltasse; deixá-la com a última a chegar
+   * faz cada imagem ocupar a moldura no momento em que existe, que é o que a
+   * pessoa está esperando para ver.
+   */
+  const [arrivedAssetId, setArrivedAssetId] = useState<string | null>(null);
+  /** "Usar no fluxo" está buscando a legenda do cartão. */
+  const [attaching, setAttaching] = useState(false);
 
   const prompt = data.prompt ?? "";
   const presetId = data.presetId ?? DEFAULT_PRESET_ID;
@@ -234,39 +279,14 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
     mentioned && anchorFolha ? { assetId: anchorFolha, handle: mentioned.handle } : null;
 
   /**
-   * The images this block last produced, whatever era the graph was saved in.
-   * A block from before the stepper carries one id in the singular field; the
-   * plural is what everything writes now.
-   */
-  const savedAssetIds = data.lastAssetIds ?? (data.lastAssetId ? [data.lastAssetId] : []);
-  const savedKey = savedAssetIds.join(",");
-
-  useEffect(() => {
-    const ids = savedKey === "" ? [] : savedKey.split(",");
-
-    if (ids.length === 0) return;
-
-    let cancelled = false;
-
-    // A signed URL expires, so the node stores the ids and asks for links when it
-    // mounts — never the other way round.
-    void signAssetUrls(ids).then((signed) => {
-      if (!cancelled) setUrls((current) => ({ ...current, ...signed }));
-    });
-
-    return () => {
-      cancelled = true;
-    };
-    // Keyed by the ids themselves: depending on the array would re-sign on every
-    // render of a parent, which is a request per keystroke in the prompt.
-  }, [savedKey]);
-
-  /**
-   * A faixa de recentes, carregada na montagem e depois de cada leva.
+   * A coluna de resultados, carregada na montagem e ao fim de cada leva.
    *
-   * `savedKey` é a dependência porque ele muda exatamente quando este bloco
-   * produziu algo novo — sem um contador à parte que alguém teria de lembrar de
-   * incrementar. Abrir o projeto e olhar não gera requisição nenhuma além desta.
+   * Uma requisição só, e ela traz tudo: os ids, as legendas e os **links já
+   * assinados** das dezesseis. Havia uma segunda aqui — o bloco assinava à parte
+   * os ids que o grafo guardava, para a moldura ter o que mostrar antes desta
+   * responder. Não comprava nada: as duas são idas ao servidor e chegam juntas,
+   * e as duas mostravam a mesma imagem. Duas fontes para um fato só é o começo
+   * de as duas discordarem.
    */
   useEffect(() => {
     if (!projectId) return;
@@ -280,7 +300,7 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
     return () => {
       cancelled = true;
     };
-  }, [projectId, id, savedKey]);
+  }, [projectId, id, historyKey]);
 
   /**
    * "+" — a new input card, wired in, with its picker already open.
@@ -350,7 +370,8 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
     setBusy(true);
     // Uma leva nova é o resultado da vez: a olhada no passado acaba aqui.
     setPromotedAssetId(null);
-    setRunSlots(Array.from({ length: quantity }, () => ({ status: "pending" })));
+    setArrivedAssetId(null);
+    setLiveSlots(Array.from({ length: quantity }, () => ({ status: "running" })));
 
     const request = {
       projectId,
@@ -393,10 +414,11 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
     }
 
     if (succeeded.length > 0) {
-      updateNodeData(id, {
-        lastAssetIds: succeeded.map((result) => result.assetId),
-        lastGenerationIds: succeeded.map((result) => result.generationId),
-      });
+      // O banco é quem guarda o que este bloco produziu, então a leva nova entra
+      // relendo — não gravando no grafo. É o que faz gerar deixar de sujar o
+      // documento: a imagem existe no acervo, e o canvas só muda quando alguém
+      // pede um cartão.
+      setHistoryKey((current) => current + 1);
 
       // Both of these are honesty, not decoration: the proportion that was really
       // drawn, and an identity that had to travel as text alone. Read off the
@@ -421,15 +443,31 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
     router.refresh();
   }
 
-  /** One answer, in its own slot — drawn the moment it arrives. */
+  /**
+   * Uma resposta, na caixinha dela — desenhada no instante em que chega.
+   *
+   * **E não cria mais cartão nenhum** *(13/08/2026 — a inversão do cartão)*. Era
+   * aqui que toda geração bem-sucedida plantava um Resultado no canvas, sem que
+   * ninguém tivesse pedido: quatro imagens plantavam quatro caixas, e quem
+   * gerasse a manhã inteira encontrava o desenho do fluxo enterrado sob as
+   * tentativas. A imagem não se perde por não virar cartão — ela está no acervo,
+   * na grade logo abaixo e na Galeria. O cartão passou a ser o que ele sempre
+   * significou: *esta* imagem alimenta o próximo bloco.
+   */
   function applyResult(slot: number, result: CanvasGenerationResult) {
-    setRunSlots((current) => {
+    setLiveSlots((current) => {
       if (!current) return current;
 
       const next = [...current];
 
       next[slot] = result.ok
-        ? { status: "done", assetId: result.assetId, url: result.url }
+        ? {
+            status: "ready",
+            assetId: result.assetId,
+            generationId: result.generationId,
+            url: result.url,
+            label: null,
+          }
         : { status: "failed", message: failureMessage(result) };
 
       return next;
@@ -437,16 +475,9 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
 
     if (!result.ok) return;
 
-    addResultNode({
-      sourceNodeId: id,
-      data: {
-        assetId: result.assetId,
-        generationId: result.generationId,
-        handle: result.character?.handle ?? null,
-        versionNumber: result.character?.versionNumber ?? null,
-        aspectRatio: result.aspectRatio,
-      },
-    });
+    // A imagem que acabou de chegar toma a moldura. Cada uma na sua vez, na
+    // ordem em que o provedor devolve — que é a ordem em que elas existem.
+    setArrivedAssetId(result.assetId);
 
     // What this image charged, taken off as it lands. Subtracting the charges
     // rather than trusting each answer's `balanceSparks` is what makes four at
@@ -454,33 +485,107 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
     useBalance.getState().spend(result.sparksCharged);
   }
 
+  /**
+   * "Usar no fluxo": a imagem da moldura vira cartão conectado a este bloco.
+   *
+   * A legenda e a proporção são buscadas **agora**, no clique, e não guardadas
+   * por miniatura: dezesseis miniaturas por bloco pagariam duas consultas cada
+   * para responder uma pergunta que quase nenhuma delas recebe (decisão do
+   * Jorge, 13/08/2026).
+   *
+   * Um caminho só, inclusive para a imagem que acabou de sair e cujos dados o
+   * navegador ainda tem na mão — o cartão nasce do que está **gravado**, que é a
+   * mesma doutrina que faz o nome do produto ser resolvido no servidor.
+   */
+  async function handleUseInFlow() {
+    if (!frameImage) return;
+
+    setMessage(null);
+    setNotice(null);
+    setAttaching(true);
+
+    // Sem geração não há o que consultar: acontece com imagem de grafo antigo,
+    // e o cartão dela já nasce com o "Ver prompt" desabilitado.
+    const card = frameImage.generationId ? await loadResultCard(frameImage.generationId) : null;
+
+    setAttaching(false);
+
+    const attached = attachResultCard({
+      sourceNodeId: id,
+      data: {
+        assetId: frameImage.assetId,
+        generationId: frameImage.generationId,
+        handle: card?.handle ?? null,
+        versionNumber: card?.versionNumber ?? null,
+        aspectRatio: card?.aspectRatio ?? null,
+      },
+    });
+
+    if (!attached) return;
+
+    // Já existia: ele foi destacado, não duplicado — e a frase existe porque um
+    // clique que faz a coisa certa sem criar nada precisa dizer o que fez.
+    if (!attached.created) setNotice(copy.node.useInFlowExisting);
+
+    // A tela vai até o cartão. Sem isto, "Usar no fluxo" num canvas grande é
+    // indistinguível de um clique que não fez nada — que é exatamente o defeito
+    // que `freePosition` foi escrito para consertar, por outro caminho.
+    const node = useCanvasStore.getState().nodes.find((entry) => entry.id === attached.id);
+
+    if (node) {
+      void setCenter(
+        node.position.x + (node.measured?.width ?? RESULT_CARD_WIDTH) / 2,
+        node.position.y + (node.measured?.height ?? RESULT_CARD_HEIGHT) / 2,
+        { zoom: getZoom(), duration: 400 },
+      );
+    }
+  }
+
   const emptyScene = scene === "";
   const nothingToDo = emptyScene && !mentions.length;
 
   /**
-   * What the right-hand panel draws: the batch that is running or just ran, and
-   * otherwise whatever the graph saved.
+   * A coluna de resultados: o que está vivo, e depois o que o banco guarda.
    *
-   * The two are not merged. A run says what each of its requests is doing right
-   * now, failures included; the saved list says which images exist. Falling back
-   * to the saved list only when there is no run is what lets a failed slot stay
-   * on screen with its sentence instead of being replaced by yesterday's image.
+   * As duas listas não se fundem — se emendam, nessa ordem. A leva viva diz o
+   * que **cada requisição está fazendo agora**, recusas incluídas; o banco diz
+   * quais imagens **existem**. Pôr a viva na frente é o que faz a caixinha vazia
+   * virar barra e a barra virar miniatura sempre no mesmo lugar, e é a regra da
+   * fila dita em código: **o histórico não consome vaga de trabalho vivo** — ele
+   * entra depois e o que não couber transborda para o "Ver todas".
+   *
+   * A deduplicação é por asset porque, no fim de uma leva, a mesma imagem está
+   * nos dois lugares: viva com o link que a resposta trouxe, e no banco com o
+   * link que a consulta assinou. A viva ganha, e a troca é invisível.
    */
-  const promoted = promotedAssetId
-    ? (recent.find((item) => item.assetId === promotedAssetId) ?? null)
-    : null;
+  const liveAssetIds = new Set(
+    (liveSlots ?? []).flatMap((slot) => (slot.status === "ready" ? [slot.assetId] : [])),
+  );
 
-  const slots: ResultSlot[] = promoted
-    ? // Uma imagem promovida ocupa a moldura inteira e nada mais: é uma olhada,
-      // não um resultado. A leva salva continua onde estava, e volta com um
-      // clique — ou sozinha, no próximo Gerar.
-      [{ status: "done", assetId: promoted.assetId, url: promoted.url }]
-    : (runSlots ??
-      savedAssetIds.map((assetId) => ({
-        status: "done",
-        assetId,
-        url: urls[assetId] ?? null,
-      })));
+  const boxes: ResultBoxState[] = [
+    ...(liveSlots ?? []),
+    ...recent
+      .filter((item) => !liveAssetIds.has(item.assetId))
+      .map((item) => ({
+        status: "ready" as const,
+        assetId: item.assetId,
+        generationId: item.generationId,
+        url: item.url,
+        label: item.label,
+      })),
+  ].slice(0, RESULT_GRID_SIZE);
+
+  /**
+   * O que a moldura mostra, em três degraus.
+   *
+   * A promoção manual ganha de tudo — é alguém dizendo "quero olhar esta". Em
+   * seguida a última que chegou, que é a razão de a moldura existir logo depois
+   * de um clique em Gerar. E por fim a primeira da grade, que é a mais recente
+   * que este bloco tem.
+   */
+  const promotedImage = findImage(boxes, promotedAssetId);
+  const frameImage =
+    promotedImage ?? findImage(boxes, arrivedAssetId) ?? findImage(boxes, null);
 
   return (
     <div
@@ -911,11 +1016,18 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
             {copy.node.resultTitle}
           </p>
 
-          <ResultPanel slots={slots} />
+          <ResultFrame
+            image={frameImage}
+            attaching={attaching}
+            onUseInFlow={() => void handleUseInFlow()}
+          />
 
-          <RecentStrip
-            items={recent}
-            promotedAssetId={promotedAssetId}
+          <ResultGrid
+            items={boxes}
+            // Só conta como promoção o que a grade consegue mostrar: uma imagem
+            // que saiu das dezesseis não pode deixar a frase "vendo uma imagem
+            // anterior" acesa sobre uma moldura que já voltou ao normal.
+            promotedAssetId={promotedImage ? promotedAssetId : null}
             onPromote={setPromotedAssetId}
             onSeeAll={() => {
               if (projectId) useReferencePicker.getState().browse({ projectId });
@@ -950,6 +1062,39 @@ const SELECT_CLASS =
   "nodrag w-full rounded-lg border border-line bg-surface px-2 py-1.5 text-xs text-ink " +
   "transition-colors hover:border-line-strong focus:border-accent focus:outline-none " +
   "disabled:cursor-not-allowed disabled:opacity-50";
+
+/**
+ * O tamanho de um cartão Resultado, só para centralizar a tela nele.
+ *
+ * Um cartão recém-criado ainda não foi medido pelo React Flow — `measured` só
+ * existe depois de ele ter sido desenhado —, e a tela precisa ir até lá agora.
+ * Um palpite errado por alguns pixels desloca o centro por alguns pixels;
+ * esperar a medida deslocaria o clique por um quadro inteiro.
+ */
+const RESULT_CARD_WIDTH = 256;
+const RESULT_CARD_HEIGHT = 320;
+
+/**
+ * A imagem de uma caixinha da grade, para a moldura.
+ *
+ * Com `assetId` nulo devolve a primeira imagem da lista — que, sendo a lista
+ * ordenada do mais novo para o mais velho, é a mais recente que este bloco tem.
+ * Caixinhas gerando ou recusadas são puladas: elas não são uma imagem, e a
+ * moldura só sabe mostrar imagem.
+ */
+function findImage(
+  boxes: readonly ResultBoxState[],
+  assetId: string | null,
+): FrameImage | null {
+  for (const box of boxes) {
+    if (box.status !== "ready") continue;
+    if (assetId !== null && box.assetId !== assetId) continue;
+
+    return { assetId: box.assetId, generationId: box.generationId, url: box.url };
+  }
+
+  return null;
+}
 
 /** 1 to 4, whatever a saved graph or a stale bundle happens to carry. */
 function clampQuantity(value: number | undefined): number {

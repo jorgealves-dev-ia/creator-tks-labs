@@ -2183,3 +2183,38 @@ gatilho — excluir um projeto que tenha gerações:
 A primeira vez que qualquer um dos dois aparecer será em produção, com dado real.
 Está escrito aqui para que, quando acontecer, ninguém precise descobrir de novo
 que era esperado.
+
+---
+
+### 13/08/2026 — Ciclo Fila de Gerações: a orquestração fica no cliente, e o cartão se inverte
+
+**A decisão: fila no cliente (opção A), sem migration.** O node dispara as requisições ao Route Handler que já existe, controla os estados localmente e respeita o teto. A alternativa investigada era uma tabela de jobs no banco, com trabalhador — "o padrão completo que o vídeo usaria".
+
+**Por que A, com os custos na mão.** As duas regras mais delicadas da fila **já eram verdade do lado do servidor**, e por isso a A não escreve uma linha nova no caminho do dinheiro: `record_generation` é chamado no passo 11 de `runCanvasGeneration`, **depois** de a imagem existir, e a conferência de saldo roda no passo 5 de **toda** requisição. Se a fila só dispara o `fetch` quando o slot entra em execução, "débito por imagem no início da execução" e "saldo conferido de novo quando o trabalho sai da fila" saem de graça. A fila fica sendo o que ela é: **intenção**. O fato continua onde já estava.
+
+A B custaria, em ordem: migration e refatoração do caminho do dinheiro (`generations` é somente-leitura para o usuário, e a cobrança deixaria de ser um `INSERT` atômico para virar `UPDATE` + ledger); um trabalhador que não existe (Vercel não tem daemon — sobrariam cron de granularidade de um minuto, pg_cron + pg_net com segredo novo, ou serviço externo); trava de concorrência; coletor de jobs travados. E o retorno para a v1 seria **um item**: a fila sobreviver à aba fechada — que vale menos do que parece, porque a pessoa fechou a aba e não está olhando.
+
+**A correção do briefing, registrada como o fundador pediu.** O ciclo foi proposto como "o esqueleto assíncrono que o vídeo vai herdar". **A parte que o vídeo herda não é uma fila-com-worker.** A invariante 1 já descreve o caminho do vídeo, e nele **o trabalhador é o provedor**: rota cria `queued` → job no provedor **com webhook de retorno** → webhook atualiza e ingere → Realtime propaga. Ninguém varre tabela; o provedor telefona de volta. Construir a fila-com-worker agora seria construir um **segundo** mecanismo assíncrono, paralelo ao que o vídeo vai usar — mais frente de vídeo, não menos.
+
+O que o vídeo de fato herda deste ciclo é a **maquinaria da tela**, e ela é **agnóstica de transporte**: caixinhas com estado próprio, escalonador com teto, botão que não trava, recuperação do estado real lendo do banco. No dia do vídeo troca-se `fetch → resposta` por `fetch → linha queued → webhook → Realtime`, e a tela não muda uma linha.
+
+**As três decisões do fundador sobre a fila:**
+
+1. **Profundidade 16 = a grade**, contando trabalhos **vivos** (esperando + executando). Histórico não consome vaga: entra depois e transborda para o "Ver todas". Tudo-ou-nada por clique — uma quantidade 3 que virasse 2 em silêncio seria a mesma mentira do meio-produto.
+2. **Barra indeterminada**, com o texto de 20–40s dizendo a verdade que temos. O provedor não emite progresso, e uma barra parada em 90% é uma frase falsa desenhada.
+3. **Legenda do "Usar no fluxo" sob demanda**, no clique. Dezesseis miniaturas por bloco pagariam duas consultas cada para responder uma pergunta que quase nenhuma delas recebe.
+
+**Duas mudanças de spec, decididas pelo fundador** (aplicadas em `nodes-geracao.md`):
+
+- **A moldura de 4 slots se aposenta.** O estado por imagem não sumiu — mudou de lugar, para a grade. A moldura ficou com o que só ela faz bem: uma imagem grande o bastante para se julgar.
+- **O Resultado deixa de nascer sozinho.** O canvas é o desenho do fluxo, não o arquivo das tentativas; o cartão virou ato deliberado ("Usar no fluxo"), idempotente por asset.
+
+**E um efeito colateral que vale mais do que parece: gerar deixou de alterar o documento.** Com a coluna de resultados lendo do banco, o bloco não grava mais no grafo o que produziu — uma imagem nova não marca o canvas como sujo nem dispara autosave. O canvas só muda quando alguém mexe nele.
+
+#### 📌 Backlog · remover o campo legado `lastAssetIds` do node gerador
+
+**Hoje:** declarado em `GeneratorNodeData`, **não escrito** por ninguém, e ainda apagado por `duplicateNode` para o clone não herdar o resultado do original. O mesmo vale para `lastGenerationIds`, `lastAssetId` e `lastGenerationId`.
+
+**Por que continua lá:** grafos salvos carregam os quatro campos, e a limpeza no clone é o único código que ainda precisa saber que eles existem. Apagar a declaração hoje custaria mais do que compra — o campo não é lido para desenhar nada, então não há como ele mentir na tela.
+
+**Critério de saída:** o primeiro ciclo que **tocar o schema do node** por outro motivo. Aí a remoção é uma linha a mais num trabalho que já estava aberto, em vez de uma migração de dados só para si mesma. Enquanto isso, o comentário no tipo diz que são legado e por quê.

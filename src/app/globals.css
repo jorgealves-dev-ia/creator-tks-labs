@@ -75,6 +75,33 @@ body {
 }
 
 /*
+ * A barra de uma caixinha que está gerando.
+ *
+ * Indeterminada porque é a verdade que temos: o provedor de imagem não emite
+ * progresso nenhum. Uma barra determinada teria de inventar a porcentagem —
+ * encher até 90% e esperar ali —, e uma barra parada em 90% é uma frase falsa
+ * desenhada.
+ *
+ * Infinita, ao contrário do shimmer logo acima, e pelo mesmo raciocínio que faz
+ * aquele parar em três: uma animação tem de durar exatamente o que o fato dela
+ * dura. O shimmer anuncia algo que já aconteceu e por isso acaba; esta acompanha
+ * um trabalho em curso e só pode acabar quando ele acabar — parar antes diria
+ * "pronto" para quem ainda está esperando.
+ */
+@keyframes result-bar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+.animate-result-bar {
+  animation: result-bar 1.4s ease-in-out infinite;
+}
+
+/*
  * The rail's scrollbar: absent when the rail is closed, discreet when it opens.
  *
  * Collapsed, the rail is 56px of icons and the browser's scrollbar draws a
@@ -125,6 +152,21 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /*
+   * A regra acima apaga a barra de "gerando" em vez de acalmá-la: com duração de
+   * 0.01ms e uma iteração só, o `translateX` termina em 300% — fora da caixa —, e
+   * quem pediu menos movimento receberia uma caixinha vazia no lugar do trabalho
+   * em curso. Sem movimento, mas presente: a barra fica parada e cheia.
+   *
+   * Vale para toda regra global de acessibilidade que remove animação: se a
+   * animação **era** a informação, removê-la remove a informação.
+   */
+  .animate-result-bar {
+    width: 100%;
+    animation: none !important;
+    opacity: 0.55;
   }
 }
 

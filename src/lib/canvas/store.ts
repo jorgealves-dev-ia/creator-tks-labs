@@ -420,8 +420,27 @@ type CanvasState = {
    * a generation node knows would be lost on reload.
    */
   updateNodeData: (id: string, patch: Record<string, unknown>) => void;
-  /** Drops a finished image on the canvas, wired to the block that made it. */
-  addResultNode: (input: { sourceNodeId: string; data: Record<string, unknown> }) => void;
+  /**
+   * "Usar no fluxo": põe uma imagem no canvas como cartão, ligada ao bloco que a
+   * fez — **e nunca duas vezes a mesma**.
+   *
+   * Chamada por clique, não por geração *(13/08/2026, a inversão do cartão)*.
+   * Antes, toda geração bem-sucedida caía aqui sozinha, e o canvas juntava um
+   * cartão por tentativa: quatro cliques de quantidade 4 plantavam dezesseis
+   * caixas que ninguém pediu, sobre um canvas que existe para desenhar o fluxo e
+   * não para arquivar tentativas. O acervo nunca dependeu disso — ele mora no
+   * banco, e a coluna de resultados do bloco lê de lá.
+   *
+   * A recusa a duplicar é a mesma regra que `duplicateNode` já aplica ao cartão
+   * Resultado: dois cartões da mesma imagem seriam dois nomes para um arquivo só.
+   * Quando já existe, ele é **destacado** em vez de recriado — e quem chamou
+   * recebe o id para levar a tela até ele, porque um clique que faz a coisa certa
+   * fora da vista é indistinguível de um clique que não fez nada.
+   */
+  attachResultCard: (input: {
+    sourceNodeId: string;
+    data: Record<string, unknown>;
+  }) => { id: string; created: boolean } | null;
   /**
    * A new input card, to the left of a generating block and already wired to it.
    *
@@ -702,47 +721,76 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       };
     }),
 
-  addResultNode: ({ sourceNodeId, data }) =>
-    set((state) => {
-      const source = state.nodes.find((node) => node.id === sourceNodeId);
+  attachResultCard: ({ sourceNodeId, data }) => {
+    const state = get();
+    const source = state.nodes.find((node) => node.id === sourceNodeId);
+    const assetId = typeof data.assetId === "string" ? data.assetId : null;
 
-      if (!source) return state;
+    if (!source || !assetId) return null;
 
-      // Cascaded down and to the right of the block that made it, offset by how
-      // many results that block already produced — so a second attempt lands
-      // beside the first instead of on top of it, and the pair reads as a
-      // sequence of tries rather than one image that changed.
-      const siblings = state.nodes.filter(
-        (node) => node.type === "result" && node.data.sourceNodeId === sourceNodeId,
-      ).length;
+    // Casada por asset e não por (asset, bloco): uma imagem é produzida por um
+    // bloco só, e procurar pelos dois deixaria passar justamente o cartão que um
+    // grafo antigo criou sozinho — que é o mesmo cartão, com a mesma imagem.
+    const existing = state.nodes.find(
+      (node) => node.type === "result" && node.data.assetId === assetId,
+    );
 
-      const width = source.measured?.width ?? source.width ?? 380;
-      const id = crypto.randomUUID();
+    if (existing) {
+      // Selecionar não é editar: a seleção é estado de vista, e marcar o canvas
+      // como sujo por causa dela faria "olhar onde está o cartão" gravar o
+      // projeto. É a mesma razão pela qual `select` fica fora de
+      // PERSISTED_NODE_CHANGES.
+      set({
+        nodes: state.nodes.map((node) =>
+          node.selected === (node.id === existing.id)
+            ? node
+            : { ...node, selected: node.id === existing.id },
+        ),
+      });
 
-      return {
-        nodes: [
-          ...state.nodes,
-          {
-            id,
-            type: "result",
-            // The sibling offset keeps a sequence of attempts readable as a
-            // sequence; freePosition keeps it from landing on an unrelated block
-            // that happens to be parked there.
-            position: freePosition(state.nodes, {
-              x: source.position.x + width + 72,
-              y: source.position.y + siblings * 48,
-            }),
-            data: { ...data, sourceNodeId },
-          },
-        ],
-        edges: [
-          ...state.edges,
-          { id: `${sourceNodeId}->${id}`, source: sourceNodeId, target: id },
-        ],
-        revision: state.revision + 1,
-        saveStatus: "dirty",
-      };
-    }),
+      return { id: existing.id, created: false };
+    }
+
+    // Cascaded down and to the right of the block that made it, offset by how
+    // many results that block already produced — so a second attempt lands
+    // beside the first instead of on top of it, and the pair reads as a
+    // sequence of tries rather than one image that changed.
+    const siblings = state.nodes.filter(
+      (node) => node.type === "result" && node.data.sourceNodeId === sourceNodeId,
+    ).length;
+
+    const width = source.measured?.width ?? source.width ?? 380;
+    const id = crypto.randomUUID();
+
+    set({
+      nodes: [
+        ...state.nodes.map((node) => (node.selected ? { ...node, selected: false } : node)),
+        {
+          id,
+          type: "result",
+          // The sibling offset keeps a sequence of attempts readable as a
+          // sequence; freePosition keeps it from landing on an unrelated block
+          // that happens to be parked there.
+          position: freePosition(state.nodes, {
+            x: source.position.x + width + 72,
+            y: source.position.y + siblings * 48,
+          }),
+          // Nasce selecionado: é o cartão que a pessoa acabou de pedir, e num
+          // canvas com dez cartões o novo precisa se identificar sozinho.
+          selected: true,
+          data: { ...data, sourceNodeId },
+        },
+      ],
+      edges: [
+        ...state.edges,
+        { id: `${sourceNodeId}->${id}`, source: sourceNodeId, target: id },
+      ],
+      revision: state.revision + 1,
+      saveStatus: "dirty",
+    });
+
+    return { id, created: true };
+  },
 
   addInputNode: ({ id, type, generatorId }) =>
     set((state) => {

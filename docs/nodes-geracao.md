@@ -42,7 +42,9 @@ O estúdio deixa de ser fábrica de personagens e vira **linha de produção de 
 4. **Botão "Gerar Conteúdo".**
 5. **Custo e saldo**, logo abaixo do botão e no futuro do indicativo — "Custará 3 × 75 = 225 ⚡ · Saldo: X ⚡". O custo fala a verdade **multiplicada** antes do clique.
 
-**Coluna direita — o painel de resultado.** Moldura **quadrada de tamanho fixo**, independente da proporção gerada: a imagem se ajusta dentro (`contain`), vertical, horizontal ou quadrada. O progresso acontece **dentro** da moldura; vazia, ela diz "A imagem aparecerá aqui"; o clique abre o lightbox. O painel é dividido para até **4 slots** — um preenche o quadrado, dois o partem ao meio, três ou quatro caem na grade 2×2 —, cada um com o seu próprio estado, porque cada imagem é a sua própria requisição, a sua própria cobrança e o seu próprio jeito de falhar. O node Resultado continua nascendo no primeiro Gerar.
+**Coluna direita — o painel de resultado.** Moldura **quadrada de tamanho fixo**, independente da proporção gerada: a imagem se ajusta dentro (`contain`), vertical, horizontal ou quadrada. Vazia, ela diz "A imagem aparecerá aqui"; o clique abre o lightbox. Sob ela, a **grade de dezesseis caixinhas** da §5.2.
+
+> **A moldura de 4 slots se aposentou em 13/08/2026** *(decisão do fundador, ciclo Fila de Gerações)*. Até aqui o painel se dividia em até quatro — um preenchia o quadrado, dois o partiam ao meio, três ou quatro caíam na grade 2×2 —, cada slot com o seu estado, porque cada imagem é a sua requisição, a sua cobrança e o seu jeito de falhar. **O estado por imagem não sumiu: mudou de lugar.** Quem o mostra agora é a grade logo abaixo, onde a caixinha é o visual da fila. A moldura ficou com o trabalho que só ela faz bem — mostrar **uma** imagem grande o bastante para se julgar. Quatro miniaturas de 100px dentro de um quadrado nunca responderam à pergunta "ficou boa?".
 
 **Conectores na borda (sempre visíveis):**
 - **Entradas de imagem** (lado esquerdo): aceitam conexão de um node Resultado (encadeamento) e de um node de Input, e no clique abrem o **seletor de referências**.
@@ -102,11 +104,30 @@ Uma imagem usada uma vez fica na galeria para sempre — subir o produto uma vez
 
 **A faixa "Recentes", sob a moldura** *(§4a da D1, 11/08/2026).* Até quatro miniaturas do que **este bloco** já produziu, lidas do banco por `project_id + node_id` — não do grafo, que guarda só a última leva. Tudo que veio antes existia apenas como cartão Resultado espalhado pelo canvas, e quem arruma o canvas apagando cartões perdia o rastro de vista; o banco nunca perdeu. Clicar promove a imagem para a moldura, e **promover é só ver**: nada é gravado, o que o projeto guarda continua sendo a última leva, e a próxima geração devolve a moldura sozinha. Uma faixa que reescrevesse o documento a cada olhada obrigaria a pensar antes de olhar, que é o contrário do que ela existe para fazer.
 
+> **Virou a grade de dezesseis em 13/08/2026**, e a leitura passou a ser a única — a moldura lê dela, não do grafo. Ver a §5.2.
+
 **A Galeria do projeto** *(§4b).* O mesmo modal do seletor de referências, em **modo navegação**: sem filtros, sem enviar arquivo, sem contador de seleção e sem confirmar — o clique **amplia** em vez de marcar. Um modo e não uma segunda tela, porque a diferença entre as duas é exatamente a ação, e duas telas iguais menos um botão divergem na primeira vez que alguém mexer numa delas. Abre pelo "Ver todas" da faixa ou pela entrada **Galeria** no menu lateral.
 
 **Ela é filtrada por projeto desde o primeiro dia, de propósito:** é o alicerce do escopo por projeto da D2 e do painel futuro, e um filtro acrescentado depois é um filtro que precisa ser adicionado em todas as telas que já existiam. Ficam de fora as folhas canônicas — geradas no editor da personagem, sem `project_id` —, o que é o recorte certo: elas são identidade, não trabalho deste projeto, e continuam alcançáveis pelo seletor de referências, que lista `assets` e não gerações.
 
-Cada geração bem-sucedida cria um **node Resultado** conectado à saída do gerador: título curto, a imagem, e ações (baixar · usar como referência · ver prompt usado). A saída do Resultado conecta na entrada de imagem de outro gerador — o encadeamento que faz do canvas um fluxo, não uma pilha de tentativas. O Resultado é um `asset` como outro qualquer: aparece na galeria, obedece às regras de proteção existentes.
+O **node Resultado** é a imagem como peça do fluxo: título curto, a imagem, e ações (baixar · usar como referência · ver prompt usado). A saída dele conecta na entrada de imagem de outro gerador — o encadeamento que faz do canvas um fluxo, não uma pilha de tentativas. O Resultado é um `asset` como outro qualquer: aparece na galeria, obedece às regras de proteção existentes.
+
+## 5.2 A grade de resultados, e a inversão do cartão *(13/08/2026)*
+
+**A geração não nasce mais como cartão no canvas.** Nasce na moldura e na grade; o cartão virou **ato deliberado**, cometido pelo controle **"Usar no fluxo"** na moldura, que cria o Resultado conectado ao bloco. *(Decisão do fundador, ciclo Fila de Gerações — substitui a regra anterior, em que toda geração bem-sucedida plantava um cartão sozinha.)*
+
+O motivo é o que o canvas é: **o desenho do fluxo, não o arquivo das tentativas.** Quatro imagens por clique plantavam quatro caixas que ninguém pediu, e uma manhã de trabalho enterrava o desenho sob elas. A imagem não se perde por não virar cartão — ela está no acervo, na grade e na Galeria, e o rastro no banco nunca dependeu do canvas (foi o argumento inteiro da §4a). E o inverso continua valendo: **excluir o cartão não apaga nada**, e "Usar no fluxo" o recria.
+
+Duas regras que o controle não pode errar:
+
+1. **Nunca duas vezes a mesma imagem.** Se já existe cartão daquele asset, ele é **destacado**, não duplicado — a mesma regra que já proibia duplicar um Resultado, porque dois cartões da mesma imagem seriam dois nomes para um arquivo só. E a tela vai até ele: um clique que faz a coisa certa fora da vista é indistinguível de um clique que não fez nada.
+2. **A legenda é buscada no clique**, não guardada por miniatura — proporção e `@personagem v2` saem do registro gravado. Dezesseis miniaturas por bloco pagariam duas consultas cada para responder uma pergunta que quase nenhuma delas recebe.
+
+**A grade tem dezesseis caixinhas, sempre**, cheias ou vazias — pela mesma razão que mantém a moldura de tamanho fixo: um bloco que crescesse a cada imagem que chega faria os controles da esquerda pularem sob o ponteiro no exato momento em que a pessoa está olhando para a direita. **A caixinha é o visual da fila**, em quatro estados: vazia · barra indeterminada enquanto gera · miniatura pronta · recusada (discreta, motivo no hover). A barra é indeterminada porque é a verdade que temos — o provedor não emite progresso, e uma barra parada em 90% é uma frase falsa desenhada.
+
+**Ordem: mais recente primeiro**, o que põe o que está vivo no topo e empurra o histórico para baixo. **O histórico não consome vaga de trabalho vivo**: ele entra depois deles, e o que não couber transborda para o "Ver todas" — que fica **abaixo da última fileira**.
+
+**Um efeito colateral que vale registrar: gerar deixou de alterar o documento.** O bloco não grava mais no grafo o que produziu (`lastAssetIds` virou legado), porque a coluna lê do banco. Uma imagem nova não marca o canvas como sujo nem dispara autosave; o canvas só muda quando alguém mexe nele — inclusive por "Usar no fluxo", que é a única porta pela qual uma geração entra no grafo agora.
 
 ## 5.1 O node Produto *(10/08/2026)*
 

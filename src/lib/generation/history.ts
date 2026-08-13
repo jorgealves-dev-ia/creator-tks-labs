@@ -115,8 +115,20 @@ export type GenerationThumb = {
   createdAt: string;
 };
 
-/** Uma faixa de recentes é um lembrete, não um arquivo: quatro basta. */
-const RECENT_LIMIT = 4;
+/**
+ * Quantas imagens a coluna de resultados de um bloco pede ao banco.
+ *
+ * Eram quatro, quando a faixa era um lembrete sob a moldura. Passou a dezesseis
+ * em 12/08/2026, quando a faixa virou **a grade** — a mesma caixinha que mostra
+ * um trabalho esperando, um trabalho gerando e uma imagem pronta. Dezesseis é o
+ * tamanho da grade, e a grade é o teto da fila: **o histórico nunca consome vaga
+ * de trabalho vivo** — ele entra depois deles e transborda para o "Ver todas".
+ *
+ * Pedir mais do que a grade mostra seria pagar assinatura de link por imagem que
+ * ninguém vê; pedir menos deixaria buracos numa grade que tem imagem para
+ * preencher.
+ */
+const NODE_HISTORY_LIMIT = 16;
 
 /** Uma tela de galeria, com folga para rolar antes de pedir mais. */
 const GALLERY_PAGE_SIZE = 24;
@@ -166,9 +178,91 @@ export async function listNodeGenerations(input: unknown): Promise<GenerationThu
     .eq("status", "succeeded")
     .not("result_asset_id", "is", null)
     .order("created_at", { ascending: false })
-    .limit(RECENT_LIMIT);
+    .limit(NODE_HISTORY_LIMIT);
 
   return withSignedUrls(supabase, rows ?? []);
+}
+
+/**
+ * O que falta para uma miniatura virar cartão Resultado — buscado **no clique**.
+ *
+ * A partir de 12/08/2026 a geração não nasce mais como cartão no canvas: ela
+ * nasce na moldura, e o cartão passa a ser um ato deliberado ("Usar no fluxo").
+ * O cartão precisa de duas coisas que a miniatura não carrega — a proporção, para
+ * a caixa dele não deitar um 9:16 dentro de um quadrado, e a personagem, para a
+ * legenda dizer `@luna v2`.
+ *
+ * **Sob demanda, e não por carregamento de faixa** (decisão do Jorge, 13/08/2026):
+ * dezesseis miniaturas por bloco pagariam duas consultas cada para responder uma
+ * pergunta que a esmagadora maioria delas nunca recebe. Um clique é raro; uma
+ * montagem de canvas não é.
+ *
+ * Sempre consultado, mesmo para a imagem que acabou de sair e cujos dados o
+ * navegador ainda tem na mão: um caminho só, e um que lê do registro gravado em
+ * vez de uma lembrança do cliente. É a mesma doutrina que faz o nome do produto
+ * ser resolvido no servidor.
+ */
+export type ResultCardData = {
+  aspectRatio: string | null;
+  handle: string | null;
+  versionNumber: number | null;
+};
+
+const NO_CARD_DATA: ResultCardData = {
+  aspectRatio: null,
+  handle: null,
+  versionNumber: null,
+};
+
+export async function loadResultCard(input: unknown): Promise<ResultCardData> {
+  const parsed = z.uuid().safeParse(input);
+
+  if (!parsed.success) return NO_CARD_DATA;
+
+  const supabase = await createSupabaseServerClient();
+  const { data: claims } = await supabase.auth.getClaims();
+
+  if (!claims?.claims) {
+    redirect("/login");
+  }
+
+  // O RLS já limita `generations` ao dono, então um id de outra pessoa
+  // simplesmente não encontra linha — e o cartão nasce sem legenda, que é o
+  // mesmo que nascer sem os dados.
+  const { data: row } = await supabase
+    .from("generations")
+    .select("params, entity_id, entity_version_id")
+    .eq("id", parsed.data)
+    .maybeSingle();
+
+  if (!row) return NO_CARD_DATA;
+
+  const params = paramsSchema.safeParse(row.params);
+  const aspectRatio = params.success ? (params.data.aspect_ratio ?? null) : null;
+
+  // Sem personagem não há legenda a buscar, e as duas consultas seguintes não
+  // acontecem. É o caso mais comum de todos: cena livre, sem `@`.
+  if (!row.entity_id) return { ...NO_CARD_DATA, aspectRatio };
+
+  const { data: entity } = await supabase
+    .from("entities")
+    .select("handle")
+    .eq("id", row.entity_id)
+    .maybeSingle();
+
+  let versionNumber: number | null = null;
+
+  if (row.entity_version_id) {
+    const { data: version } = await supabase
+      .from("entity_versions")
+      .select("version_number")
+      .eq("id", row.entity_version_id)
+      .maybeSingle();
+
+    versionNumber = version?.version_number ?? null;
+  }
+
+  return { aspectRatio, handle: entity?.handle ?? null, versionNumber };
 }
 
 /**

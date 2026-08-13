@@ -951,6 +951,20 @@ export const t = {
       balanceLabel: "Saldo",
       /** The section above the prompt, where model, format and style live. */
       configTitle: "Configuração",
+      /**
+       * A inversão do cartão (13/08/2026).
+       *
+       * A geração deixou de nascer como cartão no canvas e passou a nascer na
+       * moldura; o cartão virou ato deliberado, e este é o botão. O nome diz o
+       * que a ação **serve para**, não o que ela cria: quem clica quer que a
+       * imagem alimente o próximo bloco, e "criar cartão Resultado" descreveria
+       * o mecanismo para alguém que só tem uma intenção.
+       */
+      useInFlow: "Usar no fluxo",
+      useInFlowHint:
+        "Põe esta imagem no canvas como um cartão conectado a este bloco, pronto para alimentar o próximo.",
+      /** Já existe cartão desta imagem: ele é destacado, nunca duplicado. */
+      useInFlowExisting: "Esta imagem já está no fluxo — o cartão dela foi destacado.",
       resultAlt: "Última imagem gerada neste bloco",
       /** The heading of the right-hand column, matching "Configuração". */
       resultTitle: "Resultado",
@@ -988,14 +1002,22 @@ export const t = {
      * públicos. Duas tabelas seriam duas chances de a faixa e o histórico
      * chamarem o mesmo card por nomes diferentes.
      */
-    /** §4 da D1 — a faixa de recentes do bloco e a Galeria do projeto. */
+    /**
+     * §4 da D1 — a grade de resultados do bloco e a Galeria do projeto.
+     *
+     * Nasceu como "faixa de recentes" e virou a grade de dezesseis caixinhas de
+     * 13/08/2026, onde a mesma caixinha mostra o trabalho gerando e a imagem
+     * pronta. O título na tela continua "Recentes" porque continua sendo isso
+     * que a pessoa vê ali: o que este bloco produziu, do mais novo ao mais
+     * velho — a fila apenas ocupa o topo da lista antes de virar imagem.
+     */
     recent: {
       title: "Recentes",
-      /** O que a faixa é, dito onde ela some: um bloco que ainda não gerou nada. */
-      empty: "As imagens que este bloco gerar aparecem aqui.",
       seeAll: "Ver todas",
       seeAllHint: "Abrir a galeria deste projeto",
       promoteHint: "Ver esta imagem na moldura",
+      /** O que a caixinha com a barra está dizendo, para quem passa o mouse. */
+      runningHint: "Gerando esta imagem…",
       /** O estado promovido é de leitura: o que o projeto guarda não muda. */
       promoted: "vendo uma imagem anterior",
       back: "Voltar ao último resultado",
