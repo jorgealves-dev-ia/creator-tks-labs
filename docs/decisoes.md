@@ -2218,3 +2218,13 @@ O que o vídeo de fato herda deste ciclo é a **maquinaria da tela**, e ela é *
 **Por que continua lá:** grafos salvos carregam os quatro campos, e a limpeza no clone é o único código que ainda precisa saber que eles existem. Apagar a declaração hoje custaria mais do que compra — o campo não é lido para desenhar nada, então não há como ele mentir na tela.
 
 **Critério de saída:** o primeiro ciclo que **tocar o schema do node** por outro motivo. Aí a remoção é uma linha a mais num trabalho que já estava aberto, em vez de uma migração de dados só para si mesma. Enquanto isso, o comentário no tipo diz que são legado e por quê.
+
+#### 📌 Backlog · o seletor de formato não cabe na meia-coluna (medido)
+
+Descoberto na harmonização do bloco, 13/08/2026, e **anterior a ela**.
+
+A opção mais longa do seletor de **formato** — "Instagram Feed · Retrato · 4:5" — mede **161px**. O campo oferecia **135px** de texto antes da harmonização e passou a oferecer **131**. Faltavam 26; faltam 30. Devolver ao bloco a largura inteira levaria a falta para 21, que continua sendo falta: **o campo é curto demais nas três configurações**, então os 16px foram para onde mudam o que se vê (a moldura e as miniaturas).
+
+Não é urgente porque a opção selecionada trunca com reticências e o menu aberto mostra o texto inteiro — ninguém fica sem a informação, fica sem ela *de relance*.
+
+**O conserto é dar a linha inteira ao formato**, como o modelo já tem. Isso reorganiza a grade de configuração (formato sozinho, estilo e qualidade lado a lado, quantidade sobrando) e muda a altura do bloco — **é trabalho do Passe de UI/UX**, não de uma harmonização que se propôs a mexer só em larguras.

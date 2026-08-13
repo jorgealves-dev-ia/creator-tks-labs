@@ -589,7 +589,24 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
 
   return (
     <div
-      className={`group/node w-[38rem] rounded-xl border bg-surface-raised shadow-lg
+      /*
+        42rem, de 38 *(13/08/2026 — harmonização)*.
+
+        Medido, não estimado: o bloco cresceu 64px e a coluna de resultados 67 —
+        moldura de 224 para 291, miniatura de 53 para 70. É a diferença entre
+        conferir uma imagem e adivinhá-la. A coluna da esquerda encolheu 16px, o
+        "levemente compactado" do briefing.
+
+        O que esses 16px custaram, dito com o número: o seletor de **formato** já
+        truncava antes desta mudança e continua truncando depois. A opção mais
+        longa ("Instagram Feed · Retrato · 4:5") mede 161px; o campo oferecia 135
+        e passou a oferecer 131. Faltavam 26, faltam 30 — e devolver a largura
+        inteira levaria a falta para 21, que continua sendo falta. Como o campo é
+        curto demais nas três configurações, os 16px foram para onde mudam o que
+        se vê. **O conserto de verdade é dar a linha inteira ao formato, e isso é
+        trabalho do Passe de UI/UX** — está registrado em `decisoes.md`.
+      */
+      className={`group/node w-[42rem] rounded-xl border bg-surface-raised shadow-lg
                   shadow-black/30 transition-colors
                   ${selected ? "border-accent" : "border-line"}`}
     >
@@ -1010,8 +1027,16 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
           ) : null}
         </div>
 
-        {/* ── O que saiu ───────────────────────────────────────────────── */}
-        <div className="w-56 shrink-0">
+        {/*
+          ── O que saiu ───────────────────────────────────────────────────
+
+          A linha vertical *(13/08/2026)*. As duas colunas sempre foram duas
+          coisas — a pergunta e a resposta —, e o que as separava era espaço
+          vazio, que a certos zooms some. Um traço de um pixel diz o que o vazio
+          só sugeria, e diz em qualquer zoom. É divisor, não moldura: ele separa
+          as colunas e não desenha caixa em volta de nenhuma das duas.
+        */}
+        <div className="w-[19rem] shrink-0 border-l border-line pl-3">
           <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-ink-faint">
             {copy.node.resultTitle}
           </p>
@@ -1058,8 +1083,19 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   );
 }
 
+/*
+ * `px-1.5` e não `px-2` desde a harmonização de 13/08/2026 — a compactação
+ * horizontal do briefing, feita onde ela de fato aparece.
+ *
+ * A coluna da esquerda encolheu 16px para a de resultados crescer, e os
+ * seletores são justamente os campos onde 16px viram reticências. Estreitar o
+ * respiro lateral de 8px para 6px de cada lado devolve 4 dos 16 ao texto — não
+ * o bastante para o formato caber (ver o comentário da largura do bloco), mas o
+ * bastante para nenhum **outro** campo passar a truncar: estilo sobra 34px e
+ * qualidade sobra 69px depois da mudança.
+ */
 const SELECT_CLASS =
-  "nodrag w-full rounded-lg border border-line bg-surface px-2 py-1.5 text-xs text-ink " +
+  "nodrag w-full rounded-lg border border-line bg-surface px-1.5 py-1.5 text-xs text-ink " +
   "transition-colors hover:border-line-strong focus:border-accent focus:outline-none " +
   "disabled:cursor-not-allowed disabled:opacity-50";
 
