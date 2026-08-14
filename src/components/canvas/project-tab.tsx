@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 
 import { t } from "@/lib/i18n/pt-BR";
 import { deleteProject, renameProject } from "@/lib/projects/actions";
+import { useProjectStatus } from "@/lib/projects/status-feed";
 import type { Enums } from "@/lib/supabase/database.types";
 
 export type ProjectTabData = {
@@ -91,7 +92,7 @@ export function ProjectTab({
           : "border-transparent hover:bg-surface-hover"
       }`}
     >
-      <StatusDot status={project.status} />
+      <StatusDot projectId={project.id} serverStatus={project.status} />
 
       <Link
         href={`/studio?p=${project.id}`}
@@ -129,7 +130,25 @@ export function ProjectTab({
   );
 }
 
-function StatusDot({ status }: { status: Enums<"project_status"> }) {
+/**
+ * O ponto pulsante da aba.
+ *
+ * Ele lê o banco ao vivo e cai no valor que o servidor renderizou enquanto
+ * ninguém avisou nada — a semeadura acontece num efeito, então o primeiro
+ * quadro é sempre do servidor.
+ *
+ * A assinatura mora aqui, no ponto, e não na aba: um aviso sobre um projeto
+ * re-renderiza 1,5px, e não o nome, o link e o botão de excluir ao lado.
+ */
+function StatusDot({
+  projectId,
+  serverStatus,
+}: {
+  projectId: string;
+  serverStatus: Enums<"project_status">;
+}) {
+  const status = useProjectStatus(projectId) ?? serverStatus;
+
   return (
     <span
       className="relative flex size-1.5 shrink-0"

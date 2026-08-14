@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signOut } from "@/lib/auth/actions";
 import { t } from "@/lib/i18n/pt-BR";
 import { createProject } from "@/lib/projects/actions";
+import { useProjectStatusFeed } from "@/lib/projects/status-feed";
 import { formatBRL, formatSparks } from "@/lib/sparks";
 
 import { ProjectTab, type ProjectTabData } from "./project-tab";
@@ -14,6 +15,8 @@ type StudioHeaderProps = {
   projects: ProjectTabData[];
   activeProjectId: string | null;
   balanceCents: number;
+  /** De quem são estas abas — o filtro do canal que as mantém ao vivo. */
+  userId: string;
 };
 
 /**
@@ -24,7 +27,18 @@ export function StudioHeader({
   projects,
   activeProjectId,
   balanceCents,
+  userId,
 }: StudioHeaderProps) {
+  /**
+   * A barra é a única leitora de `projects`, então é ela quem abre o canal.
+   *
+   * Aqui e não no canvas de propósito: o canal de gerações vive no `FlowCanvas`
+   * porque é do projeto aberto, e o `FlowCanvas` só existe quando há um. As abas
+   * existem sempre — inclusive na tela de "nenhum projeto ainda" —, e o que este
+   * canal escuta é o usuário, não o projeto.
+   */
+  useProjectStatusFeed(userId, projects);
+
   return (
     <header
       className="absolute inset-x-3 top-3 z-20 flex h-14 items-center gap-3 rounded-xl

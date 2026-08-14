@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { create } from "zustand";
 
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { openChannelWhenAuthed } from "@/lib/supabase/realtime";
 
 /**
  * "Nasceu uma geração neste projeto" — o aviso que a tela não tinha.
@@ -81,71 +81,81 @@ export function useGenerationTick(nodeId: string): number {
  * que evita dois canais escutando ao mesmo tempo depois de uma troca de aba.
  */
 export function useGenerationFeed(projectId: string | null): void {
+  /**
+   * `openChannelWhenAuthed` chegou em 14/08/2026, e o motivo é grave o
+   * bastante para estar escrito aqui também: **este canal estava mudo desde
+   * sempre.** Um canal assinado durante a hidratação responde `SUBSCRIBED`,
+   * aparece `joined` e nunca recebe nada, porque o token do usuário ainda não
+   * chegou ao Realtime e o servidor não registra a assinatura. A medição que
+   * provou isso está em `lib/supabase/realtime.ts`.
+   *
+   * O defeito nunca apareceu na frente de imagem porque ali o bloco relê o
+   * banco por conta própria quando a fila esvazia — o canal era o cinto de
+   * segurança do reload, e um cinto que não existe só se descobre na batida.
+   * No vídeo não há segunda leitura: **quem avisa que o webhook terminou é
+   * este canal, e só ele.**
+   */
   useEffect(() => {
     if (!projectId) return;
 
-    const supabase = createSupabaseBrowserClient();
+    return openChannelWhenAuthed((supabase) =>
+      supabase
+        .channel(`generations:${projectId}`)
+        .on(
+          "postgres_changes",
+          {
+            /**
+             * INSERT **e** UPDATE, e o UPDATE é o que o vídeo trouxe.
+             *
+             * Escutar só INSERT bastava enquanto toda geração nascia pronta: a
+             * imagem é gravada uma vez, já com o resultado dentro. O vídeo nasce
+             * `queued` e **termina por UPDATE**, quando o webhook chega — então
+             * um canal surdo a updates veria a linha nascer e nunca veria
+             * acabar, que é o defeito de antes com um nome novo.
+             *
+             * `*` em vez dos dois eventos nomeados porque DELETE é inofensivo
+             * aqui: o Postgres entrega só a chave primária num delete (a réplica
+             * é `DEFAULT`), então `node_id` vem indefinido e o bump não
+             * acontece. Nomear dois eventos seria uma lista para alguém esquecer
+             * de atualizar no dia em que houver um terceiro.
+             */
+            event: "*",
+            schema: "public",
+            table: "generations",
+            filter: `project_id=eq.${projectId}`,
+          },
+          (payload) => {
+            // A linha chega inteira, mas a única coisa lida aqui é de quem ela
+            // é. Tudo o mais o bloco relê do banco, pela consulta de sempre.
+            const nodeId = (payload.new as { node_id?: string | null }).node_id;
 
-    const channel = supabase
-      .channel(`generations:${projectId}`)
-      .on(
-        "postgres_changes",
-        {
-          /**
-           * INSERT **e** UPDATE, e o UPDATE é o que o vídeo trouxe.
-           *
-           * Escutar só INSERT bastava enquanto toda geração nascia pronta: a
-           * imagem é gravada uma vez, já com o resultado dentro. O vídeo nasce
-           * `queued` e **termina por UPDATE**, quando o webhook chega — então um
-           * canal surdo a updates veria a linha nascer e nunca veria acabar,
-           * que é o defeito de antes com um nome novo.
-           *
-           * `*` em vez dos dois eventos nomeados porque DELETE é inofensivo
-           * aqui: o Postgres entrega só a chave primária num delete (a réplica
-           * é `DEFAULT`), então `node_id` vem indefinido e o bump não acontece.
-           * Nomear dois eventos seria uma lista para alguém esquecer de
-           * atualizar no dia em que houver um terceiro.
-           */
-          event: "*",
-          schema: "public",
-          table: "generations",
-          filter: `project_id=eq.${projectId}`,
-        },
-        (payload) => {
-          // A linha chega inteira, mas a única coisa lida aqui é de quem ela é.
-          // Tudo o mais o bloco relê do banco, pela consulta de sempre.
-          const nodeId = (payload.new as { node_id?: string | null }).node_id;
-
-          if (typeof nodeId === "string" && nodeId !== "") {
-            useFeed.getState().bump(nodeId);
+            if (typeof nodeId === "string" && nodeId !== "") {
+              useFeed.getState().bump(nodeId);
+            }
+          },
+        )
+        /**
+         * O status do canal, dito em voz alta no desenvolvimento.
+         *
+         * Um canal que não sobe **falha em silêncio**: nada quebra, nada
+         * aparece, e a tela simplesmente volta a não se atualizar sozinha. Um
+         * canal é a única peça deste ciclo cujo mau funcionamento é
+         * indistinguível de não existir, e por isso é a única que ganha uma
+         * linha de log.
+         *
+         * **E mesmo essa linha não bastou.** Ela dizia `SUBSCRIBED` enquanto o
+         * canal não recebia nada — porque `SUBSCRIBED` é o tópico aceito, não a
+         * assinatura registrada. O log estava certo e mentia do mesmo jeito;
+         * quem contou a verdade foi `realtime.subscription`, no servidor.
+         *
+         * Só em desenvolvimento, no mesmo padrão do erro de geração em
+         * `canvas-generate.ts`: em produção não há ninguém lendo console.
+         */
+        .subscribe((status) => {
+          if (process.env.NODE_ENV !== "production") {
+            console.info(`[realtime] generations:${projectId} → ${status}`);
           }
-        },
-      )
-      /**
-       * O status do canal, dito em voz alta no desenvolvimento.
-       *
-       * Um canal que não sobe **falha em silêncio**: nada quebra, nada aparece,
-       * e a tela simplesmente volta a não se atualizar sozinha — que é
-       * exatamente o defeito de antes, agora com código novo por cima. Um canal
-       * é a única peça deste ciclo cujo mau funcionamento é indistinguível de
-       * não existir, e por isso é a única que ganha uma linha de log.
-       *
-       * Só em desenvolvimento, no mesmo padrão do erro de geração em
-       * `canvas-generate.ts`: em produção não há ninguém lendo console.
-       *
-       * Em desenvolvimento a linha aparece **duas vezes** — `CLOSED` e depois
-       * `SUBSCRIBED` —, e isso é o StrictMode montando o efeito, limpando e
-       * montando de novo. Não é o canal piscando; é a prova de que a limpeza
-       * funciona. Em produção o efeito roda uma vez só.
-       */
-      .subscribe((status) => {
-        if (process.env.NODE_ENV !== "production") {
-          console.info(`[realtime] generations:${projectId} → ${status}`);
-        }
-      });
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+        }),
+    );
   }, [projectId]);
 }

@@ -23,6 +23,8 @@ import { StudioHeader } from "./studio-header";
 type StudioProps = {
   projects: ProjectTabData[];
   activeProjectId: string | null;
+  /** Passa direto para a barra de abas, que assina o canal de `projects`. */
+  userId: string;
   graph: CanvasGraph;
   version: number;
   balanceCents: number;
@@ -34,6 +36,7 @@ type StudioProps = {
 export function Studio({
   projects,
   activeProjectId,
+  userId,
   graph,
   version,
   balanceCents,
@@ -65,6 +68,7 @@ export function Studio({
           projects={projects}
           activeProjectId={activeProjectId}
           balanceCents={balanceCents}
+          userId={userId}
         />
 
         {/* Rendered once, above everything: both the card and the sidebar open it. */}

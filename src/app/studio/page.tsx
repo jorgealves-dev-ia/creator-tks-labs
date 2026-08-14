@@ -102,6 +102,7 @@ export default async function StudioPage(props: PageProps<"/studio">) {
     <Studio
       projects={projects}
       activeProjectId={activeProject?.id ?? null}
+      userId={userId}
       graph={graph}
       version={version}
       balanceCents={walletResult.data?.balance_cents ?? 0}

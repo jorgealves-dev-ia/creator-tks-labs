@@ -68,6 +68,10 @@ O comentário na tabela `generations` guarda essa regra dentro do próprio banco
 
 **Consequência prática.** A interface nunca fica "travada esperando". O canvas se inscreve no Realtime e reage à mudança de status. Como o Realtime respeita RLS, cada usuário só recebe as próprias linhas.
 
+**E é justamente o RLS que impõe *quando* assinar** *(achado de 14/08/2026)*. Todo canal do produto nasce por `openChannelWhenAuthed()`, em `lib/supabase/realtime.ts`, que espera a sessão, entrega o token ao Realtime e só então assina. Assinar antes disso produz um canal que responde `SUBSCRIBED`, aparece `joined` — e **não escuta nada**: o `join` sem identidade é aceito como tópico, mas a assinatura de `postgres_changes`, que precisa das claims para casar com o RLS, nunca é criada no servidor. O sintoma é indistinguível de o canal não existir, e nenhum log do cliente o denuncia.
+
+> **Canal se audita no banco, não no console.** A verdade está em `realtime.subscription` — uma linha por assinatura viva, com `entity`, `filters` e `claims_role`. Zero linhas com a tela aberta significa canal mudo, por mais que o console diga `SUBSCRIBED`. → [`docs/decisoes.md`](decisoes.md)
+
 ---
 
 ### Decisão 2 — Camada de adapters de provedores

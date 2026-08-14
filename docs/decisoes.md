@@ -2893,3 +2893,128 @@ por acidente.
    Vale como validação da direção; os diferenciais nossos continuam sendo
    identidade persistente, canvas componível, custo auditável e arquitetura de
    lote já nascida.
+
+---
+
+### 14/08/2026 — Fase 4 · as duas fechaduras, e a descoberta que salvou o webhook
+
+Abertura da Fase 4. Deploy de produção conferido antes de tudo: o
+`dpl_Cdwgd6qiiWHQt76pqaAeGwQwcijk` está `READY`, com `aliasError: null`, no
+commit `69bc103` — o mesmo do local e do `origin/master` —, e o alias
+`creator-tks-labs.vercel.app` aponta para ele.
+
+**As provas de graça, e o método de sempre: o que prova o caminho feliz são os
+caminhos tristes ao lado.** Um POST forjado em dois endereços diferentes, e a
+resposta lida por contraste:
+
+| requisição | status | corpo | quem recusou |
+|---|---|---|---|
+| POST forjado no **alias de produção** | 401 | `{"ok":false}` — 12 bytes | **a nossa assinatura** |
+| POST forjado na **URL gerada** do deployment | 401 | `{"protection":…"Protected deployment"}` — 436 bytes | **a borda da Vercel** |
+| GET no alias | 405 | vazio, com `x-matched-path` na rota | a rota, viva, dizendo que só aceita POST |
+
+A causa nomeada apareceu onde o desenho manda — no log da plataforma, nunca na
+resposta: `[fal-webhook] recusado: missing_headers`. **E a lista de logs prova
+uma segunda coisa pela ausência:** o POST na URL gerada não deixou linha nenhuma,
+porque nunca chegou à função. Dois 401 com o mesmo número e autores diferentes,
+e a única maneira de distingui-los é essa.
+
+**A descoberta que valia a fase inteira.** O projeto está com *Standard
+Protection* ligada (`ssoProtection: all_except_custom_domains`), e a leitura
+ingênua disso é "produção está atrás de SSO" — o que significaria que **a fal não
+consegue entregar o retorno**, e que a geração paga ficaria pendurada para
+sempre. A medição diz o contrário: a proteção cobre as **URLs geradas**, não o
+domínio de produção. O webhook está alcançável. Foi um risco silencioso fechado
+por três `curl` e zero Spark.
+
+---
+
+### 14/08/2026 — Fase 4 · o canal que dizia `SUBSCRIBED` e não escutava nada
+
+A tarefa era pequena e declarada desde a 3b: fechar a distância da bolinha com
+uma assinatura de `projects` na tela do estúdio. O código saiu em meia hora. O
+que veio depois tomou a manhã, e **encontrou um defeito que estava no produto
+desde o Ciclo Fila.**
+
+**O sintoma.** Escrita a assinatura, a bolinha não se mexia. O canal respondia
+`SUBSCRIBED`, aparecia em `getChannels()` como `joined`, carregava id de binding
+— e três flips de `projects.status` rodados no SQL editor não chegaram à tela.
+
+**Sete hipóteses morreram, todas medidas, nenhuma assumida.** `REPLICA IDENTITY
+DEFAULT` (a doc do Supabase só fala em *receber* o registro antigo, e foi lida
+antes de concluir); a publicação (publica UPDATE); o filtro (`user_id` do projeto
+idêntico ao do tópico, e sondas com o mesmo filtro recebiam); o nome do tópico
+colidindo com o formato legado `realtime:<schema>:<tabela>` (quatro tópicos
+testados, todos receberam); RLS por socket anônimo (uma sonda **sem filtro**
+recebeu no mesmo socket, e o RLS a barraria igual); a corrida do StrictMode
+(reproduzida exatamente — o segundo canal recebia); e "é coisa de
+desenvolvimento", reproduzida com `next build` + `next start`, o mesmo bundle que
+a Vercel serve.
+
+**Uma contaminação, registrada porque quase virou conclusão.** As primeiras
+medições usaram canais de diagnóstico com configuração **idêntica** à do canal da
+aplicação — mesma assinatura no servidor. Eles podiam estar roubando os eventos
+que eu estava investigando, o que faria do meu instrumento a causa do sintoma.
+Tudo foi refeito com sonda de configuração diferente. *Instrumento que divide
+assinatura com o observado não é instrumento; é participante.*
+
+**A causa raiz.** Um canal assinado durante a **hidratação** entra no ar e não
+escuta nada. Duas medidas fecharam o caso:
+
+```
+mesmo evento, mesma página, mesmo cliente, mesma configuração
+  canal nascido na hidratação ......... 0 eventos
+  canal nascido 2.500 ms depois ....... 1 evento
+
+realtime.subscription, no servidor
+  com os DOIS canais do produto joined ....... 0 linhas
+  com um canal qualquer nascido mais tarde ... 1 linha (claims_role = authenticated)
+```
+
+A coluna `claims_role` é a peça que faltava. O `access_token` do usuário chega ao
+Realtime de forma assíncrona — o `@supabase/ssr` lê a sessão dos cookies e só
+então avisa o socket. Quem assina antes disso manda um `join` sem identidade: o
+tópico é aceito, mas a assinatura de `postgres_changes`, que precisa das claims
+para casar com o RLS, não é criada. **A porta abre; ninguém entra.**
+
+**`SUBSCRIBED` é o tópico aceito, não a assinatura registrada.** O log de
+desenvolvimento que a Fase 0 criou justamente porque "um canal é a única peça
+cujo mau funcionamento é indistinguível de não existir" dizia a verdade e mentia
+do mesmo jeito. Quem contou a história foi `realtime.subscription`, do lado do
+servidor. Fica a regra: **canal se audita no banco, não no console.**
+
+**O alcance, que é o que importa.** O canal de `generations` tinha o mesmo
+defeito — e é ele que move o node quando o webhook do vídeo termina. Na frente de
+imagem nada apareceu porque o bloco relê o banco por conta própria quando a fila
+esvazia: o canal era o cinto de segurança do reload, e **cinto que não existe só
+se descobre na batida**. No vídeo não há segunda leitura. Uma geração paga feita
+antes deste conserto teria deixado o node parado em "Gerando" até um F5, com o
+vídeo pago, gravado e cobrado do outro lado.
+
+**O conserto: `lib/supabase/realtime.ts` · `openChannelWhenAuthed()`.** Espera a
+sessão, entrega o token ao Realtime e só então assina. **Não é um `setTimeout`**:
+um número mágico só acerta enquanto a máquina, a rede e o navegador se
+comportarem como no dia em que ele foi escolhido — e quando erra, erra de volta
+para o silêncio de antes. Esperar o token é esperar a coisa certa.
+
+Verificado nos dois sentidos, e no bundle de produção:
+
+```
+realtime.subscription com a página aberta
+  antes do conserto ..... 0 linhas
+  depois do conserto .... 2 linhas   (generations + projects, authenticated)
+
+a bolinha na tela, por MutationObserver, sem canal de diagnóstico nenhum
+  10:57:45    8.985 ms   Gerado    rgb(55, 201, 139)
+  11:01:48  252.759 ms   Gerando   rgb(242, 181, 68)  + halo pulsante
+  11:02:07  271.144 ms   Gerado    rgb(55, 201, 139)
+```
+
+O cronômetro é a prova de que não houve F5: `performance.now()` voltaria a zero
+num reload, e ele sobe monotonicamente atravessando as duas transições.
+
+**A decisão de escopo, dita em voz alta.** Consertar `generation-feed.ts` estava
+fora da tarefa declarada. Foi feito assim mesmo, porque é o mesmo defeito, num
+arquivo que a geração paga da própria Fase 4 ia exercitar — e entregar a bolinha
+funcionando ao lado de um node de vídeo mudo seria entregar a metade que não
+importa.
