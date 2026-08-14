@@ -876,6 +876,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      project_status_now: {
+        Args: { p_project: string }
+        Returns: Database["public"]["Enums"]["project_status"]
+      }
       record_extraction: {
         Args: {
           p_entity_id: string

@@ -2838,6 +2838,29 @@ Três detalhes que a migration registra por escrito:
   sobrescreve na geração seguinte e o estrago máximo é alguém mentir para si
   mesmo sobre a própria bolinha.
 
+**Aplicada pelo Jorge em 13/08/2026, e conferida no banco e na tela.** As duas
+funções e os dois gatilhos existem; o backfill fez o que prometeu:
+
+```
+Primeiros Testes ... idle -> generated   (53 gerações, 0 vivas, último desfecho succeeded)
+bolinha na aba ..... bg-positive, rgb(55, 201, 139)   [evidência: video-fase3b/]
+```
+
+**E a revogação foi provada por recusa, não por leitura de tabela.** A conexão
+read-only do MCP tentou chamar `project_status_now` e levou
+`ERROR: 42501: permission denied for function` — que é exatamente o que a linha
+do `revoke` existe para produzir. `anon` e `authenticated` respondem `false` a
+`has_function_privilege`; só `service_role`, que nunca sai do servidor, executa.
+
+**O que a 3b NÃO entrega, dito antes de alguém se surpreender na Fase 4:** a
+bolinha conta a verdade **no carregamento da página**, e não se mexe sozinha.
+`projects` está na publicação do Realtime desde a Fase 0, mas **nenhum cliente
+assina essa tabela** — o único canal que existe escuta `generations`, e é o que
+move o bloco de vídeo. Ou seja, na geração paga da Fase 4 o **node** vai andar ao
+vivo e a **bolinha** só vai mudar depois de um F5. Fechar essa distância é uma
+assinatura de `projects` na tela do estúdio; fica para a Fase 4, junto com a
+geração que a exercita — porque é exatamente ali que ela se prova.
+
 ---
 
 ### 13/08/2026 — Frente Vídeo · a visão alinhada — registro, não construção
