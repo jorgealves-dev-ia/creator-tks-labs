@@ -91,7 +91,22 @@ export function useGenerationFeed(projectId: string | null): void {
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          /**
+           * INSERT **e** UPDATE, e o UPDATE é o que o vídeo trouxe.
+           *
+           * Escutar só INSERT bastava enquanto toda geração nascia pronta: a
+           * imagem é gravada uma vez, já com o resultado dentro. O vídeo nasce
+           * `queued` e **termina por UPDATE**, quando o webhook chega — então um
+           * canal surdo a updates veria a linha nascer e nunca veria acabar,
+           * que é o defeito de antes com um nome novo.
+           *
+           * `*` em vez dos dois eventos nomeados porque DELETE é inofensivo
+           * aqui: o Postgres entrega só a chave primária num delete (a réplica
+           * é `DEFAULT`), então `node_id` vem indefinido e o bump não acontece.
+           * Nomear dois eventos seria uma lista para alguém esquecer de
+           * atualizar no dia em que houver um terceiro.
+           */
+          event: "*",
           schema: "public",
           table: "generations",
           filter: `project_id=eq.${projectId}`,

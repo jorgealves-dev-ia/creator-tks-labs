@@ -14,7 +14,7 @@
 export type ProviderStatus = "ready" | "missing_key" | "no_adapter";
 
 /** What the product can ask a model to do. Mirrors ai_models.capabilities. */
-export type Capability = "extraction" | "image_gen";
+export type Capability = "extraction" | "image_gen" | "video_gen";
 
 export type CatalogModel = {
   id: string;
@@ -44,12 +44,34 @@ export type CatalogModel = {
    * would be a guess printed next to a button that spends money.
    */
   sizes: ModelImageSize[];
+  /**
+   * As durações que este modelo vende — e, pela mesma lógica das resoluções,
+   * **as que ele oferece**.
+   *
+   * Vazio para toda capacidade que não é vídeo. Na v1 do vídeo há exatamente
+   * uma linha (5s · 720p), e é a **ausência** de uma linha de 10s que trava a
+   * duração: não existe oferecer o que não se sabe cobrar. Destravar é uma
+   * linha de SQL, não um deploy — e nada nesta tela precisa mudar quando for.
+   */
+  durations: ModelVideoDuration[];
 };
 
 /** One resolution a model sells, at the price the catalogue decided. */
 export type ModelImageSize = {
   /** The provider's own identifier — "1K", "2K", "4K". */
   size: string;
+  sparks: number;
+};
+
+/** Uma duração que um modelo de vídeo vende, ao preço que o catálogo decidiu. */
+export type ModelVideoDuration = {
+  seconds: number;
+  /**
+   * A resolução de saída daquele endpoint. Não é escolha de quem chama: no
+   * Kling standard ela é fixa e nem sequer é parâmetro da API — é propriedade
+   * do endpoint, e por isso viaja junto da duração em vez de num seletor.
+   */
+  resolution: string;
   sparks: number;
 };
 

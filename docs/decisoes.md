@@ -2217,7 +2217,9 @@ O que o vídeo de fato herda deste ciclo é a **maquinaria da tela**, e ela é *
 
 **Por que continua lá:** grafos salvos carregam os quatro campos, e a limpeza no clone é o único código que ainda precisa saber que eles existem. Apagar a declaração hoje custaria mais do que compra — o campo não é lido para desenhar nada, então não há como ele mentir na tela.
 
-**Critério de saída:** o primeiro ciclo que **tocar o schema do node** por outro motivo. Aí a remoção é uma linha a mais num trabalho que já estava aberto, em vez de uma migração de dados só para si mesma. Enquanto isso, o comentário no tipo diz que são legado e por quê.
+**Critério de saída** *(reescrito em 13/08/2026, na Fase 3 da Frente Vídeo)*: o primeiro ciclo que **editar `GeneratorNodeData`**. Aí a remoção é uma linha a mais num trabalho que já estava aberto, em vez de uma migração de dados só para si mesma. Enquanto isso, o comentário no tipo diz que são legado e por quê.
+
+*Por que a redação mudou:* o critério dizia "tocar o schema do node", e a Fase 3 do vídeo **tocou o schema do node** — criando `VideoGeneratorNodeData`, um tipo novo, sem encostar em `GeneratorNodeData`. Pela letra, a limpeza venceria; pela economia que o critério descreve ("uma linha a mais num trabalho já aberto"), não venceria nada: fazê-la ali seria abrir um trabalho no gerador de imagem **só** para isso, que é exatamente a migração avulsa que o critério existe para evitar. **O critério estava certo e a redação estava larga** — "o schema do node" abrange nodes que o campo legado nem conhece.
 
 #### 📌 Backlog · o seletor de formato não cabe na meia-coluna (medido)
 
@@ -2703,3 +2705,168 @@ vez de uma segunda tela.
   testada contra uma mensagem que eu escrevi, não contra a fal.
 - **A galeria desenha o vídeo como `<img>`** hoje, o que confirmei na tela. É
   esperado e é da Fase 3.
+
+---
+
+### 13/08/2026 — Fase 3 · o desvio do `runSlot`, aprovado: o trabalho vivo mora no banco
+
+**O plano da fase dizia "`runSlot` generalizado, o transporte trocando". Não foi
+feito. O desvio foi levado ao Jorge com o código na mesa e aprovado por ele** —
+com o argumento que fecha a discussão: *o banco é a única cópia do estado, e a
+resiliência a reload e aba fechada é ganho de produto.*
+
+**Os dois casos são opostos, e não o mesmo caso com transportes diferentes.**
+
+| | quem sabe o que foi pedido |
+|---|---|
+| **imagem** | só o navegador, até cada requisição sair. `record_generation` grava a linha **depois** de a imagem existir — antes disso, quem lembra que havia intenção de gerar quatro é a fila do cliente |
+| **vídeo** | o banco, desde o primeiro milissegundo. `submit_video_generation` grava `queued` **antes** de a fal ser chamada |
+
+Generalizar `runSlot` daria ao vídeo uma **segunda cópia** de um estado que o
+banco já guarda melhor. Pior: uma cópia que morre na troca de aba (o estúdio
+monta o canvas com `key={activeProjectId}`), não sobrevive a um reload e
+discorda do banco no instante exato em que o webhook chega com a aba fechada —
+que é o instante que mais custa dinheiro, porque a geração foi cobrada e a tela
+não sabe.
+
+Então o bloco de vídeo **não guarda trabalho nenhum**: lê `listNodeVideos` e o
+Realtime lhe diz quando reler. Fechar a aba no meio e voltar depois mostra o
+vídeo pronto sem nada de especial acontecer — **não há o que recuperar porque
+não havia o que perder.**
+
+**A condição do Jorge, cumprida neste mesmo passe:** o comentário do `queue.ts`
+ainda prometia *"no dia do vídeo ele vira `fetch → linha queued → webhook →
+Realtime`"*. O dia do vídeo chegou e a promessa foi revogada — deixá-la escrita
+seria a armadilha do `config/models.json` de novo: **um comentário que descreve
+uma decisão revogada é pior que nenhum comentário**, porque quem o lê acha que
+está lendo o desenho vigente. O parágrafo foi substituído pelo contraste acima,
+com o nome da decisão e a data.
+
+---
+
+### 13/08/2026 — Fase 3 · o roteiro de tela, e os dois defeitos que só o print pegou
+
+Sete itens, sete prints, em `scratchpad/evidencias/video-fase3/`. Zero Spark:
+nada aqui gera, cobra ou escreve no ledger.
+
+| # | o que o print prova |
+|---|---|
+| 1 | **Gerar Vídeo** na prateleira, em BLOCOS, com o glifo novo |
+| 2 | o bloco nasce vazio, botão travado (`disabled === true`, conferido por JS) |
+| 3 | fio de um Input de Imagem → o still aparece como espelho, botão libera (`disabled === false`) |
+| 4 | modelo, duração e preço **do catálogo** — a tela diz `Kling 2.1 · 5s · 720p · 210 ⚡`, e a consulta ao banco devolve exatamente `5 / 720p / 210` |
+| 5 | `@luna` no prompt → aviso e botão travado **antes** do clique |
+| 6 | fio cortado → still some, botão trava de novo, com a frase que explica |
+| 7 | a galeria desenha o vídeo da Fase 2 com primeiro quadro e ▶ |
+
+**O item 7 falhou na primeira tentativa, e o defeito era real.** A galeria geral
+desenhava o vídeo como `<img>` — a imagem quebrada que a Fase 2 registrou como
+pendência — **mesmo com o conserto escrito e no lugar**. A consulta já devolvia
+`isVideo`, a grade já sabia desenhar `<video>` com ▶, e o dado morria no meio:
+`toGridItem`, em `gallery-browser.tsx`, monta o item **campo a campo** e não
+copiava o campo novo.
+
+É a quarta ocorrência da mesma classe neste projeto, depois do
+`"reference image image 1"`, dos dois bytes NUL e do `b-locked`:
+**nenhum typecheck pega** — o campo é opcional na origem e no destino, então
+esquecê-lo é sintaticamente perfeito. O que pega é olhar a tela. *Se o roteiro
+tivesse sido "conferi e passou", esta fase teria sido commitada com o único
+defeito que ela se propôs a consertar ainda de pé.*
+
+**Segundo defeito, no mesmo print.** O rodapé da prateleira dizia *"Vídeo e
+storyboard chegam nas próximas fases"* — logo abaixo do bloco de vídeo que
+acabara de chegar. Uma prateleira que desmente o que ela mesma oferece ensina a
+não ler o rodapé. Agora diz "Storyboard e voz".
+
+**E uma terceira coisa, que não era do roteiro mas era do mesmo defeito.** A
+miniatura da galeria só faz uma coisa: abrir o Lightbox. Consertar a grade sem
+o overlay teria movido a imagem quebrada **um clique para dentro**. O Lightbox
+agora recebe `open(assetId, { isVideo })` — parâmetro opcional, `false` por
+omissão, então os quatro chamadores de imagem não mudaram uma linha. Perguntar
+ao servidor custaria uma viagem por um booleano que **quem chamou já sabe**,
+porque acabou de desenhar a miniatura.
+
+**Vídeo ampliado não tem zoom, e a ausência é a decisão.** Ampliar existe para
+olhar de perto o que a miniatura não mostra; num clipe, o que a miniatura não
+mostra é o **movimento**, e quem responde por isso é o play. Um clique que às
+vezes amplia e às vezes pausa seria o mesmo gesto com dois significados.
+
+**Anotado para o Passe de UI/UX:** o ▶ da miniatura é `bg-canvas/70` sobre o
+primeiro quadro, e num quadro claro ele fica discreto demais — está lá, lê-se
+quando se procura. Não é defeito de lógica, é contraste, e contraste é assunto
+daquele passe.
+
+---
+
+### 13/08/2026 — Fase 3b · a bolinha da aba é projeção, e projeção mora em trigger
+
+Aprovada com o mesmo argumento da carteira, e entregue como **migration à
+parte** (`20260813230000_project_status_projection.sql`) porque migration quem
+aplica é o Jorge, e porque enfiar escrita de banco na validação de uma fase de
+tela mistura dois riscos diferentes.
+
+`projects.status` existe desde 07/08/2026 com o comentário que diz o que ela é
+— *"Aggregated status shown as the pulsing dot on the project tab"* — e **nunca
+teve escritor**: toda aba nasceu `idle` e morreu `idle`.
+
+**Por que trigger e não código de aplicação.** O vídeo trouxe um escritor que
+não passa por rota nenhuma nossa: o webhook da fal chega com service role e
+chama `complete_video_generation`. Atualização de status escrita na aplicação
+simplesmente não existiria no caminho que mais importa — o de um vídeo
+terminando com a aba fechada.
+
+**A regra, em uma frase: "gerando" ganha de tudo; sem nada em voo, a bolinha
+conta o último desfecho.** E `canceled` **não move a bolinha** — cancelar é
+alguém parando de propósito, e vermelho para um pedido atendido seria a tela
+chamando de falha o que o usuário mandou fazer. Hoje ninguém escreve `canceled`;
+por isso a decisão é barata agora e cara depois.
+
+Três detalhes que a migration registra por escrito:
+
+- **A regra mora numa função só** (`project_status_now`), usada pelo gatilho
+  **e** pelo backfill. Duas cópias divergiriam, e a segunda a divergir seria a
+  que ninguém testa.
+- **DELETE também dispara.** Gerações são apagadas à mão de vez em quando — a
+  validação da Fase 2 apagou a linha sintética da disputa na trava —, e sem
+  isso o projeto ficaria "gerando" para sempre por um trabalho que não existe.
+- **A trava que não foi posta.** `revoke update (status) … from authenticated`
+  parece proteger a coluna e **não faz nada**: o Postgres ignora revogação de
+  coluna quando o papel tem o privilégio na tabela inteira, que é como o
+  Supabase concede. Para valer seria preciso revogar UPDATE da tabela e
+  reconceder coluna a coluna — deixando toda coluna futura invisível ao produto
+  até alguém lembrar deste arquivo. Fica sem trava, de propósito: o gatilho
+  sobrescreve na geração seguinte e o estrago máximo é alguém mentir para si
+  mesmo sobre a própria bolinha.
+
+---
+
+### 13/08/2026 — Frente Vídeo · a visão alinhada — registro, não construção
+
+Alinhado com o Jorge na autorização da Fase 3. **Nada aqui é para construir
+agora**; está escrito para que a Fase 4 e os ciclos seguintes não redescubram
+por acidente.
+
+1. **Mapa de vídeo: três nodes** — Gerar Vídeo (básico) · Motion Control ·
+   Máquina de Influencers. **A fronteira entre eles é a topologia de entradas**,
+   não o tamanho da funcionalidade.
+2. **Modos são receitas de prompt, como dado de catálogo — não código.** Dois
+   eixos: **formato** (POV, Selfie, Review, Comercial, Demonstração, Provador,
+   React, Rotina/GRWM) × **estilo**, sendo UGC um estilo **transversal** e não
+   um formato.
+3. **📌 Backlog · Máquina de Influencers**, chegando em camadas: muda
+   (composição + animação, dependências já existem) → falada (depende de
+   Voz/Lipsync) → multi-cena (depende de Roteiro/Storyboard).
+4. **📌 Backlog · Biblioteca de CTAs por canal** — camada do Roteiro, estrutura
+   gancho/corpo/CTA; CTA falado depende de voz; TikTok Shop ("carrinho laranja")
+   é o primeiro cliente.
+5. **📌 Backlog · continuar vídeo a partir do último frame (capítulos)** —
+   conversa do Storyboard, item do esboço original.
+6. **A voz pertence à PERSONAGEM, não ao vídeo.** Configura-se uma vez no
+   character sheet e persiste entre gerações. É princípio, e decide sozinho
+   onde a Fase de voz vai morar.
+7. **📌 Backlog · Arsenal do sidebar: organização e nomenclatura (tema Labs)** —
+   decidir no Passe de UI/UX.
+8. **Nota de mercado:** concorrente em pré-lançamento com formatos equivalentes.
+   Vale como validação da direção; os diferenciais nossos continuam sendo
+   identidade persistente, canvas componível, custo auditável e arquitetura de
+   lote já nascida.

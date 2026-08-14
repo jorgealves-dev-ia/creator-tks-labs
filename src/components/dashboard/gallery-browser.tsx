@@ -59,7 +59,7 @@ export function GalleryBrowser({ initial }: { initial: GeneralGalleryPage }) {
     <>
       <ImageGrid
         items={page.items.map(toGridItem)}
-        onPick={(item) => openLightbox(item.assetId)}
+        onPick={(item) => openLightbox(item.assetId, { isVideo: item.isVideo })}
         hint={copy.openHint}
         untitled={copy.untitled}
         className="mt-6 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6"
@@ -102,6 +102,13 @@ function toGridItem(entry: GalleryEntry): ImageGridItem {
     assetId: entry.assetId,
     url: entry.url,
     label: entry.label,
+    // Um mapeador escrito campo a campo **esquece campo novo em silêncio**, e
+    // este esqueceu: a consulta já devolvia `isVideo`, a grade já sabia desenhar
+    // vídeo, e o primeiro vídeo do produto apareceu como imagem quebrada porque
+    // a informação morria nesta função. Nenhum typecheck pega — a linha que
+    // faltava era opcional dos dois lados. É a mesma classe do
+    // "reference image image 1" e do b-locked: só olhar a tela pega.
+    isVideo: entry.isVideo,
     badge:
       entry.origin.kind === "project"
         ? entry.origin.name

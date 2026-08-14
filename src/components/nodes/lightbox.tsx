@@ -21,27 +21,43 @@ import { t } from "@/lib/i18n/pt-BR";
 
 const copy = t.generation.lightbox;
 
+/**
+ * Quem abre diz **o que** está abrindo.
+ *
+ * O overlay recebe um id de asset e nada mais, então sozinho ele não tem como
+ * saber se aquilo se olha ou se assiste — e um `<img src="…mp4">` não falha com
+ * erro, desenha o ícone de imagem quebrada. Perguntar ao servidor custaria uma
+ * segunda viagem por um booleano; quem chamou **já sabe**, porque acabou de
+ * desenhar a miniatura.
+ *
+ * O parâmetro é opcional e vale `false` por omissão: os quatro chamadores de
+ * imagem continuam como estavam. O dia em que um cartão Resultado mostrar vídeo,
+ * é aqui que ele precisa passar `isVideo` — e este parágrafo é o aviso.
+ */
 type LightboxState = {
   assetId: string | null;
-  open: (assetId: string) => void;
+  isVideo: boolean;
+  open: (assetId: string, options?: { isVideo?: boolean }) => void;
   close: () => void;
 };
 
 export const useLightbox = create<LightboxState>((set) => ({
   assetId: null,
-  open: (assetId) => set({ assetId }),
-  close: () => set({ assetId: null }),
+  isVideo: false,
+  open: (assetId, options) => set({ assetId, isVideo: options?.isVideo ?? false }),
+  close: () => set({ assetId: null, isVideo: false }),
 }));
 
 export function Lightbox() {
   const assetId = useLightbox((state) => state.assetId);
+  const isVideo = useLightbox((state) => state.isVideo);
 
   if (!assetId) return null;
 
-  return <LightboxView key={assetId} assetId={assetId} />;
+  return <LightboxView key={assetId} assetId={assetId} isVideo={isVideo} />;
 }
 
-function LightboxView({ assetId }: { assetId: string }) {
+function LightboxView({ assetId, isVideo }: { assetId: string; isVideo: boolean }) {
   const close = useLightbox((state) => state.close);
   const [url, setUrl] = useState<string | null>(null);
   const [zoomed, setZoomed] = useState(false);
@@ -71,12 +87,14 @@ function LightboxView({ assetId }: { assetId: string }) {
     <div
       role="dialog"
       aria-modal
-      aria-label={copy.title}
+      aria-label={isVideo ? copy.videoTitle : copy.title}
       className="fixed inset-0 z-50 flex flex-col bg-canvas/95 backdrop-blur-sm"
       onClick={close}
     >
       <div className="flex shrink-0 items-center justify-between px-5 py-3">
-        <p className="text-xs text-ink-faint">{zoomed ? copy.zoomedHint : copy.hint}</p>
+        <p className="text-xs text-ink-faint">
+          {isVideo ? copy.videoHint : zoomed ? copy.zoomedHint : copy.hint}
+        </p>
 
         <button
           type="button"
@@ -97,7 +115,26 @@ function LightboxView({ assetId }: { assetId: string }) {
           if (event.target === event.currentTarget) close();
         }}
       >
-        {url ? (
+        {url && isVideo ? (
+          /*
+            Vídeo não tem zoom, e a ausência é a decisão: ampliar existe para
+            olhar de perto o que a miniatura não mostra, e num clipe o que a
+            miniatura não mostra é o **movimento** — quem responde por isso é o
+            play, não a lupa. Um clique que às vezes amplia e às vezes pausa
+            seria o mesmo gesto com dois significados.
+
+            `stopPropagation` porque o clique no fundo fecha o overlay, e sem
+            ele arrastar a barra de progresso fecharia o vídeo no meio.
+          */
+          <video
+            src={url}
+            controls
+            preload="metadata"
+            aria-label={copy.videoTitle}
+            onClick={(event) => event.stopPropagation()}
+            className="max-h-full max-w-full object-contain"
+          />
+        ) : url ? (
           /* Short-lived signed URL for a private bucket. */
           // eslint-disable-next-line @next/next/no-img-element
           <img

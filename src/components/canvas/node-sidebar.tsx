@@ -92,6 +92,15 @@ export function NodeSidebar() {
     addNode("generator", {}, nodes.length);
   }
 
+  /**
+   * O bloco de vídeo nasce vazio pelo mesmo motivo — e com um a mais: ele nasce
+   * **sem imagem**, que é o estado que o card explica ("conecte uma imagem") em
+   * vez de esconder. Pré-conectar a alguma coisa seria escolher por quem clicou.
+   */
+  function addVideoGenerator() {
+    addNode("video-generator", {}, nodes.length);
+  }
+
   return (
     <>
       <aside
@@ -383,6 +392,30 @@ export function NodeSidebar() {
                 </span>
                 <span className="block truncate text-[11px] text-ink-faint">
                   {t.generation.node.sidebarHint}
+                </span>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={addVideoGenerator}
+              title={t.videoNode.generatingHint}
+              className="flex w-full items-center gap-3 rounded-lg py-1.5 text-left
+                         transition-colors hover:bg-surface-hover"
+            >
+              <span
+                aria-hidden
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg
+                           border border-line bg-accent-soft text-ink-muted"
+              >
+                <NodeIcon kind="video-generator" className="size-3.5" />
+              </span>
+              <span className={revealed("min-w-0 flex-1")}>
+                <span className="block truncate text-xs font-medium text-ink">
+                  {t.videoNode.title}
+                </span>
+                <span className="block truncate text-[11px] text-ink-faint">
+                  {t.videoNode.stillEmpty}
                 </span>
               </span>
             </button>

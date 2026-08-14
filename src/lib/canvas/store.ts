@@ -309,6 +309,27 @@ function syncInputInto(nodes: Node[], edges: readonly Edge[], input: Node): Node
 
     const generator = next.find((node) => node.id === edge.target);
 
+    // O fio vivo alcança o bloco de vídeo também: trocar a foto do card troca o
+    // still que vai ser animado. Sem isto, o card mostraria uma imagem e a
+    // geração usaria outra — que é exatamente o "canvas que não é a verdade
+    // sobre a geração" que a regra do fio vivo existe para impedir.
+    if (generator?.type === VIDEO_TARGET) {
+      next = next.map((node) =>
+        node.id === generator.id
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                sourceAssetId: contributed[0]?.assetId ?? null,
+                sourceNodeId: contributed[0] ? input.id : null,
+              },
+            }
+          : node,
+      );
+
+      continue;
+    }
+
     if (generator?.type !== "generator") continue;
 
     const current = readReferences(generator);
@@ -336,7 +357,64 @@ function syncInputInto(nodes: Node[], edges: readonly Edge[], input: Node): Node
   return next;
 }
 
+/**
+ * O bloco Gerar Vídeo recebe **um still**, não uma lista de referências.
+ *
+ * ---------------------------------------------------------------------------
+ * Por que ele não reusa a máquina de referências
+ * ---------------------------------------------------------------------------
+ *
+ * A lista de referências existe para responder "o que mais este bloco está
+ * olhando" — e traz junto grupo, chip de papel, instrução por imagem, teto do
+ * modelo e a chave que silencia. Nenhuma dessas perguntas existe aqui: o Kling
+ * image-to-video recebe **uma** imagem, e ela não é uma referência entre outras,
+ * é o primeiro quadro. Importar a máquina inteira daria ao bloco cinco controles
+ * que não significam nada e um contador que sempre diria "1 de 1".
+ *
+ * A invariante 12 continua valendo, e é o que importa: **a imagem chega por
+ * fio**, de um Input de Imagem ou de um Resultado. O que muda é onde ela é
+ * guardada, não como ela entra.
+ */
+const VIDEO_TARGET = "video-generator";
+
+/** As duas pontas de um fio que significa "anime esta imagem". */
+function wiredStill(
+  nodes: readonly Node[],
+  connection: { source?: string | null; target?: string | null },
+): { source: Node; block: Node; assetId: string } | null {
+  const source = nodes.find((node) => node.id === connection.source);
+  const block = nodes.find((node) => node.id === connection.target);
+
+  if (!source || block?.type !== VIDEO_TARGET) return null;
+  if (!ATTACHING_SOURCES.has(source.type ?? "")) return null;
+
+  // A primeira imagem que o card oferece. Um Input de Produto com cinco fotos
+  // entrega a primeira — e o bloco diz na tela qual foi, porque escolher em
+  // silêncio seria animar uma foto que ninguém apontou.
+  const contributed = inputReferences(source);
+  const assetId =
+    contributed[0]?.assetId ??
+    (typeof source.data.assetId === "string" ? source.data.assetId : null);
+
+  if (!assetId) return null;
+
+  return { source, block, assetId };
+}
+
 function detachReference(nodes: Node[], edge: Edge): Node[] {
+  // O fio do vídeo se desfaz limpando o still — a mesma regra do fio cortado
+  // que leva a referência junto: gerar com uma imagem que a pessoa acabou de
+  // ver-se desconectar é a única coisa que um canvas não pode fazer.
+  const still = wiredStill(nodes, edge);
+
+  if (still) {
+    return nodes.map((node) =>
+      node.id === still.block.id
+        ? { ...node, data: { ...node.data, sourceAssetId: null, sourceNodeId: null } }
+        : node,
+    );
+  }
+
   const pair = wiredPair(nodes, edge);
 
   if (!pair) return nodes;
@@ -628,6 +706,32 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         saveStatus: "dirty" as const,
         notice: null,
       };
+
+      // O fio que anima uma imagem. Resolvido antes do de referências porque os
+      // dois são o mesmo gesto com destinos diferentes, e só um deles casa.
+      const still = wiredStill(state.nodes, connection);
+
+      if (still) {
+        return {
+          ...connected,
+          nodes: state.nodes.map((node) =>
+            node.id === still.block.id
+              ? {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    sourceAssetId: still.assetId,
+                    // Guardado para o bloco poder dizer de onde a imagem veio, e
+                    // para o fio vivo saber qual card reescrever quando alguém o
+                    // editar. Um id de asset sozinho não responde "de qual card?"
+                    // quando a mesma foto chega por dois.
+                    sourceNodeId: still.source.id,
+                  },
+                }
+              : node,
+          ),
+        };
+      }
 
       if (!pair) return { ...connected, nodes: state.nodes };
 

@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { HelperLinesOverlay } from "@/components/canvas/helper-lines-overlay";
 import { CharacterNode } from "@/components/nodes/character-node";
 import { GeneratorNode } from "@/components/nodes/generator-node";
+import { VideoGeneratorNode } from "@/components/nodes/video-generator-node";
 import { InputImageNode } from "@/components/nodes/input-image-node";
 import { InputProductNode } from "@/components/nodes/input-product-node";
 import { InputPoseNode } from "@/components/nodes/input-pose-node";
@@ -47,6 +48,7 @@ const nodeTypes: NodeTypes = {
   character: CharacterNode,
   product: LegacyProductNode,
   generator: GeneratorNode,
+  "video-generator": VideoGeneratorNode,
   result: ResultNode,
   "input-image": InputImageNode,
   "input-product": InputProductNode,

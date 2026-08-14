@@ -4,9 +4,14 @@ import type {
   Capability,
   CatalogProvider,
   ModelImageSize,
+  ModelVideoDuration,
   ProviderStatus,
 } from "@/lib/ai/catalog-types";
-import { extractionProviderStatus, imageProviderStatus } from "@/lib/providers/registry";
+import {
+  extractionProviderStatus,
+  imageProviderStatus,
+  videoProviderStatus,
+} from "@/lib/providers/registry";
 import type { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
@@ -32,8 +37,19 @@ const CAPABILITY_READERS: Record<
   {
     /** The value stored in ai_models.capabilities. */
     flag: string;
-    /** Which column prices it. */
-    price: (model: { extraction_sparks: number | null; image_sparks: number | null }) => number | null;
+    /**
+     * O que precifica esta capacidade.
+     *
+     * Duas delas leem uma **coluna** de `ai_models`; vídeo lê a **tabela** de
+     * durações, porque não existe `video_sparks` e não deve existir — duração é
+     * a unidade de compra de um vídeo, e um preço avulso ao lado da tabela seria
+     * uma segunda verdade sobre o mesmo número.
+     */
+    price: (model: {
+      extraction_sparks: number | null;
+      image_sparks: number | null;
+      ai_model_video_prices: { duration_seconds: number; sparks: number }[];
+    }) => number | null;
     /**
      * Which resolutions it sells. Only image generation has any: an extraction
      * has no size, and answering with the image prices anyway would offer the
@@ -42,6 +58,19 @@ const CAPABILITY_READERS: Record<
     sizes: (model: {
       ai_model_image_prices: { image_size: string; sparks: number; sort_order: number }[];
     }) => ModelImageSize[];
+    /**
+     * Quais durações ela vende. Só vídeo tem alguma — e é a lista vazia das
+     * outras duas que impede um seletor de duração de aparecer onde duração
+     * não significa nada.
+     */
+    durations: (model: {
+      ai_model_video_prices: {
+        duration_seconds: number;
+        resolution: string;
+        sparks: number;
+        sort_order: number;
+      }[];
+    }) => ModelVideoDuration[];
     status: (slug: string, envVarName: string) => ProviderStatus;
   }
 > = {
@@ -49,6 +78,7 @@ const CAPABILITY_READERS: Record<
     flag: "extraction",
     price: (model) => model.extraction_sparks,
     sizes: () => [],
+    durations: () => [],
     status: extractionProviderStatus,
   },
   image_gen: {
@@ -61,9 +91,41 @@ const CAPABILITY_READERS: Record<
         // alphabetical order in which 4K comes before 1K.
         .sort((a, b) => a.sort_order - b.sort_order)
         .map((price) => ({ size: price.image_size, sparks: price.sparks })),
+    durations: () => [],
     status: imageProviderStatus,
   },
+  video_gen: {
+    flag: "video_gen",
+    /**
+     * O preço-base de um modelo de vídeo é o da **duração mais curta que ele
+     * vende**, e não uma coluna própria: `ai_models` não tem `video_sparks`,
+     * de propósito. Duração é a unidade de compra de um vídeo do mesmo jeito
+     * que resolução é a de uma imagem, e um preço avulso ao lado da tabela
+     * seria uma segunda verdade sobre o mesmo número.
+     *
+     * `null` quando não há linha nenhuma — e o filtro abaixo tira o modelo da
+     * lista, que é o comportamento certo: um modelo que não sabemos precificar
+     * não pode ser selecionável.
+     */
+    price: (model) => cheapestDuration(model.ai_model_video_prices)?.sparks ?? null,
+    sizes: () => [],
+    durations: (model) =>
+      [...model.ai_model_video_prices]
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((price) => ({
+          seconds: price.duration_seconds,
+          resolution: price.resolution,
+          sparks: price.sparks,
+        })),
+    status: videoProviderStatus,
+  },
 };
+
+function cheapestDuration(
+  prices: readonly { duration_seconds: number; sparks: number }[],
+): { sparks: number } | null {
+  return [...prices].sort((a, b) => a.duration_seconds - b.duration_seconds)[0] ?? null;
+}
 
 export async function loadCatalog(
   supabase: SupabaseServerClient,
@@ -77,7 +139,7 @@ export async function loadCatalog(
   const { data } = await supabase
     .from("ai_providers")
     .select(
-      "slug, display_name, enabled, env_var_name, sort_order, ai_models (id, slug, display_name, extraction_sparks, image_sparks, is_default, enabled, capabilities, sort_order, ai_model_image_prices (image_size, sparks, sort_order))",
+      "slug, display_name, enabled, env_var_name, sort_order, ai_models (id, slug, display_name, extraction_sparks, image_sparks, is_default, enabled, capabilities, sort_order, ai_model_image_prices (image_size, sparks, sort_order), ai_model_video_prices (duration_seconds, resolution, sparks, sort_order))",
     )
     .eq("enabled", true)
     .order("sort_order");
@@ -102,6 +164,7 @@ export async function loadCatalog(
           sparks: reader.price(model) ?? 0,
           isDefault: model.is_default,
           sizes: reader.sizes(model),
+          durations: reader.durations(model),
         })),
     }))
     .filter((provider) => provider.models.length > 0);

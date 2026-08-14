@@ -23,6 +23,14 @@ export type ImageGridItem = {
   label: string | null;
   /** Um selo discreto no canto — a origem, na Galeria geral. Ausente no seletor. */
   badge?: string | null;
+  /**
+   * Se o arquivo é um vídeo.
+   *
+   * Ausente em toda grade que só pode conter imagem — o seletor de referências,
+   * por exemplo, que filtra `assets.kind = 'image'` na consulta e por isso nunca
+   * precisa desta pergunta.
+   */
+  isVideo?: boolean;
 };
 
 /**
@@ -70,12 +78,43 @@ export function ImageGrid<T extends ImageGridItem>({
             >
               <span className="relative block aspect-square bg-canvas">
                 {/* URLs assinadas de vida curta, de um bucket privado. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={item.url}
-                  alt={item.label ?? untitled}
-                  className="size-full object-cover"
-                />
+                {item.isVideo ? (
+                  /*
+                    `preload="metadata"` é o que faz um vídeo ter miniatura sem
+                    thumbnail gerada: o navegador baixa só o cabeçalho e desenha
+                    o primeiro quadro. Sem `controls` — aqui a miniatura é um
+                    botão que abre, não um player; dois alvos de clique no mesmo
+                    quadrado seriam duas ações disputando o mesmo gesto.
+                  */
+                  <video
+                    src={item.url}
+                    preload="metadata"
+                    muted
+                    playsInline
+                    aria-label={item.label ?? untitled}
+                    className="size-full object-cover"
+                  />
+                ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={item.url}
+                    alt={item.label ?? untitled}
+                    className="size-full object-cover"
+                  />
+                )}
+
+                {/* O triângulo que diz "isto se assiste". Um primeiro quadro
+                    parado é indistinguível de uma foto, e a diferença importa
+                    antes do clique. */}
+                {item.isVideo ? (
+                  <span
+                    aria-hidden
+                    className="absolute left-1/2 top-1/2 flex size-7 -translate-x-1/2 -translate-y-1/2
+                               items-center justify-center rounded-full bg-canvas/70 text-[10px] text-ink"
+                  >
+                    ▶
+                  </span>
+                ) : null}
 
                 {picked ? (
                   <span className="absolute right-1 top-1 flex size-4 items-center justify-center rounded-full bg-accent text-[9px] font-bold text-canvas">

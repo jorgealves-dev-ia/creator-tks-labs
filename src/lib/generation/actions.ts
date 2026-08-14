@@ -119,6 +119,16 @@ export async function listImageProviders(): Promise<CatalogProvider[]> {
   return loadCatalog(supabase, "image_gen");
 }
 
+/**
+ * E os que sabem animar. Mesma consulta, outra capability — a lista de durações
+ * vem junto, e é ela que diz o que o bloco pode oferecer.
+ */
+export async function listVideoProviders(): Promise<CatalogProvider[]> {
+  const { supabase } = await requireSession();
+
+  return loadCatalog(supabase, "video_gen");
+}
+
 export async function generateCanonicalImage(
   input: unknown,
 ): Promise<GenerateCanonicalResult> {

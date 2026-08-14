@@ -12,6 +12,7 @@ export type NodeKind =
   | "character"
   | "product"
   | "generator"
+  | "video-generator"
   | "result"
   | "input-image"
   | "input-product"
@@ -56,6 +57,16 @@ const PATHS: Record<NodeKind, React.ReactNode> = {
       <rect x="1.5" y="2.5" width="13" height="11" rx="2" {...STROKE} />
       <path d="M1.5 11l3.2-3.2 2.4 2.4 3-3 4.4 4.4" {...STROKE} />
       <circle cx="10.4" cy="6" r="1.1" fill="currentColor" />
+    </>
+  ),
+
+  // A mesma moldura do gerador de imagem, com um play dentro em vez de uma
+  // paisagem: o parentesco é a metade da mensagem — "isto também é um bloco que
+  // produz" — e o triângulo é a outra, dita sem uma palavra.
+  "video-generator": (
+    <>
+      <rect x="1.5" y="2.5" width="13" height="11" rx="2" {...STROKE} />
+      <path d="M6.6 5.9l4.2 2.1-4.2 2.1V5.9z" {...STROKE} />
     </>
   ),
 

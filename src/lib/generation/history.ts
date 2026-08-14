@@ -113,6 +113,15 @@ export type GenerationThumb = {
   url: string;
   label: string | null;
   createdAt: string;
+  /**
+   * Se o arquivo é um vídeo — e a grade precisa saber **antes** de desenhar.
+   *
+   * Nasceu em 13/08/2026, com o primeiro vídeo: um `<img src="…mp4">` não falha
+   * com erro, ele desenha o ícone de imagem quebrada, que é indistinguível de um
+   * link expirado. A galeria mostraria um acervo com buracos e a causa seria a
+   * tag errada.
+   */
+  isVideo: boolean;
 };
 
 /**
@@ -181,6 +190,122 @@ export async function listNodeGenerations(input: unknown): Promise<GenerationThu
     .limit(NODE_HISTORY_LIMIT);
 
   return withSignedUrls(supabase, rows ?? []);
+}
+
+/**
+ * Os vídeos deste bloco — **inclusive os que ainda não existem**.
+ *
+ * ---------------------------------------------------------------------------
+ * Por que esta lista não se parece com a de imagens
+ * ---------------------------------------------------------------------------
+ *
+ * `listNodeGenerations` devolve só sucessos, e está certa: no bloco de imagem, um
+ * trabalho vivo mora na **fila do cliente**, porque a intenção de gerar quatro
+ * imagens só existe no navegador até cada requisição sair. O banco não sabe o
+ * que foi pedido enquanto não é feito.
+ *
+ * No vídeo é o contrário, e essa inversão é o ciclo inteiro: **a linha nasce
+ * antes de o provedor ser chamado.** No primeiro milissegundo já existe um
+ * `queued` no banco com dono, projeto e node. Uma fila no cliente seria uma
+ * segunda cópia — pior — de um estado que o banco já guarda melhor: ela morreria
+ * na troca de aba, não sobreviveria a um reload, e discordaria do banco no
+ * instante em que o webhook chegasse com a aba fechada.
+ *
+ * Então o estado vivo do bloco de vídeo **é o banco**, e esta consulta é a
+ * leitura dele. O Realtime avisa quando reler; nada é mantido em memória para
+ * divergir.
+ *
+ * Por isso ela traz os quatro estados e não filtra por sucesso: uma caixinha
+ * precisa saber desenhar "na fila", "gerando" e "falhou" — e uma falha, no
+ * vídeo, é a explicação de por que não há nada para ver.
+ */
+export type VideoJobRow = {
+  generationId: string;
+  status: "queued" | "running" | "succeeded" | "failed" | "canceled";
+  /** Assinada, e só quando existe arquivo. */
+  url: string | null;
+  assetId: string | null;
+  errorMessage: string | null;
+  sparksCharged: number;
+  durationSeconds: number | null;
+  createdAt: string;
+  /** Há quanto tempo o trabalho está em voo, para o botão de reconciliar. */
+  ageSeconds: number;
+};
+
+export async function listNodeVideos(input: unknown): Promise<VideoJobRow[]> {
+  const parsed = recentSchema.safeParse(input);
+
+  if (!parsed.success) return [];
+
+  const supabase = await createSupabaseServerClient();
+  const { data: claims } = await supabase.auth.getClaims();
+
+  if (!claims?.claims) {
+    redirect("/login");
+  }
+
+  const { data: rows } = await supabase
+    .from("generations")
+    .select(
+      "id, status, created_at, started_at, result_asset_id, error_message, sparks_charged, params",
+    )
+    .eq("project_id", parsed.data.projectId)
+    .eq("node_id", parsed.data.nodeId)
+    .eq("media_kind", "video")
+    .order("created_at", { ascending: false })
+    .limit(NODE_HISTORY_LIMIT);
+
+  if (!rows || rows.length === 0) return [];
+
+  // Uma assinatura só para todos os arquivos que existem. Trabalhos vivos não
+  // têm arquivo, e pedir link para eles seria uma viagem por nada.
+  const assetIds = rows
+    .map((row) => row.result_asset_id)
+    .filter((id): id is string => id !== null);
+
+  const urlByAsset = new Map<string, string>();
+
+  if (assetIds.length > 0) {
+    const { data: assets } = await supabase
+      .from("assets")
+      .select("id, storage_path")
+      .in("id", assetIds);
+
+    const { data: signed } = await supabase.storage
+      .from("assets")
+      .createSignedUrls(
+        (assets ?? []).map((asset) => asset.storage_path),
+        SIGNED_URL_TTL_SECONDS,
+      );
+
+    const urlByPath = new Map((signed ?? []).map((entry) => [entry.path, entry.signedUrl]));
+
+    for (const asset of assets ?? []) {
+      const url = urlByPath.get(asset.storage_path);
+
+      if (url) urlByAsset.set(asset.id, url);
+    }
+  }
+
+  const now = Date.now();
+
+  return rows.map((row) => {
+    const duration = (row.params as { duration_seconds?: unknown } | null)?.duration_seconds;
+    const since = row.started_at ?? row.created_at;
+
+    return {
+      generationId: row.id,
+      status: row.status,
+      url: row.result_asset_id ? (urlByAsset.get(row.result_asset_id) ?? null) : null,
+      assetId: row.result_asset_id,
+      errorMessage: row.error_message,
+      sparksCharged: row.sparks_charged,
+      durationSeconds: typeof duration === "number" ? duration : null,
+      createdAt: row.created_at,
+      ageSeconds: Math.max(0, Math.round((now - new Date(since).getTime()) / 1000)),
+    };
+  });
 }
 
 /**
@@ -458,9 +583,13 @@ async function withSignedUrls(
 
   if (assetIds.length === 0) return [];
 
+  // `kind` vem do **asset**, não de `generations.media_kind`, e a diferença é de
+  // autoridade: a pergunta é "que arquivo é este", e quem responde é o arquivo.
+  // Ler da geração daria a mesma resposta hoje e sobreviveria mal ao dia em que
+  // uma geração produzir mais de uma coisa.
   const { data: assets } = await supabase
     .from("assets")
-    .select("id, storage_path, label")
+    .select("id, storage_path, label, kind")
     .in("id", assetIds);
 
   if (!assets || assets.length === 0) return [];
@@ -490,6 +619,7 @@ async function withSignedUrls(
         url,
         label: asset.label,
         createdAt: row.created_at,
+        isVideo: asset.kind === "video",
       },
     ];
   });

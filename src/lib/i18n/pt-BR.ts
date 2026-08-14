@@ -192,7 +192,10 @@ export const t = {
     noProjectsBody: "Crie seu primeiro projeto para abrir o canvas.",
     sidebarTitle: "Arsenal",
     sidebarBlocks: "Blocos",
-    sidebarComingSoon: "Vídeo e storyboard chegam nas próximas fases.",
+    // O vídeo chegou em 13/08/2026 e esta linha ficou logo abaixo dele dizendo
+    // que ele não tinha chegado. Uma prateleira que desmente o que ela mesma
+    // oferece ensina a não ler o rodapé.
+    sidebarComingSoon: "Storyboard e voz chegam nas próximas fases.",
     status: {
       idle: "Pronto",
       generating: "Gerando",
@@ -877,6 +880,84 @@ export const t = {
   },
 
   /** The generation blocks on the canvas — docs/nodes-geracao.md. */
+  /**
+   * O bloco Gerar Vídeo — a frente de vídeo, ciclo 1.
+   *
+   * Separado de `generation` de propósito: as duas telas se parecem e **não são
+   * a mesma**. Vídeo não tem quantidade, não tem formato, não tem qualidade, não
+   * tem ajustes de cena e não aceita `@` — e uma seção compartilhada com cinco
+   * campos ignorados de um lado é como as duas começam a divergir por dentro
+   * enquanto parecem iguais por fora.
+   */
+  videoNode: {
+    title: "Gerar Vídeo",
+    configTitle: "Configuração",
+    modelLabel: "Modelo",
+    durationLabel: "Duração",
+    /** Uma opção só, e ela vem do catálogo — ver a migration da Fase 1. */
+    durationFixedHint:
+      "Nesta versão o clipe é de 5 segundos. Outras durações chegam pelo catálogo, sem atualização da tela.",
+    stillTitle: "Imagem de partida",
+    stillEmpty: "Conecte uma imagem",
+    stillEmptyHint:
+      "Arraste um fio de um Input de Imagem ou de um Resultado até a borda esquerda deste bloco. O vídeo começa nessa imagem.",
+    stillFromPrefix: "de",
+    stillAlt: "Imagem que será animada",
+    /** O Kling recebe uma imagem; um card com várias entrega a primeira. */
+    stillFirstOfMany: "Este card tem mais de uma foto — a primeira é a que será animada.",
+    promptLabel: "Movimento · opcional",
+    promptPlaceholder: "O que acontece no clipe? Deixe vazio para um movimento sutil.",
+    /**
+     * A recusa da menção, dita **antes** do clique. O Kling recebe uma imagem, e
+     * ela já é a personagem — uma menção anexaria uma segunda folha que não tem
+     * para onde ir. Aceitar e ignorar em silêncio seria cobrar por uma geração
+     * que não fez o que a frase pedia.
+     */
+    mentionRefused:
+      "Neste bloco a personagem entra pela imagem, não pelo @. Tire a menção do texto — o vídeo já começa no rosto que você conectou.",
+    generate: "Gerar Vídeo",
+    generatingHint: "Um clipe de 5 segundos leva de 1 a 3 minutos. Pode fechar a aba: o resultado fica salvo.",
+    costWillPrefix: "Custará",
+    balanceLabel: "Saldo",
+    resultTitle: "Resultado",
+    emptyResult: "O vídeo aparecerá aqui",
+    /** Diz o que sai e o que fica — os vídeos já gerados continuam na galeria. */
+    remove: "Tirar este bloco do canvas (os vídeos já gerados ficam)",
+    /** Os três estados de um trabalho, na caixinha e na moldura. */
+    statusQueued: "Na fila",
+    statusRunning: "Gerando",
+    statusFailed: "Não deu",
+    /** O botão que impede um node de ficar Gerando para sempre. */
+    checkNow: "Verificar agora",
+    checkNowHint:
+      "Pergunta ao provedor o que houve com este trabalho. Útil quando o retorno demora mais do que o normal.",
+    checking: "Verificando…",
+    stillPending: "Ainda gerando do lado do provedor.",
+    /** As recusas, cada uma com o conserto na própria frase. */
+    errors: {
+      invalid: "Não foi possível enviar este pedido. Recarregue a página e tente de novo.",
+      unauthenticated: "Sua sessão expirou. Recarregue a página para continuar.",
+      not_configured:
+        "O fornecedor de vídeo não está configurado neste ambiente. Avise o administrador.",
+      webhook_not_configured:
+        "O endereço de retorno do provedor não está configurado, então o vídeo sairia sem ter como voltar. Nada foi enviado e nada foi cobrado.",
+      insufficient_balance: "Sparks insuficientes para este vídeo.",
+      no_source_image: "Conecte uma imagem de partida antes de gerar.",
+      missing_reference: "A imagem conectada não foi encontrada. Reconecte o card.",
+      mention_not_supported:
+        "Neste bloco a personagem entra pela imagem, não pelo @. Tire a menção do texto.",
+      unsupported_duration: "Este modelo não vende esta duração.",
+      translation_failed:
+        "Não foi possível traduzir a descrição do movimento. Tente de novo em instantes.",
+      refused:
+        "O provedor recusou animar esta imagem. Ajuste a descrição do movimento e tente de novo.",
+      provider_account:
+        "A conta do fornecedor de vídeo está sem saldo e recusou o pedido. Avise o administrador — nada foi cobrado de você.",
+      error: "Não foi possível gerar o vídeo. Tente de novo.",
+      /** O que a linha guarda quando o trabalho morre depois de enviado. */
+      lost: "Perdemos o retorno deste trabalho.",
+    },
+  },
   generation: {
     node: {
       title: "Gerar Imagem",
@@ -1211,10 +1292,14 @@ export const t = {
 
     lightbox: {
       title: "Imagem ampliada",
+      videoTitle: "Vídeo",
       close: "Fechar",
       loading: "Carregando…",
       hint: "Clique na imagem para ampliar · Esc para fechar",
       zoomedHint: "Clique na imagem para reduzir · arraste para percorrer · Esc para fechar",
+      // Vídeo não amplia — então a dica não pode prometer ampliar. Ela fala do
+      // que existe ali: os controles do player e a saída.
+      videoHint: "Use os controles para assistir · Esc para fechar",
       openHint: "Ver ampliada",
     },
 

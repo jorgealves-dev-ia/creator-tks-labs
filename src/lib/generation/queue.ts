@@ -44,14 +44,35 @@ import { useBalance } from "@/lib/sparks/balance-store";
  * fio virou `notice` efêmero em vez de morar no grafo.
  *
  * ---------------------------------------------------------------------------
- * O transporte é trocável, e é isso que o vídeo herda
+ * Esta fila é da imagem, e o vídeo NÃO a herdou
  * ---------------------------------------------------------------------------
  *
- * `runSlot` é o único ponto que conhece o transporte. Hoje ele é
- * `fetch → resposta`, porque uma imagem cabe no `maxDuration` (a exceção medida
- * da invariante 1). No dia do vídeo ele vira `fetch → linha queued → webhook →
- * Realtime`, com o **provedor** como trabalhador — e nada acima desta função
- * muda: nem os estados, nem o teto, nem a grade, nem o botão.
+ * Aqui morava uma previsão — *"`runSlot` é o único ponto que conhece o
+ * transporte, e no dia do vídeo ele vira `fetch → linha queued → webhook →
+ * Realtime`"*. **O dia do vídeo chegou em 13/08/2026 e a previsão foi revogada**
+ * (decisão registrada em `docs/decisoes.md`), então ela sai daqui em vez de
+ * ficar prometendo um caminho que ninguém vai percorrer.
+ *
+ * O que a fila do vídeo mostrou é que os dois casos são **opostos**, e não o
+ * mesmo caso com transportes diferentes:
+ *
+ *   imagem   a intenção de gerar quatro só existe no navegador até cada
+ *            requisição sair. O banco não sabe o que foi pedido enquanto não é
+ *            feito — então alguém do lado de cá precisa lembrar, e é esta fila
+ *   vídeo    a linha nasce `queued` **antes** de o provedor ser chamado. O banco
+ *            já sabe, e melhor: sobrevive ao reload, à troca de aba e ao webhook
+ *            que chega com a aba fechada
+ *
+ * Generalizar `runSlot` para os dois teria dado ao vídeo uma **segunda cópia**
+ * do estado que o banco guarda melhor — e duas cópias divergem no pior momento,
+ * que aqui é o de um trabalho pago terminando sem ninguém olhando. Por isso o
+ * bloco de vídeo não tem fila de cliente nenhuma: ele lê o banco e o Realtime
+ * diz quando reler (`video-generator-node.tsx`).
+ *
+ * `runSlot` continua sendo o único ponto que conhece o transporte **desta**
+ * fila, e isso segue valendo. O que não vale é tratar isso como o desenho
+ * universal: um transporte assíncrono não precisa de fila no cliente, precisa do
+ * contrário.
  */
 
 /**
