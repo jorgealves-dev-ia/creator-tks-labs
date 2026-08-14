@@ -3018,3 +3018,97 @@ fora da tarefa declarada. Foi feito assim mesmo, porque é o mesmo defeito, num
 arquivo que a geração paga da própria Fase 4 ia exercitar — e entregar a bolinha
 funcionando ao lado de um node de vídeo mudo seria entregar a metade que não
 importa.
+
+---
+
+### 14/08/2026 — Fase 4 · a geração paga, e a arbitragem do preço contra a fatura
+
+Um clipe, dirigido pelo Jorge na interface de produção: *"ela vira para a câmera, sorri e comemora levantando o controle de videogame"*, a partir de uma imagem da @luna no quarto gamer. 72 segundos entre o clique e o vídeo na tela.
+
+**As duas coisas consertadas hoje foram exercitadas no caminho real, e as duas funcionaram:** o node saiu de "Gerando" e mostrou o vídeo **sozinho**, e a bolinha da aba pulsou amarela e voltou a verde **sozinha**. Nenhum F5.
+
+**A auditoria, contra o marco zero gravado antes do clique:**
+
+| | antes | depois |
+|---|---|---|
+| saldo | 7.165 ⚡ | **6.955** ⚡ |
+| lançamentos | 42 | **43** — um só |
+| gerações | 56 | **57** |
+| assets | 53 | **54** |
+
+O lançamento tem `created_at = 14:27:41.861333`, **idêntico** ao `completed_at` da geração: mesmo microssegundo, uma transação só. E o asset foi gravado às 14:27:41.406 — **antes** da cobrança. A ordem é a que importa: nada é cobrado por um vídeo que ainda não está no Storage.
+
+**A ARBITRAGEM DO PREÇO, fechada contra a fatura.** A dúvida vinha da Fase 0: a caixa de pricing da fal dizia US$ 0,28 e o readme do modelo dizia US$ 0,25, e o catálogo foi escrito acreditando na caixa (`real_cost_cents = 154`). O painel de billing saiu de **US$ 0,28 (1 request)** para **US$ 0,56 (2 requests)** — este clipe custou **US$ 0,28**. **A caixa de pricing venceu o readme**, e o catálogo estava certo.
+
+A conferência que fecha o argumento por outro lado: US$ 0,56 ao câmbio implícito do catálogo (~R$ 5,50/US$) dá **R$ 3,08** — exatamente o que os dois `real_cost_cents` de 154 previam. **Margem 1,3636× → 1,36×, confirmada contra fatura, não contra estimativa.**
+
+**Deriva de rosto: não houve.** A @luna manteve o rosto do primeiro ao último quadro. O item *"@ contribui texto de identidade"* continua dormindo no backlog — o resultado não deu o gatilho que o acordaria.
+
+---
+
+### 14/08/2026 — Fase 4 · o saldo surdo, e a carteira que passou a se anunciar
+
+**Defeito encontrado pelo dono, na tela, depois do sucesso:** o vídeo foi gerado e cobrado, e o saldo **não se moveu** — nem no cabeçalho, nem no rodapé do bloco. Só com F5. **Dinheiro na tela mentindo por 210 ⚡.**
+
+A suspeita dele estava certa: mesma família do canal mudo. Dois leitores, duas surdezes, uma origem só:
+
+- o **cabeçalho** lia a `prop` do servidor, que só muda quando o servidor renderiza de novo;
+- o **rodapé do bloco** lia o store, semeado por aquela mesma prop e movido apenas pela subtração otimista da fila de **imagens**.
+
+E a cobrança do vídeo não passa por nenhum dos dois: acontece no webhook da fal, servidor puro. Nenhuma resposta volta ao navegador, nenhuma subtração roda, nenhuma página re-renderiza. **O dinheiro se move num lugar onde a tela não tem ninguém escutando.**
+
+**A decisão: escutar a carteira, não o fim da geração.** Dava para reagir ao término de uma geração — o canal de `generations` está aberto ali do lado. Seria consertar o sintoma que apareceu e deixar de pé todos os outros: estorno, recarga, correção administrativa, extração. `wallets.balance_cents` é **projeção do ledger mantida por gatilho** — o exemplo que a própria decisão da 3b usou para justificar a bolinha —, e projeção quem mantém, e quem anuncia, é o banco. **A carteira é o fato; a geração é só um dos motivos.**
+
+Migration `20260814150000_realtime_wallets.sql` (aplicada pelo Jorge em 14/08/2026): `wallets` entra na publicação. Não muda dado, coluna nem política.
+
+**O teste, sem gastar e sem mentir no banco.** Um valor falso plantado **apenas na memória do navegador** (1 centavo), e então um UPDATE **no-op** na carteira — `set balance_cents = balance_cents`, zero centavos movidos, zero linhas no ledger. O banco anuncia; a tela se corrige:
+
+```
+12:05:49    43.526 ms   6.955 / 6955   R$ 69,55   <- verdade
+12:05:49    43.578 ms   1     / 1      R$ 0,01    <- mentira plantada
+12:07:23   137.621 ms   6.955 / 6955   R$ 69,55   <- o BANCO corrigiu
+```
+
+Foi descartada a alternativa de escrever um saldo diferente e voltar: seria gravar número falso na tabela do dinheiro, e `balance_cents` só é recalculada quando entra lançamento novo — a mentira ficaria lá.
+
+**Três coisas provadas de uma vez.** Que o canal entrega; que o **cabeçalho** obedece (antes do conserto ele lia a prop e teria ficado em 6.955 durante a mentira); e que o **rodapé** obedece — e junto com ele a **trava de saldo**, que travou o botão com "Sparks insuficientes para este vídeo" e o destravou na correção. A trava lia a mesma fonte surda, e sarou junto.
+
+**Lacuna declarada, não consertada:** o cabeçalho do vestíbulo (`dashboard-header.tsx`) tem o mesmo defeito e continua com ele. É Server Component, e torná-lo vivo exige convertê-lo em client — decisão maior que este ciclo, porque o extrato ao lado dele também é renderizado no servidor, e um saldo vivo ao lado de um extrato parado seria uma inconsistência nova. Fica nomeado.
+
+---
+
+### 14/08/2026 — 📌 Backlog · Cache de imagens no canvas (F5 re-baixa tudo)
+
+Nomeado pelo Jorge. **Registrar, não construir.**
+
+**Sintoma:** carregamento lento depois de um F5 num canvas com muitos nodes de imagem. **Suspeita:** os links assinados do Storage trazem URL nova a cada visita, e URL nova é recurso novo para o navegador — o cache nunca é usado, e tudo é baixado outra vez.
+
+**Escopo transversal:** vale para toda tela que mostra imagem — canvas, galeria, seletor de referências, coluna de imagens canônicas. Tem investigação e medição próprias (medir antes de mexer, como o achado da captura intermitente ensinou), e é **candidato a ciclo junto do Passe de UI/UX**.
+
+---
+
+### 14/08/2026 — Frente Vídeo · Ciclo 1 fechado, com o placar
+
+O ciclo que fez a invariante 1 deixar de ser promessa. Fila → webhook → Realtime existe, roda em produção e foi exercitado com dinheiro real.
+
+**O que este ciclo entregou:** o catálogo da fal e a cobrança de vídeo em duas partes; o motor assíncrono com assinatura ED25519 e caminho único de conclusão; o bloco na tela com o banco como estado vivo; a bolinha da aba como projeção por trigger; e — encontrado a caminho — o conserto dos canais mudos e do saldo surdo.
+
+**O placar de custo, do ciclo inteiro:**
+
+| | |
+|---|---|
+| vídeos gerados | **2** (Fase 2 e Fase 4) |
+| da carteira | **420 ⚡** = R$ 4,20 |
+| custo real pelo catálogo | 308 centavos = **R$ 3,08** |
+| fatura da fal | **US$ 0,56** |
+| margem | **1,36×**, confirmada contra fatura |
+
+**O placar honesto do que ficou sem prova**, porque exige custo ou uma falha real: `pending` com trabalho vivo; o teto de 15 minutos com `giveUp`; `failed` vindo do provedor; a corrida `already`; `provider_account` (402/403 da fal, a **nossa** conta no provedor sem crédito — não a do usuário); e o webhook com assinatura **válida**, que só a fal consegue produzir. Do webhook, o que dá para provar sozinho é a recusa — e ela foi provada, com causa nomeada.
+
+**O que foi exercitado de graça na reconciliação:** linha já terminal respondendo `succeeded` sem falar com o provedor e **sem cobrar de novo**; `not_found` provando a posse por RLS; `invalid` em duas formas; e `unauthenticated` sem sessão. Ledger, saldo, assets e gerações **idênticos** antes e depois das cinco chamadas.
+
+**Três lições que sobrevivem ao ciclo:**
+
+1. **Canal se audita no banco, não no console.** `SUBSCRIBED` é o tópico aceito, não a assinatura registrada.
+2. **Instrumento que divide assinatura com o observado não é instrumento; é participante.** Metade de uma manhã foi gasta perseguindo um sintoma que o próprio diagnóstico causava.
+3. **Cinto que não existe só se descobre na batida.** O canal era o cinto de segurança do reload na frente de imagem, e ninguém notou que ele estava desamarrado até o vídeo depender dele para tudo.

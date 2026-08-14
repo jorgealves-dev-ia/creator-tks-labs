@@ -197,11 +197,25 @@ O bloco Gerar Imagem parou de travar no botão. Um clique **enfileira e volta**:
 
 **Nenhuma migration.** E o que este ciclo constrói de verdade para a frente de vídeo é a **maquinaria da tela**, que é agnóstica de transporte — não uma fila-com-worker, que o vídeo não vai usar. O porquê está em [`decisoes.md`](./decisoes.md).
 
+### Frente Vídeo — Ciclo 1 ✅ concluído (14/08/2026)
+
+**A invariante 1 deixou de ser promessa.** Fila → webhook → Realtime existe, roda em produção e foi exercitado com dinheiro real: um clipe dirigido pelo dono, do clique ao vídeo na tela em 72 segundos, com o node e a bolinha da aba andando **sozinhos**, sem F5.
+
+Um modelo só, na configuração mais barata: Kling 2.1 image-to-video, 5s, 720p, 210 ⚡.
+
+- **O bloco Gerar Vídeo** no canvas, com modelo, duração e preço vindos do catálogo (`ai_model_video_prices`), still espelhado do card conectado e prompt de movimento. `@` no prompt é recusado com a frase certa — o Kling recebe **uma** imagem, e ela já é a personagem.
+- **A cobrança se parte em duas:** nada é cobrado no enfileirar; o débito acontece quando o vídeo existe, na mesma transação que o conclui. Auditado: lançamento único, com `created_at` idêntico ao `completed_at` da geração, e o asset no Storage **antes** da cobrança.
+- **A fechadura do webhook é assinatura ED25519** conferida contra o JWKS da fal sobre o corpo bruto. Provada pela recusa, com causa nomeada no log.
+- **A bolinha da aba** virou projeção mantida por trigger, e passou a andar ao vivo.
+- **Dois defeitos encontrados a caminho, e consertados:** os canais do Realtime nasciam mudos (assinavam antes de o token do usuário chegar, e o servidor nunca registrava a assinatura), e o saldo na tela não escutava a carteira. O segundo foi achado pelo dono, na tela, depois da geração paga.
+
+**Placar de custo do ciclo:** 2 vídeos, **420 ⚡** da carteira, **US$ 0,56** de fatura na fal. Margem **1,36×** confirmada contra fatura — a caixa de pricing venceu o readme. → [`decisoes.md`](./decisoes.md)
+
 ### Fase 2.5 — Storyboard + Vídeos 📌 conversa dedicada
 
 Registrada a pedido do Jorge, **depois dos nodes de geração**: storyboard cena a cena e geração de vídeo, que chegam junto com a estreia do **padrão assíncrono** (fila → webhook → Realtime). A geração canônica pôde ser síncrona porque uma imagem 2K leva de 20 a 40 segundos e cabe no tempo de função; vídeo não cabe, e é ali que o assíncrono deixa de ser opcional.
 
-> **Meio caminho andado desde 13/08/2026.** A fila de gerações já pôs no ar os estados por trabalho, o escalonador com teto, a recuperação lendo do banco e o **canal Realtime** — tudo exercitado com imagem. O que falta para o vídeo é o transporte: linha `queued` e webhook do provedor no lugar de `fetch → resposta`. **O trabalhador do vídeo é o provedor**, e é só essa peça que resta.
+> **A metade do vídeo está entregue desde 14/08/2026.** O padrão assíncrono estreou e o image-to-video básico está em produção — o que resta desta conversa é o **storyboard**: cena a cena, continuação a partir do último frame, e a voz. O mapa dos três nodes de vídeo (Gerar Vídeo · Motion Control · Máquina de Influencers) está registrado em [`decisoes.md`](./decisoes.md).
 
 ### Fase 3 — Vídeo e voz
 

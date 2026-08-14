@@ -6,7 +6,9 @@ import { signOut } from "@/lib/auth/actions";
 import { t } from "@/lib/i18n/pt-BR";
 import { createProject } from "@/lib/projects/actions";
 import { useProjectStatusFeed } from "@/lib/projects/status-feed";
-import { formatBRL, formatSparks } from "@/lib/sparks";
+import { formatBRL, formatSparks, sparksToCents } from "@/lib/sparks";
+import { useBalance } from "@/lib/sparks/balance-store";
+import { useWalletFeed } from "@/lib/sparks/wallet-feed";
 
 import { ProjectTab, type ProjectTabData } from "./project-tab";
 import { SaveIndicator } from "./save-indicator";
@@ -38,6 +40,27 @@ export function StudioHeader({
    * canal escuta é o usuário, não o projeto.
    */
   useProjectStatusFeed(userId, projects);
+
+  /**
+   * O saldo, ao vivo — e o cabeçalho passa a ler o store, não a `prop`.
+   *
+   * Ler a prop era o que o deixava surdo: ela só muda quando o servidor
+   * renderiza de novo, e a cobrança de um vídeo acontece no webhook, sem
+   * resposta nenhuma voltando para o navegador. O número ficava parado com o
+   * dinheiro já debitado — a tela mentindo sobre dinheiro, que é a única
+   * mentira que este produto não pode contar.
+   *
+   * A prop continua sendo o lastro do primeiro quadro: a semeadura acontece num
+   * efeito, então antes dela quem responde é o que o servidor renderizou.
+   */
+  useWalletFeed(userId);
+
+  const liveSparks = useBalance((state) => state.sparks);
+
+  // De volta a centavos, que é a unidade de tudo que é dinheiro aqui e a que o
+  // `formatBRL` do título espera. A ida e volta é exata: `CENTS_PER_SPARK` é a
+  // única definição da taxa, e mudá-la já obriga a varrer todas as telas.
+  const cents = liveSparks === null ? balanceCents : sparksToCents(liveSparks);
 
   return (
     <header
@@ -97,7 +120,7 @@ export function StudioHeader({
         {activeProjectId ? <SaveIndicator /> : null}
 
         <div
-          title={`${t.studio.sparksTooltip} — ${formatBRL(balanceCents)}`}
+          title={`${t.studio.sparksTooltip} — ${formatBRL(cents)}`}
           className="flex items-center gap-1.5 rounded-lg border border-line
                      bg-surface-raised px-2.5 py-1"
         >
@@ -105,7 +128,7 @@ export function StudioHeader({
             ⚡
           </span>
           <span className="text-xs font-medium tabular-nums text-ink">
-            {formatSparks(balanceCents)}
+            {formatSparks(cents)}
           </span>
           <span className="sr-only">{t.studio.sparksLabel}</span>
         </div>
