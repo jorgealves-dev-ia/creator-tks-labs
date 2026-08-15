@@ -272,7 +272,7 @@ Verificado na Fase 0: sem sessão, as 9 tabelas de então respondiam `42501 perm
 | `entity_versions` | os **snapshots congelados** do sheet: `entity_id`, `user_id`, `version_number` (sequencial por entidade), `sheet jsonb` (cópia integral, nunca um diff), `label` |
 | `project_entities` | o **vínculo** projeto ↔ personagem: quais personagens trabalham em qual aba. PK `(project_id, entity_id)` — o par *é* a linha —, `user_id` desnormalizado e duas FKs compostas que o compartilham. Projeto novo nasce sem vínculos; excluir projeto leva os vínculos e **não** as personagens |
 | `entity_images` | join entre `entities` e `assets`: as imagens de uma entidade — as canônicas de uma personagem (turnaround, expressões) e as **fotos de um produto** —, com `role` e ordenação |
-| `assets` | arquivos no Storage: `kind` (image/video/audio), `source` (upload/generation), mime, dimensões, duração, `label` (nome humano — o nome do arquivo enviado ou as palavras do prompt; alimenta a galeria e a busca dela, e é nulo para tudo que nasceu antes dela) |
+| `assets` | arquivos no Storage: `kind` (image/video/audio), `source` (upload/generation), mime, dimensões, duração, `label` (nome humano — o nome do arquivo enviado ou as palavras do prompt; alimenta a galeria e a busca dela, e é nulo para tudo que nasceu antes dela), `derived_from_asset_id` + `derived_from_ms` (a **linhagem** de um arquivo calculado a partir de outro arquivo nosso — hoje, o quadro final de um vídeo) |
 | `generations` | cada execução: workflow/node de origem, `entity_id`, `model_id`, provedor, modelo, `media_kind` (image/video), `params jsonb`, `prompt_user_pt`, `prompt_compiled jsonb`, status, `provider_job_id` (o protocolo do provedor assíncrono), tokens, `cost_real_cents`, `sparks_charged`, `result_asset_id`, `entity_version_id`, `sheet_source`, `summary jsonb`, `error_message`. **`media_kind` é explícito e não derivado de `result_asset_id`**: uma linha `queued` ainda não tem asset e uma `failed` nunca terá, e são esses dois estados que a tela mais precisa saber desenhar |
 | `ai_providers` | catálogo de fornecedores de IA: `slug`, `display_name`, `env_var_name` (**qual variável guarda a chave — nunca a chave**), `enabled`, ordenação |
 | `ai_models` | catálogo de modelos: `provider_id`, `slug` (o identificador oficial na API do fornecedor — **e, na fal, esse identificador é a própria rota do endpoint**, o que faz um modelo novo dela caber numa linha desta tabela sem tocar no motor), `capabilities text[]` (`{extraction}`, `{translation}`, `{image_gen}`, `{video_gen}`), `extraction_sparks`, `image_sparks` (preço-base, de quem não nomeia tamanho), `is_default`, `enabled` |
@@ -291,6 +291,18 @@ O modelo correto já estava escrito no resto do schema: `entities_handle_unique_
 A consequência de produto vem junto e é o coração da etapa: **desvincular não é arquivar**. Desvincular é leve e reversível (ela segue viva na galeria e nos outros projetos); arquivar continua sendo o ato global que preserva tudo. Duas ações, dois pesos, duas UIs.
 
 E `entities.cover_asset_id`, que existia desde a Fase 0 sem nenhum leitor, ganhou o papel que estava esperando: é o **avatar** da personagem — sobreposição opcional ao retrato padrão, que continua sendo a folha completa da versão ativa. Fica em `entities` e não em `entity_versions` de propósito: avatar é apresentação, não identidade, e congelar uma versão nova não muda a cara dela.
+
+#### Quadro derivado é engenharia, não geração *(15/08/2026, Frente Storyboard Ciclo 1)*
+
+O último quadro de um vídeo, extraído para virar a partida do capítulo seguinte, é a primeira coisa deste produto que **não é nem enviada nem gerada por um provedor**. Ela nasce dos pixels de outro asset nosso — e até `20260815195510_asset_lineage.sql` não havia coluna capaz de dizer isso.
+
+**Não é uma linha em `generations`, e isso é schema e não gosto.** `generations.provider` e `generations.model` são `NOT NULL`, e um quadro derivado não tem nem um nem outro: não houve chamada, preço nem catálogo. E ainda que coubesse, quebraria a regra ratificada em 12/08 — *o número na tela conta o que a tela mostra* —, porque o cartão do projeto conta imagens geradas e o quadro seria a mesma imagem contada duas vezes. **Extração não passa por `generations`, não toca o ledger e não custa Spark.**
+
+**Duas perguntas, duas colunas.** A tentação era acrescentar `'derived'` ao enum `asset_source`; foi recusada com o custo medido, porque o filtro da galeria oferece `todas / geradas / enviadas` e um terceiro valor cairia fora dos três — quem procurasse em "geradas" não acharia o quadro do vídeo que ele mesmo gerou. Então `source` continua respondendo *quem pôs o arquivo aqui* (a pessoa ou o sistema, e foi o sistema: `generation`), e `derived_from_asset_id` responde *de onde vieram os pixels*. O que identifica um derivado é o dado, nunca o rótulo.
+
+`derived_from_ms` guarda **em que instante** do vídeo o quadro foi lido: o registro passa a dizer um fato conferível em vez de uma afirmação, e o dia em que um recuo de N ms virar necessidade medida custa uma linha de código em vez de uma migration. A checagem `assets_derived_ms_requires_origin` vale numa direção só de propósito — um instante sem origem é impossível, uma origem sem instante não, porque nem toda derivação futura é no tempo.
+
+O FK é `on delete set null`, pelo precedente de `entities.cover_asset_id`: apagar o vídeo não pode apagar o quadro, que a essa altura já é um cartão no canvas de alguém e possivelmente a semente de uma geração paga. Perder a linhagem custa auditoria; perder o quadro custa trabalho.
 
 #### Produto é uma entidade, não uma tabela nova *(10/08/2026)*
 
@@ -367,7 +379,7 @@ A tela está especificada em [`tela-character-sheet.md`](./tela-character-sheet.
 
 Depois de aplicar, **regerar** `src/lib/supabase/database.types.ts` a partir do banco real — não escrever esse arquivo à mão.
 
-As 18 migrations existentes, em ordem de dependência:
+As 28 migrations existentes, em ordem de dependência:
 
 ```
 20260807140000_core_foundation.sql             helper updated_at, profiles, wallets, trigger de cadastro
@@ -388,6 +400,16 @@ As 18 migrations existentes, em ordem de dependência:
 20260809140000_image_generation_catalog.sql    capability image_gen, preços e record_generation
 20260809180000_record_generation_canvas.sql    origem no canvas e o português original do usuário
 20260809200000_asset_label.sql                 nome humano no asset, para a galeria e sua busca
+20260810120000_default_image_model.sql         Nano Banana 2 passa a ser o modelo padrão
+20260810160000_product_images_limit.sql        teto de 5 fotos por produto, por trigger
+20260810180000_image_price_by_resolution.sql   preço por resolução, e o GN005 que recusa tamanho sem preço
+20260810200000_archive_arsenal_products.sql    produtos do Arsenal arquivados — viraram nodes de input
+20260811140000_project_entities.sql            vínculo projeto ↔ personagem; derruba entities.project_id
+20260811180000_record_generation_project_link.sql   GN006: `@` só gera em projeto onde ela trabalha
+20260813170000_fal_video_catalog.sql           catálogo da fal, media_kind, preços de vídeo, VD001–VD007
+20260813230000_project_status_projection.sql   a bolinha da aba como projeção por trigger
+20260814150000_realtime_wallets.sql            a carteira entra na publicação do Realtime
+20260815195510_asset_lineage.sql               linhagem do quadro derivado em assets
 ```
 
 > **Nota de ambiente.** O `supabase link` está com bug nesta máquina, então a connection string vai explícita na linha de comando. O Jorge aplica manualmente:

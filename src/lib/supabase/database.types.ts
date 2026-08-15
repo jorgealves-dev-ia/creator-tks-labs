@@ -174,6 +174,8 @@ export type Database = {
         Row: {
           byte_size: number | null
           created_at: string
+          derived_from_asset_id: string | null
+          derived_from_ms: number | null
           duration_ms: number | null
           height: number | null
           id: string
@@ -189,6 +191,8 @@ export type Database = {
         Insert: {
           byte_size?: number | null
           created_at?: string
+          derived_from_asset_id?: string | null
+          derived_from_ms?: number | null
           duration_ms?: number | null
           height?: number | null
           id?: string
@@ -204,6 +208,8 @@ export type Database = {
         Update: {
           byte_size?: number | null
           created_at?: string
+          derived_from_asset_id?: string | null
+          derived_from_ms?: number | null
           duration_ms?: number | null
           height?: number | null
           id?: string
@@ -216,7 +222,15 @@ export type Database = {
           user_id?: string
           width?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "assets_derived_from_asset_id_fkey"
+            columns: ["derived_from_asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       entities: {
         Row: {
