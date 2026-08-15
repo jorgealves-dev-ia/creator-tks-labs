@@ -182,7 +182,7 @@ A publicação existe desde a Fase 0 (`20260807140600_enable_realtime.sql`), e o
 
 ## 5.5 O elo: "Continuar deste vídeo" *(15/08/2026, Frente Storyboard Ciclo 1)*
 
-O bloco Gerar Vídeo ganha um botão sob a moldura, **e só quando há vídeo pronto nela**: ele lê o último quadro do clipe e o põe no canvas como um **Input de Imagem**, à direita, pronto para partir o capítulo seguinte. É o que transforma cinco segundos numa história contada em capítulos, à mão, antes de existir Roteiro ou Máquina.
+O bloco Gerar Vídeo ganha um botão sob a moldura, **e só quando há vídeo pronto nela**: ele lê o último quadro do clipe e põe no canvas **o par** — um Input de Imagem com o quadro e um Gerar Vídeo já ligado a ele —, à direita, pronto para dirigir o capítulo seguinte. É o que transforma cinco segundos numa história contada em capítulos, à mão, antes de existir Roteiro ou Máquina.
 
 **Não é uma geração, e a diferença não é de escala.** Não há chamada a provedor, não há linha em `generations`, não há lançamento no ledger e não custa Spark — **quadro derivado é engenharia**. O porquê e a forma da linhagem estão em [`arquitetura.md`](./arquitetura.md#4-modelo-de-dados); aqui interessa a consequência de tela: o botão diz **"sem custo"** em voz alta, porque fica a três centímetros de um que anuncia *"Custará 210 ⚡"*, e uma ação grátis encostada numa paga, sem dizer qual é qual, é a tela ensinando a hesitar.
 
@@ -190,9 +190,19 @@ O bloco Gerar Vídeo ganha um botão sob a moldura, **e só quando há vídeo pr
 
 **O card nasce à direita, ao contrário de todos os outros inputs.** Um Input comum nasce à esquerda do bloco que alimenta, porque é desse lado que o fio chega. Este nasce à direita porque é o que veio **depois** — e assim o canvas passa a ser lido na ordem em que a história é contada.
 
-**Nasce sem fio, e isso é honesto.** Nada consome vídeo, então não há de onde puxar uma linha: o bloco de vídeo continua só-entrada, e o que o card tem é uma **saída**, pronta para alimentar o próximo bloco. *(O segundo node — um Gerar Vídeo já ligado ao card — é a fase seguinte.)*
+**O bloco novo herda o modelo e não herda o prompt.** É a mesma história, então o modelo vem junto; o prompt era a direção *daquela* cena, e o próximo capítulo é outra. Doutrina do Duplicar — copia a pergunta, nunca a resposta — aplicada a uma continuação em vez de a uma cópia.
 
-**Clicar duas vezes não cria dois quadros.** O caminho no Storage é determinístico pelo id do vídeo, então a segunda leitura sobrescreve os mesmos bytes; o card existente é **destacado** em vez de duplicado, com a frase dizendo o que aconteceu. Mesma regra do "Usar no fluxo", e pelo mesmo motivo: dois cards do mesmo arquivo seriam dois nomes para uma coisa só.
+**O bloco de vídeo continua só-entrada.** Quem ganha saída é o card do quadro; o clipe não vira fio, vira imagem. Por isso o botão é a única porta: um conector no bloco de vídeo prometeria que alguém consome vídeo, e ninguém consome.
+
+**O gesto garante o par e nunca duplica o que já existe.** Três desfechos, e o do meio é o que faz a regra ser "garante" e não só "não duplica":
+
+| situação | o que acontece |
+|---|---|
+| nada existia | nascem o card e o bloco |
+| o card existe, sem nada adiante | nasce **só o bloco que faltava**, ligado ao card que já estava lá |
+| o par já está de pé | nada nasce; os dois são destacados, com a frase dizendo por quê |
+
+O caminho no Storage é determinístico pelo id do vídeo, então nem o arquivo duplica: uma segunda leitura sobrescreve os mesmos bytes. E antes de ler qualquer coisa o gesto **pergunta ao banco se o quadro já existe** — sem isso, o segundo clique baixaria 4 MB, decodificaria e subiria 1,2 MB para concluir que não havia nada a fazer, e ainda exigiria aba visível para dizer isso. *Uma frase que só informa não pode custar mais que a ação que ela informa não ter acontecido.*
 
 **A leitura é gesto de quem está olhando, nunca trabalho de fundo** — e isso é medido, não preferido. Numa aba que não está visível o navegador **não decodifica vídeo**: `stalled` aos ~3 s e nenhum metadata em 20–25 s, contra 543 ms de ponta a ponta com a janela na frente. Por isso não existe "extrai sozinho quando o vídeo termina", e por isso a recusa dessa situação tem frase própria, com o conserto dentro dela.
 

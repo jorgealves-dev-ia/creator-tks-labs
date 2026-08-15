@@ -3222,3 +3222,43 @@ E o `derived_from_ms` gravado foi **5042** — o mesmo número que a investigaç
 #### O que ficou sem prova, dito em vez de contado
 
 A recusa `hidden_tab` — a frase que nasceu do achado mais útil da Fase 0 — **não foi vista na tela**, e a limitação é do instrumento e não do produto: a extensão que dirige o navegador **ativa a aba** para executar qualquer script, então "clicar com a aba escondida" é uma combinação que eu não consigo produzir. O mecanismo está medido oito vezes e o contraste com a aba visível está acima; o que falta é a frase aparecendo, não a condição existindo.
+
+---
+
+### 15/08/2026 — Fase 3 · o elo completo: o par nasce ligado
+
+O gesto deixa de entregar um card e passa a entregar **o capítulo seguinte**: um Input de Imagem com o quadro e um Gerar Vídeo já ligado a ele, com o modelo herdado e o prompt vazio. É o `addChainedGenerator` aplicado ao vídeo, e a frase dele é o argumento inteiro — *o arrastar que qualquer um faria à mão, como um clique, que é o que transforma uma pilha de tentativas num fluxo.*
+
+**Herda o modelo, não herda o prompt.** É a mesma história, então o modelo vem junto; o prompt era a direção daquela cena, e o próximo capítulo é outra. Doutrina do Duplicar — copia a pergunta, nunca a resposta — aplicada a uma continuação em vez de a uma cópia.
+
+**A armadilha, nomeada no plano e confirmada escrevendo:** construir node e aresta pelo store **não passa pelo `onConnect`**, então nada preencheria o `sourceAssetId` do bloco novo sozinho — ele nasceria com a faixa dizendo "Conecte uma imagem" e o botão travado, ligado a um card que está bem ali. A escrita é explícita, pelo mesmo cuidado que faz o `addChainedGenerator` escrever as `references` na mão. **E o teste disso não é olhar o campo, é olhar o botão**: ele só destrava quando o still existe.
+
+**"Garante o par" é mais forte que "não duplica", e a diferença tem um ramo próprio.** Se o card já existe mas o bloco adiante dele não — alguém apagou, ou o card veio por outro caminho —, o gesto cria **só o bloco que faltava**, ligado ao card que já estava lá. Foi o ramo que mais valeu provar: os cards de Input ficaram em 4 enquanto os nodes iam de 19 para 20.
+
+#### O passo zero, que a fase pediu ao ser escrita
+
+Cada clique re-extraía o quadro, inclusive quando ele já existia. Isso tornava a frase *"já está no fluxo"* cara de produzir — 4 MB baixados, uma decodificação e 1,2 MB subidos para concluir que não havia nada a fazer — e, pior, **fazia-a depender de aba visível**, porque a leitura passa pelo decodificador.
+
+Agora o gesto pergunta primeiro (`findDerivedFrame`, uma consulta no índice parcial que a Fase 1 criou). **Uma frase que só informa não pode custar mais que a ação que ela informa não ter acontecido.**
+
+#### O selo, e por que ele lê o dado
+
+A galeria do seletor marca o quadro derivado com **"quadro de vídeo"**, lido de `derivedFromAssetId` — do **dado**, nunca do `source` nem do rótulo. Numa miniatura de 100px o quadro final de um clipe é indistinguível de uma foto, e a diferença importa antes do clique. Reusa o campo `badge` que a `ImageGrid` já tinha desde a Galeria geral: nenhum componente novo.
+
+#### A validação, zero Spark
+
+Prints e medições em `scratchpad/evidencias/storyboard-c1-fase3/`. O canvas foi limpo de volta ao estado pré-Fase 2 antes de começar.
+
+| ramo | partida | nodes | Inputs | aviso |
+|---|---|---|---|---|
+| `both` | nada existia | 18 → **20** | 3 → 4 | nenhum |
+| `none` | o par de pé | 20 → **20** | 4 → 4 | "já está no fluxo" |
+| `video` | o card sim, o bloco não | 19 → **20** | 4 → **4** | nenhum |
+
+E o grafo salvo prova que a corrente é do documento e não da tela: capítulo 1 com still `d2a8b572`, capítulo 2 com still **`e707ac2c`** — o quadro derivado — e dois fios chegando em blocos de vídeo. Banco intocado: 57 gerações, 43 lançamentos, saldo 6.955, **1** derivado (o mesmo da Fase 2).
+
+#### Duas coisas que não são falsificáveis hoje, ditas em vez de contadas
+
+**A herança do modelo não pôde ser provada, e a razão é o catálogo:** `ai_models` vende um modelo de vídeo só, então não existe combinação em que o herdado e o padrão discordem. No grafo salvo os dois blocos têm `modelId` nulo — o de origem nunca escolheu um explicitamente, e herdar nulo é o comportamento certo, porque cai no padrão do catálogo, que é o mesmo modelo. O teste nasce no dia em que houver um segundo.
+
+**O caminho completo de extração não foi reexercitado**, porque o passo zero encontra o quadro que a Fase 2 criou e pula tudo — que é exatamente o que ele existe para fazer. Ele volta a rodar sozinho na Fase 4: o clipe do capítulo 2 nasce sem quadro extraído, então "Continuar deste vídeo" nele percorre os cinco passos inteiros.

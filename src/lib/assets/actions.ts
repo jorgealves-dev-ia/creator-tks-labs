@@ -93,6 +93,16 @@ export type GalleryItem = {
   label: string | null;
   source: "upload" | "generation";
   createdAt: string;
+  /**
+   * De onde vieram os pixels, quando este arquivo foi calculado de outro nosso.
+   *
+   * É **isto** que identifica um quadro derivado na galeria, e não o `source` —
+   * que continua dizendo apenas quem pôs o arquivo aqui. Foi a decisão da Fase
+   * 1: acrescentar um valor ao enum faria o quadro cair fora dos três filtros e
+   * sumir justamente de quem o procurasse em "geradas". **O dado identifica,
+   * nunca o rótulo.**
+   */
+  derivedFromAssetId: string | null;
 };
 
 export type GalleryPage = { items: GalleryItem[]; hasMore: boolean };
@@ -128,7 +138,7 @@ export async function listGalleryAssets(input: unknown): Promise<GalleryPage> {
   // second count query.
   let query = supabase
     .from("assets")
-    .select("id, storage_path, label, source, created_at")
+    .select("id, storage_path, label, source, created_at, derived_from_asset_id")
     .eq("kind", "image")
     .order("created_at", { ascending: false })
     .limit(GALLERY_PAGE_SIZE + 1);
@@ -176,6 +186,7 @@ export async function listGalleryAssets(input: unknown): Promise<GalleryPage> {
         label: row.label,
         source: row.source,
         createdAt: row.created_at,
+        derivedFromAssetId: row.derived_from_asset_id,
       }))
       .filter((item): item is GalleryItem => item.url !== null),
     hasMore,
@@ -266,6 +277,8 @@ export async function registerUploadedAsset(input: unknown): Promise<RegisterAss
       label: asset.label,
       source: asset.source,
       createdAt: asset.created_at,
+      // Um arquivo que alguém acabou de enviar não veio de arquivo nenhum.
+      derivedFromAssetId: null,
     },
   };
 }
@@ -284,6 +297,42 @@ const derivedFrameSchema = z.object({
   height: z.int().positive(),
   byteSize: z.int().positive(),
 });
+
+/**
+ * O quadro que já foi lido deste vídeo, se já foi.
+ *
+ * Existe para o segundo clique não pagar o preço do primeiro. Sem esta consulta,
+ * "Continuar deste vídeo" num vídeo que já foi continuado baixaria 4 MB,
+ * decodificaria, subiria 1,2 MB ao Storage e concluiria que não havia nada a
+ * fazer — e, pior, **exigiria aba visível para dizer isso**, porque a leitura
+ * passa pelo decodificador. Uma frase que só informa não pode custar mais que a
+ * ação que ela informa não ter acontecido.
+ *
+ * Uma consulta indexada (`assets_derived_from_asset_id_idx`) e escopada pelo RLS:
+ * um vídeo de outra pessoa simplesmente não devolve linha.
+ */
+export async function findDerivedFrame(input: unknown): Promise<{ assetId: string } | null> {
+  const parsed = z.uuid().safeParse(input);
+
+  if (!parsed.success) return null;
+
+  const supabase = await createSupabaseServerClient();
+  const { data: claims } = await supabase.auth.getClaims();
+
+  if (!claims?.claims) {
+    redirect("/login");
+  }
+
+  const { data: frame } = await supabase
+    .from("assets")
+    .select("id")
+    .eq("derived_from_asset_id", parsed.data)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return frame ? { assetId: frame.id } : null;
+}
 
 export type RegisterFrameResult =
   | { ok: true; assetId: string; url: string; label: string | null; created: boolean }

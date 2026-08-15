@@ -160,7 +160,11 @@ function PickerDialog() {
     label: string | null;
     createdAt: string;
   }): GalleryItem {
-    return { ...thumb, source: "generation" };
+    // `derivedFromAssetId` é sempre nulo aqui, e não por omissão: a Galeria do
+    // projeto lê `generations`, e um quadro derivado não tem geração nenhuma —
+    // ele nunca aparece por este caminho. É o mesmo recorte que já deixa as
+    // folhas canônicas de fora, e o seletor (que lê `assets`) é onde ele mora.
+    return { ...thumb, source: "generation", derivedFromAssetId: null };
   }
 
   function toggle(item: GalleryItem) {
@@ -407,8 +411,17 @@ function PickerDialog() {
               {/* A grade é compartilhada com a Galeria geral do dashboard — ver
                   components/ui/image-grid.tsx. O que este modal guarda para si é
                   o que o clique faz e o teto que ele impõe. */}
+              {/*
+                O selo do quadro derivado — a única coisa que a grade acrescenta
+                aqui, e ela vem do **dado**: `derivedFromAssetId`, não do rótulo
+                nem do `source`. Uma imagem que é o quadro final de um vídeo
+                parece uma foto qualquer numa miniatura de 100px, e a diferença
+                importa antes do clique.
+              */}
               <ImageGrid
-                items={items}
+                items={items.map((item) =>
+                  item.derivedFromAssetId ? { ...item, badge: copy.derivedBadge } : item,
+                )}
                 onPick={toggle}
                 pickedIds={new Set(selected.map((entry) => entry.assetId))}
                 hint={browsing ? galleryCopy.openHint : undefined}

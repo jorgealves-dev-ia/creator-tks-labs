@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { NodeHeader } from "@/components/nodes/node-header";
 import { useVideoCatalog } from "@/components/nodes/use-video-catalog";
-import { registerDerivedFrame, signAssetUrls } from "@/lib/assets/actions";
+import { findDerivedFrame, registerDerivedFrame, signAssetUrls } from "@/lib/assets/actions";
 import { extractLastFrame, type LastFrameFailure } from "@/lib/assets/last-frame";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { useGenerationTick } from "@/lib/generation/generation-feed";
@@ -24,6 +24,9 @@ const copy = t.videoNode;
 
 /** Largura do card de Input de Imagem (`w-56`), só para centralizar a tela nele. */
 const INPUT_CARD_WIDTH = 224;
+
+/** Largura deste próprio bloco (`w-[42rem]`), para enquadrar o par recém-criado. */
+const VIDEO_NODE_WIDTH = 672;
 
 /**
  * O bloco Gerar Vídeo — a estreia do assíncrono na tela.
@@ -103,7 +106,7 @@ export function VideoGeneratorNode({ id, data, selected }: NodeProps<VideoGenera
   const providers = useVideoCatalog();
   const projectId = useCanvasStore((state) => state.projectId);
   const updateNodeData = useCanvasStore((state) => state.updateNodeData);
-  const addFrameInput = useCanvasStore((state) => state.addFrameInput);
+  const addContinuation = useCanvasStore((state) => state.addContinuation);
   const balance = useBalance((state) => state.sparks);
   const tick = useGenerationTick(id);
   // Para levar a tela até o card que "Continuar deste vídeo" acabou de criar.
@@ -229,11 +232,14 @@ export function VideoGeneratorNode({ id, data, selected }: NodeProps<VideoGenera
   }
 
   /**
-   * "Continuar deste vídeo" — o elo, em cinco passos e nenhum deles pago.
+   * "Continuar deste vídeo" — o elo, e nenhum passo dele é pago.
    *
    * A ordem existe para que cada passo impeça um jeito específico de estar
    * errado, no mesmo espírito do motor de extração:
    *
+   *   0. **perguntar se o quadro já existe.** Se existe, tudo entre 1 e 4 é
+   *      trabalho para chegar num arquivo que já está lá — e trabalho que
+   *      exigiria aba visível, porque passa pelo decodificador.
    *   1. **assinar de novo**, e não reusar o link que a lista trouxe. As URLs
    *      valem uma hora; um canvas aberto desde o almoço tem link morto, e a
    *      falha apareceria como "não consegui ler o vídeo" quando a causa é o
@@ -244,7 +250,8 @@ export function VideoGeneratorNode({ id, data, selected }: NodeProps<VideoGenera
    *      irmão.
    *   4. **registrar** com a linhagem, no servidor, que confere a posse e monta
    *      o rótulo pelo id (o navegador não nomeia nada).
-   *   5. **pôr o card no canvas** e levar a tela até ele.
+   *   5. **pôr o par no canvas** — o card e o bloco do capítulo seguinte, já
+   *      ligados — e levar a tela até eles.
    *
    * Nenhum passo chama modelo, toca o ledger ou cria linha em `generations`.
    */
@@ -259,65 +266,85 @@ export function VideoGeneratorNode({ id, data, selected }: NodeProps<VideoGenera
       setContinuing(false);
     };
 
-    // 1. Link fresco, sempre.
-    const urls = await signAssetUrls([featured.assetId]);
-    const fresh = urls[featured.assetId];
+    // 0. Já lemos este vídeo antes? Uma consulta indexada, e ela poupa os
+    //    quatro passos seguintes inteiros.
+    const known = await findDerivedFrame(featured.assetId);
+    let frameAssetId = known?.assetId ?? null;
 
-    if (!fresh) return fail("expired_link");
+    if (!frameAssetId) {
+      // 1. Link fresco, sempre.
+      const urls = await signAssetUrls([featured.assetId]);
+      const fresh = urls[featured.assetId];
 
-    // 2. O quadro.
-    const read = await extractLastFrame(fresh);
+      if (!fresh) return fail("expired_link");
 
-    if (!read.ok) return fail(read.reason);
+      // 2. O quadro.
+      const read = await extractLastFrame(fresh);
 
-    // 3. O Storage. O caminho diz o que o arquivo é — o último quadro **deste**
-    //    vídeo —, e é por ser determinístico que a segunda leitura não duplica.
-    const supabase = createSupabaseBrowserClient();
-    const { data: userData } = await supabase.auth.getUser();
-    const userId = userData.user?.id;
+      if (!read.ok) return fail(read.reason);
 
-    if (!userId) return fail("upload");
+      // 3. O Storage. O caminho diz o que o arquivo é — o último quadro
+      //    **deste** vídeo —, e é por ser determinístico que uma segunda
+      //    leitura sobrescreve em vez de duplicar.
+      const supabase = createSupabaseBrowserClient();
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
 
-    const storagePath = `${userId}/frames/${featured.assetId}-ultimo.png`;
+      if (!userId) return fail("upload");
 
-    const { error: uploadError } = await supabase.storage
-      .from("assets")
-      .upload(storagePath, read.frame.blob, { contentType: "image/png", upsert: true });
+      const storagePath = `${userId}/frames/${featured.assetId}-ultimo.png`;
 
-    if (uploadError) return fail("upload");
+      const { error: uploadError } = await supabase.storage
+        .from("assets")
+        .upload(storagePath, read.frame.blob, { contentType: "image/png", upsert: true });
 
-    // 4. A escrituração, com a linhagem.
-    const registered = await registerDerivedFrame({
-      storagePath,
-      sourceAssetId: featured.assetId,
-      atMs: read.frame.atMs,
-      width: read.frame.width,
-      height: read.frame.height,
-      byteSize: read.frame.blob.size,
-    });
+      if (uploadError) return fail("upload");
 
-    if (!registered.ok) {
-      return fail(registered.reason === "not_a_video" ? "not_a_video" : "upload");
+      // 4. A escrituração, com a linhagem.
+      const registered = await registerDerivedFrame({
+        storagePath,
+        sourceAssetId: featured.assetId,
+        atMs: read.frame.atMs,
+        width: read.frame.width,
+        height: read.frame.height,
+        byteSize: read.frame.blob.size,
+      });
+
+      if (!registered.ok) {
+        return fail(registered.reason === "not_a_video" ? "not_a_video" : "upload");
+      }
+
+      frameAssetId = registered.assetId;
     }
 
-    // 5. O card, e a tela indo até ele.
-    const card = addFrameInput({ videoNodeId: id, assetId: registered.assetId });
+    // 5. O par — o card com o quadro e o bloco do capítulo seguinte, já ligados.
+    const chain = addContinuation({ videoNodeId: id, assetId: frameAssetId });
 
     setContinuing(false);
 
-    if (!card) return;
+    if (!chain) return;
 
-    // Já existia: foi destacado, não duplicado — e um clique que faz a coisa
-    // certa sem criar nada precisa dizer o que fez.
-    if (!card.created) setContinueNote(copy.continueExisting);
+    // Já estava tudo de pé: foi destacado, não duplicado — e um clique que faz a
+    // coisa certa sem criar nada precisa dizer o que fez.
+    if (chain.created === "none") setContinueNote(copy.continueExisting);
 
-    const node = useCanvasStore.getState().nodes.find((entry) => entry.id === card.id);
+    // A tela vai para o **meio do par**, não para um dos dois: enquadrar só o
+    // card esconderia o bloco que acabou de nascer ligado a ele, e é a ligação
+    // que é a notícia.
+    const nodes = useCanvasStore.getState().nodes;
+    const card = nodes.find((entry) => entry.id === chain.inputId);
+    const chapter = nodes.find((entry) => entry.id === chain.videoId);
 
-    if (node) {
+    if (card && chapter) {
+      const left = card.position.x;
+      const right = chapter.position.x + (chapter.measured?.width ?? VIDEO_NODE_WIDTH);
+
       void setCenter(
-        node.position.x + (node.measured?.width ?? INPUT_CARD_WIDTH) / 2,
-        node.position.y + (node.measured?.height ?? INPUT_CARD_WIDTH) / 2,
-        { zoom: getZoom(), duration: 400 },
+        (left + right) / 2,
+        card.position.y + (card.measured?.height ?? INPUT_CARD_WIDTH) / 2,
+        // Um pouco mais longe, porque agora há duas coisas para caber. O zoom
+        // atual enquadraria uma e cortaria a outra.
+        { zoom: Math.min(getZoom(), 0.55), duration: 400 },
       );
     }
   }

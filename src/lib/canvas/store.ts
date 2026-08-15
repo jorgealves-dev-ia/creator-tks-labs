@@ -286,6 +286,9 @@ const INPUT_SOURCES = new Set(["input-image", "input-product", "input-pose", "in
 /** Matches `w-56` on the input cards — used only to place one beside a block. */
 const INPUT_NODE_WIDTH = 224;
 
+/** Matches `w-[42rem]` on the video block — used only to place a card beside it. */
+const VIDEO_NODE_WIDTH = 672;
+
 /**
  * An input was edited; every block already holding it hears about it.
  *
@@ -533,22 +536,27 @@ type CanvasState = {
    */
   addInputNode: (input: { id: string; type: string; generatorId: string }) => void;
   /**
-   * "Continuar deste vídeo": o último quadro vira um Input de Imagem no canvas,
-   * à direita do bloco que produziu o clipe — e **nunca duas vezes o mesmo**.
+   * "Continuar deste vídeo": o capítulo seguinte, pronto para dirigir.
    *
-   * É o elo entre um capítulo e o seguinte. O card nasce sem fio: nada consome
-   * vídeo, então não há de onde puxar uma linha — o que ele tem é uma saída,
-   * pronta para alimentar o próximo bloco.
+   * Põe no canvas **o par** — um Input de Imagem com o último quadro e um Gerar
+   * Vídeo já ligado a ele —, à direita do bloco que produziu o clipe. É o
+   * `addChainedGenerator` aplicado ao vídeo, e a frase dele é o argumento
+   * inteiro: *o arrastar que qualquer um faria à mão, como um clique — que é o
+   * que transforma uma pilha de tentativas num fluxo.*
    *
-   * A recusa a duplicar é a do `attachResultCard`, pela mesma razão: o quadro é
-   * um arquivo só, e dois cards apontando para ele seriam dois nomes para a
-   * mesma coisa. Quando já existe, ele é destacado, e quem chamou recebe o id
-   * para levar a tela até lá.
+   * **Garante o par, nunca duplica o que já existe.** Três desfechos:
+   *
+   *   `both`   nada existia — nascem o card e o bloco
+   *   `video`  o card já estava lá sem nada adiante (alguém apagou o bloco, ou
+   *            o card veio de outro caminho) — nasce só o bloco que faltava
+   *   `none`   o par inteiro já está de pé — os dois são destacados, e quem
+   *            chamou recebe os ids para levar a tela até eles
    */
-  addFrameInput: (input: {
-    videoNodeId: string;
-    assetId: string;
-  }) => { id: string; created: boolean } | null;
+  addContinuation: (input: { videoNodeId: string; assetId: string }) => {
+    inputId: string;
+    videoId: string;
+    created: "both" | "video" | "none";
+  } | null;
   /**
    * A second copy of a block, beside the first.
    *
@@ -913,61 +921,114 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     return { id, created: true };
   },
 
-  addFrameInput: ({ videoNodeId, assetId }) => {
+  addContinuation: ({ videoNodeId, assetId }) => {
     const state = get();
     const video = state.nodes.find((node) => node.id === videoNodeId);
 
     if (!video) return null;
 
-    // Já está no canvas: destaca em vez de plantar um segundo card da mesma
-    // imagem. Mesma regra do "Usar no fluxo", e pelo mesmo motivo — dois cards
-    // do mesmo arquivo seriam dois nomes para uma coisa só.
-    const existing = state.nodes.find(
+    // O card do quadro, se ele já existe. Casado por asset e não por bloco: a
+    // imagem é um arquivo só, e dois cards apontando para ela seriam dois nomes
+    // para a mesma coisa — a regra que o `attachResultCard` já aplica.
+    const card = state.nodes.find(
       (node) => node.type === "input-image" && node.data.assetId === assetId,
     );
 
-    if (existing) {
-      // Selecionar não marca o canvas como sujo: seleção é estado de vista, e
-      // olhar onde o card está não pode gravar o projeto.
+    // E o bloco que ele já alimenta, se alimenta algum.
+    const downstream = card
+      ? state.nodes.find(
+          (node) =>
+            node.type === VIDEO_TARGET &&
+            state.edges.some((edge) => edge.source === card.id && edge.target === node.id),
+        )
+      : undefined;
+
+    // O par inteiro já está de pé: destacar é tudo que resta a fazer.
+    //
+    // Selecionar não marca o canvas como sujo — seleção é estado de vista, e
+    // olhar onde uma coisa está não pode gravar o projeto.
+    if (card && downstream) {
+      const highlighted = new Set([card.id, downstream.id]);
+
       set({
         nodes: state.nodes.map((node) =>
-          node.selected === (node.id === existing.id)
+          node.selected === highlighted.has(node.id)
             ? node
-            : { ...node, selected: node.id === existing.id },
+            : { ...node, selected: highlighted.has(node.id) },
         ),
       });
 
-      return { id: existing.id, created: false };
+      return { inputId: card.id, videoId: downstream.id, created: "none" };
     }
 
-    const width = video.measured?.width ?? video.width ?? 672;
-    const id = crypto.randomUUID();
+    const videoWidth = video.measured?.width ?? video.width ?? VIDEO_NODE_WIDTH;
+
+    // O card nasce **à direita** do bloco de vídeo, ao contrário do
+    // `addInputNode`. Um input comum nasce à esquerda porque é desse lado que o
+    // fio dele chega; este nasce à direita porque é o que veio **depois** — e
+    // assim o canvas passa a ser lido na ordem em que a história é contada.
+    const inputId = card?.id ?? crypto.randomUUID();
+    const inputPosition =
+      card?.position ??
+      freePosition(state.nodes, {
+        x: video.position.x + videoWidth + 72,
+        y: video.position.y,
+      });
+
+    const nextNodes: Node[] = card
+      ? [...state.nodes]
+      : [
+          ...state.nodes,
+          {
+            id: inputId,
+            type: "input-image",
+            position: inputPosition,
+            data: { assetId, kind: null, instrucao: "" },
+          },
+        ];
+
+    const chapterId = crypto.randomUUID();
+
+    nextNodes.push({
+      id: chapterId,
+      type: VIDEO_TARGET,
+      position: freePosition(nextNodes, {
+        x: inputPosition.x + INPUT_NODE_WIDTH + 72,
+        y: video.position.y,
+      }),
+      data: {
+        // O modelo vem junto porque é a mesma história; o **prompt não**, porque
+        // ele era a direção daquela cena e o próximo capítulo é outra. É a
+        // doutrina do Duplicar — copia a pergunta, nunca a resposta — aplicada
+        // a uma continuação em vez de a uma cópia.
+        modelId: video.data.modelId ?? null,
+        // Escrito à mão, e é a armadilha desta função: construir node e aresta
+        // pelo store **não passa pelo `onConnect`**, então nada preencheria o
+        // still sozinho. É o mesmo cuidado que faz `addChainedGenerator`
+        // escrever as `references` explicitamente.
+        sourceAssetId: assetId,
+        sourceNodeId: inputId,
+      },
+    });
 
     set({
-      nodes: [
-        ...state.nodes.map((node) => (node.selected ? { ...node, selected: false } : node)),
-        {
-          id,
-          type: "input-image",
-          // À **direita** do bloco de vídeo, ao contrário do `addInputNode`.
-          // Um input comum nasce à esquerda porque alimenta o bloco ao lado;
-          // este nasce à direita porque é o que veio **depois** — o capítulo
-          // seguinte. O canvas passa a ler da esquerda para a direita como a
-          // história é contada.
-          position: freePosition(state.nodes, {
-            x: video.position.x + width + 72,
-            y: video.position.y,
-          }),
-          selected: true,
-          data: { assetId, kind: null, instrucao: "" },
-        },
+      // Nascem selecionados: são as duas peças que a pessoa acabou de pedir, e
+      // num canvas com vinte cards as novas precisam se identificar sozinhas.
+      nodes: nextNodes.map((node) => {
+        const wanted = node.id === inputId || node.id === chapterId;
+
+        return node.selected === wanted ? node : { ...node, selected: wanted };
+      }),
+      edges: [
+        ...state.edges,
+        { id: `${inputId}->${chapterId}`, source: inputId, target: chapterId },
       ],
       revision: state.revision + 1,
       saveStatus: "dirty",
       notice: null,
     });
 
-    return { id, created: true };
+    return { inputId, videoId: chapterId, created: card ? "video" : "both" };
   },
 
   addInputNode: ({ id, type, generatorId }) =>

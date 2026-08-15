@@ -935,8 +935,12 @@ export const t = {
     continueHint:
       "Lê o último quadro deste vídeo e o põe no canvas como imagem de partida do próximo bloco. Não chama nenhum modelo e não gasta Sparks.",
     continueWorking: "Lendo o último quadro…",
-    /** Nada visível muda quando o card já existe — então a frase é a mudança. */
-    continueExisting: "Este quadro já está no canvas — o card dele foi destacado.",
+    /**
+     * Nada é criado quando o par já está de pé — então a frase é a única coisa
+     * que muda, e ela precisa dizer o que foi destacado e por quê.
+     */
+    continueExisting:
+      "Este capítulo já está no fluxo — o card do quadro e o bloco dele foram destacados.",
     /**
      * As recusas da leitura, cada uma com o conserto na própria frase.
      *
@@ -1294,6 +1298,15 @@ export const t = {
       emptyHint:
         "Envie uma imagem ou gere a primeira: tudo o que você gera fica nesta galeria para sempre.",
       untitled: "Sem nome",
+      /**
+       * O selo do quadro derivado, lido de `derivedFromAssetId` — do dado, e
+       * nunca do rótulo ou do `source`.
+       *
+       * Numa miniatura de 100px o quadro final de um vídeo é indistinguível de
+       * uma foto qualquer, e a diferença importa antes do clique: quem escolhe
+       * uma referência precisa saber que aquilo veio de um clipe.
+       */
+      derivedBadge: "quadro de vídeo",
       loadMore: "Carregar mais",
       selected: "selecionadas",
       notAnImage: "Esse arquivo não é uma imagem.",
