@@ -533,6 +533,23 @@ type CanvasState = {
    */
   addInputNode: (input: { id: string; type: string; generatorId: string }) => void;
   /**
+   * "Continuar deste vídeo": o último quadro vira um Input de Imagem no canvas,
+   * à direita do bloco que produziu o clipe — e **nunca duas vezes o mesmo**.
+   *
+   * É o elo entre um capítulo e o seguinte. O card nasce sem fio: nada consome
+   * vídeo, então não há de onde puxar uma linha — o que ele tem é uma saída,
+   * pronta para alimentar o próximo bloco.
+   *
+   * A recusa a duplicar é a do `attachResultCard`, pela mesma razão: o quadro é
+   * um arquivo só, e dois cards apontando para ele seriam dois nomes para a
+   * mesma coisa. Quando já existe, ele é destacado, e quem chamou recebe o id
+   * para levar a tela até lá.
+   */
+  addFrameInput: (input: {
+    videoNodeId: string;
+    assetId: string;
+  }) => { id: string; created: boolean } | null;
+  /**
    * A second copy of a block, beside the first.
    *
    * For a generating block this is the point of the whole action: prompt, model,
@@ -891,6 +908,63 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       ],
       revision: state.revision + 1,
       saveStatus: "dirty",
+    });
+
+    return { id, created: true };
+  },
+
+  addFrameInput: ({ videoNodeId, assetId }) => {
+    const state = get();
+    const video = state.nodes.find((node) => node.id === videoNodeId);
+
+    if (!video) return null;
+
+    // Já está no canvas: destaca em vez de plantar um segundo card da mesma
+    // imagem. Mesma regra do "Usar no fluxo", e pelo mesmo motivo — dois cards
+    // do mesmo arquivo seriam dois nomes para uma coisa só.
+    const existing = state.nodes.find(
+      (node) => node.type === "input-image" && node.data.assetId === assetId,
+    );
+
+    if (existing) {
+      // Selecionar não marca o canvas como sujo: seleção é estado de vista, e
+      // olhar onde o card está não pode gravar o projeto.
+      set({
+        nodes: state.nodes.map((node) =>
+          node.selected === (node.id === existing.id)
+            ? node
+            : { ...node, selected: node.id === existing.id },
+        ),
+      });
+
+      return { id: existing.id, created: false };
+    }
+
+    const width = video.measured?.width ?? video.width ?? 672;
+    const id = crypto.randomUUID();
+
+    set({
+      nodes: [
+        ...state.nodes.map((node) => (node.selected ? { ...node, selected: false } : node)),
+        {
+          id,
+          type: "input-image",
+          // À **direita** do bloco de vídeo, ao contrário do `addInputNode`.
+          // Um input comum nasce à esquerda porque alimenta o bloco ao lado;
+          // este nasce à direita porque é o que veio **depois** — o capítulo
+          // seguinte. O canvas passa a ler da esquerda para a direita como a
+          // história é contada.
+          position: freePosition(state.nodes, {
+            x: video.position.x + width + 72,
+            y: video.position.y,
+          }),
+          selected: true,
+          data: { assetId, kind: null, instrucao: "" },
+        },
+      ],
+      revision: state.revision + 1,
+      saveStatus: "dirty",
+      notice: null,
     });
 
     return { id, created: true };

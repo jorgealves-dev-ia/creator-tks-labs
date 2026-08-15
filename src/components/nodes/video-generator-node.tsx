@@ -1,11 +1,12 @@
 "use client";
 
-import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
+import { Handle, Position, useReactFlow, type Node, type NodeProps } from "@xyflow/react";
 import { useCallback, useEffect, useState } from "react";
 
 import { NodeHeader } from "@/components/nodes/node-header";
 import { useVideoCatalog } from "@/components/nodes/use-video-catalog";
-import { signAssetUrls } from "@/lib/assets/actions";
+import { registerDerivedFrame, signAssetUrls } from "@/lib/assets/actions";
+import { extractLastFrame, type LastFrameFailure } from "@/lib/assets/last-frame";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { useGenerationTick } from "@/lib/generation/generation-feed";
 import { listNodeVideos, type VideoJobRow } from "@/lib/generation/history";
@@ -15,10 +16,14 @@ import {
   requestVideoGeneration,
   type VideoGenerationFailure,
 } from "@/lib/generation/video-contract";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { t } from "@/lib/i18n/pt-BR";
 import { useBalance } from "@/lib/sparks/balance-store";
 
 const copy = t.videoNode;
+
+/** Largura do card de Input de Imagem (`w-56`), só para centralizar a tela nele. */
+const INPUT_CARD_WIDTH = 224;
 
 /**
  * O bloco Gerar Vídeo — a estreia do assíncrono na tela.
@@ -98,8 +103,11 @@ export function VideoGeneratorNode({ id, data, selected }: NodeProps<VideoGenera
   const providers = useVideoCatalog();
   const projectId = useCanvasStore((state) => state.projectId);
   const updateNodeData = useCanvasStore((state) => state.updateNodeData);
+  const addFrameInput = useCanvasStore((state) => state.addFrameInput);
   const balance = useBalance((state) => state.sparks);
   const tick = useGenerationTick(id);
+  // Para levar a tela até o card que "Continuar deste vídeo" acabou de criar.
+  const { setCenter, getZoom } = useReactFlow();
 
   const [jobs, setJobs] = useState<VideoJobRow[]>([]);
   /**
@@ -114,6 +122,9 @@ export function VideoGeneratorNode({ id, data, selected }: NodeProps<VideoGenera
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [checking, setChecking] = useState<string | null>(null);
+  /** O elo em curso: ler o quadro, subir e registrar leva um instante visível. */
+  const [continuing, setContinuing] = useState(false);
+  const [continueNote, setContinueNote] = useState<string | null>(null);
 
   const prompt = data.prompt ?? "";
   const sourceAssetId = data.sourceAssetId ?? null;
@@ -215,6 +226,100 @@ export function VideoGeneratorNode({ id, data, selected }: NodeProps<VideoGenera
     // conta isso é o Realtime relendo a carteira. Reler a lista agora é o que
     // faz a caixinha "Na fila" aparecer no mesmo instante do clique.
     reload();
+  }
+
+  /**
+   * "Continuar deste vídeo" — o elo, em cinco passos e nenhum deles pago.
+   *
+   * A ordem existe para que cada passo impeça um jeito específico de estar
+   * errado, no mesmo espírito do motor de extração:
+   *
+   *   1. **assinar de novo**, e não reusar o link que a lista trouxe. As URLs
+   *      valem uma hora; um canvas aberto desde o almoço tem link morto, e a
+   *      falha apareceria como "não consegui ler o vídeo" quando a causa é o
+   *      relógio.
+   *   2. **ler o quadro** no navegador, com o decodificador que já existe.
+   *   3. **subir ao Storage** num caminho determinístico pelo id do vídeo —
+   *      clicar duas vezes sobrescreve os mesmos bytes em vez de plantar um
+   *      irmão.
+   *   4. **registrar** com a linhagem, no servidor, que confere a posse e monta
+   *      o rótulo pelo id (o navegador não nomeia nada).
+   *   5. **pôr o card no canvas** e levar a tela até ele.
+   *
+   * Nenhum passo chama modelo, toca o ledger ou cria linha em `generations`.
+   */
+  async function continueFromVideo() {
+    if (!featured?.assetId || continuing) return;
+
+    setContinuing(true);
+    setContinueNote(null);
+
+    const fail = (reason: LastFrameFailure | "upload" | "not_a_video") => {
+      setContinueNote(copy.continueErrors[reason] ?? copy.continueErrors.error);
+      setContinuing(false);
+    };
+
+    // 1. Link fresco, sempre.
+    const urls = await signAssetUrls([featured.assetId]);
+    const fresh = urls[featured.assetId];
+
+    if (!fresh) return fail("expired_link");
+
+    // 2. O quadro.
+    const read = await extractLastFrame(fresh);
+
+    if (!read.ok) return fail(read.reason);
+
+    // 3. O Storage. O caminho diz o que o arquivo é — o último quadro **deste**
+    //    vídeo —, e é por ser determinístico que a segunda leitura não duplica.
+    const supabase = createSupabaseBrowserClient();
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+
+    if (!userId) return fail("upload");
+
+    const storagePath = `${userId}/frames/${featured.assetId}-ultimo.png`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("assets")
+      .upload(storagePath, read.frame.blob, { contentType: "image/png", upsert: true });
+
+    if (uploadError) return fail("upload");
+
+    // 4. A escrituração, com a linhagem.
+    const registered = await registerDerivedFrame({
+      storagePath,
+      sourceAssetId: featured.assetId,
+      atMs: read.frame.atMs,
+      width: read.frame.width,
+      height: read.frame.height,
+      byteSize: read.frame.blob.size,
+    });
+
+    if (!registered.ok) {
+      return fail(registered.reason === "not_a_video" ? "not_a_video" : "upload");
+    }
+
+    // 5. O card, e a tela indo até ele.
+    const card = addFrameInput({ videoNodeId: id, assetId: registered.assetId });
+
+    setContinuing(false);
+
+    if (!card) return;
+
+    // Já existia: foi destacado, não duplicado — e um clique que faz a coisa
+    // certa sem criar nada precisa dizer o que fez.
+    if (!card.created) setContinueNote(copy.continueExisting);
+
+    const node = useCanvasStore.getState().nodes.find((entry) => entry.id === card.id);
+
+    if (node) {
+      void setCenter(
+        node.position.x + (node.measured?.width ?? INPUT_CARD_WIDTH) / 2,
+        node.position.y + (node.measured?.height ?? INPUT_CARD_WIDTH) / 2,
+        { zoom: getZoom(), duration: 400 },
+      );
+    }
   }
 
   async function check(generationId: string) {
@@ -401,6 +506,44 @@ export function VideoGeneratorNode({ id, data, selected }: NodeProps<VideoGenera
               <p className="px-3 text-center text-[11px] text-ink-faint">{copy.emptyResult}</p>
             )}
           </div>
+
+          {/*
+            O ELO — só existe quando existe vídeo pronto na moldura.
+            ------------------------------------------------------------------
+            Fica **sob a moldura e sobre as caixinhas**, largura inteira, e não
+            sobreposto na imagem como o "Usar no fluxo" do gerador. Dois motivos:
+            o `<video controls>` já ocupa o canto de baixo com a barra do
+            navegador, e um gesto que é a razão de ser deste ciclo não pode
+            depender de hover para ser descoberto — o próprio diário já registrou
+            que "duplo clique ninguém descobre sozinho".
+          */}
+          {featured?.assetId ? (
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={continueFromVideo}
+                disabled={continuing}
+                title={copy.continueHint}
+                className="nodrag h-8 w-full rounded-lg border border-line bg-surface text-[11px]
+                           font-medium text-ink transition-colors hover:border-accent
+                           disabled:cursor-not-allowed disabled:text-ink-faint"
+              >
+                {continuing ? copy.continueWorking : copy.continueTitle}
+              </button>
+
+              {/* O "sem custo" não é enfeite: este botão fica a três centímetros
+                  de um que diz "Custará 210 ⚡". */}
+              <p className="text-center text-[10px] leading-relaxed text-ink-faint">
+                {copy.continueSubtitle}
+              </p>
+
+              {continueNote ? (
+                <p className="rounded-lg border border-line bg-surface px-2 py-1.5 text-[11px] text-ink">
+                  {continueNote}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           {/* As caixinhas: o visual do que está acontecendo, uma por trabalho. */}
           <ul className="space-y-1">

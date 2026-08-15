@@ -921,6 +921,41 @@ export const t = {
     balanceLabel: "Saldo",
     resultTitle: "Resultado",
     emptyResult: "O vídeo aparecerá aqui",
+    /**
+     * O ELO — Frente Storyboard, Ciclo 1.
+     *
+     * Nome de **intenção**, nunca de implementação: "Extrair último frame"
+     * descreve a máquina para quem só tem uma vontade, que é continuar a
+     * história. E o rótulo diz que é **grátis** porque este botão fica a três
+     * centímetros de um que anuncia "Custará 210 ⚡" — uma ação sem custo ao
+     * lado de uma paga, sem dizer qual é qual, é a tela ensinando a hesitar.
+     */
+    continueTitle: "Continuar deste vídeo",
+    continueSubtitle: "o último quadro vira a partida do próximo · sem custo",
+    continueHint:
+      "Lê o último quadro deste vídeo e o põe no canvas como imagem de partida do próximo bloco. Não chama nenhum modelo e não gasta Sparks.",
+    continueWorking: "Lendo o último quadro…",
+    /** Nada visível muda quando o card já existe — então a frase é a mudança. */
+    continueExisting: "Este quadro já está no canvas — o card dele foi destacado.",
+    /**
+     * As recusas da leitura, cada uma com o conserto na própria frase.
+     *
+     * `hidden_tab` é a que mais importa, e ela é medida: numa aba que não está
+     * visível o navegador simplesmente não decodifica vídeo. Sem esta frase, o
+     * sintoma seria uma espera de quinze segundos terminando em "não deu".
+     */
+    continueErrors: {
+      hidden_tab:
+        "O navegador não lê vídeo com a aba escondida. Deixe esta janela na frente e clique de novo.",
+      expired_link:
+        "O link deste vídeo expirou — eles valem uma hora. Recarregue a página e tente de novo.",
+      undecodable: "Não consegui ler este vídeo no navegador. Tente de novo em instantes.",
+      tainted:
+        "O navegador bloqueou a leitura deste quadro. Recarregue a página e tente de novo.",
+      upload: "O quadro foi lido, mas não consegui guardá-lo. Tente de novo.",
+      not_a_video: "Este resultado não é um vídeo.",
+      error: "Não foi possível pegar o último quadro. Tente de novo.",
+    },
     /** Diz o que sai e o que fica — os vídeos já gerados continuam na galeria. */
     remove: "Tirar este bloco do canvas (os vídeos já gerados ficam)",
     /** Os três estados de um trabalho, na caixinha e na moldura. */

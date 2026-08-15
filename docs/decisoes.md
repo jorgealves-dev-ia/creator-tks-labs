@@ -3112,3 +3112,113 @@ O ciclo que fez a invariante 1 deixar de ser promessa. Fila → webhook → Real
 1. **Canal se audita no banco, não no console.** `SUBSCRIBED` é o tópico aceito, não a assinatura registrada.
 2. **Instrumento que divide assinatura com o observado não é instrumento; é participante.** Metade de uma manhã foi gasta perseguindo um sintoma que o próprio diagnóstico causava.
 3. **Cinto que não existe só se descobre na batida.** O canal era o cinto de segurança do reload na frente de imagem, e ninguém notou que ele estava desamarrado até o vídeo depender dele para tudo.
+
+---
+
+## Frente Storyboard — Ciclo 1: O Elo
+
+> O ciclo que ensina o produto a contar histórias em capítulos. Dado um vídeo
+> pronto, o último quadro dele vira o ponto de partida do próximo — à mão, um
+> gesto de cada vez, antes de existir Roteiro ou Máquina. **A visão da frente
+> inteira (roteiro, fichas de cena, folha montada, a Máquina) fica registrada na
+> Fase 4;** este ciclo constrói só a primeira peça dela.
+
+### 15/08/2026 — Fase 0 · a rota do quadro, decidida com o navegador na mão
+
+A pergunta era cliente (um `<video>` + canvas) contra servidor (ffmpeg numa função). Foi respondida com medição, contra o vídeo real da @luna que já estava no Storage, e não com argumento.
+
+**O CORS permite, e o controle é a metade que prova.** As URLs assinadas do nosso Storage devolvem `Access-Control-Allow-Origin: *` — no GET, no HEAD e no preflight, com `accept-ranges: bytes`. No navegador, na mesma página e no mesmo minuto:
+
+| | resultado |
+|---|---|
+| `<video crossorigin="anonymous">` | canvas **limpo** — `getImageData` e `toBlob` funcionaram |
+| o mesmo vídeo **sem** o atributo | `SecurityError: Tainted canvases may not be exported` |
+
+O sucesso sozinho não provaria nada. **É o controle que mostra que o `crossorigin` é obrigatório e não decoração:** sem ele o navegador nem manda `Origin`, trata a resposta como opaca e contamina o canvas. Um detalhe que teria custado uma rodada inteira de diagnóstico na fase seguinte.
+
+**A rota servidor perdeu por uma distância que não é discutível.** O último quadro de um H.264 não é keyframe, então não existe "pegar sem decodificar" em lugar nenhum — a diferença é onde mora o decodificador. No navegador ele já existe e custa zero; no servidor custaria **68 MB medidos** (`@ffmpeg-installer/linux-x64`) dos 250 MB de bundle da Vercel, uma dependência nova a aprovar, e o download de 4 MB para dentro da função a cada quadro. Para um trabalho de meio segundo.
+
+**O último quadro do Kling é bom, e isso também foi medido em vez de suposto.** Duração 5,042 s, 960×960. A luminância anda entre 58,5 e 61,0 do primeiro ao último quadro — **não escurece**. A nitidez cai 13% (5,49 → 4,77), e olhando a imagem dá para ver por quê: o borrão está no controle de videogame, que está em movimento; o rosto está nítido. O quadro tem a @luna virada para a câmera, sorrindo — **um ponto de partida melhor que o original**, porque ela já está olhando para quem assiste.
+
+E `currentTime = duration` basta: o quadro do fim exato e o de 40 ms antes são **byte a byte o mesmo arquivo** (SHA-256 idêntico). Nenhum epsilon mágico. *Medido no Chrome; o recuo de 50 ms ficou no código como rede para navegadores que recortem diferente.*
+
+**O fallback de "N ms antes do fim" NÃO foi construído**, e a ausência é a decisão: não há necessidade medida, e uma amostra é uma amostra — mesma disciplina do registro da recusa em "@luna sorrindo". O `derived_from_ms` acumula o dado; se um quadro borrado aparecer no uso real, a investigação começa com caso concreto em vez de estatística fabricada.
+
+**Achado de catálogo, registrado para ninguém tropeçar:** a resolução real é **960×960**, e o catálogo diz `720p`. O `720p` é o **nível do endpoint**, não a contagem de pixels — quem assumisse 1280×720 entregaria um quadro esticado. O canvas é criado com `videoWidth × videoHeight`, e é isso que cumpre "resolução fiel à origem".
+
+---
+
+### 15/08/2026 — Fase 0 · a aba escondida não decodifica vídeo 🔎 achado fora do roteiro
+
+Não estava na lista de perguntas e mudou o desenho do produto. Um `<video>` numa aba com `visibilityState === "hidden"` emite `stalled` aos ~3 s e **nunca** chega a `loadedmetadata`. Reproduzido oito vezes — nos dois vídeos, com `preload="metadata"` e `"auto"`, com blob URL local (bytes já baixados) e até com `play()`. Enquanto isso, um `fetch()` dos mesmos bytes volta em **4 ms**. Não é rede: é a pilha de mídia do navegador.
+
+O contraste que fecha a causa veio depois, com a janela na frente — **mesma página, mesmo arquivo, mesmo código**:
+
+```
+aba ESCONDIDA   stalled@3,2s · sem metadata em 20–25 s
+aba VISÍVEL     loadedmetadata@31ms · TOTAL 543 ms · canvas limpo
+```
+
+**A consequência de produto: extrair é gesto de quem está olhando.** Não existe "extrai sozinho quando o vídeo termina" — seria uma funcionalidade que falha em silêncio exatamente quando ninguém está vendo. E a recusa dessa situação ganhou frase própria, com o conserto dentro dela, em vez de uma espera de quinze segundos terminando em "não deu".
+
+**A consequência de método:** validação de tela que envolva vídeo exige a janela visível de verdade. Uma aba atrás valida um `stalled`.
+
+---
+
+### 15/08/2026 — Fase 1 · a linhagem: duas perguntas, duas colunas
+**Migration:** `20260815195510_asset_lineage.sql` (aplicada pelo Jorge)
+
+`assets` tinha treze colunas e nenhuma dizia de onde um arquivo veio. Bastava enquanto tudo era ou **enviado** (não veio de lugar nenhum) ou **gerado** (apontado por `generations.result_asset_id`). O quadro final de um vídeo é a primeira coisa deste produto que não é nem uma nem outra.
+
+**Não é linha em `generations`, e isso é schema e não gosto.** `provider` e `model` são `NOT NULL`, e um quadro derivado não tem nenhum dos dois — não houve chamada, preço nem catálogo. E ainda que coubesse, quebraria a regra ratificada em 12/08: o cartão do projeto conta imagens geradas, e o quadro seria a mesma imagem contada duas vezes. **Quadro derivado é engenharia, não geração:** não passa por `generations`, não toca o ledger, não custa Spark.
+
+**`source` não muda, e a recusa do enum tem custo medido.** Acrescentar `'derived'` a `asset_source` parecia o mais honesto e é o mais caro: o filtro da galeria oferece `todas / geradas / enviadas`, e um terceiro valor cairia fora dos três — quem procurasse em "geradas" **não acharia** o quadro do vídeo que ele mesmo gerou. Então as perguntas se separam, porque sempre foram duas: `source` responde *quem pôs o arquivo aqui* (o sistema), `derived_from_asset_id` responde *de onde vieram os pixels*. **O que identifica um derivado é o dado, nunca o rótulo.** *(Conferido na validação da Fase 2: o quadro aparece sob "Geradas". Com o enum novo, não apareceria.)*
+
+**`derived_from_ms` guarda o instante**, para o registro dizer um fato conferível — *o quadro em 5042 ms* — em vez de uma afirmação — *o último quadro*. E a checagem `assets_derived_ms_requires_origin` vale **numa direção só**, de propósito: um instante sem origem é impossível, uma origem sem instante não — porque nem toda derivação futura é no tempo (um recorte de imagem tem origem e não tem instante), e uma trava simétrica cobraria uma migration daquele dia por uma regra que só vale para vídeo.
+
+FK `on delete set null` pelo precedente de `entities.cover_asset_id`: apagar o vídeo não pode apagar o quadro, que a essa altura já é cartão no canvas e possivelmente semente de uma geração paga. Perder a linhagem custa auditoria; perder o quadro custa trabalho.
+
+**Uma prova de sintaxe que não é leitura.** Antes de a migration sair da minha mão, ela passou pelo **parser real do Postgres** (`libpg-query`, sem nenhum contato com o banco): 7 statements, os pretendidos. E o verificador foi sabotado com três SQLs inválidos — aspa não fechada, palavra-chave errada, parêntese aberto — porque um verificador que nunca reprova não verifica nada. A leitura do AST pegou um erro que a minha releitura não pegou: uma aspa fora do lugar num `comment on` que era **sintaticamente válida** e deixava a frase quebrada.
+
+Conferido no banco depois de aplicada: as duas colunas, a FK com SET NULL, as três constraints com a definição real, o índice parcial, e as 54 linhas antigas nulas nas duas. O predicado da trava assimétrica foi avaliado nos cinco casos, e **os dois que devem reprovar reprovaram** — uma trava que só passa não prova nada.
+
+**Junto foi a lista de migrations do `arquitetura.md`**, que estava nove entradas atrasada. Acrescentar só a nova faria a lista *parecer* atual sendo errada no meio — pior que desatualizada.
+
+---
+
+### 15/08/2026 — Fase 2 · o quadro vira imagem, e o elo existe
+
+O botão **"Continuar deste vídeo"** entra sob a moldura do bloco Gerar Vídeo, e só quando há vídeo pronto nela. Cinco passos, nenhum pago: assinar o link de novo → ler o quadro → subir ao Storage → registrar com a linhagem → pôr o card no canvas e levar a tela até ele.
+
+**O link é assinado de novo, e não reusado.** As URLs valem uma hora; um canvas aberto desde o almoço tem link morto, e a falha apareceria como *"não consegui ler o vídeo"* quando a causa é o relógio.
+
+**O rótulo é montado no servidor, pelo id.** O navegador afirma onde subiu, de qual vídeo e em que instante; o servidor confere o que precisa ser verdade (o caminho é da pasta do chamador, o asset de origem é dele e é `kind = 'video'`) e **não aceita nome nenhum** — ele lê o `label` do vídeo e monta *"Último quadro · …"*. É a divisão de 10/08 — **pode nomear, nunca pode alargar** —, só que aqui nem nomear: registro de auditoria que acredita no rótulo que o cliente mandou não é registro de auditoria.
+
+**PNG, e a escolha custa 1 MB.** Medido: PNG 1,18 MB contra JPEG q0,92 em 140 KB. O quadro vai ser o primeiro frame do próximo clipe, ou seja, entra numa geração paga como referência de identidade — e já carrega a compressão do H.264. Somar uma segunda geração de perda em cima de um rosto é exatamente o que este produto existe para recusar. Storage é custo nosso e é desprezível.
+
+**Clicar duas vezes não cria dois quadros.** Caminho determinístico pelo id do vídeo, então a segunda subida sobrescreve os mesmos bytes e a escrituração devolve o asset que já existia. Mesma decisão do `video-complete.ts`: execução dupla sobrescreve, nunca duplica.
+
+**O card nasce à direita**, ao contrário de todos os outros inputs — que nascem à esquerda porque é desse lado que o fio chega. Este nasce à direita porque é o que veio **depois**, e assim o canvas passa a ser lido na ordem em que a história é contada.
+
+**E o botão diz que é grátis.** Ele fica a três centímetros de um que anuncia "Custará 210 ⚡". Uma ação sem custo encostada numa paga, sem dizer qual é qual, é a tela ensinando a hesitar — então o subtítulo diz *"o último quadro vira a partida do próximo · sem custo"*.
+
+#### A validação, zero Spark
+
+Seis itens, todos com print, em `scratchpad/evidencias/storyboard-c1-fase2/`:
+
+| # | o que ficou provado |
+|---|---|
+| 1 | dois blocos de vídeo no mesmo quadro: **só o que tem resultado tem o botão** |
+| 2 | o botão sob a moldura, com o **"sem custo"** ao lado de um "Custará 210 ⚡" |
+| 3 | o clique → o quadro vira **Input de Imagem à direita**, selecionado, com a tela indo até ele |
+| 4 | o quadro na galeria, e **sob o filtro "Geradas"** — a decisão da Fase 1 valendo na prática |
+| 5 | o banco antes e depois: gerações 57→57, lançamentos 43→43, saldo 6.955→6.955 |
+| 6 | clicar de novo → **não duplica**: destaca o card e diz por quê |
+
+O item 5 é o que mais vale, e a prova não é a igualdade dos números: é a **data da última linha**. Depois de três cliques, a geração mais recente continua sendo `14/08 14:26` e o lançamento mais recente `14/08 14:27` — os do vídeo pago de ontem. **Nada foi escrito hoje em nenhuma das duas tabelas.** Zero Spark, e não "quase zero".
+
+E o `derived_from_ms` gravado foi **5042** — o mesmo número que a investigação tinha medido de manhã no mesmo arquivo, por um caminho independente: uma página de teste solta contra o código de produção.
+
+#### O que ficou sem prova, dito em vez de contado
+
+A recusa `hidden_tab` — a frase que nasceu do achado mais útil da Fase 0 — **não foi vista na tela**, e a limitação é do instrumento e não do produto: a extensão que dirige o navegador **ativa a aba** para executar qualquer script, então "clicar com a aba escondida" é uma combinação que eu não consigo produzir. O mecanismo está medido oito vezes e o contraste com a aba visível está acima; o que falta é a frase aparecendo, não a condição existindo.

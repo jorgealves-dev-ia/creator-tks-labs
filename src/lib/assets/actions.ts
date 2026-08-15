@@ -269,3 +269,180 @@ export async function registerUploadedAsset(input: unknown): Promise<RegisterAss
     },
   };
 }
+
+// ---------------------------------------------------------------------------
+// O quadro derivado — Frente Storyboard · Ciclo 1 (O Elo)
+// ---------------------------------------------------------------------------
+
+const derivedFrameSchema = z.object({
+  storagePath: z.string().min(1),
+  /** O vídeo de onde os pixels vieram. Conferido aqui, nunca acreditado. */
+  sourceAssetId: z.uuid(),
+  /** Em que instante do vídeo. Cosmético para a segurança, essencial para o registro. */
+  atMs: z.int().min(0),
+  width: z.int().positive(),
+  height: z.int().positive(),
+  byteSize: z.int().positive(),
+});
+
+export type RegisterFrameResult =
+  | { ok: true; assetId: string; url: string; label: string | null; created: boolean }
+  | { ok: false; reason: "invalid" | "not_a_video" | "error" };
+
+/**
+ * Registra o quadro que o navegador acabou de subir, com a linhagem.
+ *
+ * ---------------------------------------------------------------------------
+ * Nada disto é uma geração
+ * ---------------------------------------------------------------------------
+ *
+ * Não há linha em `generations`, não há lançamento no ledger, não há Spark. Não
+ * é economia: é o que a coisa é. **Quadro derivado é engenharia, não geração** —
+ * não houve provedor, modelo nem preço, e `generations.provider`/`model` são
+ * `NOT NULL` justamente porque uma geração sem eles não existe.
+ *
+ * ---------------------------------------------------------------------------
+ * O que é conferido e o que é aceito
+ * ---------------------------------------------------------------------------
+ *
+ * O navegador afirma três coisas: onde subiu o arquivo, de qual vídeo o quadro
+ * saiu e em que instante. A divisão é a de 10/08/2026 — **pode nomear, nunca
+ * pode alargar**:
+ *
+ *   conferido   o caminho está na pasta do chamador (e a política do bucket
+ *               diz o mesmo, de novo); o asset de origem existe, é dele (RLS) e
+ *               é `kind = 'video'`
+ *   aceito      o instante, que é registro e não permissão
+ *
+ * O **rótulo não viaja do navegador**, e essa é a parte que vale dizer: ele é
+ * montado aqui, a partir do `label` do vídeo lido pelo id. Registro de auditoria
+ * que acredita no nome que o cliente mandou não é registro de auditoria — mesma
+ * doutrina que faz o `@` ser resolvido no servidor.
+ *
+ * ---------------------------------------------------------------------------
+ * Clicar duas vezes não cria dois quadros
+ * ---------------------------------------------------------------------------
+ *
+ * O caminho é determinístico pelo id do vídeo (`<user>/frames/<video>-ultimo.png`),
+ * então a segunda subida sobrescreve os mesmos bytes e esta função devolve o
+ * asset que já existia, com `created: false`. É a mesma decisão que fez o vídeo
+ * abandonar o `randomUUID()` no caminho do Storage: **execução dupla sobrescreve,
+ * nunca duplica.**
+ */
+export async function registerDerivedFrame(input: unknown): Promise<RegisterFrameResult> {
+  const parsed = derivedFrameSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return { ok: false, reason: "invalid" };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+
+  if (!userId) {
+    redirect("/login");
+  }
+
+  if (!parsed.data.storagePath.startsWith(`${userId}/`)) {
+    return { ok: false, reason: "invalid" };
+  }
+
+  // O RLS já limita esta leitura ao dono, então "não achou" e "não é seu" são a
+  // mesma resposta — que é a resposta certa para as duas.
+  const { data: source } = await supabase
+    .from("assets")
+    .select("id, kind, label")
+    .eq("id", parsed.data.sourceAssetId)
+    .maybeSingle();
+
+  if (!source) return { ok: false, reason: "invalid" };
+  if (source.kind !== "video") return { ok: false, reason: "not_a_video" };
+
+  const label = frameLabel(source.label);
+
+  // O caminho já foi usado: o quadro existe, e clicar de novo não cria um irmão.
+  const { data: existing } = await supabase
+    .from("assets")
+    .select("id, label, storage_path")
+    .eq("storage_bucket", "assets")
+    .eq("storage_path", parsed.data.storagePath)
+    .maybeSingle();
+
+  const row =
+    existing ??
+    (
+      await supabase
+        .from("assets")
+        .insert({
+          user_id: userId,
+          kind: "image",
+          // Foi o sistema que produziu este arquivo, não a pessoa. A pergunta
+          // precisa — de onde vieram os pixels — é da coluna abaixo, e é ela que
+          // identifica um derivado. O dado, nunca o rótulo.
+          source: "generation",
+          storage_path: parsed.data.storagePath,
+          mime_type: "image/png",
+          byte_size: parsed.data.byteSize,
+          width: parsed.data.width,
+          height: parsed.data.height,
+          derived_from_asset_id: parsed.data.sourceAssetId,
+          derived_from_ms: parsed.data.atMs,
+          label,
+        })
+        .select("id, label, storage_path")
+        .maybeSingle()
+    ).data;
+
+  if (!row) {
+    // Duas abas clicando junto: a segunda perde no unique de (bucket, path).
+    // A resposta certa não é erro — é devolver o quadro que a primeira criou.
+    const { data: raced } = await supabase
+      .from("assets")
+      .select("id, label, storage_path")
+      .eq("storage_bucket", "assets")
+      .eq("storage_path", parsed.data.storagePath)
+      .maybeSingle();
+
+    if (!raced) return { ok: false, reason: "error" };
+
+    return signFrame(supabase, raced, false);
+  }
+
+  return signFrame(supabase, row, existing === null);
+}
+
+async function signFrame(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  row: { id: string; label: string | null; storage_path: string },
+  created: boolean,
+): Promise<RegisterFrameResult> {
+  const { data: signed } = await supabase.storage
+    .from("assets")
+    .createSignedUrl(row.storage_path, SIGNED_URL_TTL_SECONDS);
+
+  if (!signed) return { ok: false, reason: "error" };
+
+  return { ok: true, assetId: row.id, url: signed.signedUrl, label: row.label, created };
+}
+
+/**
+ * O nome do quadro na galeria, montado do nome do vídeo.
+ *
+ * "Último quadro · ela vira para a câmera…" diz as duas coisas que alguém
+ * procurando precisa: o que é, e de qual clipe saiu. A busca da galeria varre
+ * `label`, então o prefixo também é como se encontram todos os quadros de uma
+ * vez.
+ */
+function frameLabel(videoLabel: string | null): string {
+  const prefix = "Último quadro";
+
+  if (!videoLabel || videoLabel.trim() === "") return prefix;
+
+  const flat = `${prefix} · ${videoLabel.trim().replace(/\s+/g, " ")}`;
+
+  // O teto de 200 é constraint (`assets_label_length`): cortar aqui é o que
+  // impede um prompt longo de derrubar a escrituração de um quadro que já está
+  // no Storage.
+  return flat.length > 200 ? `${flat.slice(0, 199)}…` : flat;
+}

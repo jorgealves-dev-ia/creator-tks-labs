@@ -180,6 +180,22 @@ A publicação existe desde a Fase 0 (`20260807140600_enable_realtime.sql`), e o
 
 **E é esta a peça que a frente de vídeo herda inteira:** lá o webhook do provedor grava a linha e é este mesmo canal que avisa a tela. Aqui ele cobre o reload — o que o põe no ar e exercitado antes de haver vídeo para depender dele.
 
+## 5.5 O elo: "Continuar deste vídeo" *(15/08/2026, Frente Storyboard Ciclo 1)*
+
+O bloco Gerar Vídeo ganha um botão sob a moldura, **e só quando há vídeo pronto nela**: ele lê o último quadro do clipe e o põe no canvas como um **Input de Imagem**, à direita, pronto para partir o capítulo seguinte. É o que transforma cinco segundos numa história contada em capítulos, à mão, antes de existir Roteiro ou Máquina.
+
+**Não é uma geração, e a diferença não é de escala.** Não há chamada a provedor, não há linha em `generations`, não há lançamento no ledger e não custa Spark — **quadro derivado é engenharia**. O porquê e a forma da linhagem estão em [`arquitetura.md`](./arquitetura.md#4-modelo-de-dados); aqui interessa a consequência de tela: o botão diz **"sem custo"** em voz alta, porque fica a três centímetros de um que anuncia *"Custará 210 ⚡"*, e uma ação grátis encostada numa paga, sem dizer qual é qual, é a tela ensinando a hesitar.
+
+**Sob a moldura, não sobreposto nela.** O "Usar no fluxo" do gerador de imagem aparece no hover, em cima da imagem; aqui não pode: o `<video controls>` já ocupa o canto de baixo com a barra do navegador, e um gesto que é a razão de ser do ciclo não pode depender de hover — *"duplo clique ninguém descobre sozinho"* (10/08/2026) vale igual para o que se esconde até o ponteiro passar.
+
+**O card nasce à direita, ao contrário de todos os outros inputs.** Um Input comum nasce à esquerda do bloco que alimenta, porque é desse lado que o fio chega. Este nasce à direita porque é o que veio **depois** — e assim o canvas passa a ser lido na ordem em que a história é contada.
+
+**Nasce sem fio, e isso é honesto.** Nada consome vídeo, então não há de onde puxar uma linha: o bloco de vídeo continua só-entrada, e o que o card tem é uma **saída**, pronta para alimentar o próximo bloco. *(O segundo node — um Gerar Vídeo já ligado ao card — é a fase seguinte.)*
+
+**Clicar duas vezes não cria dois quadros.** O caminho no Storage é determinístico pelo id do vídeo, então a segunda leitura sobrescreve os mesmos bytes; o card existente é **destacado** em vez de duplicado, com a frase dizendo o que aconteceu. Mesma regra do "Usar no fluxo", e pelo mesmo motivo: dois cards do mesmo arquivo seriam dois nomes para uma coisa só.
+
+**A leitura é gesto de quem está olhando, nunca trabalho de fundo** — e isso é medido, não preferido. Numa aba que não está visível o navegador **não decodifica vídeo**: `stalled` aos ~3 s e nenhum metadata em 20–25 s, contra 543 ms de ponta a ponta com a janela na frente. Por isso não existe "extrai sozinho quando o vídeo termina", e por isso a recusa dessa situação tem frase própria, com o conserto dentro dela.
+
 ## 6. Compilação de canvas (o contrato)
 
 Ordem do prompt final: **estilo** (do node; herdado da personagem quando não sobrescrito) → **bloco de identidade** da versão mencionada (o compilador de sempre) → **cena do usuário** (o prompt em PT, traduzido na geração) → **ajustes de cena** (quando houver) → **diretivas das referências** (tipo + instrução, traduzidas) → **restrições** (sempre, ao final).
