@@ -49,6 +49,41 @@ export type Database = {
           },
         ]
       }
+      ai_model_text_prices: {
+        Row: {
+          created_at: string
+          id: string
+          job_kind: string
+          model_id: string
+          sort_order: number
+          sparks: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_kind: string
+          model_id: string
+          sort_order?: number
+          sparks: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_kind?: string
+          model_id?: string
+          sort_order?: number
+          sparks?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_model_text_prices_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "ai_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_model_video_prices: {
         Row: {
           created_at: string
@@ -231,6 +266,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cta_library: {
+        Row: {
+          canal: string
+          created_at: string
+          enabled: boolean
+          hint: string | null
+          id: string
+          momento: string
+          sort_order: number
+          texto_pt: string
+        }
+        Insert: {
+          canal: string
+          created_at?: string
+          enabled?: boolean
+          hint?: string | null
+          id: string
+          momento: string
+          sort_order?: number
+          texto_pt: string
+        }
+        Update: {
+          canal?: string
+          created_at?: string
+          enabled?: boolean
+          hint?: string | null
+          id?: string
+          momento?: string
+          sort_order?: number
+          texto_pt?: string
+        }
+        Relationships: []
       }
       entities: {
         Row: {
@@ -734,6 +802,149 @@ export type Database = {
         }
         Relationships: []
       }
+      storyboard_scenes: {
+        Row: {
+          acao: string
+          cenario: string
+          created_at: string
+          cta_id: string | null
+          cta_texto: string | null
+          duracao_segundos: number
+          edited_at: string | null
+          enquadramento: string
+          fala: string | null
+          id: string
+          movimento: string
+          ordem: number
+          personagem_handle: string | null
+          produto: string | null
+          status: string
+          storyboard_id: string
+          transicao: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          acao: string
+          cenario: string
+          created_at?: string
+          cta_id?: string | null
+          cta_texto?: string | null
+          duracao_segundos?: number
+          edited_at?: string | null
+          enquadramento: string
+          fala?: string | null
+          id?: string
+          movimento?: string
+          ordem: number
+          personagem_handle?: string | null
+          produto?: string | null
+          status?: string
+          storyboard_id: string
+          transicao?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          acao?: string
+          cenario?: string
+          created_at?: string
+          cta_id?: string | null
+          cta_texto?: string | null
+          duracao_segundos?: number
+          edited_at?: string | null
+          enquadramento?: string
+          fala?: string | null
+          id?: string
+          movimento?: string
+          ordem?: number
+          personagem_handle?: string | null
+          produto?: string | null
+          status?: string
+          storyboard_id?: string
+          transicao?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storyboard_scenes_belongs_to_user"
+            columns: ["storyboard_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "storyboards"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
+      }
+      storyboards: {
+        Row: {
+          ajuste: string | null
+          canal: string
+          cenas_no_original: number | null
+          created_at: string
+          entity_id: string | null
+          estilo: string
+          formato: string
+          genero: string
+          id: string
+          ideia: string
+          node_id: string
+          project_id: string
+          titulo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ajuste?: string | null
+          canal: string
+          cenas_no_original?: number | null
+          created_at?: string
+          entity_id?: string | null
+          estilo: string
+          formato: string
+          genero: string
+          id?: string
+          ideia: string
+          node_id: string
+          project_id: string
+          titulo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ajuste?: string | null
+          canal?: string
+          cenas_no_original?: number | null
+          created_at?: string
+          entity_id?: string | null
+          estilo?: string
+          formato?: string
+          genero?: string
+          id?: string
+          ideia?: string
+          node_id?: string
+          project_id?: string
+          titulo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storyboards_entity_belongs_to_user"
+            columns: ["entity_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "entities"
+            referencedColumns: ["id", "user_id"]
+          },
+          {
+            foreignKeyName: "storyboards_project_belongs_to_user"
+            columns: ["project_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
+      }
       wallets: {
         Row: {
           balance_cents: number
@@ -939,6 +1150,8 @@ export type Database = {
           p_error_message?: string
           p_image_size?: string
           p_input_tokens?: number
+          p_job_kind?: string
+          p_media_kind?: Database["public"]["Enums"]["media_kind"]
           p_model_id: string
           p_node_id?: string
           p_output_tokens?: number
@@ -1072,7 +1285,7 @@ export type Database = {
         | "failed"
         | "canceled"
       ledger_kind: "deposit" | "debit" | "refund" | "adjustment"
-      media_kind: "image" | "video"
+      media_kind: "image" | "video" | "text"
       project_status: "idle" | "generating" | "generated" | "error"
     }
     CompositeTypes: {
@@ -1214,7 +1427,7 @@ export const Constants = {
         "canceled",
       ],
       ledger_kind: ["deposit", "debit", "refund", "adjustment"],
-      media_kind: ["image", "video"],
+      media_kind: ["image", "video", "text"],
       project_status: ["idle", "generating", "generated", "error"],
     },
   },
