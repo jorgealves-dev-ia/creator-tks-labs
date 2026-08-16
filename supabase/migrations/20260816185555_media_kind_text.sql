@@ -1,0 +1,71 @@
+-- FRENTE STORYBOARD · CICLO 2 · Fase 1, migration 1 de 4 — o terceiro tipo de mídia.
+--
+-- Especificação: docs/decisoes.md (entradas de 16/08/2026, Ciclo 2 do Roteiro).
+--
+-- ---------------------------------------------------------------------------
+-- POR QUE ESTE ARQUIVO TEM UMA LINHA E EXISTE SOZINHO
+-- ---------------------------------------------------------------------------
+--
+-- Não é organização: é a única forma que funciona.
+--
+-- A documentação do PostgreSQL 17 (ALTER TYPE, seção Notes) diz, verbatim:
+--
+--     "If ALTER TYPE ... ADD VALUE is executed inside a transaction block, the
+--      new value cannot be used until after the transaction has been committed."
+--
+-- O `supabase db push` roda **cada arquivo dentro de uma transação**. Então um
+-- arquivo que acrescentasse 'text' ao enum e, embaixo, escrevesse
+-- `media_kind = 'text'` em qualquer lugar — um default, um seed, um corpo de
+-- função com literal — falharia na hora de aplicar, com um erro cujo texto não
+-- aponta para a causa.
+--
+-- Uma linha num arquivo próprio custa um arquivo. Um `db push` que estoura na
+-- mão do Jorge custa uma rodada, e estoura no meio de quatro migrations.
+--
+-- ---------------------------------------------------------------------------
+-- Por que 'text' e não deixar a geração de roteiro fora de `generations`
+-- ---------------------------------------------------------------------------
+--
+-- Porque a alternativa é um segundo caminho de dinheiro, e a decisão (c) da
+-- visão desta frente proíbe exatamente isso: *"nenhuma economia paralela;
+-- nenhum caminho de dinheiro novo, nenhum segundo lugar onde o preço é
+-- decidido"*.
+--
+-- A `generations` já tem tudo o que uma geração de roteiro precisa registrar —
+-- `project_id`, `node_id`, `prompt_user_pt`, `prompt_compiled`, tokens,
+-- `cost_real_cents`, `sparks_charged` — e o `record_generation` já é a única
+-- porta que escreve nela e no ledger na mesma transação. O que falta é o enum
+-- saber dizer que aquela linha não produziu pixel nenhum.
+--
+-- E `media_kind` é explícito, e não derivado de `result_asset_id`, pelo motivo
+-- que a migration do vídeo já registrou: uma linha `failed` nunca terá asset, e
+-- uma geração de texto **nunca tem asset nenhum**, nem quando dá certo. Derivar
+-- do resultado classificaria toda geração de roteiro como falha.
+--
+-- ---------------------------------------------------------------------------
+-- O que ele NÃO faz aparecer em lugar nenhum, e isso foi conferido
+-- ---------------------------------------------------------------------------
+--
+-- Uma geração de texto entra em `generations` com `result_asset_id` nulo. As
+-- telas que contam imagem filtram por essa coluna, então nenhuma delas passa a
+-- mentir:
+--
+--   loadProjectCards   -> `status = succeeded AND result_asset_id IS NOT NULL`
+--   listProjectGallery -> `.not("result_asset_id", "is", null)`
+--   listGallery        -> idem
+--
+-- É a regra ratificada em 12/08 sobrevivendo de graça: **o número na tela conta
+-- o que a tela mostra.** O cartão do projeto continua dizendo "30 imagens" e a
+-- galeria continua mostrando trinta.
+--
+-- Duas coisas que uma geração de roteiro MOVE, e as duas estão certas:
+--
+--   1. a "última atividade" do cartão — escrever roteiro é atividade;
+--   2. a bolinha da aba (`project_status_now` conta toda geração) — ela nasce e
+--      morre terminal no mesmo instante, então pisca para o último desfecho, que
+--      é o que ela existe para contar.
+
+alter type public.media_kind add value 'text';
+
+-- Nenhum backfill: a coluna tem default 'image' e toda linha existente é imagem
+-- ou vídeo, já classificada corretamente desde 20260813170000.
