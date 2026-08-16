@@ -3262,3 +3262,143 @@ E o grafo salvo prova que a corrente é do documento e não da tela: capítulo 1
 **A herança do modelo não pôde ser provada, e a razão é o catálogo:** `ai_models` vende um modelo de vídeo só, então não existe combinação em que o herdado e o padrão discordem. No grafo salvo os dois blocos têm `modelId` nulo — o de origem nunca escolheu um explicitamente, e herdar nulo é o comportamento certo, porque cai no padrão do catálogo, que é o mesmo modelo. O teste nasce no dia em que houver um segundo.
 
 **O caminho completo de extração não foi reexercitado**, porque o passo zero encontra o quadro que a Fase 2 criou e pula tudo — que é exatamente o que ele existe para fazer. Ele volta a rodar sozinho na Fase 4: o clipe do capítulo 2 nasce sem quadro extraído, então "Continuar deste vídeo" nele percorre os cinco passos inteiros.
+
+---
+
+### 15/08/2026 — Fase 4 · a prova do elo: o capítulo 2 da @luna
+
+Um clipe dirigido pelo Jorge na interface de produção — *"ela abaixa o controle e volta a olhar para a TV"* —, partindo **do último quadro do capítulo 1**. Sessenta e seis segundos entre o clique e o vídeo na tela.
+
+A imagem de partida gravada na geração é `e707ac2c`, que é o asset derivado cuja linhagem aponta para o vídeo do capítulo 1. **O elo não é uma frase sobre o produto: é uma coluna apontando para outra.**
+
+**A auditoria, contra o marco zero gravado antes do clique:**
+
+| | antes | depois |
+|---|---|---|
+| saldo | 6.955 ⚡ | **6.745** ⚡ |
+| gerações | 57 | **58** |
+| lançamentos | 43 | **44** — um só |
+| assets | 55 | **56** |
+
+O lançamento tem `created_at = 23:50:34.011124`, **idêntico** ao `completed_at` da geração: mesmo microssegundo, uma transação só. E o asset foi gravado às `23:50:33.774` — **237 ms antes** da cobrança. Nada é cobrado por um vídeo que ainda não está no Storage. Margem **1,36×**, a mesma confirmada contra fatura ontem.
+
+#### O que sobreviveu à emenda
+
+| quadro | luz | nitidez |
+|---|---|---|
+| cap1 primeiro *(a imagem original)* | 58,5 | 5,49 |
+| **cap1 último** *(o quadro extraído)* | **59,5** | **4,77** |
+| **cap2 primeiro** *(o mesmo instante)* | **60,7** | **4,89** |
+| cap2 em 0,6 s | 62,6 | 5,34 |
+| cap2 último | 51,8 | 5,72 |
+
+As duas linhas do meio são a emenda vista dos dois lados: 1,2 de luminância e 0,12 de nitidez de diferença. **O capítulo 2 recomeça praticamente no quadro em que o capítulo 1 parou.**
+
+- **Rosto: sobreviveu.** Em 0,6 s ela ainda encara a câmera, e é a mesma pessoa — mesmos olhos, mesmo sorriso, mesma mandíbula, mesmos brincos, e a **mesma tatuagem manuscrita no pulso esquerdo**.
+- **Cenário: sobreviveu.** A TV de tubo com o Tekken 3 e "JIN KAZAMA", a parede laranja, as espumas acústicas, os painéis de luz e a mesa de borda laranja continuam lá — inclusive quando a câmera abre e mostra mais quarto do que o capítulo 1 jamais mostrou.
+- **Traje: sobreviveu.** A regata bege, do primeiro quadro ao último.
+- **A emenda é assistível.** O capítulo 2 abre onde o 1 fechou, a direção é obedecida, e a câmera abre junto — o que dá à costura um movimento próprio em vez de um corte seco.
+
+#### A metade da prova que eu não podia ver
+
+Tudo acima é banco e pixel: o que eu consigo medir sozinho. **A outra metade é de quem estava diante da tela**, e o Jorge a registrou:
+
+> o node saiu de "Gerando" e mostrou o vídeo **sozinho**, sem F5; o saldo caiu de 6.955 para 6.745 **sozinho**; a bolinha pulsou e voltou. E, assistindo os dois clipes: *"os dois capítulos emendam — parece uma história contínua, a @luna atravessa o corte."*
+
+As três primeiras são os consertos de 14/08 — os canais mudos e o saldo surdo — valendo de novo, agora num caminho que nasceu depois deles. A quarta é a única coisa deste ciclo que **nenhuma consulta responde**: se a emenda convence. Números dizem que os quadros colam; só olhar diz que a história continua.
+
+#### Uma nota de método, contra mim mesmo
+
+A direção foi sugerida por mim para manter a personagem no mesmo cômodo, de modo que qualquer desvio de cenário fosse atribuível à emenda e não ao roteiro. Ela conseguiu isso e **cobrou um preço que eu não previ**: a partir de ~1,5 s a personagem está de costas, então o último quadro do capítulo 2 não permite avaliar rosto nenhum.
+
+A medição do rosto só existe porque voltei e amostrei o **início** do clipe. Com os três quadros do roteiro original — primeiro, meio, último — o placar teria dito "rosto não avaliável", **por causa da minha sugestão e não do produto**.
+
+Fica a regra para as próximas medições de emenda: **a direção do capítulo seguinte precisa manter o rosto na câmera no primeiro segundo, ou a amostragem precisa ser no começo.** Medir identidade num quadro em que ninguém está olhando é não medir.
+
+> **E ela é herança direta do Ciclo 2** *(decidido pelo Jorge no fechamento)*. A regra nasceu como cuidado de medição e vale como **regra de receita de cena**: uma cena que abre num capítulo emendado precisa dar o rosto à câmera no primeiro segundo — não para o medidor, para o espectador. É o quadro em que ele reconhece que continua sendo a mesma pessoa, e é por isso que a continuidade se sente antes de se conferir. Vai para o brief das receitas de cena do node de Roteiro, ao lado da linguagem de atuação com tempo.
+
+#### E o gatilho da Fase 3 ficou armado
+
+A Fase 3 registrou que o caminho completo de extração não fora reexercitado, porque o passo zero encontrava o quadro que a Fase 2 já criara. **O clipe do capítulo 2 nasceu sem quadro extraído** — clicar "Continuar deste vídeo" nele percorre os cinco passos inteiros. O gatilho está no canvas, esperando o capítulo 3.
+
+---
+
+### 15/08/2026 — A visão da Frente Storyboard 📌 registro, não construção
+
+Alinhada com o Jorge na abertura do Ciclo 1. **Nada aqui é para construir agora**; está escrito para que os ciclos 2 e 3 não redescubram por acidente.
+
+A frente entrega em três ciclos: **(1) o elo** de continuação entre vídeos — este; **(2) o node de Roteiro** — ideia → fichas de cena estruturadas e editáveis, com biblioteca de CTAs por canal e o modo colar-roteiro-pronto-e-estruturar; **(3) a Máquina de Storyboard** — o node maestro que rege os motores existentes em lote, com trilho de cenas (teto 10 na v1), portões de custo entre etapas, custo total visível antes do primeiro clique e template pré-montado no sidebar.
+
+**a. A CENA é dado estruturado, não texto.** Uma ficha com ordem, ação, `@personagem`, produto, cenário, enquadramento, movimento, fala/narração (dormente até a voz), slot de CTA, duração, status e **transição** (corte × continuação-do-último-frame). Uma ficha, **três consumidores**: o compilador de imagem, o prompt de vídeo e a voz futura. É o que impede o roteiro de virar um parágrafo que cada motor reinterpreta do seu jeito.
+
+**b. A folha de storyboard é VISÃO MONTADA**, feita por nós a partir das imagens individuais (exportável em PDF um dia) — **nunca uma imagem única gerada por IA**. A espinha é uma imagem por cena. Uma folha gerada por modelo seria uma imagem bonita que ninguém pode editar cena a cena.
+
+**c. A Máquina é MAESTRO, não motor.** Ela rege o compilador, o motor de imagem e o motor de vídeo **já auditados**. Nenhuma economia paralela: nenhum caminho de dinheiro novo, nenhum segundo lugar onde o preço é decidido.
+
+**d. Nenhum modelo entra pelo nome**, todos pelo catálogo. O Seedance, quando vier, é uma linha na `ai_models` sob a fal — como a invariante 2 manda.
+
+**e. Roteiro v1 é GERADOR, não chat:** geração barata + edição manual + regenerar com instrução + colar-e-estruturar. Um chat seria um segundo produto dentro deste.
+
+**f. Templates de história por nicho = receitas de catálogo**, mesma filosofia dos modos de formato: dado, não código.
+
+**g. Conexões ENTRE projetos: backlog nomeado, não construir.** O `GN006` é muralha proposital — `@` só resolve personagem vinculada ao projeto da geração. Furá-la para o storyboard seria desfazer a Etapa D2 pela porta dos fundos.
+
+**h. A Máquina NASCE com a arte como corpo do node** — imagem em fundo transparente, conectores reais alinhados aos soquetes, efeito flutuante discreto — já no ciclo 3. A interface funcional (trilho, custo, estados) é **DOM real ancorado na arte**. O Passe de UI/UX fica com o refinamento fino (brilhos por estado, microinterações). Arte fornecida pelo Jorge.
+
+**i. Máquina de Influencers e Máquina de Storyboard compartilham o mesmo motor de orquestração futuro.** Duas telas, um maestro — decidido agora para que a segunda não nasça como cópia da primeira.
+
+---
+
+### 15/08/2026 — Absorções da análise dos vídeos de referência 📌 registro, não construção
+
+Analisadas com o Jorge. Nenhuma é para construir neste ciclo.
+
+**1. Backlog · Exportar folha da personagem.** Vistas rotuladas + recortes de detalhe ampliado (tatuagem, pele, olho) + paleta com hex + régua de altura. **Visão montada sobre dados que já existem** — mesma filosofia da folha de storyboard do item (b): nós montamos, o modelo não desenha a folha.
+
+**2. Para o brief do Ciclo 2 (Roteiro).** Campos de **HISTÓRIA** — título, formato, estilo, gênero (o rodapé da folha deles). Ficha confirmada **campo a campo**, com emoção/clima e iluminação como opcionais. **Heurística de ritmo:** ~4 cenas por bloco de 15 s, com o aviso **antes** de gastar. E **linguagem de atuação com tempo** — *"ri de forma escandalosa por meio segundo"* — como padrão do campo ação: é a diferença entre dirigir e descrever. Junto delas vai a **regra do rosto no primeiro segundo**, que nasceu como cuidado de medição na Fase 4 e vale como regra de receita: cena que abre num capítulo emendado dá o rosto à câmera logo, porque é ali que o espectador reconhece que continua sendo a mesma pessoa.
+
+**3. Para o brief do Ciclo 3 (Máquina/folha).** Gabarito da folha montada: selo numerado por painel, metadados da ficha sob cada quadro, rodapé com identidade do projeto em **toda** página, e **numeração contínua** nas sub-folhas por capítulo. Rota futura *"folha composta como entrada multi-shot"*, com gatilho nomeado: **quando um modelo multi-referência entrar no catálogo da fal**. E o **cenário como âncora de color grade** — candidato a entidade `@` futura.
+
+**4. O `720p` do catálogo é nível de endpoint, não contagem de pixels.** Medido no clipe real: a saída é **960×960**. Quem assumisse 1280×720 entregaria quadro esticado. O canvas de extração é criado com `videoWidth × videoHeight`, e é isso que cumpre "resolução fiel à origem".
+
+**5. Extração é gesto de quem está olhando, sem trabalho de fundo.** O navegador não decodifica vídeo em aba escondida (medido oito vezes). Consequência de produto: nada de extrair sozinho quando o vídeo termina. Consequência de método: **validação de tela que envolva vídeo exige a janela visível de verdade** — uma aba atrás valida um `stalled`.
+
+---
+
+### 15/08/2026 — Frente Storyboard · Ciclo 1 fechado, com o placar
+
+O ciclo que ensinou o produto a contar histórias em capítulos.
+
+| fase | o que entrou | como foi provado |
+|---|---|---|
+| **0** | a rota do quadro, decidida com o navegador na mão | CORS com **controle** (`SecurityError` sem `crossorigin`); ffmpeg medido em 68 MB e descartado; o último quadro do Kling avaliado em luz e nitidez |
+| **1** | `derived_from_asset_id` + `derived_from_ms` | sintaxe pelo parser real do Postgres, o verificador sabotado, e o predicado da trava assimétrica avaliado nos 5 casos |
+| **2** | o quadro vira imagem: extração, escrituração, galeria | 6/6 com print, zero Spark — e a prova não é a igualdade dos números, é a **data da última linha** |
+| **3** | o elo completo: o par nasce ligado, o selo, o passo zero | os três ramos por contagem de nodes, e o grafo salvo com a corrente no documento |
+| **4** | a prova do elo, com dinheiro real | 66 s do clique ao vídeo; rosto, cenário e traje atravessando a emenda |
+
+**O placar de custo:**
+
+| | |
+|---|---|
+| vídeos gerados | **1** (o capítulo 2) |
+| da carteira | **210 ⚡** = R$ 2,10 |
+| custo real pelo catálogo | 154 centavos = R$ 1,54 |
+| fatura estimada na fal | **US$ 0,28** |
+| margem | **1,36×** |
+| migrations | 1 |
+| commits | 4 |
+
+**O placar honesto do que ficou sem prova**, com gatilho nomeado para cada um:
+
+- **A recusa `hidden_tab` na tela** — a condição está medida oito vezes, a frase não foi vista. Limitação do instrumento: a extensão que dirige o navegador ativa a aba para executar qualquer script.
+- **A herança do modelo pelo bloco novo** — o catálogo vende um modelo de vídeo só, então não existe combinação em que o herdado e o padrão discordem. Gatilho: o segundo modelo.
+- **O fallback de "N ms antes do fim"** — não construído por não haver necessidade medida. Gatilho: um quadro borrado no uso real, que `derived_from_ms` deixa investigável com caso concreto em vez de estatística fabricada.
+
+**Três lições que sobrevivem ao ciclo:**
+
+1. **O que prova o caminho feliz são os caminhos tristes ao lado.** O CORS só virou veredito quando o mesmo vídeo, sem `crossorigin`, estourou com `SecurityError` — e a trava do banco só virou trava quando os dois casos que deviam reprovar reprovaram.
+2. **Uma frase que só informa não pode custar mais que a ação que ela informa não ter acontecido.** Foi o que trouxe o passo zero: dizer "já está no fluxo" custava 4 MB, uma decodificação e uma subida.
+3. **Medir identidade num quadro em que ninguém está olhando é não medir.** A direção que protege o cenário pode esconder o rosto, e o placar teria dito "não avaliável" por causa da amostragem, não do produto. A regra virou herança do Ciclo 2: cena emendada dá o rosto à câmera no primeiro segundo — para o espectador antes que para o medidor.
+
+E uma quarta, que é sobre quem prova o quê: **há metades que nenhuma consulta responde.** O banco disse que os quadros colam; que a história continua, só olhar disse. Foi o dono quem assinou essa linha — como foi ele quem viu o node andar e o saldo cair sozinhos.

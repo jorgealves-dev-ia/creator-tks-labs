@@ -211,11 +211,22 @@ Um modelo só, na configuração mais barata: Kling 2.1 image-to-video, 5s, 720p
 
 **Placar de custo do ciclo:** 2 vídeos, **420 ⚡** da carteira, **US$ 0,56** de fatura na fal. Margem **1,36×** confirmada contra fatura — a caixa de pricing venceu o readme. → [`decisoes.md`](./decisoes.md)
 
+### Frente Storyboard — Ciclo 1: O Elo ✅ concluído (15/08/2026)
+
+**O produto passou a contar histórias em capítulos.** Dado um vídeo pronto, o botão **"Continuar deste vídeo"** lê o último quadro do clipe e põe no canvas o capítulo seguinte inteiro — um Input de Imagem com o quadro e um Gerar Vídeo já ligado a ele, com o modelo herdado e o prompt vazio, esperando a direção.
+
+- **Extrair não é gerar.** Nenhuma chamada a provedor, nenhuma linha em `generations`, nenhum lançamento no ledger, **zero Spark**. O quadro é lido no navegador — pelo `<video>`, que já é um decodificador — e a rota servidor foi medida e descartada: custaria 68 MB de bundle na Vercel para um trabalho de meio segundo.
+- **Linhagem no banco.** `assets.derived_from_asset_id` e `derived_from_ms` dizem de onde vieram os pixels e em que instante. `source` continua respondendo outra pergunta — quem pôs o arquivo aqui —, e é o **dado**, nunca o rótulo, que identifica um derivado na galeria.
+- **A leitura é gesto de quem está olhando.** Medido: o navegador **não decodifica vídeo em aba escondida**. Por isso não existe extração em segundo plano, e a recusa desse caso tem frase própria com o conserto dentro dela.
+- **A prova do elo, com dinheiro real:** o capítulo 2 da @luna, gerado a partir do quadro extraído do capítulo 1, do clique ao vídeo em **66 segundos**. Rosto, cenário e traje **sobreviveram à emenda** — mesma tatuagem no pulso, mesma TV, mesma regata —, e o capítulo 2 recomeça praticamente no quadro em que o 1 parou.
+
+**Placar de custo do ciclo:** 1 vídeo, **210 ⚡**, **US$ 0,28** de fatura. Uma migration, quatro commits. → [`decisoes.md`](./decisoes.md)
+
 ### Fase 2.5 — Storyboard + Vídeos 📌 conversa dedicada
 
 Registrada a pedido do Jorge, **depois dos nodes de geração**: storyboard cena a cena e geração de vídeo, que chegam junto com a estreia do **padrão assíncrono** (fila → webhook → Realtime). A geração canônica pôde ser síncrona porque uma imagem 2K leva de 20 a 40 segundos e cabe no tempo de função; vídeo não cabe, e é ali que o assíncrono deixa de ser opcional.
 
-> **A metade do vídeo está entregue desde 14/08/2026.** O padrão assíncrono estreou e o image-to-video básico está em produção — o que resta desta conversa é o **storyboard**: cena a cena, continuação a partir do último frame, e a voz. O mapa dos três nodes de vídeo (Gerar Vídeo · Motion Control · Máquina de Influencers) está registrado em [`decisoes.md`](./decisoes.md).
+> **A metade do vídeo está entregue desde 14/08/2026**, e a **continuação a partir do último frame desde 15/08/2026** (Frente Storyboard, Ciclo 1). O que resta desta conversa é o **node de Roteiro** — ideia → fichas de cena estruturadas — e a **Máquina de Storyboard**, o node maestro que rege os motores existentes em lote. Depois, a voz. O mapa dos três nodes de vídeo (Gerar Vídeo · Motion Control · Máquina de Influencers) e a visão da frente inteira estão registrados em [`decisoes.md`](./decisoes.md).
 
 ### Fase 3 — Vídeo e voz
 
