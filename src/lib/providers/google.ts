@@ -7,6 +7,8 @@ import {
   ProviderError,
   type ImageGenerationProvider,
   type ImageGenerationResult,
+  type TextGenerationProvider,
+  type TextGenerationResult,
 } from "@/lib/providers/types";
 
 /**
@@ -151,6 +153,84 @@ export const googleImageProvider: ImageGenerationProvider = {
       image: { mimeType: image.mime_type ?? "image/png", base64: image.data },
       usage,
     };
+  },
+};
+
+/**
+ * O adaptador de TEXTO — a quinta capacidade, e o segundo uso deste arquivo.
+ *
+ * Mesma casa, mesma chave, mesma tradução de erro. O que muda é uma linha:
+ * `response_format` pede `text` com `mime_type: "application/json"` e o schema
+ * junto, em vez de pedir uma imagem. É por isso que ele mora aqui e não num
+ * arquivo próprio — separar seria duplicar `toProviderError`, que é a parte
+ * que custou uma tarde de diagnóstico às cegas em 08/08.
+ *
+ * A forma da chamada não foi deduzida da documentação: é a que fez as 47
+ * chamadas reais da Fase 0, copiada do probe que as fez.
+ */
+export const googleTextProvider: TextGenerationProvider = {
+  slug: PROVIDER_SLUG,
+
+  async generateText({ model, input }): Promise<TextGenerationResult> {
+    const apiKey = readProviderKey(API_KEY_ENV_VAR);
+
+    if (!apiKey) {
+      throw new ProviderError("not_configured", `${API_KEY_ENV_VAR} is not set on the server`);
+    }
+
+    const ai = new GoogleGenAI({
+      apiKey,
+      httpOptions: { timeout: REQUEST_TIMEOUT_MS, retryOptions: NO_RETRIES },
+    });
+
+    let interaction;
+
+    try {
+      interaction = await ai.interactions.create({
+        model: model.slug,
+        system_instruction: input.systemPrompt,
+        input: [{ type: "text" as const, text: input.userPrompt }],
+        // `type: "text"` com mime_type JSON é o structured output desta API —
+        // não é o mesmo campo que o gerador de imagem usa para `aspect_ratio`,
+        // e é a combinação que o probe da Fase 0 exercitou 47 vezes.
+        response_format: {
+          type: "text" as const,
+          mime_type: "application/json",
+          schema: input.schema,
+        },
+      });
+    } catch (error) {
+      throw toProviderError(error);
+    }
+
+    const usage = {
+      inputTokens: interaction.usage?.total_input_tokens ?? 0,
+      outputTokens: interaction.usage?.total_output_tokens ?? 0,
+    };
+
+    const text = interaction.output_text;
+
+    // Uma recusa de política chega como chamada bem-sucedida e vazia — a mesma
+    // forma documentada que o gerador de imagem trata acima, e pela mesma razão
+    // reconhecida aqui: sem isto, um roteiro recusado por conteúdo viraria
+    // "erro inesperado" em vez da frase que diz o que refazer.
+    //
+    // E vale para texto tanto quanto para imagem: um roteiro pode pedir uma
+    // cena que o provedor não escreve.
+    if (!text || text.trim() === "") {
+      const reported = (interaction.errors ?? []).map((entry) => JSON.stringify(entry)).join("; ");
+
+      throw new ProviderError(
+        interaction.status === "failed" && reported !== "" ? "provider" : "refused",
+        "the provider returned no text",
+        `status=${interaction.status}${reported ? `, errors=${reported}` : ""}`,
+      );
+    }
+
+    // Devolvido cru, de propósito. Quem decide se isto pode ser gravado é o Zod
+    // em lib/storyboard/contract.ts, acima da camada — um adaptador que já
+    // parseasse seria um adaptador com opinião sobre o contrato.
+    return { text, usage };
   },
 };
 

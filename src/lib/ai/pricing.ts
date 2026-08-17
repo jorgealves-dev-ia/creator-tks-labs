@@ -131,3 +131,90 @@ export function imageRealCostCents(
 
   return Math.ceil(usd * BRL_CENTS_PER_USD);
 }
+
+// ---------------------------------------------------------------------------
+// Text generation — e a primeira tarifa com VIGÊNCIA
+// ---------------------------------------------------------------------------
+
+/**
+ * Uma faixa de tarifa e o último dia em que ela vale.
+ *
+ * `until` é uma data ISO **inclusiva**, em UTC, ou `null` para "daqui em
+ * diante". As faixas de um modelo são lidas na ordem em que estão escritas, e a
+ * primeira que cobre a data ganha — então elas ficam em ordem cronológica e a
+ * aberta fica por último.
+ */
+type TokenPriceWindow = { until: string | null; input: number; output: number };
+
+/**
+ * ⚠️ Por que este modelo registra a tarifa VIGENTE e o Claude Sonnet acima
+ *    registra a de LISTA — a divergência é deliberada, e escolhida caso a caso.
+ *
+ * A regra do Sonnet ("registrar a lista, errar para cima, não ter de lembrar do
+ * dia da virada") resolve um problema: esquecer a data e passar a sub-precificar.
+ * Ela paga esse seguro com um `cost_real_cents` que não bate com a fatura
+ * enquanto a promoção durar.
+ *
+ * Aqui esse preço é alto demais. A promoção do `gemini-3.7-flash` vale por
+ * **quatro meses e meio** — até 31/12/2026 —, e é neste período que a Frente
+ * Storyboard vai fazer sua conciliação extrato-contra-fatura, o mesmo ritual
+ * que validou a Frente Vídeo. Um custo registrado com o dobro do valor real
+ * durante justamente a janela em que se está calibrando não é conservador: é
+ * ruído em cima do único número que a calibração existe para medir.
+ *
+ * E o seguro do Sonnet aqui é desnecessário, porque a vigência **está no
+ * código** em vez de na memória de alguém: em 01/01/2027 a segunda faixa passa
+ * a valer sozinha, sem deploy e sem ninguém lembrar de nada.
+ *
+ * O preço em ⚡ não se move em nenhum dos dois casos: ele foi semeado na
+ * migration já calculado sobre a tarifa CHEIA, exatamente para que a virada não
+ * obrigue a mexer em preço. Até 31/12/2026 a margem efetiva é maior do que a
+ * tabela promete; depois dela, é a que a tabela promete.
+ *
+ * Tarifas por milhão de tokens, em dólares, lidas da página oficial de preços
+ * do Google em 16/08/2026.
+ */
+const TEXT_PRICES_USD_PER_MTOK: Record<string, TokenPriceWindow[]> = {
+  "gemini-3.7-flash": [
+    // Promocional, e é a que a fatura cobra hoje.
+    { until: "2026-12-31", input: 0.75, output: 3.75 },
+    // Tarifa de tabela, a partir de 01/01/2027.
+    { until: null, input: 1.5, output: 7.5 },
+  ],
+};
+
+/**
+ * O custo real de uma geração de texto, em centavos de BRL, arredondado para
+ * cima.
+ *
+ * `at` entra por parâmetro em vez de a função ler o relógio sozinha, e não é
+ * detalhe: é o que permite provar as duas faixas num harness sem esperar
+ * janeiro. Uma vigência que só pode ser observada no dia em que vira é uma
+ * vigência que ninguém testou.
+ *
+ * A comparação é em UTC porque a data de corte é a do fornecedor, não a de quem
+ * está chamando — o mesmo instante tem de escolher a mesma faixa em São Paulo e
+ * em Lisboa.
+ *
+ * Devolve `null` para modelo sem tarifa em arquivo, e quem chama grava `null`
+ * em vez de inventar número: um custo ausente é honesto, um inventado não é.
+ */
+export function textRealCostCents(
+  modelSlug: string,
+  usage: { inputTokens: number; outputTokens: number },
+  at: Date = new Date(),
+): number | null {
+  const windows = TEXT_PRICES_USD_PER_MTOK[modelSlug];
+
+  if (!windows) return null;
+
+  const day = at.toISOString().slice(0, 10);
+  const price = windows.find((w) => w.until === null || day <= w.until);
+
+  if (!price) return null;
+
+  const usd =
+    (usage.inputTokens * price.input + usage.outputTokens * price.output) / TOKENS_PER_MTOK;
+
+  return Math.ceil(usd * BRL_CENTS_PER_USD);
+}

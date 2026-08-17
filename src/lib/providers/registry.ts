@@ -6,11 +6,12 @@ import {
 } from "@/lib/providers/anthropic";
 import type { ProviderStatus } from "@/lib/ai/catalog-types";
 import { falVideoProvider } from "@/lib/providers/fal";
-import { googleImageProvider } from "@/lib/providers/google";
+import { googleImageProvider, googleTextProvider } from "@/lib/providers/google";
 import { isProviderConfigured } from "@/lib/providers/keys";
 import type {
   ExtractionProvider,
   ImageGenerationProvider,
+  TextGenerationProvider,
   TranslationProvider,
   VideoGenerationProvider,
 } from "@/lib/providers/types";
@@ -73,6 +74,37 @@ const VIDEO_PROVIDERS: Record<string, VideoGenerationProvider> = {
 
 export function findVideoProvider(slug: string): VideoGenerationProvider | null {
   return VIDEO_PROVIDERS[slug] ?? null;
+}
+
+/**
+ * E para texto — a quinta capacidade.
+ *
+ * O Google é a única entrada, e é o mesmo arquivo que já desenha: um provedor
+ * pode perfeitamente saber escrever e não saber desenhar, e vice-versa, então
+ * os dois mapas são separados mesmo apontando para `google.ts`. É o que permite
+ * um dia trocar o redator sem tocar no desenhista.
+ */
+const TEXT_PROVIDERS: Record<string, TextGenerationProvider> = {
+  [googleTextProvider.slug]: googleTextProvider,
+};
+
+export function findTextProvider(slug: string): TextGenerationProvider | null {
+  return TEXT_PROVIDERS[slug] ?? null;
+}
+
+/** Whether a text adapter exists at all — the second half of "usable". */
+export function hasTextAdapter(slug: string): boolean {
+  return slug in TEXT_PROVIDERS;
+}
+
+/**
+ * Por que um fornecedor de texto está ou não usável. Mesma resposta em duas
+ * partes das outras quatro capacidades.
+ */
+export function textProviderStatus(slug: string, envVarName: string): ProviderStatus {
+  if (!hasTextAdapter(slug)) return "no_adapter";
+
+  return isProviderConfigured(envVarName) ? "ready" : "missing_key";
 }
 
 /** Whether a video adapter exists at all — the second half of "usable". */

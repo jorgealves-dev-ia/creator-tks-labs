@@ -255,6 +255,67 @@ export type VideoPayload = {
   bytes: Uint8Array;
 };
 
+// ---------------------------------------------------------------------------
+// Text generation — a quinta capacidade, e a primeira que não produz arquivo
+// ---------------------------------------------------------------------------
+
+/**
+ * O que se pede a um modelo de texto: duas metades de prompt e a forma que a
+ * resposta tem de ter.
+ *
+ * `schema` viaja como `unknown` e não como um tipo nosso, e a escolha é a mesma
+ * que `systemPrompt` faz na extração: o formato de schema é vocabulário do
+ * FORNECEDOR. Tipá-lo aqui seria congelar a gramática de um provedor na
+ * interface que existe justamente para não depender de nenhum — e o adaptador
+ * do próximo é livre para traduzir o objeto para o que a API dele aceitar.
+ *
+ * Quem garante a forma de verdade não é este campo: é o Zod acima da camada,
+ * que roda sobre a resposta venha ela de onde vier.
+ */
+export type TextGenerationInput = {
+  /** As instruções — o papel, as listas fechadas, as regras. */
+  systemPrompt: string;
+  /** O pedido concreto desta chamada. */
+  userPrompt: string;
+  /** A forma esperada da resposta, na gramática de JSON Schema. */
+  schema: unknown;
+};
+
+export type TextGenerationResult = {
+  /** O texto cru, exatamente como o provedor devolveu. Nunca interpretado aqui. */
+  text: string;
+  /**
+   * O que a chamada consumiu, como o provedor reportou — nunca estimado.
+   *
+   * Modelo de texto cobra só por token, ao contrário do de imagem, que cobra
+   * por imagem **e** por token. Por isso `real_cost_cents` sai inteiro destes
+   * dois números, em lib/ai/pricing.ts.
+   */
+  usage: { inputTokens: number; outputTokens: number };
+};
+
+/**
+ * Um provedor capaz de escrever JSON estruturado a partir de duas metades de
+ * prompt.
+ *
+ * Uma implementação nesta fase: Google, com `gemini-3.7-flash` — escolhido na
+ * Fase 0 por 24/24 continuações corretas contra 17/21 do candidato 5× mais
+ * barato. O argumento que decidiu: **o roteiro é a coisa mais barata do
+ * pipeline e dirige a mais cara**, e uma emenda quebrada custa uma regeração
+ * de vídeo de 210 ⚡.
+ *
+ * É síncrona como a imagem e não assíncrona como o vídeo, e a régua é a mesma
+ * da invariante 1: cabe no `maxDuration` de 60. O pior caso medido na Fase 0
+ * foi 16 s, estruturando um roteiro de 14 cenas.
+ */
+export type TextGenerationProvider = {
+  readonly slug: string;
+  generateText(request: {
+    model: { slug: string };
+    input: TextGenerationInput;
+  }): Promise<TextGenerationResult>;
+};
+
 /**
  * Every way a provider call can fail that the interface must speak about. A
  * refusal by content policy is an *expected* error in this product (architecture

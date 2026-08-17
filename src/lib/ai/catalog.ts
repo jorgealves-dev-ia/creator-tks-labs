@@ -4,12 +4,14 @@ import type {
   Capability,
   CatalogProvider,
   ModelImageSize,
+  ModelTextJob,
   ModelVideoDuration,
   ProviderStatus,
 } from "@/lib/ai/catalog-types";
 import {
   extractionProviderStatus,
   imageProviderStatus,
+  textProviderStatus,
   videoProviderStatus,
 } from "@/lib/providers/registry";
 import type { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -49,6 +51,7 @@ const CAPABILITY_READERS: Record<
       extraction_sparks: number | null;
       image_sparks: number | null;
       ai_model_video_prices: { duration_seconds: number; sparks: number }[];
+      ai_model_text_prices: { job_kind: string; sparks: number }[];
     }) => number | null;
     /**
      * Which resolutions it sells. Only image generation has any: an extraction
@@ -71,6 +74,14 @@ const CAPABILITY_READERS: Record<
         sort_order: number;
       }[];
     }) => ModelVideoDuration[];
+    /**
+     * Quais tipos de trabalho ela vende. Só texto tem algum — e, como as
+     * resoluções e as durações, a lista é ao mesmo tempo o preço e a **oferta**:
+     * não existe oferecer um trabalho que não se sabe cobrar.
+     */
+    jobs: (model: {
+      ai_model_text_prices: { job_kind: string; sparks: number; sort_order: number }[];
+    }) => ModelTextJob[];
     status: (slug: string, envVarName: string) => ProviderStatus;
   }
 > = {
@@ -79,6 +90,7 @@ const CAPABILITY_READERS: Record<
     price: (model) => model.extraction_sparks,
     sizes: () => [],
     durations: () => [],
+    jobs: () => [],
     status: extractionProviderStatus,
   },
   image_gen: {
@@ -92,6 +104,7 @@ const CAPABILITY_READERS: Record<
         .sort((a, b) => a.sort_order - b.sort_order)
         .map((price) => ({ size: price.image_size, sparks: price.sparks })),
     durations: () => [],
+    jobs: () => [],
     status: imageProviderStatus,
   },
   video_gen: {
@@ -117,9 +130,37 @@ const CAPABILITY_READERS: Record<
           resolution: price.resolution,
           sparks: price.sparks,
         })),
+    jobs: () => [],
     status: videoProviderStatus,
   },
+  text_gen: {
+    flag: "text_gen",
+    /**
+     * O preço-base de um modelo de texto é o do trabalho **mais barato** que ele
+     * vende, e não uma coluna própria: `ai_models` não tem `text_sparks`, de
+     * propósito, pela mesma razão de não ter `video_sparks`. Tipo de trabalho é
+     * a unidade de compra aqui, e um preço avulso ao lado da tabela seria uma
+     * segunda verdade sobre o mesmo número.
+     *
+     * `null` quando não há linha nenhuma, e o filtro abaixo tira o modelo da
+     * lista — um modelo que não sabemos precificar não pode ser selecionável.
+     */
+    price: (model) => cheapestJob(model.ai_model_text_prices)?.sparks ?? null,
+    sizes: () => [],
+    durations: () => [],
+    jobs: (model) =>
+      [...model.ai_model_text_prices]
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((price) => ({ jobKind: price.job_kind, sparks: price.sparks })),
+    status: textProviderStatus,
+  },
 };
+
+function cheapestJob(
+  prices: readonly { sparks: number }[],
+): { sparks: number } | null {
+  return [...prices].sort((a, b) => a.sparks - b.sparks)[0] ?? null;
+}
 
 function cheapestDuration(
   prices: readonly { duration_seconds: number; sparks: number }[],
@@ -139,7 +180,7 @@ export async function loadCatalog(
   const { data } = await supabase
     .from("ai_providers")
     .select(
-      "slug, display_name, enabled, env_var_name, sort_order, ai_models (id, slug, display_name, extraction_sparks, image_sparks, is_default, enabled, capabilities, sort_order, ai_model_image_prices (image_size, sparks, sort_order), ai_model_video_prices (duration_seconds, resolution, sparks, sort_order))",
+      "slug, display_name, enabled, env_var_name, sort_order, ai_models (id, slug, display_name, extraction_sparks, image_sparks, is_default, enabled, capabilities, sort_order, ai_model_image_prices (image_size, sparks, sort_order), ai_model_video_prices (duration_seconds, resolution, sparks, sort_order), ai_model_text_prices (job_kind, sparks, sort_order))",
     )
     .eq("enabled", true)
     .order("sort_order");
@@ -165,6 +206,7 @@ export async function loadCatalog(
           isDefault: model.is_default,
           sizes: reader.sizes(model),
           durations: reader.durations(model),
+          jobs: reader.jobs(model),
         })),
     }))
     .filter((provider) => provider.models.length > 0);

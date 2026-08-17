@@ -3402,3 +3402,116 @@ O ciclo que ensinou o produto a contar histórias em capítulos.
 3. **Medir identidade num quadro em que ninguém está olhando é não medir.** A direção que protege o cenário pode esconder o rosto, e o placar teria dito "não avaliável" por causa da amostragem, não do produto. A regra virou herança do Ciclo 2: cena emendada dá o rosto à câmera no primeiro segundo — para o espectador antes que para o medidor.
 
 E uma quarta, que é sobre quem prova o quê: **há metades que nenhuma consulta responde.** O banco disse que os quadros colam; que a história continua, só olhar disse. Foi o dono quem assinou essa linha — como foi ele quem viu o node andar e o saldo cair sozinhos.
+
+---
+
+## Frente Storyboard — Ciclo 2: O Roteiro
+
+O ciclo que ensina o produto a **escrever** a história antes de desenhá-la. O Ciclo 1 provou que dois capítulos emendam; este produz as fichas que dirigem os dois.
+
+A decisão que atravessa o ciclo inteiro, e que decide quase todas as outras: **uma ficha é dado estruturado, não texto.** Um roteiro em prosa obrigaria três motores — o compilador de imagem, o prompt de vídeo, a voz futura — a reinterpretar o mesmo parágrafo cada um do seu jeito. Uma ficha com `acao`, `cenario`, `enquadramento` e `transicao` é lida igual pelos três.
+
+### 16/08/2026 — Fase 0 · o modelo, escolhido por medição e não por memória
+
+47 chamadas reais, dois candidatos, três versões de receita, R$ 1,34 do nosso bolso e **zero Spark** — o probe roda fora do produto, com chave nossa.
+
+O que decidiu não foi preço nem velocidade:
+
+| | continuações corretas | custo | velocidade |
+|---|---|---|---|
+| `gemini-3.1-flash-lite` | 17/21 (81%) | 5× mais barato | 1,6× mais rápido |
+| **`gemini-3.7-flash`** | **24/24 (100%)** | — | — |
+
+**O lite é 5× mais barato e perdeu assim mesmo.** O argumento que fecha: *o roteiro é a coisa mais barata do pipeline e dirige a mais cara.* Uma emenda quebrada custa uma regeração de vídeo de 210 ⚡; escolher o modelo que erra uma em cinco para economizar dez centavos é otimizar o número errado.
+
+**As três durezas da receita v3 nasceram de defeitos medidos, não de intuição:**
+
+1. **Rosto em câmera no primeiro segundo de toda continuação.** Herança direta do Ciclo 1 — *medir identidade num quadro em que ninguém está olhando é não medir*. Mais o parágrafo do "VARIE a forma", que existe porque a rodada 2 produziu seis cenas abrindo com as mesmas cinco palavras: o modelo obedecia à regra ao pé da letra, que é como uma instrução certa produz um resultado ruim.
+2. **Toda ação carrega marca de tempo explícita.** A rodada 1 produziu "ela está feliz com o produto" — que descreve um estado e não dirige nada. O motor de vídeo precisa saber quanto dura cada beat dentro dos 5 segundos.
+3. **Cenário próprio de cada cena.** Cada cena vira uma imagem gerada separadamente; um cenário repetido palavra por palavra em três cenas produz três imagens iguais, e um roteiro de seis cenas vira um vídeo de duas.
+
+**E um defeito que virou coluna, não regra.** O modelo declarou *"Condensado de 6 para 6 cenas"* sobre um roteiro que não foi condensado. A correção não é confiar melhor na prosa — é **parar de confiar nela**: nasceu `storyboards.cenas_no_original`, e quem decide se houve condensação passou a ser a conta (`cenas_no_original > total`), com `ajuste` virando ilustração de um fato já estabelecido. Mesma doutrina do quadro derivado de 15/08: **o que identifica é o dado, nunca o rótulo.**
+
+### 16/08/2026 — Fase 1 · as fichas ganham casa, e o preço ganha trabalho
+
+Quatro migrations. O commit de fechamento é `f1e41d6`.
+
+**O princípio que decide a forma das tabelas: o node guarda a PERGUNTA; o banco guarda a RESPOSTA.** A ideia, o canal, o `@` e o modelo moram no `data` do node — o autosave já cuida deles, e duplicar o node copia a pergunta sem copiar as fichas, que é exatamente o comportamento certo e sai de graça. As fichas moram no banco porque três consumidores futuros vão lê-las.
+
+**O node não guarda id nenhum**, e isso é o padrão do bloco de vídeo: `unique (project_id, node_id)` faz o bloco se reencontrar depois de um reload, sem uma segunda cópia para discordar do banco no instante em que mais custa.
+
+**A menção guarda o HANDLE, nunca a versão congelada**, e é a decisão mais importante de `storyboard_scenes`. Uma ficha é um **plano**, não uma geração: congelar a versão aqui faria um roteiro escrito hoje gerar com a v4 amanhã, quando a personagem já estivesse na v6. A ficha aponta para a pessoa; a geração aponta para o retrato.
+
+**O `media_kind = 'text'` num arquivo só de uma linha**, porque a documentação do PostgreSQL é explícita: um rótulo de enum acrescentado dentro de uma transação não pode ser usado antes do commit. Um arquivo a mais custa um arquivo; um `db push` que estoura na mão do Jorge custa uma rodada.
+
+**Preço por TRABALHO, não por tamanho.** `ai_model_text_prices` tem `job_kind` como dimensão — escrever dez fichas do zero, estruturar um roteiro colado e reescrever uma ficha são três consumos de token medidos, e cobrar o mesmo pelos três seria o mesmo erro que cair no preço-base de 2K para entregar 4K. `estruturar` foi precificado sobre o **pior caso medido** (condensar 14 cenas em 10), nunca sobre o típico: calibrar contra a média é como um estruturar longo vira prejuízo silencioso.
+
+#### Regra nova da casa: abaixo de ~20 ⚡, arredonda-se para CIMA
+
+A régua sempre disse "arredondado ao múltiplo de 5 mais próximo", e isso funciona quando o preço tem dois ou três dígitos — o 4K foi de 112,1 para 110, um desconto de 2%. **No chão da régua ela se anula:** 5c × 1,35 = 6,75, que "ao mais próximo" vira 5 ⚡ e margem 1,0×. Abaixo de ~20 ⚡, sempre para cima.
+
+#### A verificação: prova estrutural E prova ao vivo, as duas
+
+Regra que o Jorge firmou aqui, e que vale além deste ciclo: **trava que nunca reprovou de verdade ainda não é trava.**
+
+A verificação read-only leu do catálogo do Postgres — não das migrations, que dizem o que se pediu e não o que existe — as 25 constraints, as 10 políticas, os grants, os índices e os gatilhos. O teto de 10 foi avaliado nos casos que **reprovam**, incluindo o teto **contado**, que é coisa diferente do CHECK de `ordem`: aquele impede a cena de número 11, este impede a décima primeira **linha**.
+
+E o ramo de imagem do `record_generation` foi provado inalterado por md5 do corpo no banco contra o da migration (idênticos — o que também prova que ninguém editou à mão no painel) mais um diff das linhas executáveis: 22 antes, 22 agora, zero divergências.
+
+Depois vieram as travas **executadas**, dentro de `BEGIN … ROLLBACK`: 14 casos, 14 OK. O que mais valeu: **a 11ª linha barrou pelo trigger, com a mensagem dele** (`at most 10 scenes`), e não pelo CHECK de ordem — a trava certa recusando, provado por usar `ordem = 10`, que é número legal.
+
+#### A faxina, com as tabelas em zero linhas
+
+Dois achados da verificação, corrigidos no dia mais barato possível:
+
+1. **Índice redundante.** `storyboard_scenes_storyboard_id_idx` tinha as mesmas colunas, na mesma ordem, que o índice do unique de ordem. Não foi erro de digitação: um foi escrito pensando na **leitura** e o outro na **trava**, em momentos diferentes do mesmo arquivo. Só lado a lado no catálogo ficou visível que são o mesmo objeto com dois nomes.
+2. **`anon` com GRANT** em `ai_model_image_prices` e `ai_model_video_prices` — as irmãs antigas não levaram o `revoke` que as novas levaram. Sem vazamento (RLS default-deny fazia o visitante ler zero linhas), mas é a segunda camada que faltava.
+
+### 16/08/2026 — Fase 2 · o motor, e a ordem que decide para que lado se erra
+
+**A ordem de segurança é a única coisa não negociável do motor:**
+
+> sessão → `@` resolvido **no escopo do projeto** → modelo e preço do catálogo → saldo → *daqui para baixo pode custar* → chamada → Zod → persistência → `record_generation`
+
+Os quatro primeiros são antes de qualquer centavo, e a razão é aritmética: uma recusa no passo 2 não escreve linha, não toca o ledger e não chama ninguém — **zero Spark, e não "quase zero"**. O banco tem os mesmos cadeados um degrau abaixo (GN002, GN006, GN007); estes são os que disparam, aqueles são os que não deveriam precisar disparar nunca.
+
+**A persistência vem antes da cobrança, e a escolha decide para que lado se erra.** Não há transação que abrace as duas — são duas chamadas, e uma delas é a função que cobra. Gravando primeiro, uma falha na cobrança deixa o usuário com um roteiro que não pagou; cobrando primeiro, deixaria alguém que pagou sem o roteiro. **Erra-se a favor de quem paga**, que é a mesma escolha do gerador de imagem ao ingerir o asset antes de chamar `record_generation`. O prejuízo tem teto conhecido: 15 ⚡.
+
+#### A tarifa com vigência, e por que ela diverge do Claude Sonnet
+
+`lib/ai/pricing.ts` registra o Sonnet pela tarifa de **lista** — errar para cima, não ter de lembrar do dia da virada. Aqui a escolha é a oposta, e é deliberada.
+
+A promoção do `gemini-3.7-flash` vale **quatro meses e meio**, e é neste período que a Frente Storyboard faz sua conciliação extrato-contra-fatura. Um custo registrado com o dobro do valor real durante justamente a janela em que se está calibrando não é conservador: é ruído em cima do único número que a calibração existe para medir. E o seguro do Sonnet aqui é desnecessário, porque a vigência **está no código** em vez de na memória de alguém — em 01/01/2027 a segunda faixa passa a valer sozinha, sem deploy.
+
+O preço em ⚡ não se move: foi semeado já calculado sobre a tarifa cheia, exatamente para que a virada não obrigue a mexer em preço.
+
+#### Duas correções que o harness arrancou
+
+Não são hipóteses — são coisas que passavam e não deviam:
+
+1. **`parseCena` aceitava uma cena 1 marcada como continuação.** O roteiro inteiro tinha o `refine`, a cena avulsa não. O banco recusaria, mas no passo 7 — **depois** de o provedor ter sido pago, com "não foi possível" na tela e nada a fazer.
+2. **Uma cena voltando com a ordem trocada seria gravada em silêncio.** A receita manda "não mude ordem", e instrução em prompt não é garantia. Sem a conferência, a substituição não casaria com ficha nenhuma, o roteiro seria regravado **idêntico**, a cobrança aconteceria e a tela diria que deu certo. **Um caminho que cobra e não muda nada é pior que um que falha: o segundo avisa.**
+
+#### A prova
+
+| o que | como |
+|---|---|
+| o contrato | 21 sabotagens recusadas + controle positivo (1, 2, 5 e 10 cenas, e os 8 enquadramentos do dicionário) |
+| a receita | as três durezas conferidas no texto gerado, e determinismo (mesma entrada, mesma saída) |
+| a tarifa | as duas faixas exercitadas sem esperar janeiro — 5/5/2¢ hoje, 10/9/3¢ em 2027 |
+| as recusas | 9 casos ao vivo, duas rodadas, **banco idêntico antes e depois até o microssegundo** |
+| a geração paga | 1 roteiro, 6 cenas, 15 ⚡, extrato conferido linha a linha |
+
+**O placar de dinheiro:** 22 chamadas à rota, 21 recusas, 1 geração, **15 centavos**.
+
+**As três durezas sobreviveram ao resultado real:** 6/6 ações com marca de tempo, 6/6 cenários distintos, 3/3 continuações abrindo com o rosto em câmera — e as três com frases diferentes, que é a regra do "VARIE" funcionando.
+
+**E o extrato disse a frase certa:** `"Roteiro com @luna"`. Sem o ramo de texto que a migration acrescentou ao `case`, esta linha diria "Imagem no canvas com @luna" — e um extrato que nomeia errado o que foi comprado é pior que um que não nomeia nada.
+
+**Custo real 4c contra 15 ⚡ cobrados**, na tarifa promocional: a conta bate com a fatura, que é o ponto inteiro de a vigência existir.
+
+#### Uma nota de método, contra mim mesmo
+
+Meu primeiro medidor das continuações marcou a cena 6 como "sem rosto em câmera". A ação era *"mantém o foco do olhar na câmera por um segundo"* — o rosto estava lá; a régua é que procurava um conjunto fechado de verbos e não previa aquela formulação. **O resultado estava certo e o medidor estava errado.**
+
+Registrado porque o inverso — uma régua frouxa aprovando o que devia reprovar — é o mesmo erro com o sinal trocado, e é o mais perigoso dos dois. A única defesa contra ambos é ler o que foi medido, e não só o placar.

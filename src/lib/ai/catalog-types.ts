@@ -14,7 +14,7 @@
 export type ProviderStatus = "ready" | "missing_key" | "no_adapter";
 
 /** What the product can ask a model to do. Mirrors ai_models.capabilities. */
-export type Capability = "extraction" | "image_gen" | "video_gen";
+export type Capability = "extraction" | "image_gen" | "video_gen" | "text_gen";
 
 export type CatalogModel = {
   id: string;
@@ -54,6 +54,25 @@ export type CatalogModel = {
    * linha de SQL, não um deploy — e nada nesta tela precisa mudar quando for.
    */
   durations: ModelVideoDuration[];
+  /**
+   * Os trabalhos de texto que este modelo vende, com o preço de cada um.
+   *
+   * Vazio para toda capacidade que não é texto. A dimensão aqui não é tamanho
+   * nem duração: é o **tipo de trabalho**. Escrever dez fichas do zero,
+   * estruturar um roteiro colado e reescrever uma ficha consomem três volumes
+   * de token diferentes, e cobrar o mesmo pelos três seria o mesmo erro que
+   * cair no preço-base de 2K para entregar 4K.
+   *
+   * É isto que o bloco de Roteiro lê para dizer o custo **antes** do clique.
+   */
+  jobs: ModelTextJob[];
+};
+
+/** Um tipo de trabalho de texto que um modelo vende, ao preço do catálogo. */
+export type ModelTextJob = {
+  /** `roteiro`, `estruturar` ou `cena` — vocabulário nosso, não do fornecedor. */
+  jobKind: string;
+  sparks: number;
 };
 
 /** One resolution a model sells, at the price the catalogue decided. */

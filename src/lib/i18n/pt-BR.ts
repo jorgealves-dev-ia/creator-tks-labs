@@ -997,6 +997,58 @@ export const t = {
       lost: "Perdemos o retorno deste trabalho.",
     },
   },
+  /**
+   * O bloco de Roteiro — FRENTE STORYBOARD · CICLO 2.
+   *
+   * Separado de `generation` e de `videoNode` pela mesma razão que aqueles dois
+   * são separados entre si: as telas se parecem e não são a mesma coisa. Um
+   * roteiro não tem resolução, não tem quantidade e não produz arquivo — e a
+   * primeira frase que fosse reaproveitada de lá seria a que fala de imagem.
+   */
+  storyboardNode: {
+    /** As recusas, cada uma com o conserto dentro da própria frase. */
+    errors: {
+      invalid: "Não foi possível enviar este pedido. Recarregue a página e tente de novo.",
+      unauthenticated: "Sua sessão expirou. Recarregue a página para continuar.",
+      not_configured:
+        "O fornecedor de roteiro não está configurado neste ambiente. Avise o administrador.",
+      insufficient_balance: "Sparks insuficientes para este roteiro.",
+      empty_request: "Escreva a ideia da história antes de gerar.",
+      unknown_handle: "Não encontrei essa personagem no seu Arsenal.",
+      /**
+       * A recusa da Etapa D2, e a frase ensina o conserto em vez de só dizer
+       * não — a tela é o manual. Nada foi cobrado: esta recusa acontece antes de
+       * o provedor ser chamado.
+       */
+      not_linked:
+        "Essa personagem ainda não trabalha neste projeto. Vincule-a no painel do projeto e tente de novo.",
+      no_version:
+        "Essa personagem ainda não tem versão salva. Abra a ficha dela e salve uma versão antes de escrever o roteiro.",
+      /** O catálogo não vende este trabalho neste modelo — e ninguém pagou por descobrir. */
+      unsupported_job: "Este modelo não escreve esse tipo de roteiro.",
+      storyboard_not_found: "Este bloco ainda não tem roteiro. Gere um antes de reescrever a cena.",
+      scene_not_found: "Essa cena não está mais no roteiro. Recarregue a página.",
+      /**
+       * O modelo respondeu e o que veio não pode ser gravado. Dito assim, sem
+       * culpar quem clicou: o erro foi do modelo, e a única ação útil é tentar
+       * de novo. Nada foi cobrado.
+       */
+      invalid_answer:
+        "O roteiro voltou fora do formato esperado e nada foi gravado. Tente de novo — você não foi cobrado.",
+      refused:
+        "O provedor recusou escrever este roteiro. Ajuste a ideia e tente de novo — você não foi cobrado.",
+      error: "Não foi possível escrever o roteiro. Tente de novo.",
+    },
+    /**
+     * O aviso de condensação, montado a partir da CONTA e não da frase do
+     * modelo. `historia.ajuste` entra como explicação depois deste número — e só
+     * quando ele de fato mudou.
+     */
+    condensou: (de: number, para: number) => `Condensei de ${de} para ${para} cenas.`,
+    /** O que a coluna `fala` é hoje, dito em voz alta em vez de descoberto. */
+    falaDormente:
+      "Este campo ainda não é usado por nada: a voz chega numa fase futura. Escreva se quiser adiantar o texto.",
+  },
   generation: {
     node: {
       title: "Gerar Imagem",
