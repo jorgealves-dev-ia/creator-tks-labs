@@ -3515,3 +3515,25 @@ Não são hipóteses — são coisas que passavam e não deviam:
 Meu primeiro medidor das continuações marcou a cena 6 como "sem rosto em câmera". A ação era *"mantém o foco do olhar na câmera por um segundo"* — o rosto estava lá; a régua é que procurava um conjunto fechado de verbos e não previa aquela formulação. **O resultado estava certo e o medidor estava errado.**
 
 Registrado porque o inverso — uma régua frouxa aprovando o que devia reprovar — é o mesmo erro com o sinal trocado, e é o mais perigoso dos dois. A única defesa contra ambos é ler o que foi medido, e não só o placar.
+
+### 17/08/2026 — o plano vai para o disco antes da primeira fase (regra 9 do CLAUDE.md)
+
+Achado do Jorge na retomada da Fase 3, e ele o chamou de raiz: **o plano do Ciclo 2 nunca existiu em disco.** As fases 0, 1 e 2 fecharam com commit, com evidência e com entrada aqui — e mesmo assim, ao retomar, a Fase 3 teve de ser reconstruída a partir de um enunciado escrito à mão por ele.
+
+**O que faltava não era registro, era o tipo certo de registro.** O commit e este diário guardam o **porquê** de cada decisão, e guardam bem: nenhuma das três fases fechadas está mal documentada. O que nenhum dos dois responde é a pergunta com que uma sessão *começa* — **onde paramos e o que falta** —, porque um diário é cronológico por natureza e um commit fala do passado por definição. A pergunta do plano é sobre o futuro.
+
+**E a sessão não serve de cofre.** O Jorge fecha tudo entre sessões, e isso é o modo normal de operar aqui, não exceção. Um plano que só vive no contexto da conversa morre no fechamento — e a sessão seguinte recomeça adivinhando o que já tinha sido aprovado, que é como uma decisão fechada volta a ser discutida. O custo não é o tempo da reconstrução: é a chance de a reconstrução sair **diferente** do que foi aprovado, e ninguém reparar.
+
+A regra: todo plano de ciclo ou de frente vira `docs/plano-<frente>.md` **antes** do primeiro commit de código daquele plano, com as fases, o que cada uma entrega, a prova de cada uma, o status e o detalhe da fase aberta. Cada fase que fecha atualiza o status no mesmo arquivo, na mesma sessão.
+
+Nasceu `docs/plano-storyboard-c2.md`, retroativo nas fases 0–2 (que ele descreve a partir do que foi executado) e prospectivo nas 3 e 4. **As duas metades estão marcadas como tais dentro do arquivo**, e a distinção não é preciosismo: uma delas é história e a outra é intenção, e um documento que as apresenta com a mesma cara ensina a ler intenção como fato — o mesmo defeito que fez `cenas_no_original` nascer na Fase 0.
+
+#### E a primeira coisa que o arquivo pagou, no mesmo dia
+
+O plano voltou para o Jorge conferir contra o original — que é a segunda metade da regra — e a conferência achou **três divergências** que teriam virado código errado:
+
+1. **O ▸ não é expansor: é a ponte, e ela é da Fase 4.** Eu tinha lido o glifo como "expandir a linha no trilho". Ele é "criar o bloco de imagem a partir desta ficha", e nasce junto com a função. Daí a regra da casa que fica: **botão sem função não entra na tela.** Um glifo que aparece antes de fazer alguma coisa é uma promessa que a tela não pode cumprir, e quem o clica aprende que os botões daqui às vezes não fazem nada — o que estraga a confiança em todos os outros. E ver a ficha completa continua tendo **caminho único**, o overlay: dois caminhos para a mesma informação são duas telas para manter e duas para divergir.
+2. **O checklist tinha perdido três itens na reconstrução** — o Roteiro na prateleira com glifo próprio, a `@` não vinculada com o banco intocado, e a edição à mão com `edited_at` gravado e o ledger idêntico. Os três voltaram; os que a reconstrução tinha acrescentado (os controles negativos do ritmo e da condensação, o print do colar-e-estruturar) ficaram. 12 itens, 15 arquivos.
+3. **A ficha semeada foi autorizada com quatro condições** — `node_id` prefixado `seed-validacao-`, contagem de `generations` e do ledger idêntica antes e depois do seed **e** da limpeza, apagamento provado por contagem, e o registro explícito de que **o seed prova a tela e nada mais**: o caminho real é provado pela geração paga do dono, no fim, sem exceção.
+
+**As três só apareceram porque o plano estava escrito.** Um plano na cabeça de alguém não se confere contra nada — e as três teriam sido descobertas com a tela pronta, que é quando corrigir custa a tela.

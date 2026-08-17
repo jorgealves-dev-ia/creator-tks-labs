@@ -18,6 +18,7 @@
 | [`docs/motor-extracao.md`](docs/motor-extracao.md) | Ao mexer no motor de extração (foto ou texto colado), no catálogo de fornecedores e modelos de IA, na camada adaptadora ou na cobrança de Sparks por extração. Especificação v1 aprovada com as decisões E1–E6. |
 | [`docs/geracao-canonica.md`](docs/geracao-canonica.md) | Ao mexer no compilador de prompt, na tradução com cache dos campos livres, na prévia "Prompt compilado", na geração das imagens canônicas (folha completa e vistas), no adaptador de imagem ou na cobrança de Sparks por geração. Especificação v1 aprovada com as decisões G1–G4. |
 | [`docs/nodes-geracao.md`](docs/nodes-geracao.md) | Ao mexer nos nodes do canvas — a **anatomia do bloco Gerar Imagem** (§3), os **nodes de Input** e a prateleira de tipos (§3.1), node Resultado, menções `@` no prompt, referências anexadas e sua galeria, a chave que silencia os inputs, qualidade e quantidade, presets de formato por canal, ou a compilação de canvas. Especificação v1 aprovada com as decisões N1–N5 (a N5 revisada em parte em 10/08/2026). |
+| [`docs/plano-storyboard-c2.md`](docs/plano-storyboard-c2.md) | Ao retomar a **Frente Storyboard · Ciclo 2 (O Roteiro)** — qual fase está aberta, o que ela entrega, o que prova o quê, a anatomia do node de Roteiro e o checklist de prints da Fase 3. É o plano aprovado do ciclo, em disco. |
 | [`docs/decisoes.md`](docs/decisoes.md) | Quando quiser saber **por que** algo é do jeito que é, ou antes de reverter uma escolha que parece estranha. Diário cronológico de decisões. |
 
 ---
@@ -160,3 +161,9 @@ Versão curta. O porquê de cada uma está em [`docs/arquitetura.md`](docs/arqui
    git log origin/master -1
    ```
    O hash e a mensagem no resumo são a prova. **"Está em produção" nunca mais é suposição: é uma linha de log.** Se essa linha não estiver no resumo, o resumo está incompleto — e se ela mostrar um commit que não é o do fechamento, o push falhou e isso precisa ser dito em vez de assumido.
+
+9. **Plano aprovado vira arquivo em `docs/` ANTES de a primeira fase executar** *(regra de 17/08/2026)*. Todo plano de ciclo ou de frente — as fases, o que cada uma entrega, a prova de cada uma, o status e o detalhe da fase aberta — é escrito em `docs/plano-<frente>.md` e commitado **antes** do primeiro commit de código daquele plano. Depois, cada fase que fecha atualiza o status no mesmo arquivo, na mesma sessão.
+
+   **Sessão não é lugar de guardar plano.** O Jorge fecha tudo entre sessões, e isso é o **modo normal de operar**, não exceção: um plano que só existe no contexto da conversa some no fechamento, e a sessão seguinte recomeça reconstruindo por adivinhação o que já tinha sido decidido — que é como uma decisão aprovada volta a ser discutida. O commit e o diário guardam o **porquê**; o arquivo de plano guarda o **onde estamos e o que falta**, que é justamente a pergunta que nenhum dos dois responde.
+
+   Na dúvida sobre a fase seguinte, a ordem de leitura é: o arquivo de plano diz **o que** fazer e em que ponto paramos; [`docs/decisoes.md`](docs/decisoes.md) diz **por quê**; o código diz **como está hoje**. Se o arquivo de plano não existir para o trabalho em curso, **escrevê-lo é a primeira tarefa** — e ele volta para o Jorge conferir antes de qualquer código.
