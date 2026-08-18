@@ -195,7 +195,12 @@ export const t = {
     // O vídeo chegou em 13/08/2026 e esta linha ficou logo abaixo dele dizendo
     // que ele não tinha chegado. Uma prateleira que desmente o que ela mesma
     // oferece ensina a não ler o rodapé.
-    sidebarComingSoon: "Storyboard e voz chegam nas próximas fases.",
+    //
+    // E aconteceu de novo em 17/08/2026, com o Roteiro: a linha continuava
+    // prometendo "storyboard" com o bloco de Roteiro desenhado três centímetros
+    // acima dela. Duas vezes o mesmo defeito é sinal de que o rodapé precisa
+    // encolher para o que ainda não existe **de verdade** — e hoje isso é a voz.
+    sidebarComingSoon: "A voz chega numa fase futura.",
     status: {
       idle: "Pronto",
       generating: "Gerando",
@@ -1006,6 +1011,127 @@ export const t = {
    * primeira frase que fosse reaproveitada de lá seria a que fala de imagem.
    */
   storyboardNode: {
+    title: "Roteiro",
+    remove: "Tirar este bloco do canvas. O roteiro gravado continua no banco.",
+    sidebarHint: "Uma ideia vira fichas de cena, prontas para virar imagem",
+
+    // ── A pergunta ─────────────────────────────────────────────────────────
+    configTitle: "Configuração",
+    modelLabel: "Modelo",
+    canalLabel: "Canal",
+    /** Os cinco do CHECK de `cta_library.canal`. Canal novo é decisão de produto. */
+    canais: {
+      tiktok: "TikTok",
+      tiktok_shop: "TikTok Shop",
+      reels: "Reels",
+      shorts: "Shorts",
+      shopee: "Shopee",
+    } as Record<string, string>,
+    cenasLabel: "Cenas",
+    /** O teto dito na tela, antes de ser recusado no servidor. */
+    cenasTetoHint: "Dez é o teto de um roteiro. Cada cena vira um clipe de 5 segundos.",
+    personagemLabel: "Personagem",
+    personagemNenhuma: "Sem personagem (roteiro de produto)",
+    personagemVazia: "Nenhuma personagem trabalha neste projeto ainda.",
+    produtoLabel: "Produto",
+    produtoPlaceholder: "Ex.: biquíni Aurora terracota",
+    /** A ficha guarda texto; foto é assunto do Input de Produto, e a tela diz. */
+    produtoHint: "Só o nome. Fotos entram pelo card Input de Produto, no bloco de imagem.",
+
+    modoIdeia: "Escrever de uma ideia",
+    modoColar: "Colar um roteiro pronto",
+    ideiaLabel: "Ideia da história",
+    ideiaPlaceholder:
+      "Ex.: ela recebe o biquíni, experimenta em casa e mostra o caimento na luz da janela",
+    textoLabel: "Roteiro para estruturar",
+    textoPlaceholder: "Cole aqui o roteiro que você já escreveu, do jeito que ele está.",
+    /** Por que o nº de cenas some ao colar: quem conta as cenas do texto é o modelo. */
+    colarHint: "Quantas cenas o texto tem é o modelo que conta. Acima de 10, ele condensa.",
+
+    generate: "Escrever roteiro",
+    generateEstruturar: "Estruturar roteiro",
+    working: "Escrevendo…",
+    /** Sob o botão, no futuro do indicativo — a anatomia da §3. */
+    costWillPrefix: "Custará",
+    balanceLabel: "Saldo",
+    /** Substituir avisa antes, porque um roteiro gerado por cima apaga as fichas. */
+    replaceWarning: "Gerar de novo substitui as fichas que já estão no trilho.",
+    replaceWarningEdited: (quantas: number) =>
+      quantas === 1
+        ? "1 ficha foi editada à mão e será substituída."
+        : `${quantas} fichas foram editadas à mão e serão substituídas.`,
+
+    /**
+     * O aviso de ritmo, dito ANTES de gastar — que é a única hora em que ele
+     * vale. Heurística de ~4 cenas por bloco de 15 s, do registro de 15/08/2026.
+     */
+    ritmoAviso: (segundos: number) =>
+      `${segundos}s de vídeo. Acima de ~45s o ritmo cai — considere menos cenas.`,
+    duracaoTotal: (segundos: number) => `${segundos}s no total`,
+
+    // ── A resposta ─────────────────────────────────────────────────────────
+    trilhoTitle: "Fichas de cena",
+    trilhoEmpty: "As fichas aparecem aqui depois que o roteiro for escrito.",
+    trilhoLoading: "Lendo o roteiro…",
+    statusRascunho: "rascunho",
+    statusAprovada: "aprovada",
+    transicaoCorte: "Corte seco: começa num plano novo.",
+    transicaoContinuacao:
+      "Continuação: começa exatamente no último quadro da cena anterior — é o que emenda os dois clipes.",
+    editarFicha: "Abrir a ficha",
+    editadaAMao: "Editada à mão",
+
+    // ── O overlay ──────────────────────────────────────────────────────────
+    ficha: {
+      titulo: (ordem: number, total: number) => `Cena ${ordem} de ${total}`,
+      close: "Fechar",
+      acaoLabel: "Ação",
+      /** A dureza 2 da receita, repetida para quem vai reescrever à mão. */
+      acaoHint:
+        'A ação dirige e carrega tempo: "ri por meio segundo, depois encara a câmera por dois".',
+      cenarioLabel: "Cenário",
+      cenarioHint: "Curto e próprio desta cena — cada cena vira uma imagem separada.",
+      enquadramentoLabel: "Enquadramento",
+      movimentoLabel: "Movimento",
+      movimentoPlaceholder: "Ex.: câmera se aproxima devagar",
+      personagemLabel: "Personagem",
+      /** Read-only, e a frase diz por quê — um handle digitado à mão só falha depois. */
+      personagemFixo: "Quem está em cena vem da configuração do bloco.",
+      personagemNenhuma: "Ninguém em cena",
+      produtoLabel: "Produto",
+      falaLabel: "Fala",
+      falaPlaceholder: "O que ela diz, curto e falado.",
+      ctaLabel: "Chamada para ação",
+      ctaNenhum: "Sem CTA nesta cena",
+      ctaProprio: "Escrever um próprio",
+      ctaTextoLabel: "Texto do CTA",
+      ctaVazia: "Este canal ainda não tem biblioteca de CTA. Escreva um próprio.",
+      duracaoLabel: "Duração",
+      transicaoLabel: "Transição",
+      transicaoCorte: "Corte",
+      transicaoContinuacao: "Continuação",
+      /** A trava do banco, dita na tela antes de ser recusada por CHECK. */
+      transicaoPrimeira: "A cena 1 não pode ser continuação: não existe quadro anterior.",
+      statusLabel: "Estado",
+      save: "Salvar ficha",
+      saving: "Salvando…",
+      saved: "Ficha salva.",
+      saveError: "Não foi possível salvar a ficha. Tente de novo.",
+      /** Editar não é gerar, e os dois gestos moram a três centímetros um do outro. */
+      saveFree: "Salvar não custa Spark nenhum.",
+      /**
+       * O único gesto pago do trilho, e ele mora AQUI — nunca na lista. Dez
+       * botões de gastar numa lista de dez linhas fazem da rolagem um campo
+       * minado, e o gesto que custa dinheiro fica mais fácil que o que só olha.
+       */
+      regenerateTitle: "Regerar esta cena",
+      regenerateInstrucaoLabel: "O que mudar",
+      regenerateInstrucaoPlaceholder: "Ex.: deixa ela mais animada e troca o cenário para a cozinha",
+      regenerateHint: "As cenas vizinhas vão junto, para a emenda continuar fazendo sentido.",
+      regenerateWorking: "Reescrevendo…",
+      regenerateNeedsInstrucao: "Escreva o que mudar antes de regerar.",
+    },
+
     /** As recusas, cada uma com o conserto dentro da própria frase. */
     errors: {
       invalid: "Não foi possível enviar este pedido. Recarregue a página e tente de novo.",

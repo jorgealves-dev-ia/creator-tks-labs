@@ -3537,3 +3537,89 @@ O plano voltou para o Jorge conferir contra o original — que é a segunda meta
 3. **A ficha semeada foi autorizada com quatro condições** — `node_id` prefixado `seed-validacao-`, contagem de `generations` e do ledger idêntica antes e depois do seed **e** da limpeza, apagamento provado por contagem, e o registro explícito de que **o seed prova a tela e nada mais**: o caminho real é provado pela geração paga do dono, no fim, sem exceção.
 
 **As três só apareceram porque o plano estava escrito.** Um plano na cabeça de alguém não se confere contra nada — e as três teriam sido descobertas com a tela pronta, que é quando corrigir custa a tela.
+
+### 17/08/2026 — Fase 3 · a tela, e três coisas que só a validação produziu
+
+O node de Roteiro inteiro: cabeçalho, configuração, campo de ideia, botão com **custo e saldo antes do clique**, e o trilho de fichas à direita. Mais o overlay `<dialog>` com a ficha completa, o colar-e-estruturar, o dropdown de CTA por canal, a fala dormente, o aviso de ritmo e o de condensação.
+
+**O node guarda a pergunta; o banco guarda a resposta** — o princípio da Fase 1 aplicado à tela. O componente não guarda ficha nenhuma: lê `(project_id, node_id)` na montagem e relê quando o Realtime avisa. Dois presentes que isso dá de graça: **duplicar copia a receita e não o resultado** (o clone tem outro `node_id`, então nasce com o trilho vazio) e **recarregar no meio de nada perde nada**, porque não havia o que perder.
+
+#### Botão sem função não entra na tela
+
+O ▸ da linha compacta — a ponte para o bloco de imagem — quase entrou na Fase 3 porque **eu li o glifo como "expandir a linha"**, e o Jorge corrigiu conferindo o plano escrito contra o original. Ele é a ponte, e a ponte é a Fase 4.
+
+A regra que fica vale além dele: **um glifo que aparece antes de fazer alguma coisa é uma promessa que a tela não pode cumprir**, e quem o clica aprende que os botões daqui às vezes não fazem nada — o que estraga a confiança em todos os outros. Pelo mesmo motivo o bloco nasceu **sem conector**: o fio nasce na Fase 4, com o que o usa.
+
+E ver a ficha completa continua com **caminho único**, o overlay. Dois caminhos para a mesma informação seriam duas telas para manter, duas para divergir, e nenhuma das duas sendo *a* resposta para "onde eu vejo esta cena inteira?".
+
+#### "Regerar esta cena · 5 ⚡" mora no overlay, nunca na lista
+
+É o único gesto pago do trilho. Numa lista de dez linhas, dez botões de gastar a um clique de distância transformam a rolagem num campo minado — e o gesto que custa dinheiro fica **mais fácil** que o gesto que só olha. Dentro do overlay ele custa um passo a mais, e esse passo é a deliberação.
+
+O par de frases ao redor dele existe pela mesma razão: **editar não é gerar**, e os dois gestos moram no mesmo overlay a poucos centímetros um do outro. O de baixo diz o número; o de cima diz "salvar não custa Spark nenhum". Um botão silencioso ao lado de um que gasta é lido como sendo do mesmo tipo.
+
+#### A prateleira mentiu sobre si mesma pela segunda vez
+
+O rodapé do trilho lateral dizia *"Storyboard e voz chegam nas próximas fases"* com o bloco de Roteiro desenhado três centímetros acima dela. O comentário no código já dizia que isso tinha acontecido com o vídeo em 13/08 — *"uma prateleira que desmente o que ela mesma oferece ensina a não ler o rodapé"* — e aconteceu de novo, no primeiro print da validação.
+
+Duas vezes o mesmo defeito é sinal de que a frase estava larga demais: um rodapé que promete uma lista de coisas fica errado a cada entrega. Ele encolheu para o que ainda não existe **de verdade**, que hoje é só a voz.
+
+#### A prova: 12 itens, e três com controle negativo
+
+Zero Spark do primeiro ao último print — `generations` em 59, `ledger_transactions` em 45 e o saldo em 6.730 ⚡ do começo ao fim. Três itens não se contentaram com o caminho feliz, porque **um aviso que só acende nunca provou que sabe ficar apagado**:
+
+| | acende | não acende |
+|---|---|---|
+| ritmo | 10 cenas = 50 s | **9 cenas = 45 s** — a fronteira exata que um `>=` no lugar do `>` teria errado |
+| condensação | `cenas_no_original` 12 > 8 | **8 = 8, com `ajuste` dizendo "Condensado de 8 para 8 cenas"** — a frase mente, e a conta ganha |
+| `@` não vinculada | aviso + botão morto | banco idêntico antes e depois: 59 / 45 / 6.730 |
+
+O segundo é o defeito medido na Fase 0 reencenado na tela e barrado por ela.
+
+E o item da `@` foi provado **pelo caminho real**, não simulado: a personagem foi desvinculada do projeto pela interface, o bloco passou a recusar guardando o handle, e ela foi revinculada. É a Etapa D2 acontecendo — *"uma aba aberta desde antes de um desvincular manda o mesmo corpo que um clique legítimo"*.
+
+#### A ficha semeada, e o que ela não prova
+
+Cinco itens precisavam de fichas na tela, e a única porta de ficha no produto é uma geração paga. O Jorge autorizou semear à mão com quatro condições, e a primeira mudou de forma durante a discussão: nasceu como "`node_id` prefixado" e virou **"`storyboards.ideia` prefixada"**, porque prefixar o `node_id` exigiria um script escrevendo à mão o `workflows.graph` — um roteiro automático editando o documento que **é** a verdade do canvas —, e a alternativa de marcar pelo **título** seria identificar por rótulo, contra a doutrina que fez `cenas_no_original` existir. Os dois nodes nasceram pela interface, com uuid do próprio app.
+
+O que o seed prova é a **tela**. Que o motor produz fichas foi provado na Fase 2 e volta a ser provado no fechamento, pela geração paga do dono. A limpeza devolveu tudo: `storyboards` de 3 para 1, `storyboard_scenes` de 22 para 6, e o grafo com os mesmos 20 nodes e 19 arestas do retrato tirado antes — **zero divergência de ids**.
+
+#### Uma nota de método, de novo contra mim mesmo
+
+O seletor de personagem apareceu vazio no meio da validação, e por alguns minutos isso parecia defeito do bloco. Não era: **Fast Refresh recria um store de escopo de módulo sem re-rodar o efeito que o semeia**, e eu tinha acabado de editar um arquivo com a página aberta. Um reload devolveu tudo.
+
+Registrado porque a conclusão errada estava a um passo — "meu filtro de vinculadas está errado" — e teria produzido um conserto para um problema que não existe. **Durante validação, editar código exige recarregar a página antes de acreditar no que se vê.**
+
+#### O fechamento pago, pela interface — e o que o extrato disse
+
+Duas gerações do Jorge, pelo bloco, com o extrato conferido linha a linha:
+
+| quando | trabalho | descrição no extrato | ⚡ | custo real | tokens |
+|---|---|---|---|---|---|
+| 00:10:56 | `roteiro` | **"Roteiro com @luna"** | 15 | 4c | 1.357 / 1.203 |
+| 00:13:02 | `estruturar` | **"Roteiro estruturado com @luna"** | 15 | 2c | 1.535 / 300 |
+
+Saldo 6.730 → **6.700**; `generations` 59 → 61; `ledger_transactions` 45 → 47.
+
+**As duas descrições são diferentes, e isso é o `case` do `record_generation` fazendo o trabalho dele.** A Fase 2 exercitou só o `roteiro`; foi aqui que o `estruturar` se nomeou pela primeira vez — e um extrato que chamasse os dois de "Roteiro" apagaria a única diferença que importa para quem confere a fatura: **o que foi comprado**.
+
+**A margem se confirmou nos dois, e por baixo.** 4c e 2c de custo real contra 15 ⚡ cobrados, ambos **abaixo do pior caso medido** que fixou o preço — que é o comportamento certo de uma régua calibrada sobre o pior caso e não sobre a média.
+
+**E as durezas da receita sobreviveram ao uso real:** o roteiro de 6 cenas saiu com **6 cenários distintos** e 2 continuações. O `estruturar` recebeu um texto de uma cena e devolveu uma, com `cenas_no_original = 1` — a conta dizendo corretamente que não houve condensação, sem frase nenhuma.
+
+**O veredito que nenhuma consulta dá:** *"as fichas dirigem"*. Foi o dono quem assinou essa linha, como assinou a do Ciclo 1 — há metades que só olhar responde.
+
+### 17/08/2026 — sinal do fundador: o fluxo está longo, e isso vira o critério do Ciclo 3
+
+Registrado como **ressalva de produto**, não da Fase 3 — a tela entregou o que o plano pedia. É um sinal sobre o **fluxo inteiro**, dado por quem o percorreu de ponta a ponta pela primeira vez:
+
+> *o fluxo de criação está me parecendo prolongado; concorrentes entregam vídeo satisfatório com uma folha e uma orientação básica.*
+
+Isso deixa de ser impressão e passa a ser **o critério de sucesso do Ciclo 3**. A Máquina — template pré-montado no sidebar mais lote com portões de custo — não existe para acrescentar capacidade: existe para **comprimir este fluxo a "uma ideia e alguns cliques"**. E o teste dela é o mesmo julgamento humano de hoje: **se depois da Máquina o fluxo ainda parecer longo, o problema é de produto e o desenho volta à mesa** — não se resolve com mais um bloco.
+
+Duas consequências práticas, decididas junto:
+
+1. **Fase 4 enxuta.** A ponte manual entrega a ponte e nada além: o ▸, o fio vivo e o "corte para assumir". **Sem expansão de escopo** — cada coisa a mais nela é um passo a mais no fluxo que acabou de ser apontado como longo.
+2. **O Ciclo 3 vira prioridade absoluta** na sequência, à frente de qualquer capacidade nova.
+
+**Por que isto está no diário e não numa lista de tarefas:** é a primeira vez que a régua de sucesso do produto deixa de ser "a peça funciona" e passa a ser "quantos passos custa chegar ao vídeo". Uma frente que não souber disso vai otimizar a coisa certa da maneira errada — acrescentando poder onde o que falta é **caminho curto**.

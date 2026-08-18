@@ -101,6 +101,17 @@ export function NodeSidebar() {
     addNode("video-generator", {}, nodes.length);
   }
 
+  /**
+   * O bloco de Roteiro nasce vazio pelo mesmo motivo dos outros dois — e os
+   * defaults dele (canal, nº de cenas, modelo) são resolvidos **dentro** do
+   * card, não semeados aqui. Gravar um canal no `data` no instante da criação
+   * congelaria a escolha de hoje no grafo de quem nunca abriu o seletor, e um
+   * default que virou dado salvo é um default que ninguém consegue mudar depois.
+   */
+  function addStoryboard() {
+    addNode("storyboard", {}, nodes.length);
+  }
+
   return (
     <>
       <aside
@@ -416,6 +427,35 @@ export function NodeSidebar() {
                 </span>
                 <span className="block truncate text-[11px] text-ink-faint">
                   {t.videoNode.stillEmpty}
+                </span>
+              </span>
+            </button>
+
+            {/* O terceiro bloco da casa. Fica com os outros dois e não com os
+                Inputs porque produz — e o glifo dele é a linha do trilho vista de
+                longe, para ser achado a baixo zoom antes de qualquer texto ser
+                legível, que é a razão de a prateleira e o card usarem o mesmo
+                desenho. */}
+            <button
+              type="button"
+              onClick={addStoryboard}
+              title={t.storyboardNode.sidebarHint}
+              className="flex w-full items-center gap-3 rounded-lg py-1.5 text-left
+                         transition-colors hover:bg-surface-hover"
+            >
+              <span
+                aria-hidden
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg
+                           border border-line bg-accent-soft text-ink-muted"
+              >
+                <NodeIcon kind="storyboard" className="size-3.5" />
+              </span>
+              <span className={revealed("min-w-0 flex-1")}>
+                <span className="block truncate text-xs font-medium text-ink">
+                  {t.storyboardNode.title}
+                </span>
+                <span className="block truncate text-[11px] text-ink-faint">
+                  {t.storyboardNode.sidebarHint}
                 </span>
               </span>
             </button>

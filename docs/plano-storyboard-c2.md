@@ -58,8 +58,8 @@ um arquivo por item, com nome que diz **o que o print prova**.
 | **0** | O modelo, escolhido por medição | ✅ fechada — 16/08/2026 |
 | **1** | A fundação no banco: as fichas ganham casa, e o preço ganha trabalho | ✅ fechada — `f1e41d6` + `4d87ca1` |
 | **2** | O motor: a ideia vira ficha, e a ficha tem dono | ✅ fechada — `3576f97` |
-| **3** | **A tela: o node de Roteiro inteiro** | ⏳ **pendente — é esta** |
-| **4** | A ponte manual: a ficha vira bloco, por fio vivo | ⏳ pendente |
+| **3** | A tela: o node de Roteiro inteiro | ✅ fechada — 17/08/2026 |
+| **4** | **A ponte manual: a ficha vira bloco, por fio vivo** | ⏳ **pendente — é esta, e é enxuta** |
 
 ---
 
@@ -268,14 +268,30 @@ próprio usuário (pelo RLS), sem passar por `generations` e sem tocar no ledger
 
 As quatro condições, e cada uma fecha um jeito de esta muleta virar mentira:
 
-1. **`node_id` prefixado `seed-validacao-`.** O dado se identifica sozinho, no banco,
-   sem depender da memória de quem o criou. É a mesma doutrina de sempre: **o que
+1. **A ideia prefixada `seed-validacao-`.** O dado se identifica sozinho, no banco, sem
+   depender da memória de quem o criou. É a mesma doutrina de sempre: **o que
    identifica é o dado, nunca o rótulo** — e um roteiro de teste que se parece com um
    roteiro de verdade é exatamente o que ninguém quer encontrar daqui a três meses.
+
+   *A condição nasceu como "`node_id` prefixado" e foi corrigida no mesmo dia, porque a
+   primeira leitura dela levava a lugares piores que o problema.* Como o `node_id` de um
+   storyboard tem de casar com o id do node no canvas, e o canvas gera uuid, prefixar o
+   `node_id` exigiria **um script escrevendo à mão o `workflows.graph`** — pôr um roteiro
+   automático a editar o documento que É a verdade do canvas, num grafo real de vinte
+   nodes, para economizar dois cliques. A alternativa considerada em seguida — marcar o
+   seed pelo **título** — é pior de outro jeito: título é rótulo, e é exatamente contra
+   isso que `cenas_no_original` existe.
+   
+   O que ficou: **os dois nodes nascem pela interface** (uuid legítimo, e de graça isso
+   exercita o caminho real de criação do bloco em vez de contorná-lo), e o prefixo mora
+   em `storyboards.ideia` — dado nosso, na tabela nova, sem uma linha escrita fora dela.
 2. **Contagem de `generations` e do ledger idêntica antes e depois** — do seed **e** da
    limpeza. É a prova de que a muleta não tocou em dinheiro, e ela é uma contagem
    porque "não cobrou" não é coisa que um print mostre.
-3. **Apagada no fim, com a contagem provando** que sumiu.
+3. **Apagada no fim, com a contagem provando** que sumiu. E o grafo tem prova própria:
+   um retrato dos vinte nodes é tirado **antes** de qualquer coisa e outro **depois** da
+   limpeza, e a diferença entre os dois tem de ser vazia — descontados os dois nodes de
+   Roteiro que foram criados pela interface e apagados pela interface.
 4. **Registrada aqui**, que é esta seção: **o seed prova a TELA.** Que o motor produz
    fichas de verdade foi provado na Fase 2 e volta a ser provado no fechamento desta,
    pela geração paga do Jorge — **sem exceção**. Nenhum print de ficha semeada conta
@@ -291,21 +307,55 @@ As quatro condições, e cada uma fecha um jeito de esta muleta virar mentira:
 - Não mexe no motor, no contrato, na receita nem no banco. Se a tela pedir mudança em
   qualquer um dos quatro, isso é **decisão registrada antes**, não conserto no caminho.
 
-### 3.8 O fechamento da fase
+### 3.8 O que a validação de interface achou — 17/08/2026
 
-Quando os 8 itens estiverem provados, o Jorge é chamado e faz, **pela interface**:
+Os 12 itens fecharam com **zero Spark**: `generations` em 59, `ledger_transactions`
+em 45 e o saldo em 6.730 ⚡ do primeiro ao último print. Três achados que só a
+validação produziu:
 
-1. um roteiro pago de ponta a ponta;
-2. um colar-e-estruturar;
+1. **A prateleira mentia sobre si mesma, pela segunda vez.** O rodapé do trilho dizia
+   *"Storyboard e voz chegam nas próximas fases"* com o bloco de Roteiro desenhado três
+   centímetros acima. O comentário no código já registrava que isso tinha acontecido com
+   o vídeo em 13/08 — e aconteceu de novo. O rodapé encolheu para o que ainda não existe
+   de verdade: **a voz**.
+2. **O ▸ teria entrado por leitura minha, não por decisão.** Está registrado em §3.3
+   como regra e não como detalhe, porque a lição vale além dele: *botão sem função não
+   entra na tela*.
+3. **Fast Refresh esvazia o store do Arsenal.** Editar um arquivo com a página aberta
+   fez o `useEntitiesStore` perder a semeadura, e o seletor de personagem ficou vazio —
+   parecendo um defeito do bloco. É artefato de desenvolvimento e não do produto (um
+   reload devolveu tudo), mas custou uma investigação: **durante validação, editar
+   código exige recarregar a página antes de acreditar no que se vê.**
 
-com o extrato conferido linha a linha nos dois. Só então o commit — que, pela regra 8
-do `CLAUDE.md`, é a mesma ação que o `git push`.
+### 3.9 O fechamento da fase — feito em 17/08/2026 ✅
+
+Os 12 itens de interface fecharam com **zero Spark**, e o Jorge fez as duas gerações
+pagas **pela interface**, com o extrato conferido linha a linha:
+
+| trabalho | descrição no extrato | ⚡ | custo real |
+|---|---|---|---|
+| `roteiro` | "Roteiro com @luna" | 15 | 4c |
+| `estruturar` | "Roteiro estruturado com @luna" | 15 | 2c |
+
+Saldo 6.730 → 6.700. **As duas descrições diferentes** são o `case` do
+`record_generation` funcionando — a Fase 2 tinha exercitado só o `roteiro`. E as
+durezas da receita sobreviveram ao uso real: 6 cenas, **6 cenários distintos**, 2
+continuações.
+
+**O veredito, que nenhuma consulta dá:** *"as fichas dirigem"* — assinado pelo dono.
 
 ---
 
 ## Fase 4 · a ponte manual — a ficha vira bloco, por fio vivo  ⏳
 
-**Nível de mapa.** O detalhe vira plano quando a Fase 3 fechar.
+**Nível de mapa.** O detalhe vira plano antes de a fase executar (regra 9).
+
+> **Esta fase é ENXUTA, e a restrição é decisão do dono** *(17/08/2026)*. Ela entrega a
+> ponte e nada além: o ▸, o fio vivo e o "corte para assumir". **Sem expansão de
+> escopo.** A razão está no sinal registrado no fechamento da Fase 3 — *o fluxo de
+> criação está parecendo prolongado* —, e cada coisa a mais aqui é um passo a mais no
+> fluxo que acabou de ser apontado como longo. Depois desta fase, **o Ciclo 3 (a
+> Máquina) é prioridade absoluta**, à frente de qualquer capacidade nova.
 
 **A entrega.** Uma ficha de cena vira um bloco **Gerar Imagem** no canvas, ligada à
 ficha por um **fio vivo**: editar a ficha atualiza o bloco que já a recebeu — a mesma
@@ -338,4 +388,8 @@ A tela diz "conecte um Input de Produto" em vez de fingir que resolve.
   declara isso. O consumidor chega numa fase futura.
 - **Reordenar, inserir e apagar cenas.** O `unique deferrable` já está no banco
   esperando; quem vai usá-lo é o Ciclo 3.
-- **A Máquina.** Reger as dez fichas de um roteiro de uma vez — o Ciclo 3.
+- **A Máquina.** Reger as dez fichas de um roteiro de uma vez — o Ciclo 3, e **prioridade
+  absoluta depois da Fase 4**. Ela não existe para acrescentar capacidade: existe para
+  **comprimir o fluxo a "uma ideia e alguns cliques"**, que passou a ser o critério de
+  sucesso do produto em 17/08/2026. O teste dela é o mesmo julgamento humano de hoje —
+  se depois dela o fluxo ainda parecer longo, o desenho volta à mesa.

@@ -13,6 +13,7 @@ export type NodeKind =
   | "product"
   | "generator"
   | "video-generator"
+  | "storyboard"
   | "result"
   | "input-image"
   | "input-product"
@@ -67,6 +68,27 @@ const PATHS: Record<NodeKind, React.ReactNode> = {
     <>
       <rect x="1.5" y="2.5" width="13" height="11" rx="2" {...STROKE} />
       <path d="M6.6 5.9l4.2 2.1-4.2 2.1V5.9z" {...STROKE} />
+    </>
+  ),
+
+  /**
+   * A ficha de cena, desenhada: a moldura da família, dividida em painel e texto.
+   *
+   * É deliberadamente a **linha do trilho** vista de longe — um retângulo com a
+   * parte da imagem à esquerda e as linhas do que se lê à direita —, e não uma
+   * claquete. A claquete é o símbolo óbvio de roteiro e diria a coisa errada
+   * aqui: ela promete vídeo, e este bloco não produz arquivo nenhum. Produz
+   * **fichas**, que é justamente o que o desenho mostra.
+   *
+   * Mantém a moldura de 13×11 das outras três para o parentesco continuar
+   * legível a baixo zoom: quem procura um bloco que produz procura um retângulo,
+   * e o que separa os quatro é a marca de dentro.
+   */
+  storyboard: (
+    <>
+      <rect x="1.5" y="2.5" width="13" height="11" rx="2" {...STROKE} />
+      <path d="M6.2 2.5v11" {...STROKE} />
+      <path d="M8.2 6.1h4.1M8.2 9.9h4.1" {...STROKE} />
     </>
   ),
 

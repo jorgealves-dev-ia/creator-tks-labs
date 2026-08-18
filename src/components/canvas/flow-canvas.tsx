@@ -24,6 +24,7 @@ import { InputPoseNode } from "@/components/nodes/input-pose-node";
 import { InputSheetNode } from "@/components/nodes/input-sheet-node";
 import { LegacyProductNode } from "@/components/nodes/legacy-product-node";
 import { ResultNode } from "@/components/nodes/result-node";
+import { StoryboardNode } from "@/components/nodes/storyboard-node";
 import { useImageCatalog } from "@/components/nodes/use-image-catalog";
 import { defaultModelId, findModel } from "@/components/ui/model-select";
 import { NODE_TYPE_MIME } from "@/lib/canvas/drag";
@@ -49,6 +50,7 @@ const nodeTypes: NodeTypes = {
   product: LegacyProductNode,
   generator: GeneratorNode,
   "video-generator": VideoGeneratorNode,
+  storyboard: StoryboardNode,
   result: ResultNode,
   "input-image": InputImageNode,
   "input-product": InputProductNode,
