@@ -206,6 +206,50 @@ O caminho no Storage é determinístico pelo id do vídeo, então nem o arquivo 
 
 **A leitura é gesto de quem está olhando, nunca trabalho de fundo** — e isso é medido, não preferido. Numa aba que não está visível o navegador **não decodifica vídeo**: `stalled` aos ~3 s e nenhum metadata em 20–25 s, contra 543 ms de ponta a ponta com a janela na frente. Por isso não existe "extrai sozinho quando o vídeo termina", e por isso a recusa dessa situação tem frase própria, com o conserto dentro dela.
 
+## 5.6 A ponte: uma ficha de cena vira bloco *(18/08/2026, Frente Storyboard Ciclo 2)*
+
+O irmão da §5.5, do outro lado do produto: lá um vídeo pronto vira o capítulo seguinte; aqui uma **ficha de cena** vira o bloco que a desenha. O ▸ na linha do trilho de fichas põe um **Gerar Imagem** à direita do bloco de Roteiro, pré-preenchido, ligado à linha daquela cena, selecionado, e leva a tela até ele.
+
+**O bloco ganha um estado novo, e ele é normativo: *regido por ficha*.** Um bloco regido difere de um bloco comum em três pontos, e em nenhum outro:
+
+| | bloco comum | bloco regido por ficha |
+|---|---|---|
+| campo do prompt | editável | **somente leitura**, com *Assumir o prompt* ao lado |
+| sob o prompt | "Digite @ para chamar uma personagem." | **"Este prompt vem da Cena N."** |
+| quando a ficha muda | — | o prompt é reescrito **sozinho** (o fio é vivo) |
+
+Tudo o mais é o bloco de sempre: mesmo modelo, mesmo preset, mesma faixa de referências, mesmo custo e saldo antes do clique, mesma compilação.
+
+**A corrente é a aresta, e só ela** — `sourceHandle: "cena-3"`, que o grafo salvo já persistia. Não há cópia no `data` do bloco, e a ausência é a decisão: sem segunda cópia não há o que discordar, e **cortar o fio não precisa limpar nada**. É isso que faz o "corte para assumir" existir sem nenhum código combinando duas coisas — o texto simplesmente fica onde estava, e passa a ser de quem cortou.
+
+**O conector é de cada linha do trilho, não do bloco de Roteiro.** Num roteiro de dez fichas com três blocos pendurados, um fio saindo da borda do node não diria qual cena rege qual imagem — e o canvas passaria a esconder justamente o que ele existe para mostrar.
+
+**A tradução é campo para controle, sem reinterpretação** — é o dividendo de a ficha ser dado estruturado e não prosa:
+
+| campo da ficha | onde vai |
+|---|---|
+| `personagem` (handle) | `data.prompt`, como `@handle` na frente — a menção, resolvida **no servidor** |
+| `acao` · `cenario` · `movimento` | `data.prompt`, em PT: `@handle {acao}. {cenario}. {movimento}.` |
+| `enquadramento` | **`data.anguloKey`, por atribuição direta** — mesma chave, mesmo dicionário da §5.27 |
+| `produto` | **nada** — a tela manda conectar um Input de Produto |
+| `fala` · CTA · `duracao_segundos` · `transicao` | **nada** — o overlay da ficha diz por quê |
+
+A menção vai **na frente** por causa da invariante 13: assim o texto sem ela não fica vazio, a cena é uma cena dirigida, e nem os padrões de cena do sheet nem o traje canônico entram.
+
+**Os três desfechos do ▸, decididos por contagem** — a mesma doutrina do "garante o par" da §5.5:
+
+| situação | o que acontece | nodes | arestas |
+|---|---|---|---|
+| a cena não rege bloco nenhum | nasce o bloco, ligado e selecionado | +1 | +1 |
+| a cena já rege um | **nada nasce**; ele é destacado, e a tela diz que já existia | 0 | 0 |
+| o bloco foi apagado | a aresta órfã saiu com ele; o clique recria **só o bloco** | +1 | +1 |
+
+**Religar devolve o comando à ficha — e confirma quando há texto a perder.** Prompt vazio ou idêntico ao da ficha é substituído em silêncio; prompt escrito à mão faz a tela perguntar, nomeando a cena, **antes de a aresta existir** — então *Cancelar* deixa o canvas exatamente como estava. É o padrão de "gerar por cima" do bloco de Roteiro aplicado ao mesmo problema, e a pergunta é do **religar**, nunca do fio vivo: enquanto o fio existe o campo está travado, então a única divergência possível é a ficha ter mudado — que é precisamente o trabalho que o fio vivo faz.
+
+**O ▸ não custa Spark, e por isso pode estar na lista.** É a diferença que mantém "Regerar esta cena · 5 ⚡" dentro do overlay: criar um bloco não gasta nada, e quem gasta continua sendo o botão dentro dele, depois de a pessoa ler o preço.
+
+**A ponte não anexa foto nenhuma.** `storyboard_scenes.produto` é texto livre porque produto virou card de canvas em 10/08/2026 — não existe linha para uma FK apontar. O bloco diz "conecte um Input de Produto" em vez de fingir que resolveu.
+
 ## 6. Compilação de canvas (o contrato)
 
 Ordem do prompt final: **estilo** (do node; herdado da personagem quando não sobrescrito) → **bloco de identidade** da versão mencionada (o compilador de sempre) → **cena do usuário** (o prompt em PT, traduzido na geração) → **ajustes de cena** (quando houver) → **diretivas das referências** (tipo + instrução, traduzidas) → **restrições** (sempre, ao final).

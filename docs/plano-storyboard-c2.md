@@ -62,7 +62,7 @@ um arquivo por item, com nome que diz **o que o print prova**.
 | **1** | A fundação no banco: as fichas ganham casa, e o preço ganha trabalho | ✅ fechada — `f1e41d6` + `4d87ca1` |
 | **2** | O motor: a ideia vira ficha, e a ficha tem dono | ✅ fechada — `3576f97` |
 | **3** | A tela: o node de Roteiro inteiro | ✅ fechada — 17/08/2026 |
-| **4** | **A ponte manual: a ficha vira bloco, por fio vivo** | ⏳ **aberta — detalhada em 18/08/2026, à espera do ok** |
+| **4** | **A ponte manual: a ficha vira bloco, por fio vivo** | ✅ fechada — 18/08/2026 |
 
 ---
 
@@ -349,7 +349,7 @@ continuações.
 
 ---
 
-## Fase 4 · a ponte manual — a ficha vira bloco, por fio vivo  ⏳
+## Fase 4 · a ponte manual — a ficha vira bloco, por fio vivo  ✅
 
 **Detalhada em 18/08/2026, antes de qualquer código (regra 9).** O que está abaixo é
 o enunciado de retomada do Jorge desenvolvido. O que **ele** fixou está marcado como
@@ -658,6 +658,63 @@ sai barato:
 - **Não mexe em motor, contrato, receita, banco, compilador ou tradução** (§4.5).
 
 ---
+
+### 4.12 O fechamento — feito em 18/08/2026 ✅
+
+**As duas metades de prova, porque os três ramos são afirmações sobre números.**
+
+**Estrutural.** O store de verdade rodando fora do React (`scratchpad/fase4-ramos.ts`),
+**49 verificações, todas passando**: a fórmula do prompt em seis casos de borda, os três
+ramos por contagem, o fio vivo, a guarda do "só escreve se mudou", o corte, o religar
+nos dois sentidos, Cancelar, Substituir, e o fio apontando para uma cena que sumiu do
+roteiro. Saída inteira em `00-ramos-por-contagem-store-real.txt`.
+
+**Ao vivo — 13 arquivos, zero Spark.** `generations` **61**, `ledger_transactions`
+**47** e saldo **6.700 ⚡** idênticos do primeiro ao último print. Os dois controles
+negativos que a emenda pedia entraram: religar sobre um prompt idêntico ao da ficha
+**não pergunta nada** (`08b`), e *Cancelar* **não muda um caractere** (`08d`).
+
+Os números dos ramos, lidos no DOM do canvas:
+
+| ramo | nodes | arestas |
+|---|---|---|
+| sem bloco → nasce ligado | 22 → **23** | 16 → **17** |
+| com bloco → destaca | 23 → **23** | 17 → **17** |
+| bloco apagado → recria só ele | 23 → 22 → **23** | 17 → 16 → **17** |
+
+E o grafo salvo mostrou a corrente com o número da cena no `sourceHandle` (`12`), que é
+o que prova que ela sobrevive ao reload sem coluna nova nenhuma.
+
+**A limpeza fechou o retrato:** 22 nodes e 19 arestas antes de tocar em qualquer coisa,
+22 e 19 depois, **zero arestas de cena restantes**, e a ficha da Cena 1 restaurada
+palavra por palavra. A única escrita no banco em toda a validação foi a edição dessa
+ficha (item 5), que deixou `edited_at` preenchido — declarado aqui porque é uma marca
+que fica.
+
+**O achado de método da fase**, e ele custou uma hora: o bloco criado pelo ▸ apareceu
+invisível e o canvas parou de desenhar arestas. **Não era defeito da ponte** — a aba do
+Chrome estava em background, e sem layout o React Flow não mede nodes nem desenha
+arestas. A regra que salvou foi a de sempre: *medir com JS antes de consertar*. → o
+registro em [`decisoes.md`](decisoes.md).
+
+**O que falta, e é do dono:** a **geração paga** de uma ficha real pelo ▸, com "Ver
+prompt" mostrando a cena compilada e a versão congelada resolvida no servidor. Nenhum
+print de interface conta como ela.
+
+---
+
+## O ciclo, fechado — 18/08/2026
+
+Cinco fases, **4 migrations**, **6 commits**, e **30 ⚡** gastos em roteiro no total,
+sobre custo real de 6 centavos.
+
+O produto passou a **escrever a história antes de desenhá-la** — e, desde esta fase, a
+ficha atravessa para o canvas em um clique. A régua do ciclo não foi capacidade nova:
+foi **treze gestos virando dois**.
+
+**A próxima prioridade é absoluta: o Ciclo 3, a Máquina.** Reger as dez fichas de uma
+vez, e o teste dela é o mesmo julgamento humano de sempre — se depois dela o fluxo ainda
+parecer longo, o desenho volta à mesa.
 
 ## O que fica para depois do ciclo
 

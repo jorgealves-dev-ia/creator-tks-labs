@@ -10,6 +10,8 @@ import {
 } from "@xyflow/react";
 import { create } from "zustand";
 
+import type { SceneDirective } from "@/lib/storyboard/scene-prompt";
+
 export type SaveStatus = "saved" | "dirty" | "saving" | "failed";
 
 /**
@@ -108,13 +110,30 @@ export type CapacityResolver = (generatorId: string) => number;
  * of the document. Storing it in node data would mark the project dirty and save
  * a transient complaint into the workflow.
  */
-export type CanvasNotice = {
-  nodeId: string;
-  reason: "product_over_limit";
-  /** How many slots the product needed, and how many there were. */
-  needed: number;
-  free: number;
-};
+export type CanvasNotice =
+  | {
+      nodeId: string;
+      reason: "product_over_limit";
+      /** How many slots the product needed, and how many there were. */
+      needed: number;
+      free: number;
+    }
+  /**
+   * Um fio de ficha foi solto sobre um bloco cujo prompt **alguém escreveu**, e a
+   * escrita está esperando resposta.
+   *
+   * A pendência mora aqui, com as recusas, e não no documento: enquanto ela
+   * existe **a aresta ainda não existe**, e é isso que faz o *Cancelar* ser
+   * gratuito — o canvas fica exatamente como estava, sem fio novo e sem um
+   * caractere perdido. A emenda de 18/08/2026 pede confirmação com a perda
+   * contada, e uma confirmação que já tivesse mudado o documento não seria uma.
+   */
+  | {
+      nodeId: string;
+      reason: "scene_overwrite";
+      storyboardNodeId: string;
+      ordem: number;
+    };
 
 /**
  * A spot near `candidate` that no node is already sitting on.
@@ -439,6 +458,191 @@ function detachReference(nodes: Node[], edge: Edge): Node[] {
   return withReferences(nodes, pair.generator.id, next);
 }
 
+// ---------------------------------------------------------------------------
+// A ponte do Roteiro — Ciclo 2 · Fase 4
+// ---------------------------------------------------------------------------
+
+/**
+ * A corrente entre uma ficha e o bloco que ela rege **é a aresta**, e só ela.
+ *
+ * Não existe cópia no `data` do bloco, e a ausência é a decisão: o bloco de
+ * vídeo guarda `sourceNodeId` porque precisa dizer *de qual card* veio o still
+ * quando a mesma foto chega por dois caminhos, e aqui essa ambiguidade não
+ * existe — a aresta já carrega as duas pontas **e** o número da cena, no
+ * `sourceHandle` que o grafo salvo persiste.
+ *
+ * O dividendo aparece no corte: cortar o fio desfaz o vínculo inteiro porque não
+ * sobrou nada em lugar nenhum para limpar, e o texto continua onde estava. Isso
+ * **é** o "corte para assumir" — o prompt passa a ser de quem cortou, e nenhuma
+ * linha de código precisou combinar isso com nenhuma outra.
+ */
+const SCENE_HANDLE_PREFIX = "cena-";
+const SCENE_SOURCE = "storyboard";
+const GENERATOR_TARGET = "generator";
+
+/** Matches `w-[46rem]` on the storyboard block — used only to place a block beside it. */
+const STORYBOARD_NODE_WIDTH = 736;
+
+/** O handle de saída da linha da cena N, no trilho de fichas. */
+export function sceneHandleId(ordem: number): string {
+  return `${SCENE_HANDLE_PREFIX}${ordem}`;
+}
+
+/** O caminho de volta: de que linha do trilho este fio saiu. */
+export function sceneOrdemFromHandle(handleId: string | null | undefined): number | null {
+  if (typeof handleId !== "string" || !handleId.startsWith(SCENE_HANDLE_PREFIX)) return null;
+
+  const ordem = Number(handleId.slice(SCENE_HANDLE_PREFIX.length));
+
+  return Number.isInteger(ordem) && ordem > 0 ? ordem : null;
+}
+
+/**
+ * Qual cena rege este bloco, se alguma.
+ *
+ * Lido das arestas e de mais nada — que é o ponto de a corrente morar ali. O
+ * `directive` vem nulo quando o fio aponta para uma cena que não está mais no
+ * roteiro (alguém gerou por cima com menos cenas): estado real, e a tela diz
+ * isso em vez de mostrar um número que não existe.
+ */
+export function findGoverningScene(
+  edges: readonly Edge[],
+  sceneSources: Readonly<Record<string, SceneDirective[]>>,
+  generatorId: string,
+): { storyboardNodeId: string; ordem: number; directive: SceneDirective | null } | null {
+  for (const edge of edges) {
+    if (edge.target !== generatorId) continue;
+
+    const ordem = sceneOrdemFromHandle(edge.sourceHandle);
+
+    if (ordem === null) continue;
+
+    return {
+      storyboardNodeId: edge.source,
+      ordem,
+      directive: sceneSources[edge.source]?.find((scene) => scene.ordem === ordem) ?? null,
+    };
+  }
+
+  return null;
+}
+
+/** O bloco que esta cena já rege, se já rege algum. */
+function governedBlock(
+  nodes: readonly Node[],
+  edges: readonly Edge[],
+  storyboardNodeId: string,
+  ordem: number,
+): Node | undefined {
+  const edge = edges.find(
+    (entry) =>
+      entry.source === storyboardNodeId && sceneOrdemFromHandle(entry.sourceHandle) === ordem,
+  );
+
+  if (!edge) return undefined;
+
+  const block = nodes.find((node) => node.id === edge.target);
+
+  return block?.type === GENERATOR_TARGET ? block : undefined;
+}
+
+/** O que a ficha manda para o bloco, e nada além disso. */
+function directiveData(directive: SceneDirective): Record<string, unknown> {
+  return { prompt: directive.prompt, anguloKey: directive.anguloKey };
+}
+
+function matchesDirective(block: Node, directive: SceneDirective): boolean {
+  return (
+    block.data.prompt === directive.prompt &&
+    (block.data.anguloKey ?? null) === directive.anguloKey
+  );
+}
+
+/**
+ * As fichas mudaram; todo bloco que uma delas rege ouve.
+ *
+ * Irmã de `syncInputInto`, e pela mesma razão registrada lá: a regra é "o fio é
+ * vivo", e uma regra que cada componente precisa lembrar de cumprir é uma regra
+ * que um componente vai esquecer.
+ *
+ * **Com uma dureza que a irmã não precisa ter: devolve `null` quando nada
+ * mudou.** Esta função roda a cada leitura do trilho — inclusive na montagem do
+ * bloco —, e um `set` incondicional faria *abrir um projeto* marcá-lo como sujo
+ * e disparar autosave. Um documento que se altera por ter sido aberto é um
+ * documento em que não se pode confiar.
+ */
+function syncScenes(
+  nodes: Node[],
+  edges: readonly Edge[],
+  storyboardNodeId: string,
+  scenes: readonly SceneDirective[],
+): Node[] | null {
+  let next: Node[] = nodes;
+  let changed = false;
+
+  for (const edge of edges) {
+    if (edge.source !== storyboardNodeId) continue;
+
+    const ordem = sceneOrdemFromHandle(edge.sourceHandle);
+
+    if (ordem === null) continue;
+
+    const directive = scenes.find((scene) => scene.ordem === ordem);
+
+    // O fio aponta para uma cena que não existe mais. O prompt fica como está:
+    // apagá-lo seria destruir a única cópia de um texto por causa de uma ficha
+    // que sumiu, e a tela já sabe dizer que a cena não está mais no roteiro.
+    if (!directive) continue;
+
+    const block = next.find((node) => node.id === edge.target);
+
+    if (block?.type !== GENERATOR_TARGET || matchesDirective(block, directive)) continue;
+
+    next = next.map((node) =>
+      node.id === block.id ? { ...node, data: { ...node.data, ...directiveData(directive) } } : node,
+    );
+    changed = true;
+  }
+
+  return changed ? next : null;
+}
+
+/** As duas pontas de um fio que significa "esta cena dirige este bloco". */
+function wiredScene(
+  nodes: readonly Node[],
+  sceneSources: Readonly<Record<string, SceneDirective[]>>,
+  connection: { source?: string | null; target?: string | null; sourceHandle?: string | null },
+): { source: Node; block: Node; ordem: number; directive: SceneDirective } | null {
+  const source = nodes.find((node) => node.id === connection.source);
+  const block = nodes.find((node) => node.id === connection.target);
+  const ordem = sceneOrdemFromHandle(connection.sourceHandle);
+
+  if (source?.type !== SCENE_SOURCE || block?.type !== GENERATOR_TARGET || ordem === null) {
+    return null;
+  }
+
+  const directive = sceneSources[source.id]?.find((scene) => scene.ordem === ordem);
+
+  return directive ? { source, block, ordem, directive } : null;
+}
+
+function sameDirectives(
+  current: readonly SceneDirective[] | undefined,
+  next: readonly SceneDirective[],
+): boolean {
+  return (
+    current !== undefined &&
+    current.length === next.length &&
+    current.every(
+      (scene, index) =>
+        scene.ordem === next[index].ordem &&
+        scene.prompt === next[index].prompt &&
+        scene.anguloKey === next[index].anguloKey &&
+        scene.produto === next[index].produto,
+    )
+  );
+}
+
 type CanvasState = {
   projectId: string | null;
   nodes: Node[];
@@ -456,6 +660,17 @@ type CanvasState = {
   notice: CanvasNotice | null;
   /** How the store asks a block how much room it has left. See CapacityResolver. */
   capacityResolver: CapacityResolver;
+  /**
+   * As fichas de cada node de Roteiro, como o canvas as enxerga.
+   *
+   * Fora do documento salvo de propósito: as fichas moram em `storyboards` +
+   * `storyboard_scenes`, achadas por `(project_id, node_id)`, e este dicionário é
+   * só a cópia que o canvas precisa ter à mão para responder duas perguntas sem
+   * ir ao banco — *"o que esta cena manda para o bloco?"* (o ▸ e o religar) e
+   * *"esta cena tem produto?"* (o aviso). Publicado pelo próprio bloco de
+   * Roteiro a cada leitura; zerado ao abrir outro projeto.
+   */
+  sceneSources: Record<string, SceneDirective[]>;
 
   loadWorkflow: (input: {
     projectId: string;
@@ -558,6 +773,48 @@ type CanvasState = {
     created: "both" | "video" | "none";
   } | null;
   /**
+   * As fichas deste node de Roteiro, publicadas no canvas — **e o fio vivo
+   * correndo junto**.
+   *
+   * Um gesto só, e não dois, porque são a mesma notícia: as fichas mudaram. Quem
+   * chama é o bloco de Roteiro, depois de cada leitura do banco — a montagem e
+   * cada aviso do Realtime.
+   *
+   * Não marca o canvas como sujo quando nada mudou. Ver `syncScenes`.
+   */
+  publishScenes: (input: { storyboardNodeId: string; scenes: SceneDirective[] }) => void;
+  /**
+   * O ▸ da linha do trilho: esta cena, virando bloco.
+   *
+   * Põe um Gerar Imagem **à direita** do bloco de Roteiro, já preenchido com o
+   * prompt e o ângulo da ficha, já ligado à linha dela, selecionado — o padrão do
+   * `addContinuation`, aplicado a uma ficha em vez de a um último quadro.
+   *
+   * **Garante um bloco por cena, nunca dois.** Quando a cena já rege um, ele é
+   * apenas **destacado** e quem chamou recebe o id para levar a tela até lá:
+   * criar um segundo daria à mesma ficha dois donos, e a próxima edição dela
+   * teria de escolher um.
+   */
+  addSceneBlock: (input: {
+    storyboardNodeId: string;
+    ordem: number;
+  }) => { id: string; created: boolean } | null;
+  /**
+   * "Assumir o prompt": o corte, pelo botão.
+   *
+   * Tira só a aresta. O texto fica onde está — e é isso que o gesto significa:
+   * dali em diante o prompt é de quem cortou. Religar devolve o comando à ficha.
+   */
+  cutSceneWire: (input: { generatorId: string }) => void;
+  /**
+   * "Substituir": a resposta afirmativa à pergunta da emenda de 18/08/2026.
+   *
+   * Só aqui a aresta nasce e o prompt é reescrito. Enquanto a pergunta esteve na
+   * tela, o documento não tinha mudado — então *Cancelar* é `clearNotice`, e não
+   * um desfazer.
+   */
+  confirmSceneOverwrite: () => void;
+  /**
    * A second copy of a block, beside the first.
    *
    * For a generating block this is the point of the whole action: prompt, model,
@@ -617,6 +874,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   // Deliberately outside everything loadWorkflow resets: this is how the store
   // asks a question, not part of the document it holds.
   capacityResolver: NO_CAPACITY,
+  sceneSources: {},
 
   loadWorkflow: ({ projectId, nodes, edges, version }) =>
     set({
@@ -628,6 +886,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       saveFailure: null,
       revision: 0,
       notice: null,
+      // As fichas do projeto que ficou para trás não valem para este. Cada bloco
+      // de Roteiro republica as suas na montagem, então zerar não perde nada —
+      // e não zerar deixaria o canvas respondendo sobre cenas de outro projeto.
+      sceneSources: {},
     }),
 
   onNodesChange: (changes) => {
@@ -731,6 +993,52 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         saveStatus: "dirty" as const,
         notice: null,
       };
+
+      /*
+        O fio de uma ficha — religar, que é devolver o comando à cena.
+
+        Resolvido antes dos outros dois porque ele se identifica pelo
+        `sourceHandle` e nenhum dos outros usa handle nomeado: perguntar primeiro
+        é mais barato que descartar depois.
+
+        **E é o único ramo que pode não fazer nada e não ser um erro.** Quando o
+        bloco tem um prompt que alguém escreveu, a aresta não nasce aqui: nasce
+        no *Substituir*, se ele vier. A emenda de 18/08/2026 pede a perda
+        contada antes, e contar depois de ter substituído não é contar.
+      */
+      const scene = wiredScene(state.nodes, state.sceneSources, connection);
+
+      if (scene) {
+        const current = typeof scene.block.data.prompt === "string" ? scene.block.data.prompt : "";
+        // Vazio não tem o que perder, e idêntico não muda um caractere. Perguntar
+        // nos dois seria um diálogo sobre coisa nenhuma — e um diálogo que
+        // aparece à toa é um diálogo que se aprende a fechar sem ler.
+        const wouldLose = current.trim() !== "" && current !== scene.directive.prompt;
+
+        if (wouldLose) {
+          return {
+            nodes: state.nodes,
+            edges: state.edges,
+            revision: state.revision,
+            saveStatus: state.saveStatus,
+            notice: {
+              nodeId: scene.block.id,
+              reason: "scene_overwrite" as const,
+              storyboardNodeId: scene.source.id,
+              ordem: scene.ordem,
+            },
+          };
+        }
+
+        return {
+          ...connected,
+          nodes: state.nodes.map((node) =>
+            node.id === scene.block.id
+              ? { ...node, data: { ...node.data, ...directiveData(scene.directive) } }
+              : node,
+          ),
+        };
+      }
 
       // O fio que anima uma imagem. Resolvido antes do de referências porque os
       // dois são o mesmo gesto com destinos diferentes, e só um deles casa.
@@ -1054,6 +1362,143 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
           },
         ],
         edges: [...state.edges, { id: `${id}->${generatorId}`, source: id, target: generatorId }],
+        revision: state.revision + 1,
+        saveStatus: "dirty",
+        notice: null,
+      };
+    }),
+
+  publishScenes: ({ storyboardNodeId, scenes }) =>
+    set((state) => {
+      const known = sameDirectives(state.sceneSources[storyboardNodeId], scenes);
+      const nodes = syncScenes(state.nodes, state.edges, storyboardNodeId, scenes);
+
+      // Nada mudou nem no dicionário nem nos blocos: sair sem tocar em `revision`
+      // é o que impede que abrir um projeto o marque como sujo.
+      if (known && !nodes) return state;
+
+      return {
+        sceneSources: known
+          ? state.sceneSources
+          : { ...state.sceneSources, [storyboardNodeId]: scenes },
+        ...(nodes
+          ? { nodes, revision: state.revision + 1, saveStatus: "dirty" as const }
+          : {}),
+      };
+    }),
+
+  addSceneBlock: ({ storyboardNodeId, ordem }) => {
+    const state = get();
+    const board = state.nodes.find((node) => node.id === storyboardNodeId);
+    const directive = state.sceneSources[storyboardNodeId]?.find((scene) => scene.ordem === ordem);
+
+    if (!board || !directive) return null;
+
+    const existing = governedBlock(state.nodes, state.edges, storyboardNodeId, ordem);
+
+    // Já está de pé: destacar é tudo que resta a fazer. Selecionar não marca o
+    // canvas como sujo — seleção é estado de vista, e olhar onde uma coisa está
+    // não pode gravar o projeto.
+    if (existing) {
+      set({
+        nodes: state.nodes.map((node) =>
+          node.selected === (node.id === existing.id)
+            ? node
+            : { ...node, selected: node.id === existing.id },
+        ),
+      });
+
+      return { id: existing.id, created: false };
+    }
+
+    const width = board.measured?.width ?? board.width ?? STORYBOARD_NODE_WIDTH;
+    const id = crypto.randomUUID();
+
+    set({
+      nodes: [
+        ...state.nodes.map((node) => (node.selected ? { ...node, selected: false } : node)),
+        {
+          id,
+          type: GENERATOR_TARGET,
+          // Escalonado pela ordem da cena, como `attachResultCard` faz com as
+          // tentativas: a cena 5 nasce mais abaixo que a 1, e três blocos de um
+          // mesmo roteiro leem como a sequência que são em vez de uma pilha.
+          position: freePosition(state.nodes, {
+            x: board.position.x + width + 72,
+            y: board.position.y + (ordem - 1) * 56,
+          }),
+          // Nasce selecionado: é o bloco que a pessoa acabou de pedir, e num
+          // canvas com vinte cards o novo precisa se identificar sozinho.
+          selected: true,
+          data: directiveData(directive),
+        },
+      ],
+      edges: [
+        ...state.edges,
+        {
+          id: `${storyboardNodeId}-${sceneHandleId(ordem)}->${id}`,
+          source: storyboardNodeId,
+          sourceHandle: sceneHandleId(ordem),
+          target: id,
+        },
+      ],
+      revision: state.revision + 1,
+      saveStatus: "dirty",
+      notice: null,
+    });
+
+    return { id, created: true };
+  },
+
+  cutSceneWire: ({ generatorId }) =>
+    set((state) => {
+      const edges = state.edges.filter(
+        (edge) =>
+          !(edge.target === generatorId && sceneOrdemFromHandle(edge.sourceHandle) !== null),
+      );
+
+      if (edges.length === state.edges.length) return state;
+
+      // Só a aresta. O `data.prompt` não é tocado — o texto passa a ser de quem
+      // cortou, que é a definição inteira do gesto.
+      return {
+        edges,
+        revision: state.revision + 1,
+        saveStatus: "dirty",
+        notice: null,
+      };
+    }),
+
+  confirmSceneOverwrite: () =>
+    set((state) => {
+      const pending = state.notice;
+
+      if (pending?.reason !== "scene_overwrite") return state;
+
+      const directive = state.sceneSources[pending.storyboardNodeId]?.find(
+        (scene) => scene.ordem === pending.ordem,
+      );
+
+      // A ficha sumiu enquanto a pergunta estava na tela (alguém gerou o roteiro
+      // por cima). Sem ficha não há o que escrever, e escrever a aresta sozinha
+      // deixaria um fio regendo o nada.
+      if (!directive) return { ...state, notice: null };
+
+      return {
+        nodes: state.nodes.map((node) =>
+          node.id === pending.nodeId
+            ? { ...node, data: { ...node.data, ...directiveData(directive) } }
+            : node,
+        ),
+        edges: [
+          ...state.edges,
+          {
+            id: `${pending.storyboardNodeId}-${sceneHandleId(pending.ordem)}->${pending.nodeId}`,
+            source: pending.storyboardNodeId,
+            sourceHandle: sceneHandleId(pending.ordem),
+            target: pending.nodeId,
+          },
+        ],
         revision: state.revision + 1,
         saveStatus: "dirty",
         notice: null,

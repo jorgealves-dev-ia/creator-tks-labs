@@ -1081,6 +1081,20 @@ export const t = {
     editarFicha: "Abrir a ficha",
     editadaAMao: "Editada à mão",
 
+    // ── A ponte (Fase 4) ───────────────────────────────────────────────────
+    /**
+     * O ▸, e a frase diz o que ele faz **antes** de ele fazer — inclusive que
+     * não custa nada. É o único gesto grátis ao lado de um trilho onde o gesto
+     * vizinho (regerar) custa 5 ⚡.
+     */
+    ponte: "Criar um bloco Gerar Imagem com esta cena. Não custa Sparks.",
+    ponteHandle: "Arraste para reger um bloco Gerar Imagem com esta cena.",
+    /** O rótulo de leitor de tela: qual das dez linhas é este ▸. */
+    ponteAria: (ordem: number) => `Criar um bloco Gerar Imagem com a cena ${ordem}`,
+    /** Um clique que destaca em vez de criar precisa dizer o que fez. */
+    ponteExistente: (ordem: number) =>
+      `A Cena ${ordem} já dirige um bloco. Ele está destacado no canvas.`,
+
     // ── O overlay ──────────────────────────────────────────────────────────
     ficha: {
       titulo: (ordem: number, total: number) => `Cena ${ordem} de ${total}`,
@@ -1130,6 +1144,20 @@ export const t = {
       regenerateHint: "As cenas vizinhas vão junto, para a emenda continuar fazendo sentido.",
       regenerateWorking: "Reescrevendo…",
       regenerateNeedsInstrucao: "Escreva o que mudar antes de regerar.",
+      /**
+       * O que a ponte leva para a imagem, e o que ela não leva — dito na ficha,
+       * que é onde a pergunta nasce.
+       *
+       * Um campo preenchido que não aparece na imagem parece defeito da ponte. É
+       * o mesmo remédio do `falaDormente`, aplicado aos quatro campos que são de
+       * vídeo e de voz: o silêncio sobre eles seria lido como esquecimento.
+       */
+      pontePega: "Para a imagem vão a ação, o cenário, o movimento e o enquadramento.",
+      ponteNaoPega:
+        "Fala, CTA, duração e transição ficam de fora: são do vídeo — e a fala, da voz que ainda não existe.",
+      /** A ponte não anexa foto: produto é card de canvas desde 10/08/2026. */
+      ponteProduto:
+        "O produto entra como texto no prompt. Para a foto dele entrar, conecte um Input de Produto ao bloco.",
     },
 
     /** As recusas, cada uma com o conserto dentro da própria frase. */
@@ -1191,6 +1219,44 @@ export const t = {
       emptyPromptWithCharacter:
         "Prompt vazio gera a personagem nos padrões dela (traje canônico).",
       emptyPromptAlone: "Escreva a cena ou chame uma personagem com @.",
+
+      // ── A ponte do Roteiro (Ciclo 2 · Fase 4) ────────────────────────────
+      /**
+       * A frase que explica um campo que muda sozinho.
+       *
+       * Sem ela, o fio vivo seria indistinguível de um defeito: o texto que a
+       * pessoa está lendo se reescreve porque alguém corrigiu uma ficha do outro
+       * lado do canvas. Com ela, o campo tem dono declarado — e o botão ao lado
+       * diz como tomá-lo.
+       */
+      sceneBound: (ordem: number) => `Este prompt vem da Cena ${ordem}.`,
+      /** O fio existe e a cena não: gerar o roteiro por cima com menos cenas. */
+      sceneGone: (ordem: number) =>
+        `A Cena ${ordem} não está mais no roteiro. Este prompt ficou como estava.`,
+      sceneRelease: "Assumir o prompt",
+      sceneReleaseHint:
+        "Corta o fio da ficha. O texto continua aqui e passa a ser seu — a ficha para de reescrevê-lo.",
+      /**
+       * A limitação declarada desde a migration, dita onde ela atrapalha.
+       *
+       * `storyboard_scenes.produto` é texto livre porque produto virou card de
+       * canvas em 10/08/2026 — não existe linha para uma FK apontar, e a ponte
+       * não tem foto para anexar. Mandar conectar é a única coisa honesta a
+       * fazer; fingir que resolveu seria pior que o silêncio.
+       */
+      sceneProduct: (nome: string) =>
+        `Esta cena tem um produto: ${nome}. Conecte um Input de Produto para a foto dele entrar.`,
+      /**
+       * A emenda de 18/08/2026: substituir com confirmação, **contando a perda**.
+       *
+       * Aparece só quando há texto a perder — prompt vazio ou idêntico ao da
+       * ficha passa em silêncio. Um aviso que aparece à toa é um aviso que se
+       * aprende a fechar sem ler.
+       */
+      sceneOverwrite: (ordem: number) =>
+        `O prompt escrito à mão será substituído pelo da Cena ${ordem}.`,
+      sceneOverwriteConfirm: "Substituir",
+      sceneOverwriteCancel: "Cancelar",
       modelLabel: "Modelo",
       formatLabel: "Formato",
       styleLabel: "Estilo",

@@ -48,9 +48,19 @@ type PromptFieldProps = {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  /**
+   * Somente leitura — o campo tem dono, e não é quem está olhando.
+   *
+   * Diferente de `disabled`, e a diferença é o ponto: um campo desabilitado não
+   * se lê direito, não se seleciona e não se copia. Aqui o texto continua sendo
+   * texto — dá para ler a cena inteira e copiar um pedaço dela —, só não dá para
+   * escrever por cima. É o estado de um prompt regido por uma ficha do Roteiro,
+   * onde o gesto de tomar a caneta existe e fica ao lado ("Assumir o prompt").
+   */
+  readOnly?: boolean;
 };
 
-export function PromptField({ id, value, onChange, disabled }: PromptFieldProps) {
+export function PromptField({ id, value, onChange, disabled, readOnly }: PromptFieldProps) {
   const characters = useEntitiesStore((state) => state.characters);
   const order = useEntitiesStore((state) => state.order);
   const linkedIds = useEntitiesStore((state) => state.linkedIds);
@@ -111,7 +121,11 @@ export function PromptField({ id, value, onChange, disabled }: PromptFieldProps)
   });
 
   function syncQuery(element: HTMLTextAreaElement) {
-    setQuery(activeMentionQuery(element.value, element.selectionStart ?? 0));
+    // Campo com dono não sugere. A lista existe para *escrever* uma menção, e
+    // aceitar uma sugestão aqui escreveria no texto que o `readOnly` acabou de
+    // dizer que ninguém escreve — a única porta pela qual o campo travado ainda
+    // podia ser alterado.
+    setQuery(readOnly ? null : activeMentionQuery(element.value, element.selectionStart ?? 0));
   }
 
   function moveHighlight(index: number) {
@@ -162,6 +176,7 @@ export function PromptField({ id, value, onChange, disabled }: PromptFieldProps)
           id={id}
           value={value}
           disabled={disabled}
+          readOnly={readOnly}
           // Six lines, not three. The prompt is the one field in the block where
           // the user does the actual writing, and a box that shows three lines of
           // a six-line scene makes them edit through a letterbox.

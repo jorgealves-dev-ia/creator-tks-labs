@@ -341,7 +341,7 @@ export function StoryboardSceneDialog({
               />
             </Field>
 
-            <Field label={fichaCopy.produtoLabel}>
+            <Field label={fichaCopy.produtoLabel} hint={fichaCopy.ponteProduto}>
               <input
                 value={form.produto}
                 onChange={(event) => patch({ produto: event.target.value })}
@@ -350,6 +350,20 @@ export function StoryboardSceneDialog({
               />
             </Field>
           </div>
+
+          {/*
+            O que esta ficha leva para a imagem, e o que ela não leva.
+
+            Dito aqui porque é aqui que a pergunta nasce: alguém que acabou de
+            escrever uma fala e uma transição precisa saber, **antes** de clicar
+            no ▸, que os dois não vão aparecer na imagem. É o mesmo remédio do
+            `falaDormente` aplicado aos quatro campos que são de vídeo e de voz —
+            um campo preenchido que não aparece parece defeito da ponte.
+          */}
+          <p className="rounded-lg border border-line bg-surface px-2 py-1.5 text-[10px] leading-relaxed text-ink-faint">
+            <span className="text-ink-muted">{fichaCopy.pontePega}</span>{" "}
+            {fichaCopy.ponteNaoPega}
+          </p>
 
           {/* A personagem é leitura, e a frase diz por quê: um handle digitado à
               mão gravaria sem reclamar (não há FK) e só falharia lá na frente,

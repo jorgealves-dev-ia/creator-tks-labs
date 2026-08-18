@@ -222,6 +222,20 @@ Um modelo só, na configuração mais barata: Kling 2.1 image-to-video, 5s, 720p
 
 **Placar de custo do ciclo:** 1 vídeo, **210 ⚡**, **US$ 0,28** de fatura. Uma migration, quatro commits. → [`decisoes.md`](./decisoes.md)
 
+### Frente Storyboard — Ciclo 2: O Roteiro ✅ concluído (18/08/2026)
+
+**O produto passou a escrever a história antes de desenhá-la.** Uma ideia em uma linha vira até dez **fichas de cena** estruturadas — ação com tempo, cenário próprio, enquadramento, transição, CTA do canal —, e cada ficha vira, num clique, o bloco Gerar Imagem que a desenha.
+
+- **Ficha é dado, nunca prosa.** É a decisão que atravessa o ciclo: um roteiro em parágrafos obrigaria três motores — o compilador de imagem, o prompt de vídeo, a voz futura — a reinterpretar o mesmo texto cada um do seu jeito. Com `acao`, `cenario`, `enquadramento` e `transicao`, os três leem igual.
+- **O modelo foi escolhido por medição, não por memória:** 47 chamadas reais, dois candidatos, R$ 1,34 do nosso bolso e zero Spark. O candidato 5× mais barato perdeu — *o roteiro é a coisa mais barata do pipeline e dirige a mais cara*.
+- **A conta ganha da frase.** O modelo declarou "condensei de 6 para 6 cenas" sobre um roteiro intacto, e a correção não foi confiar melhor na prosa: foi gravar `cenas_no_original` e deixar a **conta** decidir se houve condensação. A tela lê o número; a frase entra só como ilustração.
+- **A ponte, e o gesto que a define.** O ▸ na linha da ficha cria o bloco de imagem já preenchido e ligado por um **fio vivo**: editar a ficha reescreve o prompt do bloco. Cortar o fio é **assumir** o prompt — dali em diante ele é de quem cortou. Religar devolve o comando, e confirma antes quando há texto escrito à mão a perder.
+- **A régua que ela move:** da ficha pronta até a imagem, o caminho caiu de **treze gestos para dois** — e cinco dos treze eram cópia manual entre duas telas, que é onde o cenário lembrado errado virava imagem paga errada.
+
+**Placar do ciclo:** 4 migrations, 5 commits, e **30 ⚡** gastos em roteiro (as duas gerações do fechamento da Fase 3) sobre custo real de 6 centavos. → [`plano-storyboard-c2.md`](./plano-storyboard-c2.md) · [`decisoes.md`](./decisoes.md)
+
+**O que fica para o Ciclo 3 (A Máquina), agora prioridade absoluta:** reger as dez fichas de uma vez. Ela não existe para acrescentar capacidade — existe para **comprimir o fluxo a "uma ideia e alguns cliques"**, que passou a ser o critério de sucesso do produto em 17/08/2026.
+
 ### Fase 2.5 — Storyboard + Vídeos 📌 conversa dedicada
 
 Registrada a pedido do Jorge, **depois dos nodes de geração**: storyboard cena a cena e geração de vídeo, que chegam junto com a estreia do **padrão assíncrono** (fila → webhook → Realtime). A geração canônica pôde ser síncrona porque uma imagem 2K leva de 20 a 40 segundos e cabe no tempo de função; vídeo não cabe, e é ali que o assíncrono deixa de ser opcional.

@@ -2,7 +2,7 @@
 
 import { Handle, Position, useReactFlow, type Node, type NodeProps } from "@xyflow/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { NodeHeader } from "@/components/nodes/node-header";
 import { PromptField } from "@/components/nodes/prompt-field";
@@ -23,7 +23,7 @@ import {
   ILUMINACAO,
 } from "@/lib/character-sheet/dictionary";
 import { useReferencePicker } from "@/lib/canvas/reference-picker-store";
-import { useCanvasStore } from "@/lib/canvas/store";
+import { findGoverningScene, useCanvasStore } from "@/lib/canvas/store";
 import { useEntitiesStore } from "@/lib/entities/store";
 import type { CanvasGenerationResult } from "@/lib/generation/canvas-contract";
 import {
@@ -140,7 +140,34 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
   const characters = useEntitiesStore((state) => state.characters);
   // A wire the canvas refused, aimed at this block. Ephemeral by construction —
   // it lives outside the saved graph, and the next edit clears it.
-  const refusedWire = useCanvasStore((state) => (state.notice?.nodeId === id ? state.notice : null));
+  const canvasNotice = useCanvasStore((state) =>
+    state.notice?.nodeId === id ? state.notice : null,
+  );
+  const refusedWire = canvasNotice?.reason === "product_over_limit" ? canvasNotice : null;
+  /**
+   * Um fio de ficha esperando resposta — a emenda de 18/08/2026.
+   *
+   * Enquanto ele está aqui, **a aresta ainda não existe**: é o que faz o
+   * *Cancelar* devolver o canvas exatamente como estava.
+   */
+  const pendingScene = canvasNotice?.reason === "scene_overwrite" ? canvasNotice : null;
+  const cutSceneWire = useCanvasStore((state) => state.cutSceneWire);
+  const confirmSceneOverwrite = useCanvasStore((state) => state.confirmSceneOverwrite);
+  const clearNotice = useCanvasStore((state) => state.clearNotice);
+  /**
+   * Qual ficha rege este bloco, se alguma.
+   *
+   * Derivado das arestas em vez de lido do `data`, porque **a corrente é a
+   * aresta**: não existe segunda cópia para discordar dela. Fora do seletor do
+   * zustand de propósito — um seletor que monta objeto novo a cada leitura
+   * devolveria uma referência instável a cada render.
+   */
+  const edges = useCanvasStore((state) => state.edges);
+  const sceneSources = useCanvasStore((state) => state.sceneSources);
+  const governing = useMemo(
+    () => findGoverningScene(edges, sceneSources, id),
+    [edges, sceneSources, id],
+  );
 
   const [message, setMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -975,15 +1002,86 @@ export function GeneratorNode({ id, data, selected }: NodeProps<GeneratorNodeTyp
             id={`prompt-${id}`}
             value={prompt}
             onChange={(value) => updateNodeData(id, { prompt: value })}
+            /*
+              Travado enquanto a ficha rege.
+
+              Deixá-lo editável daria ao produto as duas coisas ao mesmo tempo: um
+              gesto de assumir o prompt **e** um jeito de perder o que se escreveu
+              sem nunca ter usado, porque a próxima edição da ficha passaria por
+              cima. Um campo travado com o destravador ao lado ensina o gesto na
+              primeira vez que alguém tenta digitar.
+            */
+            readOnly={governing !== null}
           />
 
-          <p className="mt-1 text-[10px] leading-relaxed text-ink-faint">
-            {nothingToDo
-              ? copy.node.emptyPromptAlone
-              : emptyScene
-                ? copy.node.emptyPromptWithCharacter
-                : copy.node.promptHint}
-          </p>
+          {/* ── A ficha que rege este bloco, e como tomar o prompt dela ──── */}
+          {governing ? (
+            <div className="mt-1 space-y-1">
+              <p className="flex items-baseline gap-1.5 text-[10px] leading-relaxed text-ink-faint">
+                <span className={governing.directive ? "text-accent" : "text-warning"}>
+                  {governing.directive
+                    ? copy.node.sceneBound(governing.ordem)
+                    : copy.node.sceneGone(governing.ordem)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => cutSceneWire({ generatorId: id })}
+                  title={copy.node.sceneReleaseHint}
+                  className="nodrag shrink-0 underline decoration-dotted underline-offset-2
+                             transition-colors hover:text-ink"
+                >
+                  {copy.node.sceneRelease}
+                </button>
+              </p>
+
+              {/* A ponte não anexa foto nenhuma, e diz isso onde atrapalha. */}
+              {governing.directive?.produto ? (
+                <p className="text-[10px] leading-relaxed text-ink-faint">
+                  {copy.node.sceneProduct(governing.directive.produto)}
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <p className="mt-1 text-[10px] leading-relaxed text-ink-faint">
+              {nothingToDo
+                ? copy.node.emptyPromptAlone
+                : emptyScene
+                  ? copy.node.emptyPromptWithCharacter
+                  : copy.node.promptHint}
+            </p>
+          )}
+
+          {/* ── O fio de ficha esperando resposta ─────────────────────────
+
+              A pergunta da emenda de 18/08/2026, e ela só aparece quando há
+              texto a perder: prompt vazio ou idêntico ao da ficha é substituído
+              em silêncio, porque um aviso que aparece à toa é um aviso que se
+              aprende a fechar sem ler. */}
+          {pendingScene ? (
+            <div className="mt-1.5 rounded-lg border border-warning/40 bg-warning/10 px-2 py-1.5">
+              <p className="text-[10px] leading-relaxed text-ink">
+                {copy.node.sceneOverwrite(pendingScene.ordem)}
+              </p>
+              <div className="mt-1.5 flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={confirmSceneOverwrite}
+                  className="nodrag rounded-md bg-accent px-2 py-1 text-[10px] font-medium
+                             text-canvas transition-colors hover:bg-accent-hover"
+                >
+                  {copy.node.sceneOverwriteConfirm}
+                </button>
+                <button
+                  type="button"
+                  onClick={clearNotice}
+                  className="nodrag rounded-md border border-line px-2 py-1 text-[10px]
+                             text-ink-muted transition-colors hover:text-ink"
+                >
+                  {copy.node.sceneOverwriteCancel}
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           {/* ── O botão, e logo abaixo o que ele custa ─────────────────────
 

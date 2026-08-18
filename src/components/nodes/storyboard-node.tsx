@@ -1,12 +1,12 @@
 "use client";
 
-import { type Node, type NodeProps } from "@xyflow/react";
+import { Handle, Position, useReactFlow, type Node, type NodeProps } from "@xyflow/react";
 import { useCallback, useEffect, useState } from "react";
 
 import { NodeHeader } from "@/components/nodes/node-header";
 import { StoryboardSceneDialog } from "@/components/nodes/storyboard-scene-dialog";
 import { useTextCatalog } from "@/components/nodes/use-text-catalog";
-import { useCanvasStore } from "@/lib/canvas/store";
+import { sceneHandleId, useCanvasStore } from "@/lib/canvas/store";
 import { useEntitiesStore } from "@/lib/entities/store";
 import { useGenerationTick } from "@/lib/generation/generation-feed";
 import { t } from "@/lib/i18n/pt-BR";
@@ -19,6 +19,7 @@ import {
   type SceneRow,
 } from "@/lib/storyboard/actions";
 import { CANAL_KEYS, TETO_CENAS, type Canal } from "@/lib/storyboard/contract";
+import { buildSceneDirective } from "@/lib/storyboard/scene-prompt";
 import {
   requestStoryboard,
   type StoryboardGenerationFailure,
@@ -53,14 +54,15 @@ const copy = t.storyboardNode;
  * ---------------------------------------------------------------------------
  *
  * cabeçalho → configuração → o que se escreve → botão → **custo e saldo** →
- * resultado, em duas colunas. As duas ausências:
+ * resultado, em duas colunas. A ausência que ficou:
  *
  *   sem chave de inputs   um roteiro não recebe imagem. A chave que silencia
  *                         referências não teria o que silenciar.
- *   sem conector          o fio nasce na Fase 4, junto com a ponte que o usa.
- *                         Um conector que não liga a lugar nenhum é uma promessa
- *                         que o canvas não pode cumprir — a mesma regra que
- *                         mantém o ▸ fora da linha compacta até a Fase 4.
+ *
+ * O conector chegou na Fase 4, junto com a ponte que o usa — e não é do bloco: é
+ * **de cada linha do trilho**, com o número da cena no id. O fio sai da ficha, e
+ * é isso que diz qual cena rege qual imagem num roteiro de dez com três blocos
+ * pendurados.
  *
  * ---------------------------------------------------------------------------
  * Toda recusa possível é dita ANTES do clique
@@ -107,10 +109,26 @@ const SEGUNDOS_POR_CENA = 5;
  */
 const RITMO_LIMITE_SEGUNDOS = 45;
 
+/**
+ * O bloco Gerar Imagem, antes de a tela medi-lo — `w-[42rem]`, e uma altura
+ * plausível.
+ *
+ * Usados só para enquadrar o bloco que **acabou de nascer**: no instante do
+ * clique o React Flow ainda não o mediu, e esperar a medida para levar a tela até
+ * lá faria o salto acontecer um quadro depois do gesto. Um bloco já existente é
+ * enquadrado pela medida de verdade.
+ */
+const GENERATOR_NODE_WIDTH = 672;
+const GENERATOR_NODE_HEIGHT = 520;
+
 export function StoryboardNode({ id, data, selected }: NodeProps<StoryboardNodeType>) {
   const providers = useTextCatalog();
   const projectId = useCanvasStore((state) => state.projectId);
   const updateNodeData = useCanvasStore((state) => state.updateNodeData);
+  const publishScenes = useCanvasStore((state) => state.publishScenes);
+  const addSceneBlock = useCanvasStore((state) => state.addSceneBlock);
+  // Para levar a tela até o bloco que a ponte acabou de pôr no canvas.
+  const { setCenter, getZoom } = useReactFlow();
   const balance = useBalance((state) => state.sparks);
   const tick = useGenerationTick(id);
 
@@ -126,6 +144,14 @@ export function StoryboardNode({ id, data, selected }: NodeProps<StoryboardNodeT
   const [message, setMessage] = useState<string | null>(null);
   /** Qual ficha está aberta no overlay, pela ordem dela. */
   const [openScene, setOpenScene] = useState<number | null>(null);
+  /**
+   * O que a ponte acabou de fazer, quando o que ela fez foi **não criar nada**.
+   *
+   * Um clique que faz a coisa certa fora da vista é indistinguível de um clique
+   * que não fez nada — e a ponte, ao encontrar o bloco já de pé, apenas o
+   * destaca. Sem esta frase, clicar duas vezes no ▸ pareceria um botão quebrado.
+   */
+  const [bridgeNote, setBridgeNote] = useState<string | null>(null);
 
   // -------------------------------------------------------------------------
   // A pergunta, lida do node com os defaults aplicados aqui e não gravados
@@ -228,6 +254,21 @@ export function StoryboardNode({ id, data, selected }: NodeProps<StoryboardNodeT
   }, [reload, tick]);
 
   /**
+   * As fichas, publicadas no canvas — e o fio vivo correndo com elas.
+   *
+   * Uma chamada, dois efeitos: o canvas passa a saber o que cada cena manda (para
+   * o ▸ e para o religar), e todo bloco que uma delas rege é reescrito. O store
+   * não marca o projeto como sujo quando nada mudou, que é o que permite chamar
+   * isto na montagem sem que **abrir um projeto** vire uma alteração dele.
+   */
+  useEffect(() => {
+    publishScenes({
+      storyboardNodeId: id,
+      scenes: board ? board.cenas.map((cena) => buildSceneDirective(cena)) : [],
+    });
+  }, [board, id, publishScenes]);
+
+  /**
    * A biblioteca de CTA do canal **do roteiro gravado**, não do seletor.
    *
    * A diferença aparece no minuto em que alguém troca o canal na configuração
@@ -294,6 +335,33 @@ export function StoryboardNode({ id, data, selected }: NodeProps<StoryboardNodeT
 
     useBalance.getState().spend(result.sparksCharged);
     reload();
+  }
+
+  /**
+   * A ponte: esta cena, virando bloco — e a tela indo até ele.
+   *
+   * Os três desfechos moram no store, decididos por **contagem** e não por
+   * memória: sem bloco, nasce um; com bloco, ele é destacado e nada nasce; com o
+   * bloco apagado, a aresta já saiu junto e o clique cai no primeiro caso,
+   * recriando **só** o bloco. Aqui só resta enquadrar o resultado, porque um
+   * clique que faz a coisa certa fora da vista parece um clique que não fez nada.
+   */
+  function bridge(ordem: number) {
+    const result = addSceneBlock({ storyboardNodeId: id, ordem });
+
+    if (!result) return;
+
+    setBridgeNote(result.created ? null : copy.ponteExistente(ordem));
+
+    const block = useCanvasStore.getState().nodes.find((node) => node.id === result.id);
+
+    if (!block) return;
+
+    void setCenter(
+      block.position.x + (block.measured?.width ?? GENERATOR_NODE_WIDTH) / 2,
+      block.position.y + (block.measured?.height ?? GENERATOR_NODE_HEIGHT) / 2,
+      { zoom: Math.min(getZoom(), 0.75), duration: 400 },
+    );
   }
 
   const scene = board?.cenas.find((cena) => cena.ordem === openScene) ?? null;
@@ -608,9 +676,14 @@ export function StoryboardNode({ id, data, selected }: NodeProps<StoryboardNodeT
                     key={cena.ordem}
                     cena={cena}
                     onOpen={() => setOpenScene(cena.ordem)}
+                    onBridge={() => bridge(cena.ordem)}
                   />
                 ))}
               </ul>
+
+              {bridgeNote ? (
+                <p className="text-[10px] leading-relaxed text-ink-faint">{bridgeNote}</p>
+              ) : null}
             </div>
           ) : (
             <p className="rounded-lg border border-dashed border-line px-2 py-6 text-center text-[11px] leading-relaxed text-ink-faint">
@@ -620,7 +693,9 @@ export function StoryboardNode({ id, data, selected }: NodeProps<StoryboardNodeT
         </div>
       </div>
 
-      {/* Sem `<Handle>`: a ponte é a Fase 4, e o conector nasce com ela. */}
+      {/* O conector não é do bloco: é **de cada linha do trilho**, e mora no
+          `SceneRowItem`. O fio sai da cena, e num roteiro de dez fichas com três
+          blocos pendurados é isso que diz qual cena rege qual imagem. */}
 
       {scene && board && projectId ? (
         <StoryboardSceneDialog
@@ -642,25 +717,42 @@ export function StoryboardNode({ id, data, selected }: NodeProps<StoryboardNodeT
 }
 
 /**
- * Uma ficha, na linha compacta: `nº · início da ação · duração · ✂/⇥ · selo · ✎`.
+ * Uma ficha, na linha compacta:
+ * `nº · início da ação · duração · ✂/⇥ · selo · ✎ · ▸`.
  *
- * Seis campos e **uma** ação. O que não está aqui é tão deliberado quanto o que
- * está:
+ * Seis campos e **duas** ações — e a segunda nasceu aqui na Fase 4, junto com a
+ * função que ela executa. O ▸ ficou fora da Fase 3 de propósito: *um glifo que
+ * aparece antes de fazer alguma coisa ensina que os botões daqui às vezes não
+ * fazem nada.* Ele é o último da linha porque é o último gesto — ver a ficha,
+ * depois levá-la ao canvas —, e porque é de onde o fio sai.
+ *
+ * O que continua não estando aqui é tão deliberado quanto o que está:
  *
  *   sem "Regerar"   é o único gesto pago do trilho, a 5 ⚡. Dez botões de gastar
  *                   numa lista de dez linhas fazem da rolagem um campo minado, e
  *                   o gesto que custa dinheiro fica mais fácil que o que só olha.
  *                   Ele mora no overlay, onde custa um passo a mais — e esse
  *                   passo é a deliberação.
- *   sem ▸           a ponte para o bloco de imagem é a Fase 4. Botão sem função
- *                   não entra na tela: um glifo que aparece antes de fazer alguma
- *                   coisa ensina que os botões daqui às vezes não fazem nada.
+ *
+ * O ▸ **não** é pago, e é por isso que ele pode estar na lista: criar um bloco
+ * não gasta Spark nenhum. Quem gasta é o botão dentro do bloco, que continua
+ * pedindo um clique deliberado depois de a pessoa ler o preço.
  */
-function SceneRowItem({ cena, onOpen }: { cena: SceneRow; onOpen: () => void }) {
+function SceneRowItem({
+  cena,
+  onOpen,
+  onBridge,
+}: {
+  cena: SceneRow;
+  onOpen: () => void;
+  onBridge: () => void;
+}) {
   const continua = cena.transicao === "continuacao";
 
   return (
-    <li className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-1.5 py-1">
+    // `relative` por causa do Handle: sem um ancestral posicionado, os dez
+    // conectores do trilho se empilhariam todos no canto do node.
+    <li className="relative flex items-center gap-1.5 rounded-lg border border-line bg-surface px-1.5 py-1">
       <span className="w-3 shrink-0 text-center text-[10px] tabular-nums text-ink-faint">
         {cena.ordem}
       </span>
@@ -712,6 +804,34 @@ function SceneRowItem({ cena, onOpen }: { cena: SceneRow; onOpen: () => void }) 
           />
         </svg>
       </button>
+
+      {/* A ponte. Um clique, e a cena está no canvas como bloco de imagem. */}
+      <button
+        type="button"
+        onClick={onBridge}
+        title={copy.ponte}
+        aria-label={copy.ponteAria(cena.ordem)}
+        className="nodrag flex size-5 shrink-0 items-center justify-center rounded text-[11px]
+                   text-ink-faint transition-colors hover:bg-accent-soft hover:text-accent"
+      >
+        ▸
+      </button>
+
+      {/*
+        O conector desta cena.
+
+        `right` puxado para fora da linha para alcançar a borda do node: o `li`
+        termina 12px antes dela (o `p-3` do corpo do bloco), e um conector que
+        nascesse dentro do card pareceria decoração em vez de tomada.
+      */}
+      <Handle
+        type="source"
+        id={sceneHandleId(cena.ordem)}
+        position={Position.Right}
+        title={copy.ponteHandle}
+        style={{ right: -17 }}
+        className="!size-2 !border-2 !border-canvas !bg-accent"
+      />
     </li>
   );
 }

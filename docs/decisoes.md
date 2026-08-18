@@ -3623,3 +3623,73 @@ Duas consequências práticas, decididas junto:
 2. **O Ciclo 3 vira prioridade absoluta** na sequência, à frente de qualquer capacidade nova.
 
 **Por que isto está no diário e não numa lista de tarefas:** é a primeira vez que a régua de sucesso do produto deixa de ser "a peça funciona" e passa a ser "quantos passos custa chegar ao vídeo". Uma frente que não souber disso vai otimizar a coisa certa da maneira errada — acrescentando poder onde o que falta é **caminho curto**.
+
+### 18/08/2026 — Fase 4: a ponte manual, e a régua que ela move
+
+**A entrega em uma linha:** o ▸ na linha da ficha põe um bloco Gerar Imagem no canvas, pré-preenchido e ligado à cena por um fio vivo — e cortar o fio é **assumir** o prompt.
+
+#### A régua veio antes do desenho, e é o que justifica a fase
+
+Desde o sinal de 17/08 a pergunta do produto deixou de ser "a peça funciona" e passou a ser "quantos passos até o vídeo". Então a fase foi planejada contando os passos que ela **remove**, e não os que ela acrescenta.
+
+Da ficha pronta até a imagem, o caminho de ontem tinha **treze gestos**: abrir a ficha, selecionar a ação, copiar, fechar, clicar na prateleira, arrastar o bloco, digitar `@`, colar a ação, reabrir a ficha para ler o cenário, digitar o cenário, digitar o movimento, abrir "Ajustes de cena", traduzir `close_rosto` para "Close no rosto" de cabeça. Hoje são **dois**: ▸ e Gerar.
+
+E a diferença não está só no número: **cinco dos treze eram cópia entre duas telas**, que é onde o erro entra — um cenário lembrado errado é uma imagem paga errada. A ponte não deixa a informação passar por mão nenhuma.
+
+**E ela não acrescenta passo a quem não usa Roteiro.** O ▸ só existe na linha de uma ficha; um bloco que não é regido por ficha continua exatamente como era.
+
+#### A corrente mora na aresta, e é isso que faz o corte existir
+
+`storyboard --(sourceHandle: "cena-3")--> generator`, e **nenhuma cópia no `data` do bloco**.
+
+O bloco de vídeo guarda `sourceNodeId` porque precisa dizer *de qual card* veio o still quando a mesma foto chega por dois caminhos. Aqui essa ambiguidade não existe — a aresta já carrega as duas pontas e o número da cena, no campo que o grafo salvo **já persistia**. Uma segunda cópia só existiria para poder discordar da primeira.
+
+O dividendo é o gesto que dá nome à fase: **cortar o fio não precisa limpar nada.** O texto continua onde estava, e passa a ser de quem cortou. Nenhuma linha de código precisou combinar essas duas coisas — zero migration, zero campo novo.
+
+#### O campo travado, e por que não "editável com aviso"
+
+Enquanto a ficha rege, o prompt é somente-leitura, com *Assumir o prompt* ao lado. A alternativa — deixar editar e avisar — daria ao produto as duas coisas ao mesmo tempo: um gesto de assumir **e** um jeito de perder o que se escreveu sem nunca ter usado, porque a próxima edição da ficha passaria por cima. Um campo travado com o destravador ao lado ensina o gesto na primeira vez que alguém tenta digitar.
+
+Consequência que o `readOnly` obrigou a fechar: **a lista de sugestões de `@` também cala**. Ela existe para *escrever* uma menção, e aceitar uma sugestão num campo travado seria a única porta pela qual ele ainda podia ser alterado.
+
+#### A emenda do Jorge: religar confirma quando há texto a perder
+
+Aprovada com emenda no mesmo dia. Três casos, e só um pergunta:
+
+| o prompt do bloco | o que acontece |
+|---|---|
+| vazio | substitui **em silêncio** — não há nada a perder |
+| igual ao que a ficha compila | substitui **em silêncio** — não muda um caractere |
+| não-vazio e diferente | **pergunta**, nomeando a cena: *"O prompt escrito à mão será substituído pelo da Cena 1."* |
+
+**A pergunta acontece antes de a aresta existir**, e é isso que a mantém honesta: *Cancelar* devolve o canvas exatamente como estava, porque o documento ainda não tinha mudado. É a mesma doutrina de "gerar por cima" do bloco de Roteiro — substituir com confirmação, **contando a perda**.
+
+E a confirmação é do **religar**, nunca do fio vivo. Enquanto o fio existe o campo está travado, então a única divergência possível é a ficha ter mudado — que é precisamente o trabalho do fio vivo. Um sync que perguntasse transformaria a regência no questionário que o "corte para assumir" existe para não ser.
+
+#### O enquadramento provou uma decisão de três dias antes
+
+`storyboard_scenes.enquadramento` reusa `ENQUADRAMENTO_KEYS`, que é a §5.27 do character sheet copiada verbatim — decisão de 15/08, tomada por "onde já existe vocabulário fechado não se inventa vocabulário paralelo". A cobrança chegou aqui: a passagem da ficha para o bloco é **`data.anguloKey = cena.enquadramento`**, atribuição direta. Uma segunda lista teria virado uma função de conversão com oito casos e um `default` — e o `default` de uma tabela de tradução é sempre por onde ela erra.
+
+#### A prova, e a parte dela que não é print
+
+Os três ramos do ▸ são afirmações sobre **números**, e um print de um canvas com um bloco não distingue "não criou o segundo" de "criou o segundo fora da tela". Por isso a fase tem duas metades de prova:
+
+**Estrutural** — o store de verdade rodando fora do React, 49 verificações, todas passando: a fórmula do prompt (com movimento vazio, personagem nulo, handle impossível e enquadramento desconhecido), os três ramos por contagem, o fio vivo, a guarda do "só escreve se mudou", o corte, o religar nos dois sentidos, o Cancelar e o Substituir, e o fio apontando para uma cena que não existe mais.
+
+**Ao vivo** — 13 arquivos de evidência, **zero Spark**: `generations` 61, `ledger_transactions` 47 e saldo 6.700 ⚡ idênticos do primeiro ao último print. Com dois controles negativos: religar sobre prompt idêntico **não** pergunta nada, e Cancelar não muda um caractere.
+
+E o retrato do grafo fechou: 22 nodes e 19 arestas antes, 22 e 19 depois, com zero arestas de cena restantes.
+
+#### Uma nota de método, e ela custou uma hora
+
+O bloco criado pelo ▸ apareceu **invisível**, e o canvas inteiro parou de desenhar arestas. Passei a investigar como defeito da ponte — li o bundle do React Flow, instrumentei renders, contei requisições no servidor.
+
+Não era defeito nenhum. **A aba do Chrome estava em background**, e sem layout o `ResizeObserver` não dispara: o React Flow não mede os nodes, os mantém em `visibility: hidden` e **não desenha aresta nenhuma** enquanto houver node não medido. Rodar JS na aba (que a ativa) fez os 23 nodes e as 17 arestas aparecerem de uma vez.
+
+Registrado porque a conclusão errada estava a um passo — eu ia "consertar" o `publishScenes` — e porque isso amplia uma limitação que já estava no diário desde 15/08 em versão mais estreita: *o navegador não decodifica vídeo em aba escondida*. A versão larga é **nenhuma validação de canvas vale em aba escondida**, e o instrumento que resolve é o `browser_batch`: JS e screenshot na mesma chamada mantêm a aba ativa entre os dois.
+
+O que salvou foi a regra de sempre: **medir com JS antes de consertar**. O print dizia "quebrado"; a medição disse `visibilityState: "hidden"`.
+
+#### O ciclo fecha aqui
+
+Cinco fases, 4 migrations, 6 commits. **30 ⚡ gastos em roteiro** no total (as duas gerações do fechamento da Fase 3), com custo real de 6 centavos — margem confirmada por baixo nas duas. O Ciclo 3 (A Máquina) é a próxima prioridade, e o teste dele é o mesmo julgamento humano: se depois dele o fluxo ainda parecer longo, o desenho volta à mesa.
