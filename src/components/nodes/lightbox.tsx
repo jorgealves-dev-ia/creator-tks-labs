@@ -66,7 +66,10 @@ function LightboxView({ assetId, isVideo }: { assetId: string; isVideo: boolean 
     let cancelled = false;
 
     void signAssetUrls([assetId]).then((signed) => {
-      if (!cancelled) setUrl(signed[assetId] ?? null);
+      // `full`, e nunca `thumb`: esta é a tela do zoom. A grade atrás dela
+      // mostra 20 kB para caber na página; quem clicou pediu a imagem inteira,
+      // e é aqui que a faxina de egress **não** se aplica.
+      if (!cancelled) setUrl(signed[assetId]?.full ?? null);
     });
 
     return () => {

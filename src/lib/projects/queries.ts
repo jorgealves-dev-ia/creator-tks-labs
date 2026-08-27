@@ -1,3 +1,4 @@
+import { signWithThumbnails } from "@/lib/assets/signing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /** Os links do Storage são privados e de vida curta, como em todo o resto do app. */
@@ -194,21 +195,19 @@ async function signCovers(
 
   if (!assets || assets.length === 0) return new Map();
 
-  const { data: signed } = await supabase.storage
-    .from("assets")
-    .createSignedUrls(
-      assets.map((asset) => asset.storage_path),
-      SIGNED_URL_TTL_SECONDS,
-    );
-
-  const urlByPath = new Map((signed ?? []).map((entry) => [entry.path, entry.signedUrl]));
+  // Capa de cartão é miniatura: ninguém amplia a capa, ela leva ao projeto.
+  const signed = await signWithThumbnails(
+    supabase,
+    assets.map((asset) => asset.storage_path),
+    SIGNED_URL_TTL_SECONDS,
+  );
 
   // Uma capa que sumiu do Storage simplesmente não vira URL, e o cartão cai no
   // estado vazio — que é uma tela honesta, e não uma moldura quebrada.
   return new Map(
     assets.flatMap((asset) => {
-      const url = urlByPath.get(asset.storage_path);
-      return url ? [[asset.id, url] as const] : [];
+      const pair = signed.get(asset.storage_path);
+      return pair ? [[asset.id, pair.thumb] as const] : [];
     }),
   );
 }

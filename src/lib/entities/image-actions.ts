@@ -7,6 +7,7 @@ import {
   TODOS_SLOTS_CANONICOS,
   type ImagemCanonicaSlot,
 } from "@/lib/character-sheet/dictionary";
+import { signWithThumbnails } from "@/lib/assets/signing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
@@ -125,15 +126,14 @@ export async function attachCanonicalImage(input: unknown): Promise<AttachImageR
     return { ok: false, reason: "error" };
   }
 
-  const { data: signed } = await supabase.storage
-    .from("assets")
-    .createSignedUrl(parsed.data.storagePath, SIGNED_URL_TTL_SECONDS);
+  const signed = await signWithThumbnails(supabase, [parsed.data.storagePath], SIGNED_URL_TTL_SECONDS);
+  const pair = signed.get(parsed.data.storagePath);
 
-  if (!signed) {
+  if (!pair) {
     return { ok: false, reason: "error" };
   }
 
-  return { ok: true, image: { assetId: asset.id, url: signed.signedUrl } };
+  return { ok: true, image: { assetId: asset.id, url: pair.thumb } };
 }
 
 /**
@@ -158,17 +158,12 @@ export async function loadCanonicalImageUrls(input: unknown): Promise<CanonicalI
 
   if (paths.length === 0) return [];
 
-  const { data: signed } = await supabase.storage
-    .from("assets")
-    .createSignedUrls(
-      paths.map((row) => row.path),
-      SIGNED_URL_TTL_SECONDS,
-    );
-
-  const urlByPath = new Map((signed ?? []).map((entry) => [entry.path, entry.signedUrl]));
+  // A coluna do editor mostra estas o tempo todo, em quadro pequeno: miniatura.
+  // Ampliar é assunto do Lightbox, que reassina por id.
+  const signed = await signWithThumbnails(supabase, paths.map((row) => row.path), SIGNED_URL_TTL_SECONDS);
 
   return paths
-    .map((row) => ({ assetId: row.assetId, url: urlByPath.get(row.path) ?? null }))
+    .map((row) => ({ assetId: row.assetId, url: signed.get(row.path)?.thumb ?? null }))
     .filter((image): image is CanonicalImage => image.url !== null);
 }
 

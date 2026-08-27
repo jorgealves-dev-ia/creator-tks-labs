@@ -7,6 +7,7 @@ import {
   structureSchema,
   type StoredPromptStructure,
 } from "@/lib/generation/prompt-structure";
+import { signWithThumbnails } from "@/lib/assets/signing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
@@ -272,19 +273,18 @@ export async function listNodeVideos(input: unknown): Promise<VideoJobRow[]> {
       .select("id, storage_path")
       .in("id", assetIds);
 
-    const { data: signed } = await supabase.storage
-      .from("assets")
-      .createSignedUrls(
-        (assets ?? []).map((asset) => asset.storage_path),
-        SIGNED_URL_TTL_SECONDS,
-      );
-
-    const urlByPath = new Map((signed ?? []).map((entry) => [entry.path, entry.signedUrl]));
+    // A faixa do node desenha pequeno: miniatura. Vídeo não tem miniatura, e
+    // por isso `thumb` cai no original sozinho — mudo, e não ausente.
+    const signed = await signWithThumbnails(
+      supabase,
+      (assets ?? []).map((asset) => asset.storage_path),
+      SIGNED_URL_TTL_SECONDS,
+    );
 
     for (const asset of assets ?? []) {
-      const url = urlByPath.get(asset.storage_path);
+      const pair = signed.get(asset.storage_path);
 
-      if (url) urlByAsset.set(asset.id, url);
+      if (pair) urlByAsset.set(asset.id, pair.thumb);
     }
   }
 
@@ -594,19 +594,17 @@ async function withSignedUrls(
 
   if (!assets || assets.length === 0) return [];
 
-  const { data: signed } = await supabase.storage
-    .from("assets")
-    .createSignedUrls(
-      assets.map((asset) => asset.storage_path),
-      SIGNED_URL_TTL_SECONDS,
-    );
-
-  const urlByPath = new Map((signed ?? []).map((entry) => [entry.path, entry.signedUrl]));
+  // Grade e faixa: miniatura. Quem amplia é o Lightbox, que reassina por id.
+  const signed = await signWithThumbnails(
+    supabase,
+    assets.map((asset) => asset.storage_path),
+    SIGNED_URL_TTL_SECONDS,
+  );
   const assetById = new Map(assets.map((asset) => [asset.id, asset]));
 
   return rows.flatMap((row) => {
     const asset = row.result_asset_id ? assetById.get(row.result_asset_id) : undefined;
-    const url = asset ? urlByPath.get(asset.storage_path) : undefined;
+    const url = asset ? signed.get(asset.storage_path)?.thumb : undefined;
 
     // Uma imagem que sumiu do Storage simplesmente não entra na faixa. Nada a
     // explicar: a miniatura existe para ser clicada, e essa não pode ser.

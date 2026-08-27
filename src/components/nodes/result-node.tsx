@@ -56,7 +56,7 @@ export function ResultNode({ id, data, selected }: NodeProps<ResultNodeType>) {
     void signAssetUrls([assetId]).then((urls) => {
       if (cancelled) return;
 
-      setUrl(urls[assetId] ?? null);
+      setUrl(urls[assetId]?.thumb ?? null);
       setLoading(false);
     });
 

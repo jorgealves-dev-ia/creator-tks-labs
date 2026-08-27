@@ -68,7 +68,8 @@ export function InputImageNode({ id, data, selected }: NodeProps<InputImageNodeT
     let cancelled = false;
 
     void signAssetUrls([assetId]).then((urls) => {
-      const link = urls[assetId];
+      // O card desenha pequeno: miniatura. Ampliar é o Lightbox, que reassina.
+      const link = urls[assetId]?.thumb;
 
       if (!cancelled && link) setSigned({ assetId, url: link });
     });

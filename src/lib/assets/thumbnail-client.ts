@@ -51,7 +51,7 @@ export type ClientThumbnail = {
   source: { width: number; height: number };
 };
 
-export async function deriveThumbnailInBrowser(file: File): Promise<ClientThumbnail | null> {
+export async function deriveThumbnailInBrowser(file: Blob): Promise<ClientThumbnail | null> {
   let bitmap: ImageBitmap | null = null;
 
   try {
@@ -106,7 +106,7 @@ export async function deriveThumbnailInBrowser(file: File): Promise<ClientThumbn
  */
 export async function storeThumbnailInBrowser(
   originalPath: string,
-  file: File,
+  file: Blob,
 ): Promise<{ width: number; height: number } | null> {
   const derived = await deriveThumbnailInBrowser(file);
 

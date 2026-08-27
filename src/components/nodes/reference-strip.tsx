@@ -194,7 +194,16 @@ export function ReferenceStrip({
     let cancelled = false;
 
     void signAssetUrls(assetIds).then((signed) => {
-      if (!cancelled) setUrls((current) => ({ ...current, ...signed }));
+      if (cancelled) return;
+
+      // A faixa é espelho, em quadros de poucas dezenas de pixels. O que viaja
+      // para o provedor não é isto: o servidor baixa o original por
+      // `storage_path` na hora de gerar (`asset-payloads.ts`).
+      const thumbs = Object.fromEntries(
+        Object.entries(signed).map(([id, pair]) => [id, pair.thumb]),
+      );
+
+      setUrls((current) => ({ ...current, ...thumbs }));
     });
 
     return () => {

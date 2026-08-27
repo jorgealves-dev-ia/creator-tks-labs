@@ -79,10 +79,11 @@ export function useCharacterPortraits(): Record<string, string> {
     void signAssetUrls(pairs.map(([, assetId]) => assetId)).then((signed) => {
       if (cancelled) return;
 
+      // Retrato de personagem: um quadradinho ao lado do nome. Miniatura.
       setUrls(
         Object.fromEntries(
           pairs
-            .map(([id, assetId]) => [id, signed[assetId]] as const)
+            .map(([id, assetId]) => [id, signed[assetId]?.thumb] as const)
             .filter((entry): entry is readonly [string, string] => typeof entry[1] === "string"),
         ),
       );

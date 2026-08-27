@@ -155,7 +155,7 @@ mudança nos originais, e qualquer coisa que acrescente passo ao fluxo.
 |---|---|---|
 | **0** | A régua: medir antes de mexer, e responder as três perguntas em aberto | ✅ **fechada — 27/08/2026** (§0.5) |
 | **1** | A miniatura nasce — e o acervo ganha as suas | ✅ **fechada — 27/08/2026** (§1.7) |
-| **2** | A tela lê a miniatura — o corte de 97% aparece | ⬜ não iniciada |
+| **2** | A tela lê a miniatura — o corte de 97% aparece | ✅ **fechada — 27/08/2026** (§2.3) |
 | **3** | A URL estável e o cache imutável, que só funcionam juntos | ⬜ não iniciada — **confirmada pela 0.1** |
 | **4** | A prova consolidada e o fechamento | ⬜ não iniciada |
 | **5** | **A assinatura em lote no canvas** — 66 chamadas em fila, 13,17 s | ✅ **aprovada em 27/08/2026, entra no ciclo** |
@@ -497,12 +497,46 @@ resposta, não num `try`.**
 O `Lightbox` e o `signAssetDownload` **não mudam** — eles são o lado do original,
 e o requisito 1 é justamente que eles continuem sendo.
 
-### Prova da Fase 2
+### 2.3 O que a Fase 2 entregou — fechada em 27/08/2026 ✅
 
-O número do briefing: a mesma visita da Fase 0.2, com o mesmo instrumento,
-mostrando **MB transferidos antes e depois** e o tempo de pintura. Mais o print do
-lightbox exibindo o original em resolução cheia sobre uma grade de miniaturas — as
-duas metades do requisito 1 numa tela só.
+Números completos em `scratchpad/evidencias/egress-fase2/numeros-fase2.md`.
+**Zero Spark, zero linha em `generations`, zero lançamento no ledger.**
+
+**Os mesmos 21 arquivos que a Fase 0 mediu:**
+
+| | bytes | |
+|---|---|---|
+| antes (originais) | 23.101.806 | **22,03 MB** |
+| depois (miniaturas) | 479.392 | **468 kB** |
+| | | **corte de 97,92%** — 48× menos |
+
+O plano prometia ~97%. Entregou **97,92%**.
+
+**O que a tela de fato pediu:** galeria 21 miniaturas e **zero** `.jpg`
+original; canvas 24 miniaturas e **zero** `.jpg` original; **zero imagens
+quebradas** nas duas. As não-miniaturas são todas `.mp4` — os 3 vídeos, que não
+têm miniatura.
+
+**Tempo, como ilustração e não como régua** (o método do diário: bytes são a
+invariante, a banda não é): janela de download 1,74 s → **0,76 s**; mediana por
+imagem 1.164 ms → **170 ms**.
+
+**Requisito 1, as duas metades numa tela só:** com o Lightbox aberto sobre a
+grade, o zoom pede **o original `.jpg` em 2752×1536** e a grade atrás pede
+miniatura em 412×512.
+
+**A varredura que importava** — nenhuma URL de exibição vazou para caminho de
+geração paga:
+
+| caminho | lê | |
+|---|---|---|
+| referências que vão ao provedor (`asset-payloads.ts`) | `download(storage_path)` no servidor | ✅ intocado |
+| download do usuário (`signAssetDownload`) | `createSignedUrl(storage_path)` | ✅ intocado |
+| extração do último quadro | `.full`, explícito | ✅ matéria-prima, não miniatura |
+
+**O que ela não consertou, e já se sabia:** o canvas continua em **15,24 s** com
+as **66 Server Actions em fila**. Miniatura corta bytes; o gargalo do canvas é
+contagem de idas. É a Fase 5.
 
 ---
 

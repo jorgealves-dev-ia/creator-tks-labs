@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { NodeHeader } from "@/components/nodes/node-header";
 import { useVideoCatalog } from "@/components/nodes/use-video-catalog";
 import { findDerivedFrame, registerDerivedFrame, signAssetUrls } from "@/lib/assets/actions";
+import { storeThumbnailInBrowser } from "@/lib/assets/thumbnail-client";
 import { extractLastFrame, type LastFrameFailure } from "@/lib/assets/last-frame";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { useGenerationTick } from "@/lib/generation/generation-feed";
@@ -169,7 +170,7 @@ export function VideoGeneratorNode({ id, data, selected }: NodeProps<VideoGenera
     let cancelled = false;
 
     void signAssetUrls([sourceAssetId]).then((urls) => {
-      const url = urls[sourceAssetId];
+      const url = urls[sourceAssetId]?.thumb;
 
       if (!cancelled && url) setSignedStill({ assetId: sourceAssetId, url });
     });
@@ -274,7 +275,10 @@ export function VideoGeneratorNode({ id, data, selected }: NodeProps<VideoGenera
     if (!frameAssetId) {
       // 1. Link fresco, sempre.
       const urls = await signAssetUrls([featured.assetId]);
-      const fresh = urls[featured.assetId];
+      // `full`, e a distinção aqui vale dinheiro: estes pixels viram o primeiro
+      // quadro do próximo clipe, numa geração paga. Miniatura é para olhar;
+      // isto é matéria-prima.
+      const fresh = urls[featured.assetId]?.full;
 
       if (!fresh) return fail("expired_link");
 
@@ -299,6 +303,11 @@ export function VideoGeneratorNode({ id, data, selected }: NodeProps<VideoGenera
         .upload(storagePath, read.frame.blob, { contentType: "image/png", upsert: true });
 
       if (uploadError) return fail("upload");
+
+      // 3b. A miniatura do quadro. Ele é um PNG de ~1,2 MB que vira card no
+      //     canvas — mesma regra de todo o resto, e best-effort como todo o
+      //     resto: falhar aqui não pode custar o quadro que já está no Storage.
+      await storeThumbnailInBrowser(storagePath, read.frame.blob);
 
       // 4. A escrituração, com a linhagem.
       const registered = await registerDerivedFrame({

@@ -67,7 +67,13 @@ export function InputProductNode({ id, data, selected }: NodeProps<InputProductN
     let cancelled = false;
 
     void signAssetUrls(ids).then((signed) => {
-      if (!cancelled) setUrls((current) => ({ ...current, ...signed }));
+      if (cancelled) return;
+
+      const thumbs = Object.fromEntries(
+        Object.entries(signed).map(([id, pair]) => [id, pair.thumb]),
+      );
+
+      setUrls((current) => ({ ...current, ...thumbs }));
     });
 
     return () => {

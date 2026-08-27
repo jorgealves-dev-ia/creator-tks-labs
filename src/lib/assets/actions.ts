@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+import { signWithThumbnails, type SignedAsset } from "./signing";
 import { isThumbnailPath } from "./thumbnail-path";
 
 /**
@@ -29,7 +30,14 @@ const GALLERY_PAGE_SIZE = 24;
 
 const schema = z.array(z.uuid()).max(MAX_IDS);
 
-export type SignedAssetUrls = Record<string, string>;
+/**
+ * Os dois endereços de cada arquivo, por id de asset.
+ *
+ * **Grade, faixa e card leem `thumb`; clique, zoom e download leem `full`** — a
+ * regra da faxina de egress, e o porquê de `thumb` nunca ser nulo está em
+ * `signing.ts`.
+ */
+export type SignedAssetUrls = Record<string, SignedAsset>;
 
 export async function signAssetUrls(input: unknown): Promise<SignedAssetUrls> {
   const parsed = schema.safeParse(input);
@@ -54,19 +62,18 @@ export async function signAssetUrls(input: unknown): Promise<SignedAssetUrls> {
     return {};
   }
 
-  const { data: signed } = await supabase.storage
-    .from("assets")
-    .createSignedUrls(
-      assets.map((asset) => asset.storage_path),
-      SIGNED_URL_TTL_SECONDS,
-    );
-
-  const urlByPath = new Map((signed ?? []).map((entry) => [entry.path, entry.signedUrl]));
+  const signed = await signWithThumbnails(
+    supabase,
+    assets.map((asset) => asset.storage_path),
+    SIGNED_URL_TTL_SECONDS,
+  );
 
   return Object.fromEntries(
-    assets
-      .map((asset) => [asset.id, urlByPath.get(asset.storage_path)] as const)
-      .filter((entry): entry is readonly [string, string] => typeof entry[1] === "string"),
+    assets.flatMap((asset) => {
+      const pair = signed.get(asset.storage_path);
+
+      return pair ? [[asset.id, pair] as const] : [];
+    }),
   );
 }
 
@@ -171,20 +178,19 @@ export async function listGalleryAssets(input: unknown): Promise<GalleryPage> {
   const hasMore = rows.length > GALLERY_PAGE_SIZE;
   const page = hasMore ? rows.slice(0, GALLERY_PAGE_SIZE) : rows;
 
-  const { data: signed } = await supabase.storage
-    .from("assets")
-    .createSignedUrls(
-      page.map((row) => row.storage_path),
-      SIGNED_URL_TTL_SECONDS,
-    );
-
-  const urlByPath = new Map((signed ?? []).map((entry) => [entry.path, entry.signedUrl]));
+  // A grade desenha em ~173 px: o que viaja aqui é a miniatura. O original é
+  // assunto de quem amplia, e o Lightbox reassina por id quando isso acontece.
+  const signed = await signWithThumbnails(
+    supabase,
+    page.map((row) => row.storage_path),
+    SIGNED_URL_TTL_SECONDS,
+  );
 
   return {
     items: page
       .map((row) => ({
         assetId: row.id,
-        url: urlByPath.get(row.storage_path) ?? null,
+        url: signed.get(row.storage_path)?.thumb ?? null,
         label: row.label,
         source: row.source,
         createdAt: row.created_at,
@@ -272,11 +278,11 @@ export async function registerUploadedAsset(input: unknown): Promise<RegisterAss
     return { ok: false, reason: "error" };
   }
 
-  const { data: signed } = await supabase.storage
-    .from("assets")
-    .createSignedUrl(parsed.data.storagePath, SIGNED_URL_TTL_SECONDS);
+  // O que volta daqui vai direto para a grade do seletor, em ~173 px: miniatura.
+  const signed = await signWithThumbnails(supabase, [parsed.data.storagePath], SIGNED_URL_TTL_SECONDS);
+  const pair = signed.get(parsed.data.storagePath);
 
-  if (!signed) {
+  if (!pair) {
     return { ok: false, reason: "error" };
   }
 
@@ -284,7 +290,7 @@ export async function registerUploadedAsset(input: unknown): Promise<RegisterAss
     ok: true,
     item: {
       assetId: asset.id,
-      url: signed.signedUrl,
+      url: pair.thumb,
       label: asset.label,
       source: asset.source,
       createdAt: asset.created_at,
@@ -477,13 +483,12 @@ async function signFrame(
   row: { id: string; label: string | null; storage_path: string },
   created: boolean,
 ): Promise<RegisterFrameResult> {
-  const { data: signed } = await supabase.storage
-    .from("assets")
-    .createSignedUrl(row.storage_path, SIGNED_URL_TTL_SECONDS);
+  const signed = await signWithThumbnails(supabase, [row.storage_path], SIGNED_URL_TTL_SECONDS);
+  const pair = signed.get(row.storage_path);
 
-  if (!signed) return { ok: false, reason: "error" };
+  if (!pair) return { ok: false, reason: "error" };
 
-  return { ok: true, assetId: row.id, url: signed.signedUrl, label: row.label, created };
+  return { ok: true, assetId: row.id, url: pair.thumb, label: row.label, created };
 }
 
 /**

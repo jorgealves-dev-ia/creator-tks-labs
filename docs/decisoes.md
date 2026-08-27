@@ -3913,3 +3913,46 @@ A regra: **quando o caminho certo e o caminho errado produzem a mesma tela, só 
 O item era do briefing do dono, e **a Fase 0 o desautorizou**: o `moov` destes MP4 está no início do arquivo e pesa ~5,6 kB, então o `preload="metadata"` que a grade já usa puxa quase nada. O pôster custaria um caminho de upload oportunista, com tratamento de aba escondida (a limitação já documentada em 15/08), para economizar quilobytes.
 
 Fica registrado com esta forma porque a forma importa: **não foi cortado por escopo, foi cortado por número.** Ninguém decidiu que era muito trabalho — a medição mostrou que o ganho não existia. **O briefing propõe, a medição dispõe**, e um item que sobrevive a essa ordem vale mais do que um que nunca foi testado contra ela.
+
+### 27/08/2026 — Fase 2 · a tela lê a miniatura: 97,92% a menos, e visualmente a mesma tela
+
+**O número, nos mesmos 21 arquivos que a Fase 0 mediu:** 23.101.806 bytes viraram 479.392. **22,03 MB → 468 kB, corte de 97,92%** — 48× menos. O plano prometia ~97%.
+
+**O que a tela de fato pediu**, que é a prova de que a troca é completa e não parcial: galeria **21 miniaturas e zero `.jpg` original**; canvas **24 miniaturas e zero `.jpg` original**; **zero imagens quebradas** nas duas. As não-miniaturas são todas `.mp4`.
+
+**Requisito 1, as duas metades numa tela só:** com o Lightbox aberto sobre a grade, o zoom pede **o original em 2752×1536** e a grade atrás pede miniatura em 412×512. A mesma tela prova o corte e a inviolabilidade.
+
+**O tempo entrou como ilustração, não como régua** — pelo método registrado hoje: janela de download 1,74 s → 0,76 s, mediana por imagem 1.164 ms → 170 ms. São números da conexão desta hora; os bytes são do produto.
+
+#### A forma da resposta é o que torna o requisito 3 estrutural
+
+`signWithThumbnails` devolve `{ full, thumb }` e **`thumb` nunca é nulo**: sem miniatura, vem o endereço do original. O requisito *"miniatura que falha não bloqueia nada"* deixou de ser um `if` que cinco telas precisariam lembrar de escrever e virou **propriedade da forma da resposta**. A tela pinta a mesma imagem; só o peso muda.
+
+E custa **zero requisição a mais**: `createSignedUrls` responde por caminho, então original e miniatura saem na mesma viagem. Foi isso que dispensou a coluna `has_thumbnail` — **o Storage é a autoridade sobre o que está no Storage**, e um booleano no banco só poderia discordar dele. É a mesma família de decisão do `derived_from_asset_id`: *o dado identifica, nunca o rótulo*.
+
+#### A varredura que era o risco real da fase
+
+O perigo desta fase nunca foi a tela ficar feia — era **uma URL de exibição vazar para um caminho que alimenta geração paga**, e degradar silenciosamente a qualidade do que o usuário compra. Conferido um a um:
+
+| caminho | lê | |
+|---|---|---|
+| referências que vão ao provedor (`asset-payloads.ts`) | `download(storage_path)`, no servidor | intocado — nunca passou por `signAssetUrls` |
+| download do usuário (`signAssetDownload`) | `createSignedUrl(storage_path)` | intocado |
+| extração do último quadro | `.full`, explícito no código | matéria-prima, não miniatura |
+| grade, faixa, cards, capas, retratos | `.thumb` | miniatura |
+
+A distinção que vale dinheiro está comentada no ponto exato onde alguém poderia trocá-la: *"estes pixels viram o primeiro quadro do próximo clipe, numa geração paga. Miniatura é para olhar; isto é matéria-prima."*
+
+**E a Fase 2 não consertou o canvas, como já se sabia:** ele continua em 15,24 s com as **66 Server Actions em fila**. Miniatura corta bytes; o gargalo de lá é contagem de idas ao servidor. É a Fase 5 — e o fato de a Fase 2 **não** tê-lo melhorado é a confirmação independente do diagnóstico da Fase 0.3.
+
+### 27/08/2026 — Três registros que a Fase 2 promoveu a método
+
+**Exibição e matéria-prima são dois mundos, e não pode haver ponte acidental.** Vira invariante nomeada:
+
+> **O que vai ao provedor lê `storage_path` no servidor. O que vai à tela lê a assinatura de exibição.**
+
+Os dois caminhos nunca se cruzam, e a varredura da Fase 2 é o **retrato de nascimento** dessa regra — a lista de qual caminho lê o quê, feita no dia em que a distinção passou a existir. O risco que ela fecha é o mais caro que este produto tem: uma miniatura de 20 kB entrando como referência de identidade numa geração paga degradaria o rosto que o usuário comprou, **sem erro, sem log e sem tela quebrada**. A regra existe para que ninguém precise reconstruir esse raciocínio no dia em que acrescentar a sexta tela.
+
+**Quando cinco telas precisariam lembrar de um `if`, mova o `if` para a forma do dado.** `thumb` nunca é nulo: sem miniatura, vem o original. O requisito *"miniatura que falha não bloqueia nada"* deixou de depender de disciplina distribuída e virou **propriedade da resposta** — não há como uma tela esquecer de tratar um caso que não existe no tipo. É a mesma família do `mudo ≠ ausente` e do `o dado identifica, nunca o rótulo`: **a forma carrega a regra, o chamador não precisa saber dela.**
+
+**O canvas inalterado é prova, não pendência.** A Fase 2 cortou 97,92% dos bytes e o canvas continuou em 15,24 s. Isso não é uma falha da Fase 2 — é a **confirmação independente** do diagnóstico da Fase 0.3: se o gargalo de lá fosse peso, ele teria caído junto; como é **contagem de idas ao servidor**, não caiu. Duas medições separadas, tomadas por motivos diferentes, concordando sobre a causa. Fica registrado como evidência a favor do diagnóstico, e não como item novo de dívida.
