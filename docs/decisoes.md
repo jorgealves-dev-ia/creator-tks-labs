@@ -3800,3 +3800,58 @@ Não é uma desculpa, é uma propriedade do instrumento, e ela tem consequência
 **Dois produtores, porque é o desenho que gasta menos.** A miniatura é feita **onde os bytes já estão**: no servidor com `sharp` para a imagem gerada (o servidor já tem os bytes para subir o original), e no navegador com canvas para a enviada (o arquivo vai do navegador direto ao bucket, sem passar pelo servidor). Um produtor só custaria um download em um dos dois casos. Não é repetição — é a única divisão que não paga egress para economizar egress.
 
 **`sharp` declarado.** Já estava em `node_modules` como `optionalDependency` do `next@16.3.0`, então declarar **não baixa um byte novo**. Mas depender de um pacote que só existe por ser opcional de outro é frágil: um `npm i --no-optional` derrubaria a geração de miniaturas sem aviso. Declarar é formalizar o que já está no disco.
+
+### 27/08/2026 — Fase 0 · a medição achou uma segunda doença, e corrigiu duas coisas que eu tinha afirmado
+
+**A pergunta 0.1, respondida por dentro do token.** 24 caminhos comparados entre duas visitas à galeria: **24 tokens diferentes, nenhum igual**. O payload decodificado é `{url, scope, iat, exp}`, com `exp − iat = 3600`. O `iat` é o relógio do servidor no instante da assinatura — **é ele que torna a URL irrepetível**, e portanto o cache inconsultável. A Fase 3 fica de pé como escrita.
+
+**As duas doenças são diferentes, e essa é a descoberta da fase.**
+
+| | galeria | canvas |
+|---|---|---|
+| sintoma | 22 MB por visita | 16,5 s até a última imagem |
+| causa | **banda** — 20 de 20 requisições sobrepostas | **fila** — 66 Server Actions serializadas |
+| prova | mediana de 1.164 ms por imagem, em paralelo | soma 13,03 s ÷ janela 13,17 s = **razão 1,01** |
+| conserto | a miniatura | assinar em lote |
+
+Razão 1,01 é fila perfeita: se as 66 chamadas fossem paralelas, a janela seria ≈ a maior delas (~300 ms); sendo a **soma**, cada card espera todos os anteriores. E cada chamada é rápida — 111 ms de TTFB mediano. **O gargalo não são os bytes, é a contagem de idas ao servidor**, e nenhuma miniatura toca nisso.
+
+Virou **fase proposta 5**, não emenda da Fase 2. O plano tinha escrito, antes de medir, que se essa hipótese aparecesse ela voltaria para o Jorge — e voltou. Misturá-la na Fase 2 faria a prova medir duas coisas ao mesmo tempo sem poder atribuir o ganho a nenhuma.
+
+**A correção que a medição fez em mim.** O plano afirmava que a maior imagem era 960×960, lendo `assets.width/height`. Medidas no navegador, são **1856×2304** e **2752×1536** — classe 2K. O erro tem nome: **51 das 52 linhas têm esses campos nulos**, e um `max()` sobre quase-tudo-nulo não é medição, é um artefato com aparência de fato. É exatamente o mesmo defeito que este plano acusa no diagnóstico preliminar — afirmar sobre um campo que ninguém preencheu —, cometido por mim três parágrafos depois de acusá-lo.
+
+O saldo do diagnóstico fica assim: o palpite do Jorge estava **certo sobre as dimensões** e superestimava só o peso (1,84 MB de média, não 8-15 MB). O que a investigação de fato acrescentou não foi "as imagens são menores" — foi **a proporção**: caixa de 173 px, DPR 1, **56× de desperdício em área na média** e 143× no pior caso.
+
+### 27/08/2026 — Duas armadilhas de instrumento, registradas porque quase viraram achado
+
+**`transferSize` mente por omissão.** A primeira leitura pela Resource Timing API devolveu `transferSize: 0` nos 34 recursos. A conclusão natural — *"34 de 34 servidos do cache"* — seria **o oposto exato da verdade**, num plano cujo tema inteiro é cache. O que denunciou foi a inconsistência interna: `total_ms: 1535` ao lado de `baixando_ms: 7465`, e um download não dura mais que a requisição que o contém.
+
+Causa: recurso **cross-origin sem `Timing-Allow-Origin`** tem `transferSize`, `encodedBodySize` e `responseStart` zerados pelo navegador. Sobrevivem `startTime`, `duration` e `responseEnd` — e é só com esses três que toda a Fase 0 foi medida.
+
+A consequência é permanente e vale para a Fase 3: **do lado do navegador não existe instrumento que confirme o "cached egress"**. Quem tem esse número é o painel do Supabase. A prova de que o cache passou a funcionar terá que ser feita com o que é legível — a **URL idêntica** entre duas visitas, e a requisição que não acontece.
+
+**O 503 que não era erro.** O log de rede mostrou 16 requisições com **503** para 3 vídeos, com cara de servidor recusando sob carga. Conferido antes de virar achado: `fetch` direto nos mesmos URLs devolveu **206 em todos**, concorrente e sequencial. É como o log marca requisição de mídia **abortada** — `preload="metadata"` pede, recebe o `moov` e cancela.
+
+**A lição comum às duas:** *o instrumento faz parte do achado.* Um número que vem de uma API não é um fato até alguém conferir se aquela API podia responder aquela pergunta naquele contexto. As duas seriam entradas neste diário como descobertas — uma delas invertendo o diagnóstico do mini-ciclo inteiro — se a conferência não tivesse vindo antes.
+
+De quebra: o `moov` destes MP4 está no início e pesa ~5,6 kB, então `preload="metadata"` puxa muito pouco. **O pôster de vídeo move ainda menos o ponteiro do que o plano estimava** — a ressalva de "menor metade" sai mais forte, não mais fraca.
+
+### 27/08/2026 — Três registros de método que saíram da Fase 0
+
+**A prova da Fase 3 muda de instrumento.** Como a Resource Timing zera `transferSize` em recurso cross-origin sem `Timing-Allow-Origin`, **o navegador não consegue confirmar cache** dos nossos assets. O "cached egress" é um número do painel do Supabase, e nenhuma medição de página o reproduz. Então a prova de que o cache passou a funcionar não é um byte contado: é **a URL idêntica entre duas visitas, e a requisição que não acontece**. Ausência conferida vale prova quando a presença é ilegível.
+
+**"Os bytes são a invariante, a banda não é" — e isso vira método.** A galeria mediu 1,74 s hoje e ~5 s por imagem na experiência do Jorge; as duas leituras são do mesmo defeito, separadas só pela velocidade do link do dia. Segundos medem a conexão de quem mediu; **bytes medem o produto**. Daqui em diante, toda medição de desempenho de rede deste projeto reporta **bytes primeiro** — o tempo entra como ilustração, nunca como a régua. Uma otimização julgada por segundos passa numa fibra e reprova num 4G, e nós não saberíamos qual das duas era verdade.
+
+**A autocorreção fica escrita.** O `max()` sobre `assets.width/height` com 51 de 52 linhas nulas produziu "960×960" — um artefato com aparência de fato, no mesmo documento em que eu acusava o diagnóstico preliminar de afirmar sobre campo não preenchido. Fica no diário na forma em que aconteceu, e não resumido: **o rigor apontado para fora só vale se for apontado para dentro com a mesma força.** O antídoto é uma pergunta de uma linha — *quantas linhas desta coluna estão preenchidas?* — que eu não fiz antes de agregar.
+
+### 27/08/2026 — A Fase 5 entra: o portão pré-registrado se pagou
+
+A assinatura em lote no canvas entrou no mini-ciclo. O veredito do dono, com os três motivos:
+
+**(a) O portão estava pré-registrado.** O plano dizia, *antes* de medir, que se a hipótese da fila aparecesse ela voltaria como fase proposta. Apareceu, e voltou. **Isto é o plano se honrando, não escopo crescendo** — e a diferença entre as duas coisas é justamente ter escrito o portão antes de saber a resposta. Um escopo que cresce é um que ninguém previu; este estava previsto, com a condição de disparo por escrito.
+
+**(b) É o território do sinal do fundador.** 13,17 s de fila e 16,5 s até a última imagem, **por abertura de canvas** — e o Ciclo 3 (a Máquina) vai abrir e povoar canvas o tempo todo. **Construir a Máquina sobre fila serializada é multiplicar a espera que já foi reclamada.** Consertar depois seria consertar em cima de dez vezes mais nodes.
+
+**(c) O conserto usa máquina que já existe.** O `MAX_IDS = 60` do `signAssetUrls` foi escrito para assinar em lote; a galeria já assina assim. Não é capacidade nova — é usar a que está lá.
+
+**E uma decisão de escopo dentro da Fase 1:** o `sharp` vai decodificar cada imagem de qualquer maneira para produzir a miniatura, e nesse ponto as dimensões estão na mão. **Se gravar `assets.width/height` custar uma linha, grava** — é o buraco que produziu o "960×960". Se custar mais que uma linha, vira backlog. A regra que decide não é "seria bom ter": é **fase enxuta continua valendo**, e um derivado oportunista não pode virar sub-projeto.

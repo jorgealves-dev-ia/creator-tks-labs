@@ -40,6 +40,14 @@ caminho de geração nunca gravou dimensão. Isso não quebra nada hoje, mas
 significa que **o gerador de miniatura não pode perguntar ao banco qual é o
 tamanho**: ele lê dos bytes, que é o que o `sharp` faz de graça.
 
+> ⚠️ **Corrigido pela Fase 0.** Esta seção chegou a dizer que a maior dimensão
+> era 960×960, lido de `assets.width/height` — mas com 51 linhas nulas **o banco
+> não sabia**, e um `max()` sobre quase-tudo-nulo não é uma medição. Medidas no
+> navegador, as imagens são de classe 2K: **1856×2304** e **2752×1536**. O
+> diagnóstico preliminar estava **certo sobre as dimensões**; só o peso em bytes
+> estava superestimado. Fica registrado porque é o mesmo erro que o plano acusa
+> no diagnóstico inicial — **afirmar sobre um campo que ninguém preencheu.**
+
 ### A conta que fecha o diagnóstico
 
 A galeria pagina de **24 em 24** (`GALLERY_PAGE_SIZE`), num grid de 6 colunas
@@ -145,11 +153,12 @@ mudança nos originais, e qualquer coisa que acrescente passo ao fluxo.
 
 | Fase | Entrega | Status |
 |---|---|---|
-| **0** | A régua: medir antes de mexer, e responder as três perguntas em aberto | 🔄 **autorizada, em execução** |
-| **1** | A miniatura nasce — e o acervo ganha as suas | ⬜ não iniciada |
+| **0** | A régua: medir antes de mexer, e responder as três perguntas em aberto | ✅ **fechada — 27/08/2026** (§0.5) |
+| **1** | A miniatura nasce — e o acervo ganha as suas | 🔄 **autorizada, em execução** |
 | **2** | A tela lê a miniatura — o corte de 97% aparece | ⬜ não iniciada |
-| **3** | A URL estável e o cache imutável, que só funcionam juntos | ⬜ não iniciada |
+| **3** | A URL estável e o cache imutável, que só funcionam juntos | ⬜ não iniciada — **confirmada pela 0.1** |
 | **4** | A prova consolidada e o fechamento | ⬜ não iniciada |
+| **5** | **A assinatura em lote no canvas** — 66 chamadas em fila, 13,17 s | ✅ **aprovada em 27/08/2026, entra no ciclo** |
 
 ---
 
@@ -216,6 +225,69 @@ pagá-lo.
 | 5 | `05-edge-logs-da-visita.txt` | Os objetos que dominaram, lidos do log da mesma janela |
 | 6 | `numeros-antes.md` | Os números transcritos, que a Fase 4 vai comparar |
 
+### 0.5 O que a Fase 0 achou — fechada em 27/08/2026 ✅
+
+Números completos em
+`scratchpad/evidencias/egress-fase0/numeros-antes.md`. **Zero Spark, zero linha
+em `generations`, zero lançamento no ledger.**
+
+**0.1 — as URLs mudam, todas.** 24 caminhos comparados entre duas visitas, **24
+tokens diferentes, nenhum igual**. O payload decodificado é
+`{url, scope, iat, exp}` com `exp − iat = 3600`: o `iat` é o relógio do servidor
+no instante da assinatura, e é por isso que a URL nunca se repete. **A Fase 3
+existe como escrita.**
+
+**0.2 — a galeria é BANDA.** 22 MB por visita (21 imagens), **20 de 20
+requisições sobrepostas**, janela de 1,74 s, **mediana de 1.164 ms por imagem**.
+Hoje deu 1,74 s porque a conexão da medição está a ~100 Mbps; **os bytes são a
+invariante, a banda não é** — em 20 Mbps os mesmos 22 MB levam ~9 s e cada imagem
+aparenta ~5 s. A medição não contradiz o relato do Jorge: explica-o.
+
+**0.3 — o canvas é FILA, e é outra doença.** A segunda hipótese apareceu:
+
+| | |
+|---|---|
+| Server Actions numa carga | **66** |
+| folga mediana entre uma e a seguinte | **1 ms** (60 de 65 abaixo de 5 ms) |
+| soma das durações ÷ janela real | 13,03 s ÷ 13,17 s = **razão 1,01** |
+| TTFB de cada chamada | 111 ms — **cada uma é rápida** |
+| última imagem do canvas | **16,50 s** |
+
+Razão 1,01 é fila perfeita: paralelas, a janela seria ≈ a maior chamada
+(~300 ms). **Nenhuma miniatura conserta isto** — o gargalo não são os bytes, é o
+número de idas ao servidor. Por isso virou a **fase proposta 5**, e não entrou de
+carona: o plano dizia que se essa hipótese aparecesse, ela voltaria para o Jorge.
+
+**0.4 — a proporção, que é o defeito.** Caixa de **173 px**, DPR **1**, imagens
+de **1856×2304** e **2752×1536**: **56× de desperdício em área na média**, 143×
+no pior caso.
+
+#### As duas armadilhas de instrumento, registradas porque quase viraram achado
+
+**O `transferSize` mente por omissão.** A primeira leitura devolveu
+`transferSize: 0` nos 34 recursos, e a conclusão natural — *"34 de 34 servidos do
+cache"* — teria sido **exatamente o contrário da verdade** num plano cujo tema é
+cache. Denunciou-se pela inconsistência interna: `total_ms 1535` com
+`baixando_ms 7465`. Causa: cross-origin **sem `Timing-Allow-Origin`** zera
+`transferSize`, `encodedBodySize` e `responseStart`. Só `startTime`, `duration` e
+`responseEnd` sobrevivem.
+
+Consequência que fica para as fases seguintes: **do lado do navegador não existe
+instrumento que confirme o "cached egress"** — quem tem esse número é o painel do
+Supabase. A prova da Fase 3 tem que ser feita com o que é legível: a **URL
+idêntica** entre duas visitas e a ausência de requisição.
+
+**O 503 que não era erro.** O log de rede mostrou **16 requisições 503** para 3
+vídeos. Antes de virar achado, foi conferido: `fetch` direto nos mesmos URLs
+devolveu **206 em todos**, concorrente e sequencial. É como o log marca
+requisição de mídia **abortada** — `preload="metadata"` pede, recebe o `moov` e
+cancela. Não é erro de servidor.
+
+*(De quebra: o `moov` destes MP4 está no início e tem ~5,6 kB, então
+`preload="metadata"` puxa muito pouco. **O pôster de vídeo move ainda menos o
+ponteiro do que a §1.5 estimava** — continua barato pela regra única, mas a
+ressalva de "menor metade" fica mais forte, não mais fraca.)*
+
 ---
 
 ## Fase 1 · a miniatura nasce — e o acervo ganha as suas
@@ -235,6 +307,17 @@ miniatura sem aviso. **Declarar é honestidade, não custo.**
 
 > ✅ **Autorizado pelo Jorge em 27/08/2026:** *"já está no disco, declarar é
 > formalizar."*
+
+### 1.1b O oportunista de uma linha — `width`/`height`
+
+O `sharp` **já vai decodificar** cada imagem para produzir a miniatura, e nesse
+ponto as dimensões estão na mão. Foi a ausência delas (51 de 52 nulas) que
+produziu o "960×960" errado do plano.
+
+**A regra que decide, dita antes de olhar o código: se gravar custar uma linha,
+grava; se custar mais que uma linha, vira backlog.** Fase enxuta continua valendo
+— um derivado oportunista não pode virar sub-projeto, e "seria bom ter" não é
+critério.
 
 ### 1.2 A regra do caminho
 
@@ -258,8 +341,10 @@ Sem coluna, sem migration, sem política nova — pelos motivos já medidos acim
 | qualidade | ~72 |
 | alvo | **~50 KB** |
 
-512 px porque o maior consumidor é o grid de 175 px em tela de DPR 2 = 350 px de
-dispositivo. 512 cobre com folga e ainda serve os cards maiores do canvas.
+512 px porque o maior consumidor é o grid — **medido na Fase 0 em 173 px de
+largura, em tela de DPR 1**. 512 cobre com folga, serve os cards maiores do
+canvas e aguenta uma tela DPR 2 sem reamostrar para cima. *(O plano assumia DPR 2
+e 175 px; a Fase 0 mediu 1 e 173. A escolha não muda — mas agora é medida.)*
 
 ### 1.4 Os dois produtores — e por que são dois
 
@@ -426,6 +511,46 @@ Uma tabela só, os mesmos instrumentos, os dois lados:
 Mais: `docs/decisoes.md` com a entrada datada, este arquivo com os status
 fechados, e o commit + push com a saída de `git log origin/master -1` colada no
 resumo.
+
+---
+
+## Fase 5 · a assinatura em lote no canvas  ✅ aprovada
+
+**Não estava no plano.** Nasceu da Fase 0.3, e está aqui em vez de ter entrado de
+carona porque o plano dizia, antes de medir, que se esta hipótese aparecesse ela
+**voltaria para o Jorge** como fase proposta.
+
+> ✅ **Aprovada em 27/08/2026.** Os três motivos do dono: **(a)** o portão estava
+> pré-registrado, então isto é *o plano se honrando, não escopo crescendo* —
+> escopo que cresce é o que ninguém previu, e este tinha a condição de disparo
+> por escrito; **(b)** 13-16,5 s por abertura de canvas é o território do sinal do
+> fundador, e **o Ciclo 3 vai abrir e povoar canvas o tempo todo — construir a
+> Máquina sobre fila serializada é multiplicar a espera já reclamada**;
+> **(c)** o conserto usa máquina que já existe.
+
+**O fato:** 66 Server Actions numa carga de canvas, em fila perfeita (razão
+1,01), somando **13,17 s** antes de a última imagem começar a aparecer — e cada
+chamada individual custando só 111 ms. Não é lentidão do servidor: é **contagem
+de idas**.
+
+**A causa:** cada card assina por conta própria, `signAssetUrls([um id])` — em
+`result-node`, `input-image-node`, `input-pose-node`, `input-product-node`,
+`input-sheet-node`, `reference-strip`, `video-generator-node` e `use-portraits`.
+A galeria já faz certo: uma assinatura em lote, no servidor, para a página
+inteira.
+
+**Por que é fase separada, e não um remendo dentro da Fase 2:** ela não corta
+byte nenhum. É a **outra** doença — a galeria sofre de bytes, o canvas sofre de
+viagens —, e misturar as duas faria a prova da Fase 2 medir duas coisas ao mesmo
+tempo, sem poder atribuir o ganho a nenhuma delas.
+
+**O desenho provável** (a detalhar se o Jorge aprovar): um coletor no store do
+canvas que junta os ids pedidos no mesmo tick e faz **uma** chamada, com os cards
+lendo do mapa em vez de pedirem sozinhos. O `MAX_IDS = 60` que já existe em
+`signAssetUrls` foi escrito para exatamente isto.
+
+> 🟡 **Aguarda decisão do Jorge:** entra neste mini-ciclo, ou vira item de
+> backlog para depois do Ciclo 3?
 
 ---
 
