@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { SheetUpdater } from "@/components/character-sheet/field-row";
 import { defaultModelId, findModel, ModelSelect } from "@/components/ui/model-select";
 import type { CatalogProvider } from "@/lib/ai/catalog-types";
+import { storeThumbnailInBrowser } from "@/lib/assets/thumbnail-client";
 import {
   FOLHA_SLOTS,
   IMAGENS_CANONICAS_SLOTS,
@@ -157,7 +158,11 @@ export function CanonicalImagesColumn({
       return;
     }
 
-    const size = await readDimensions(file);
+    // A miniatura já devolve as dimensões corrigidas pelo EXIF, então no caminho
+    // feliz ela substitui o `readDimensions` em vez de somar uma segunda
+    // decodificação. Quando falha, o `readDimensions` continua respondendo — o
+    // derivado é que é opcional, a dimensão não.
+    const size = (await storeThumbnailInBrowser(storagePath, file)) ?? (await readDimensions(file));
 
     const result = await attachCanonicalImage({
       entityId,

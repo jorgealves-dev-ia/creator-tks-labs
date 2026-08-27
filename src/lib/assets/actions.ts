@@ -5,6 +5,8 @@ import { z } from "zod";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+import { isThumbnailPath } from "./thumbnail-path";
+
 /**
  * Short-lived links for stored images, by asset id.
  *
@@ -238,6 +240,15 @@ export async function registerUploadedAsset(input: unknown): Promise<RegisterAss
   }
 
   if (!parsed.data.storagePath.startsWith(`${userId}/`)) {
+    return { ok: false, reason: "invalid" };
+  }
+
+  // Um original jamais nasce num caminho de derivado. Sem esta linha, um envio
+  // chamado `foto.jpg.thumb.webp` viraria a "miniatura" de `foto.jpg` — e a
+  // grade mostraria uma imagem no lugar de outra. É a única forma de a regra do
+  // caminho ser violada, e ela é fechada aqui, no mesmo lugar em que o caminho
+  // vindo do navegador já é conferido.
+  if (isThumbnailPath(parsed.data.storagePath)) {
     return { ok: false, reason: "invalid" };
   }
 

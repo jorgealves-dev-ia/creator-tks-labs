@@ -3855,3 +3855,61 @@ A assinatura em lote no canvas entrou no mini-ciclo. O veredito do dono, com os 
 **(c) O conserto usa máquina que já existe.** O `MAX_IDS = 60` do `signAssetUrls` foi escrito para assinar em lote; a galeria já assina assim. Não é capacidade nova — é usar a que está lá.
 
 **E uma decisão de escopo dentro da Fase 1:** o `sharp` vai decodificar cada imagem de qualquer maneira para produzir a miniatura, e nesse ponto as dimensões estão na mão. **Se gravar `assets.width/height` custar uma linha, grava** — é o buraco que produziu o "960×960". Se custar mais que uma linha, vira backlog. A regra que decide não é "seria bom ter": é **fase enxuta continua valendo**, e um derivado oportunista não pode virar sub-projeto.
+
+### 27/08/2026 — Fase 1 · a miniatura nasce, e duas coisas só apareceram porque foram conferidas
+
+**O corte:** 55 miniaturas de **20 kB de média** ao lado de originais de 1.530 kB — 1.069 kB contra 85 MB. O plano projetava ~50 kB por miniatura; o alvo caiu com folga. O backfill fez **54 de 54 com zero falhas**, baixando **73,5 MB uma vez** (a previsão era ~73 MB), e a quarta execução pulou todas e baixou **zero byte em 0,2 s** — a idempotência que faz dela também a ferramenta de reparo.
+
+**O requisito 1, provado por timestamp e não por promessa:** dos 57 originais, **nenhum** foi modificado durante o backfill; o mais recente era do dia anterior. Uma garantia que se lê no banco vale mais do que uma que se lê no código.
+
+#### O bug que a tela nunca denunciaria
+
+O `metadata()` do sharp **ignora a orientação EXIF, mesmo com `autoOrient: true` no construtor**. Num JPEG de 2000×1200 com `orientation: 6`, ele responde 2000×1200 enquanto a imagem é vista 1200×2000. O campo certo é `metadata().autoOrient`.
+
+O que faz disso um registro de diário não é o erro — é **por que ele teria sobrevivido**. A miniatura já saía correta: a rotação é aplicada no pipeline. Então nenhuma tela, nenhum print, nenhuma revisão visual mostraria qualquer coisa errada. **Só a coluna `width` ficaria com largura e altura trocadas, em silêncio, para sempre** — toda foto de celular em pé gravada como paisagem.
+
+Foi achado porque a afirmação "o `autoOrient` resolve" foi **medida em vez de lida**, com uma imagem construída de propósito para falhar. É a mesma doutrina que pegou o `transferSize` na Fase 0, e a regra que sai das duas é a mesma: **quando o caminho feliz e o caminho errado produzem a mesma tela, só um teste que sabe a resposta separa os dois.**
+
+#### `assets` é imutável para o usuário, e isso decidiu o oportunista
+
+A regra do dono era *uma linha entra, mais que isso vira backlog*. A resposta veio partida, por uma propriedade do banco que ninguém tinha escrito: **`assets` não tem política de UPDATE** — só SELECT, INSERT e DELETE. Com RLS default-deny, o `update` que eu havia posto no backfill afetou **zero linhas e não reclamou**: o PostgREST responde sucesso, e a coluna continua vazia.
+
+Só apareceu porque a coluna foi conferida **depois** de rodar. Eu havia marcado a escrita como "best-effort" no comentário, e best-effort é exatamente o rótulo que faz alguém não conferir se funcionou.
+
+| | custo | veredito |
+|---|---|---|
+| imagens novas, no `INSERT` | uma linha, sem política nenhuma | **entrou** — provado por upload real |
+| as 52 linhas antigas, por `UPDATE` | migration criando política | **backlog** |
+
+E o backlog não é só aritmética de linhas: **uma linha de `assets` é o registro de um arquivo que existe, e é escrita uma vez.** Criar a política trocaria uma imutabilidade deliberada por um dado cosmético. O `update` morto foi removido do código — **código que silenciosamente não faz nada é pior que código ausente**, porque o próximo leitor vai acreditar nele.
+
+#### Dois produtores, e a razão que não é simetria
+
+A miniatura nasce **onde os bytes já estão**: no servidor com `sharp` para a imagem gerada, no navegador com canvas para a enviada. Não é duplicação por descuido — é a única divisão que não paga egress para economizar egress. Um produtor só obrigaria a baixar 1,8 MB que o servidor já tinha, ou a baixar do bucket o que o navegador acabou de ler do disco.
+
+Os dois lados precisam concordar sobre o que é largura, e isso foi conferido nos dois: `meta.autoOrient` no servidor, `createImageBitmap(..., { imageOrientation: "from-image" })` no navegador, este último provado por um upload real de imagem girada — 2400×1600 no arquivo, **1600×2400** gravados em `assets`.
+
+#### E o backfill não virou botão
+
+O lugar óbvio seria a Conta, e ela **recusa por escrito**: *"só leitura, e a ausência é o conteúdo"*. Pôr manutenção ali contradiria o desenho declarado da página. E não faria falta a ninguém: uma miniatura ausente é **invisível** — a tela cai para o original e mostra a mesma imagem. Não é defeito de produto, é ineficiência de custo, e **um botão para consertar o que o usuário não pode ver é superfície de produto sem leitor**. Ficou como rota POST de manutenção, com o modo de rodar escrito no topo do arquivo.
+
+### 27/08/2026 — Três regras de método que a Fase 1 deixou
+
+**"Escrita sem política de RLS não falha — ela não acontece."** É a armadilha silenciosa do default-deny, e agora ela tem nome. Um `UPDATE` numa tabela sem política de UPDATE não estoura, não avisa e não volta erro: o PostgREST responde **sucesso com zero linhas afetadas**. O código parece funcionar, o log fica limpo, e a coluna continua vazia para sempre. Sempre que uma escrita nova tocar uma tabela, a pergunta é **"existe política para este verbo?"** — e a conferência é olhar o dado depois, não o retorno da chamada.
+
+**"Best-effort é o rótulo que faz alguém não conferir."** Eu havia marcado a escrita das dimensões como best-effort no comentário, e foi exatamente isso que a protegeu de ser verificada: um código declaradamente opcional convida quem lê — inclusive quem escreveu — a não perguntar se funcionou. O rótulo é legítimo, mas **best-effort descreve o que fazer quando falha, não licença para não saber se falhou.** Toda vez que algo for marcado assim, o par obrigatório é uma conferência do resultado.
+
+**O teste que já sabe a resposta — segunda aparição, promovido a método da casa.** Duas vezes no mesmo dia um defeito sobreviveria a qualquer inspeção visual:
+
+| | o que mentia | por que a tela não denunciava |
+|---|---|---|
+| Fase 0 | `transferSize: 0` em recurso cross-origin | "34 de 34 do cache" é uma frase plausível — e era o oposto da verdade |
+| Fase 1 | `metadata()` ignorando o EXIF | a miniatura **saía correta**; só a coluna `width` ficava trocada |
+
+A regra: **quando o caminho certo e o caminho errado produzem a mesma tela, só um teste que já sabe a resposta separa os dois.** Na prática é construir a entrada de propósito para falhar — uma imagem com `orientation: 6` cuja resposta correta se conhece antes de rodar — em vez de observar o comportamento e concluir que está bom. Observação confirma o que já se acredita; **entrada construída é o que discorda.**
+
+### 27/08/2026 — O pôster de vídeo, cortado pela medição e não por escopo
+
+O item era do briefing do dono, e **a Fase 0 o desautorizou**: o `moov` destes MP4 está no início do arquivo e pesa ~5,6 kB, então o `preload="metadata"` que a grade já usa puxa quase nada. O pôster custaria um caminho de upload oportunista, com tratamento de aba escondida (a limitação já documentada em 15/08), para economizar quilobytes.
+
+Fica registrado com esta forma porque a forma importa: **não foi cortado por escopo, foi cortado por número.** Ninguém decidiu que era muito trabalho — a medição mostrou que o ganho não existia. **O briefing propõe, a medição dispõe**, e um item que sobrevive a essa ordem vale mais do que um que nunca foi testado contra ela.

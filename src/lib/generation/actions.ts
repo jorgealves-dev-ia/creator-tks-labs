@@ -6,6 +6,8 @@ import { z } from "zod";
 import { loadCatalog } from "@/lib/ai/catalog";
 import type { CatalogProvider } from "@/lib/ai/catalog-types";
 import { imageRealCostCents } from "@/lib/ai/pricing";
+import { storeThumbnail } from "@/lib/assets/thumbnail";
+import { thumbnailPath } from "@/lib/assets/thumbnail-path";
 import {
   isFolhaSlot,
   slotLabel,
@@ -315,6 +317,11 @@ export async function generateCanonicalImage(
     return { ok: false, reason: "error" };
   }
 
+  // A folha canônica é a âncora de identidade da personagem: é a imagem que a
+  // coluna do editor mostra o tempo todo, e a que mais se olha sem ampliar.
+  // Mesma regra, mesmo best-effort.
+  const source = await storeThumbnail(supabase, storagePath, bytes);
+
   const { data: asset } = await supabase
     .from("assets")
     .insert({
@@ -324,8 +331,8 @@ export async function generateCanonicalImage(
       storage_path: storagePath,
       mime_type: image.mimeType,
       byte_size: bytes.byteLength,
-      width: null,
-      height: null,
+      width: source?.width ?? null,
+      height: source?.height ?? null,
       // What this image is, in the words the gallery will show it with.
       label: `${slotLabel(slot)} · @${entity.handle}`,
     })
@@ -333,7 +340,7 @@ export async function generateCanonicalImage(
     .single();
 
   if (!asset) {
-    await supabase.storage.from("assets").remove([storagePath]);
+    await supabase.storage.from("assets").remove([storagePath, thumbnailPath(storagePath)]);
     return { ok: false, reason: "error" };
   }
 
@@ -385,7 +392,7 @@ export async function generateCanonicalImage(
     // Nobody keeps an image they were just told they could not afford. Deleting
     // the asset cascades into entity_images, so the link goes with it.
     await supabase.from("assets").delete().eq("id", asset.id);
-    await supabase.storage.from("assets").remove([storagePath]);
+    await supabase.storage.from("assets").remove([storagePath, thumbnailPath(storagePath)]);
 
     return { ok: false, reason: CHARGE_ERROR_CODES[chargeError.code ?? ""] ?? "error" };
   }

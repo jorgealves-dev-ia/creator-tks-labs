@@ -9,6 +9,7 @@ import {
   registerUploadedAsset,
   type GalleryItem,
 } from "@/lib/assets/actions";
+import { storeThumbnailInBrowser } from "@/lib/assets/thumbnail-client";
 import { useReferencePicker } from "@/lib/canvas/reference-picker-store";
 import { listProjectGallery } from "@/lib/generation/history";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -252,12 +253,16 @@ function PickerDialog() {
       return;
     }
 
+    // A miniatura, do arquivo que já está na mão. Best-effort: se falhar, o
+    // envio segue e a grade cai para o original.
+    const source = await storeThumbnailInBrowser(storagePath, file);
+
     const result = await registerUploadedAsset({
       storagePath,
       mimeType: file.type,
       byteSize: file.size,
-      width: null,
-      height: null,
+      width: source?.width ?? null,
+      height: source?.height ?? null,
       // The name the file already had. Nobody has to think of a caption, and the
       // search finds it by the word the user themselves put on the disk.
       label: file.name.replace(/\.[^.]+$/, ""),

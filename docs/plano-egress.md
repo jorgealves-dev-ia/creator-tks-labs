@@ -154,7 +154,7 @@ mudança nos originais, e qualquer coisa que acrescente passo ao fluxo.
 | Fase | Entrega | Status |
 |---|---|---|
 | **0** | A régua: medir antes de mexer, e responder as três perguntas em aberto | ✅ **fechada — 27/08/2026** (§0.5) |
-| **1** | A miniatura nasce — e o acervo ganha as suas | 🔄 **autorizada, em execução** |
+| **1** | A miniatura nasce — e o acervo ganha as suas | ✅ **fechada — 27/08/2026** (§1.7) |
 | **2** | A tela lê a miniatura — o corte de 97% aparece | ⬜ não iniciada |
 | **3** | A URL estável e o cache imutável, que só funcionam juntos | ⬜ não iniciada — **confirmada pela 0.1** |
 | **4** | A prova consolidada e o fechamento | ⬜ não iniciada |
@@ -405,6 +405,70 @@ mostrando original e `.thumb.webp` lado a lado com os dois tamanhos; o original
 baixado **antes e depois** com o mesmo SHA-256 (o requisito 1 provado, não
 afirmado); o tempo do `sharp` medido; o backfill com 54/54 e a segunda execução
 pulando todas.
+
+### 1.7 O que a Fase 1 entregou — fechada em 27/08/2026 ✅
+
+Números completos em `scratchpad/evidencias/egress-fase1/numeros-fase1.md`.
+**Zero Spark, zero linha em `generations`, zero lançamento no ledger.**
+
+| | originais | miniaturas |
+|---|---|---|
+| arquivos | 58 | **55** |
+| peso total | **85 MB** | **1.069 kB** |
+| média | 1.530 kB | **20 kB** |
+| `cacheControl` | `max-age=3600` | **`max-age=31536000`** |
+
+**20 kB de média contra os ~50 kB projetados** — o alvo caiu com folga.
+
+**Requisito 1, provado e não afirmado:** **0 de 57 originais** modificados nas
+duas horas do backfill; o mais recente é do dia anterior. Só acrescentou.
+
+**Backfill:** 54 de 54, **zero falhas**, **73,5 MB** baixados uma vez — a
+previsão do plano era ~73 MB. A quarta execução pulou todas as 54 e baixou
+**zero byte** em 0,2 s: a idempotência que faz dela também a ferramenta de
+reparo.
+
+#### O bug de orientação, barrado antes de embarcar
+
+`metadata()` do sharp **ignora a orientação EXIF mesmo com `autoOrient: true`**:
+num JPEG de 2000×1200 com `orientation: 6`, responde 2000×1200 enquanto a imagem
+é vista 1200×2000. O correto é `metadata().autoOrient`.
+
+**E a armadilha é que a miniatura já saía certa** — a rotação é aplicada no
+pipeline. Nada na tela denunciaria: só a coluna `width` ficaria com largura e
+altura trocadas, em silêncio, para sempre. Uma foto de celular em pé gravada
+como paisagem. Achado porque a afirmação foi **medida em vez de lida**, com uma
+imagem de teste construída para falhar.
+
+#### O oportunista do `width`/`height` veio partido em dois
+
+A regra era *uma linha entra, mais que isso vira backlog*. A resposta se partiu,
+e o motivo é uma propriedade do banco: **`assets` não tem política de UPDATE** —
+só SELECT, INSERT e DELETE. Com RLS default-deny, o `update` que eu havia escrito
+no backfill afetou **zero linhas e não reclamou**. Descoberto porque a coluna foi
+conferida depois de rodar, em vez de confiar no "best-effort" que eu mesmo
+escrevi.
+
+| | custo | resultado |
+|---|---|---|
+| **imagens novas** (INSERT) | uma linha, sem política | ✅ **entrou** — provado por upload real: 1600×2400 gravados |
+| **52 linhas antigas** (UPDATE) | migration criando política | ⬜ **backlog** |
+
+E o backlog não é só por custo: **uma linha de `assets` é o registro de um
+arquivo que existe, e é escrita uma vez.** A política trocaria uma imutabilidade
+deliberada por um dado cosmético. O `update` morto foi removido.
+
+#### O pôster de vídeo — ❌ **cortado pela medição, não por escopo**
+
+A §1.5 já o chamava de "menor metade". A Fase 0 mediu o `moov` destes MP4 em
+**~5,6 kB, no início do arquivo** — o `preload="metadata"` que a grade já usa
+puxa quase nada. O pôster custaria um caminho de upload oportunista com
+tratamento de aba escondida, para economizar quilobytes.
+
+> ❌ **Cortado pelo Jorge em 27/08/2026**, e a forma importa: o item era do
+> **briefing dele**, e foi a **Fase 0 que o desautorizou**. Ninguém decidiu que
+> era muito trabalho — a medição mostrou que o ganho não existia.
+> **O briefing propõe, a medição dispõe.**
 
 ---
 

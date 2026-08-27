@@ -3,6 +3,8 @@ import "server-only";
 import { z } from "zod";
 
 import { imageRealCostCents } from "@/lib/ai/pricing";
+import { storeThumbnail } from "@/lib/assets/thumbnail";
+import { thumbnailPath } from "@/lib/assets/thumbnail-path";
 import { SUBJECT_BY_GENERO, type GeneroApresentacao } from "@/lib/character-sheet/dictionary";
 import { parseSheet, type CharacterSheet } from "@/lib/character-sheet/schema";
 import { loadImagePayloads } from "@/lib/generation/asset-payloads";
@@ -550,6 +552,11 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
     return { ok: false, reason: "error" };
   }
 
+  // A miniatura, dos bytes que já estão na mão — nenhum download a mais. Falha
+  // aqui devolve `null` e nada além disso: uma geração paga não se perde por
+  // causa de um derivado de 50 KB, e a tela cai para o original sozinha.
+  const source = await storeThumbnail(supabase, storagePath, bytes);
+
   const { data: asset } = await supabase
     .from("assets")
     .insert({
@@ -559,8 +566,11 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
       storage_path: storagePath,
       mime_type: image.mimeType,
       byte_size: bytes.byteLength,
-      width: null,
-      height: null,
+      // Sai de graça da decodificação que a miniatura já fez. Estas duas linhas
+      // eram `null` desde sempre, e é a ausência delas que fez um `max()` sobre
+      // 51 de 52 linhas vazias virar "960×960" num documento.
+      width: source?.width ?? null,
+      height: source?.height ?? null,
       // The gallery caption is the user's own sentence, not a description we
       // invented for it — which also makes the search find an image by what
       // was asked for rather than by what we decided to call it.
@@ -570,7 +580,7 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
     .single();
 
   if (!asset) {
-    await supabase.storage.from("assets").remove([storagePath]);
+    await supabase.storage.from("assets").remove([storagePath, thumbnailPath(storagePath)]);
     return { ok: false, reason: "error" };
   }
 
@@ -604,7 +614,7 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
   if (chargeError || !generation) {
     // Nobody keeps an image they were just told they could not afford.
     await supabase.from("assets").delete().eq("id", asset.id);
-    await supabase.storage.from("assets").remove([storagePath]);
+    await supabase.storage.from("assets").remove([storagePath, thumbnailPath(storagePath)]);
 
     return { ok: false, reason: CHARGE_ERROR_CODES[chargeError?.code ?? ""] ?? "error" };
   }
