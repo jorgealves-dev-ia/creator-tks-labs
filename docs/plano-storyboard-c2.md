@@ -62,7 +62,7 @@ um arquivo por item, com nome que diz **o que o print prova**.
 | **1** | A fundação no banco: as fichas ganham casa, e o preço ganha trabalho | ✅ fechada — `f1e41d6` + `4d87ca1` |
 | **2** | O motor: a ideia vira ficha, e a ficha tem dono | ✅ fechada — `3576f97` |
 | **3** | A tela: o node de Roteiro inteiro | ✅ fechada — 17/08/2026 |
-| **4** | **A ponte manual: a ficha vira bloco, por fio vivo** | ✅ fechada — 18/08/2026 |
+| **4** | **A ponte manual: a ficha vira bloco, por fio vivo** | ✅ fechada — 18/08/2026, **selada pelo dono em 26/08/2026** (§4.13) |
 
 ---
 
@@ -697,16 +697,40 @@ Chrome estava em background, e sem layout o React Flow não mede nodes nem desen
 arestas. A regra que salvou foi a de sempre: *medir com JS antes de consertar*. → o
 registro em [`decisoes.md`](decisoes.md).
 
-**O que falta, e é do dono:** a **geração paga** de uma ficha real pelo ▸, com "Ver
-prompt" mostrando a cena compilada e a versão congelada resolvida no servidor. Nenhum
-print de interface conta como ela.
+### 4.13 A metade do dono — feita em 26/08/2026 ✅
+
+A **geração paga** que nenhum print de interface substitui: o ▸ da Cena 1, o bloco, e a
+imagem. **75 ⚡** sobre custo real de **56 centavos**.
+
+| a prova | o que se leu |
+|---|---|
+| a corrente viva até a geração | a aresta `cena-1 → 039bf703` no grafo salvo, e `039bf703` é o `node_id` da geração — bloco **ainda regido**, campo travado |
+| a ficha no prompt | `acao` + `cenario` + `movimento`, e `enquadramento: plano_americano` → *"medium-full shot, framed from mid-thigh up"* |
+| a versão congelada, no servidor | `personagem.versao: 4` com `entity_version_id`, e `sheet_source: version` |
+| a menção como sujeito | `mencao_sujeito: {handle: "luna", sujeito: "ela"}` |
+| a cena dirigida | `regra_diretor: prompt_dirige`, com `traje_canonico: null` e `cena_padrao: []` |
+| a auditoria bilíngue | `cena_usuario` com `pt` e `en` |
+
+**E o extrato conferido**, contra o retrato do fim da Fase 4: `generations` 61 → **63**,
+`ledger_transactions` 47 → **48**, saldo 6.700 → **6.625 ⚡**. Duas gerações, **um
+lançamento só** — porque a primeira tentativa foi recusada pelo provedor (*safety
+violations*) e recusa de política custa zero e não lança. O mesmo prompt passou 27
+segundos depois: o filtro **não é determinístico**, e isso é trabalho do Ciclo 3, que
+manda dez de uma vez. → o registro em [`decisoes.md`](decisoes.md).
+
+**O veredito do dono:** *a imagem é a cena.*
+
+**E o registro de ritual que este fechamento produziu:** o commit da Fase 4 saiu **antes**
+desta metade. O código estava provado, mas a ordem da casa é **evidência fecha, commit
+sela** — terceira reafirmação, agora dentro da regra 8 do [`CLAUDE.md`](../CLAUDE.md).
 
 ---
 
-## O ciclo, fechado — 18/08/2026
+## O ciclo, fechado — 18/08/2026, selado pelo dono em 26/08/2026
 
-Cinco fases, **4 migrations**, **6 commits**, e **30 ⚡** gastos em roteiro no total,
-sobre custo real de 6 centavos.
+Cinco fases, **4 migrations**, **8 commits** (`git rev-list b559790..HEAD`, contando este
+fechamento), e **30 ⚡** gastos em roteiro no total, sobre custo real de 6 centavos —
+mais a **imagem de fechamento, 75 ⚡** sobre 56 centavos.
 
 O produto passou a **escrever a história antes de desenhá-la** — e, desde esta fase, a
 ficha atravessa para o canvas em um clique. A régua do ciclo não foi capacidade nova:

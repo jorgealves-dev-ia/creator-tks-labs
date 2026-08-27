@@ -3693,3 +3693,56 @@ O que salvou foi a regra de sempre: **medir com JS antes de consertar**. O print
 #### O ciclo fecha aqui
 
 Cinco fases, 4 migrations, 6 commits. **30 ⚡ gastos em roteiro** no total (as duas gerações do fechamento da Fase 3), com custo real de 6 centavos — margem confirmada por baixo nas duas. O Ciclo 3 (A Máquina) é a próxima prioridade, e o teste dele é o mesmo julgamento humano: se depois dele o fluxo ainda parecer longo, o desenho volta à mesa.
+
+### 26/08/2026 — Fase 4 · o fechamento do dono: a ficha virou imagem paga, e a recusa custou zero
+
+**A prova que faltava, e que nenhum print de interface dá:** o ▸ da Cena 1 pôs o bloco no canvas, o bloco gerou, e saiu uma imagem paga de **75 ⚡** sobre custo real de **56 centavos** — margem confirmada por baixo, como nas outras. Veredito do dono: *a imagem é a cena*.
+
+**A corrente sobreviveu até a geração.** O grafo salvo tem a aresta `69f58d35 --(sourceHandle: "cena-1")--> 039bf703`, e `039bf703` é exatamente o `node_id` gravado na geração. A imagem não saiu de um bloco que *um dia* veio de uma ficha: saiu de um bloco **ainda regido por ela**, com o campo travado.
+
+**E o prompt é a ficha, campo por campo:**
+
+| a ficha (Cena 1) | o que chegou ao prompt |
+|---|---|
+| `acao` | "aponta para o liquidificador sobre a bancada por um segundo e fala empolgada olhando para a lente durante três segundos" |
+| `cenario` | "cozinha moderna com bancada de granito claro" |
+| `movimento` | "câmera estática no tripé" |
+| `enquadramento: plano_americano` | `ajustes_cena → angulo_camera` → *"medium-full shot, framed from mid-thigh up"* |
+| `personagem_handle: luna` | `@luna`, sujeito da frase |
+
+O `enquadramento` é o dividendo da decisão de 15/08 cobrado em dinheiro: a ficha usa `ENQUADRAMENTO_KEYS`, o bloco usa `ENQUADRAMENTO_KEYS`, e a passagem entre os dois é **atribuição** — não existe tabela de conversão para errar no `default`.
+
+**O compilado fecha a invariante 13 inteira**, e é o que o "Ver prompt" mostrou:
+
+| campo do `prompt_compiled` | valor | o que prova |
+|---|---|---|
+| `personagem.versao` | `4`, com `entity_version_id` | a menção resolveu **versão congelada**, no servidor |
+| `sheet_source` | `version` | reproduzível — não é rascunho |
+| `mencao_sujeito` | `{handle: "luna", sujeito: "ela"}` | a menção virou **sujeito**, não foi apagada |
+| `regra_diretor` | `prompt_dirige` | a cena é dirigida pelo prompt… |
+| `traje_canonico` · `cena_padrao` | `null` · `[]` | …então o traje de banho e os padrões do sheet **não entraram** |
+| `cena_usuario` | `pt` **e** `en` | a auditoria bilíngue, em toda geração |
+
+**A recusa que custou zero, e que é meia prova sozinha.** Vinte e sete segundos antes da imagem paga, o **mesmo prompt** foi recusado pelo provedor: `400 Image generation blocked due to safety violations`. O extrato do dia:
+
+| | fim da Fase 4 (18/08) | agora |
+|---|---|---|
+| `generations` | 61 | **63** |
+| `ledger_transactions` | 47 | **48** |
+| saldo | 6.700 ⚡ | **6.625 ⚡** |
+
+**Duas gerações, um lançamento só.** A recusa virou linha em `generations` com `failed` e `0/0`, e **nenhuma linha no livro**. É a invariante 7 e a 5 se encontrando na prática: recusa de política é erro **esperado**, e o que não executou não lança. O saldo caiu exatamente os 75 da imagem que existe.
+
+**E o achado que fica para o Ciclo 3:** o mesmo texto foi recusado e aceito com 27 segundos de diferença. Uma amostra não mede taxa, mas basta para afirmar o essencial — **o filtro do provedor não é função determinística do prompt**. "Tentar de novo" é resposta legítima, e uma recusa não é veredito sobre o que a pessoa escreveu. A Máquina rege dez fichas de uma vez: um lote de dez vai encontrar isso, e precisa tratar a recusa de uma cena como **uma cena para repetir** — nunca como lote perdido, nunca como prompt a reescrever.
+
+### 26/08/2026 — Registro de ritual: evidência fecha, commit sela — e é a terceira vez
+
+**O que aconteceu.** O commit da Fase 4 (`7e10ff0`, 18/08) saiu com os docs já dizendo *"o ciclo fecha aqui"* — e a metade da prova que é do dono, a geração paga, só aconteceu **oito dias depois**. O código estava provado: 49 verificações estruturais e 13 arquivos de evidência ao vivo. Mas **provado não é selado**.
+
+**Por que é erro mesmo quando o código está certo.** O commit é o que diz *isto está pronto*. Commitar antes da metade do dono faz uma etapa que está **esperando** ter a mesma aparência de uma etapa **fechada** — e essa é, palavra por palavra, a forma de falha que já está neste diário no caso do commit-sem-push (09/08): *quando o sucesso e a pendência têm a mesma aparência, o ritual precisa produzir uma evidência que só existe no sucesso.* Lá a evidência virou a linha do `git log origin/master`. Aqui ela é a geração paga.
+
+**O diagnóstico da terceira repetição, que é o que interessa.** A regra 8 já mandava esperar o ok — mas ela não dizia **de qual prova** o ok é quando a prova tem duas metades. Esta fase tinha duas: a minha (13 prints, zero Spark) e a do dono (uma imagem paga). O commit ancorou na metade que estava na minha mão, que é a que fica pronta primeiro — e **ficar pronta primeiro não é ser a última**.
+
+**A regra, em uma linha: evidência fecha, commit sela.** O commit espera a **última** metade da prova, não a primeira. Se parte dela é do Jorge — qualquer item de geração ou de dado financeiro —, a etapa continua aberta e **não commitada** até essa metade chegar.
+
+**O que custou desta vez:** oito dias em que o `produto.md` dizia "✅ concluído" sobre um ciclo cuja única prova de *geração* ainda não existia. Nada quebrou e o veredito veio positivo — mas o documento andou na frente do fato, que é precisamente o que este diário existe para impedir. Entrou na **regra 8 do `CLAUDE.md`**, porque duas passagens só pelo diário não seguraram a terceira.
