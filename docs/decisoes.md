@@ -3746,3 +3746,57 @@ O `enquadramento` é o dividendo da decisão de 15/08 cobrado em dinheiro: a fic
 **A regra, em uma linha: evidência fecha, commit sela.** O commit espera a **última** metade da prova, não a primeira. Se parte dela é do Jorge — qualquer item de geração ou de dado financeiro —, a etapa continua aberta e **não commitada** até essa metade chegar.
 
 **O que custou desta vez:** oito dias em que o `produto.md` dizia "✅ concluído" sobre um ciclo cuja única prova de *geração* ainda não existia. Nada quebrou e o veredito veio positivo — mas o documento andou na frente do fato, que é precisamente o que este diário existe para impedir. Entrou na **regra 8 do `CLAUDE.md`**, porque duas passagens só pelo diário não seguraram a terceira.
+
+---
+
+## Mini-ciclo — Faxina de Egress
+
+### 27/08/2026 — O plano, e a correção de diagnóstico que a investigação impôs
+
+**O sintoma.** Egress a **170% da cota free por dois ciclos** seguidos, galeria levando ~5 s por imagem, e *cached egress* em 5% — quase nada aproveitando cache.
+
+**O diagnóstico preliminar dizia: assets gigantes.** 2K/4K, 8-15 MB, servidos em cards pequenos. **A medição disse outra coisa**, e a diferença muda o desenho do conserto.
+
+| | o palpite | o fato, lido do banco |
+|---|---|---|
+| tamanho da imagem gerada | 8-15 MB | **1,84 MB de média** (maior: 7,57 MB) |
+| quantas | — | **40**, somando 72 MB |
+| como aparecem | cards pequenos | **24 por vez**, num grid de **175 px de lado** |
+
+A conta fecha sozinha: `24 × 1,84 MB ≈ 44 MB por visita`. A 170% de 5 GB são ~8,5 GB — **~193 visitas de galeria**. Com Fast Refresh recarregando a página a cada edição, isso explica o consumo inteiro sem precisar de segunda causa.
+
+**A frase que fica:** o desperdício era de **proporção, não de tamanho**. Uma imagem de 1,84 MB num quadro de 175 px é **~40× mais bytes do que a tela pode mostrar**, e nenhuma delas é grande o bastante para chamar atenção sozinha. Foi por isso que passou dois ciclos despercebido: não havia um arquivo culpado para achar. Procurar o arquivo gigante teria consumido a investigação inteira e não teria encontrado nada — **o defeito estava na razão entre dois números, e razão não aparece numa lista ordenada por tamanho.**
+
+### 27/08/2026 — URL estável e `cacheControl` são uma fase só, porque separados o header é peso morto
+
+O briefing pedia as duas coisas como itens independentes. **Não são.** Cache — o do navegador e o do Cloudflare na frente do Storage — indexa pela **URL inteira, query incluída**. A URL assinada do Supabase carrega um JWT com o relógio do servidor dentro, então cada assinatura produz uma URL diferente: chave de cache nova, e o `max-age` nunca chega a ser consultado.
+
+Consequência prática: **`cacheControl: immutable` sozinho não faz absolutamente nada.** Entregue sem a URL estável, seria um header correto, bem-intencionado e completamente inerte — e, pior, teria a aparência de trabalho feito. Viraram uma fase única.
+
+É também o que explica o *cached egress* em 5%: não é o cache falhando, é o cache **nunca sendo consultado**.
+
+### 27/08/2026 — O bucket público de miniaturas: visto, e recusado pelo motivo certo
+
+Havia um caminho de longe mais simples que todos os outros. Miniatura em **bucket público**: URL eterna, sem assinatura nenhuma, sem viagem de servidor, CDN perfeito, e a Fase 3 inteira deixaria de existir.
+
+**Recusado.** Bucket público significa que qualquer pessoa com a URL vê a imagem, e o caminho ser um UUID não muda isso: **"ninguém adivinha o UUID" não é política de segurança para o rosto de uma influencer que é da pessoa.** URL não adivinhável é obscuridade, não controle de acesso — e este produto existe justamente para gerar o rosto que é de alguém.
+
+Fica registrado porque **a opção existe, foi vista, e foi recusada** — não esquecida. Quem reencontrar essa ideia daqui a seis meses e achar que ninguém pensou nela vai encontrar aqui a resposta e o porquê.
+
+**Escolhido no lugar:** cache das URLs assinadas num `Map` em módulo do servidor, com TTL de 7 dias. Zero migration, e — o que decidiu — **quando erra, entrega uma URL nova, que é exatamente o comportamento de hoje**. Um cache cujo pior caso é o presente não pode piorar nada. Se o acerto medido em produção decepcionar, a tabela entra depois.
+
+**Com uma advertência dita antes de medir:** em `localhost` o Node é um processo só e sempre quente, então o acerto será 100% e **a medição vai mentir a favor**. A prova da Fase 3 tem que ser lida com isso na mão.
+
+### 27/08/2026 — Log que expira em 24 h não serve de baseline retroativo
+
+O plano pedia confirmar no Logs Explorer quais objetos dominavam o egress real — *confirmar o diagnóstico no fato, não no palpite*. **Não foi possível:** a janela de consulta do Supabase é de **24 horas**, e nelas o app esteve parado. Os 6 registros de `edge_logs` do período são `auth/token` e o websocket do Realtime; **nenhuma requisição de Storage**.
+
+Não é uma desculpa, é uma propriedade do instrumento, e ela tem consequência de método: **o baseline de um problema que já aconteceu precisa ser reproduzido, não recuperado.** A confirmação virou trabalho da Fase 0 — produzir a visita e ler o log dela no mesmo dia.
+
+### 27/08/2026 — As três decisões de desenho que o plano fixou
+
+**A miniatura é caminho, não coluna.** `thumbPath(p) = p + ".thumb.webp"` — função pura, total, sem parsing e sem migration. **Acrescenta** a extensão em vez de substituir, porque trocar `.jpg` por `.webp` colidiria se dois assets diferissem só na extensão. E o `createSignedUrls` do Supabase já devolve erro **por caminho**, com `signedUrl: null` para o que não existe: dá para perguntar *"existe miniatura?"* na mesma viagem que já assina — sem requisição extra e sem 404 no navegador. O fallback do requisito 3 mora na **forma da resposta**, não num `try`.
+
+**Dois produtores, porque é o desenho que gasta menos.** A miniatura é feita **onde os bytes já estão**: no servidor com `sharp` para a imagem gerada (o servidor já tem os bytes para subir o original), e no navegador com canvas para a enviada (o arquivo vai do navegador direto ao bucket, sem passar pelo servidor). Um produtor só custaria um download em um dos dois casos. Não é repetição — é a única divisão que não paga egress para economizar egress.
+
+**`sharp` declarado.** Já estava em `node_modules` como `optionalDependency` do `next@16.3.0`, então declarar **não baixa um byte novo**. Mas depender de um pacote que só existe por ser opcional de outro é frágil: um `npm i --no-optional` derrubaria a geração de miniaturas sem aviso. Declarar é formalizar o que já está no disco.
