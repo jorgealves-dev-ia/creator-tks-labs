@@ -147,11 +147,19 @@ Versão curta. O porquê de cada uma está em [`docs/arquitetura.md`](docs/arqui
 7. **Invariantes do character sheet.** As regras de compilação da seção 6 de [`docs/character-sheet.md`](docs/character-sheet.md) são invariantes do projeto, com o mesmo status das 7 decisões de arquitetura: **nunca podem ser violadas pelo código sem decisão explícita registrada.**
 8. **Fluxo de encerramento de toda tarefa:** apresentar resumo enxuto do que foi feito → rodar `git status` e mostrar a lista de arquivos a commitar → pedir ok ao Jorge → só então fazer commit e push. Se aparecer qualquer arquivo fora do escopo declarado da tarefa, **parar e avisar antes de commitar**.
 
-   **Quem valida no navegador depende do risco** (emenda de 11/08/2026, com o porquê em [`docs/decisoes.md`](docs/decisoes.md)). Tarefa **sem geração** — zero Sparks, sem tocar em ledger, compilador ou escrita no banco: o Claude valida em `localhost:3000`, com **um screenshot por item do roteiro de teste colado no resumo**. "Conferi e passou" sem print não vale. Qualquer item que envolva **geração ou dado financeiro volta para o Jorge**. O commit continua esperando o ok dele, dado sobre os prints.
+   **Quem valida no navegador depende do risco** (emenda de 11/08/2026, com o porquê em [`docs/decisoes.md`](docs/decisoes.md)). Tarefa **sem geração** — zero Sparks, sem tocar em ledger, compilador ou escrita no banco: o Claude valida em `localhost:3000`, com **prova por item do roteiro de teste colada no resumo** — em número, pela regra de 27/08/2026 abaixo. "Conferi e passou" sem prova não vale. Qualquer item que envolva **geração ou dado financeiro volta para o Jorge**. O commit continua esperando o ok dele, dado sobre a prova.
 
    **Evidência fecha, commit sela — e quando a prova tem duas metades, vale a última** *(reafirmação de 26/08/2026, a terceira; o porquê em [`docs/decisoes.md`](docs/decisoes.md))*. Se parte da prova é do Jorge — qualquer item de geração ou de dado financeiro —, a etapa continua **aberta e não commitada** até essa metade chegar, mesmo com a metade do Claude inteira e passando. A metade do Claude fica pronta primeiro, e ficar pronta primeiro não é ser a última: **uma etapa esperando prova e uma etapa fechada não podem ter a mesma aparência no git.**
 
-   **Evidência tem endereço fixo:** `D:\Z - Meus Projetos DevIA\Creator TKS Labs\scratchpad\evidencias\<etapa>-<fase>\`, um arquivo por item, com **nome que diz o que o print prova** (`trilho-fechado-luna-foto.png`), e a lista de caminhos no resumo. Pasta de temp com timestamp no nome não é evidência — daqui a uma semana ninguém acha, e prova que ninguém acha não prova nada.
+   **Evidência tem endereço fixo:** `D:\Z - Meus Projetos DevIA\Creator TKS Labs\scratchpad\evidencias\<etapa>-<fase>\`, um arquivo por item, com **nome que diz o que aquele arquivo prova** (`trilho-fechado-luna-foto.png`, `numeros-fase5.md`), e a lista de caminhos no resumo. Pasta de temp com timestamp no nome não é evidência — daqui a uma semana ninguém acha, e prova que ninguém acha não prova nada.
+
+   **Prova em número; print só quando o número não alcança** *(regra do fundador, 27/08/2026 — o porquê em [`docs/decisoes.md`](docs/decisoes.md))*. O entregável padrão de toda validação é **dado**: contagens, tabelas, leituras de log, banco ou DOM — o que se analisa, compara e cita.
+
+   - **Screenshot como instrumento continua livre.** Olhar a tela em tempo real para saber o que está acontecendo é trabalho normal; o que muda é que isso **não vira entregável arquivado por padrão**.
+   - **Print entra na evidência só quando a afirmação é inerentemente visual** e nenhum número a carrega — layout quebrado, imagem renderizando errado. E aí **um print decisivo, nunca uma série**.
+   - **O que já está arquivado fica.** A regra vale daqui em diante, e não se reescreve evidência velha.
+
+   **O racional:** o Jorge analisa números, não pixels. Série de print custa produtividade e tokens sem acrescentar decisão — e a casa já dizia isto desde a Fase 0 do egress: **o número decide.** Uma tabela de 53 → 1 se confere, se discute e se cita; uma pasta de dez imagens exige que alguém as abra uma a uma para chegar à mesma frase.
 
    **Nunca rodar `npm run build` com o `npm run dev` no ar** — os dois escrevem no mesmo `.next/`. Parar o dev, buildar, subir o dev de novo.
 

@@ -157,7 +157,7 @@ mudança nos originais, e qualquer coisa que acrescente passo ao fluxo.
 | **1** | A miniatura nasce — e o acervo ganha as suas | ✅ **fechada — 27/08/2026** (§1.7) |
 | **2** | A tela lê a miniatura — o corte de 97% aparece | ✅ **fechada — 27/08/2026** (§2.3) |
 | **3** | A URL estável e o cache imutável, que só funcionam juntos | ✅ **fechada — 27/08/2026** (§3.3) |
-| **4** | A prova consolidada e o fechamento | 🟡 **primeira metade feita** — a geração do Jorge de 27/08 (§3.3) |
+| **4** | A prova consolidada e o fechamento | 🚧 **aberta — 27/08/2026** (§4.1); a geração do Jorge é a 1ª metade |
 | **5** | **A assinatura em lote no canvas** — 66 chamadas em fila, 13,17 s | ✅ **fechada — 27/08/2026** (§5.4) |
 
 ---
@@ -666,16 +666,79 @@ Esta geração vale como **primeira metade da Fase 4**, por decisão do dono.
 
 ---
 
-## Fase 4 · a prova consolidada e o fechamento
+## Fase 4 · a prova consolidada e o fechamento — aberta em 27/08/2026
 
-Uma tabela só, os mesmos instrumentos, os dois lados:
+**Prova em número, prints zero** — salvo o inerentemente visual, pela regra do
+fundador de 27/08/2026 registrada no CLAUDE.md.
+
+### 4.1 A tabela final — o que já está medido
+
+Herda a Fase 0 como "antes" e as Fases 1-3 e 5 como "depois". As três primeiras
+linhas já têm os dois lados; a quarta é a que a produção precisa fechar.
 
 | Métrica | Antes (Fase 0) | Depois | Corte |
 |---|---|---|---|
-| MB por visita à galeria (cache limpo) | | | |
-| MB por visita à galeria (cache quente) | | | |
-| tempo até a última imagem pintar | | | |
-| MB por carga do studio | | | |
+| bytes por visita à galeria, cache limpo | **23.101.806** (22,03 MB) | **479.392** (468 kB) | **−97,92%**, 48× |
+| miniaturas que chegam ao Supabase, 2ª visita | **21** | **0** | **−100%** |
+| URLs idênticas entre duas visitas | **0 / 24** | **24 / 24** | — |
+| chamadas `signAssetUrls` numa carga de canvas | **53** | **1** | **53×** |
+| Server Actions numa carga de canvas | 72 | 20 | −72% |
+| até a última imagem no canvas | 7.199 ms | 4.736 ms | −2,46 s |
+| **egress real por visita, em produção** | *a medir* | *a medir* | **critério de fechamento** |
+
+### 4.2 A conferência em produção — e por que ela é obrigatória
+
+Todas as medições das Fases 1-5 são de `localhost`. **A advertência está escrita
+desde a Fase 3, e é hora de honrá-la:** um processo Node só, sempre quente, dá
+acerto de cache de 100% por construção. **A medição de desenvolvimento mente a
+favor.**
+
+Em produção o `Map` do `signing.ts` vive numa função serverless que **esfria e
+multiplica**. O que a produção decide, e o desenvolvimento não pode:
+
+| pergunta | só a produção responde porque |
+|---|---|
+| o cache de URL acerta quanto? | instância fria devolve URL nova, e localhost nunca esfria |
+| o `cacheControl` de um ano pega no CDN? | localhost não tem CDN na frente |
+| o egress por visita caiu de fato? | só a fatura e o `edge_logs` de produção sabem |
+
+**E o pior caso continua sendo o comportamento de hoje** — instância fria assina
+de novo, que é exatamente o que acontecia antes da Fase 3. Um acerto decepcionante
+não é regressão: é o gatilho da opção **B** (tabela `asset_signed_urls`), que ficou
+registrada em §3.2 justamente para este momento.
+
+### 4.3 O critério de fechamento do mini-ciclo, em dado
+
+O mini-ciclo **não fecha** com o deploy verde. Fecha com dois números de
+produção:
+
+1. **`edge_logs` de produção**: uma visita à galeria e uma ao studio, contando os
+   objetos que **chegaram ao Storage** — o mesmo instrumento e o mesmo `group by`
+   da Fase 3, agora do outro lado. A segunda visita tem que repetir o **zero**.
+2. **O gráfico de Usage do Supabase, nos dias seguintes.** É o único lugar onde
+   a promessa do mini-ciclo se confirma ou se desmente: **egress diário antes
+   contra depois.** Precisa de dias, não de minutos — e por isso o fechamento tem
+   uma parte que **só pode ser escrita depois**.
+
+> ⚠️ **O mini-ciclo tem, portanto, um fechamento em duas datas.** A §4.4 fecha
+> a consolidação e o deploy; a §4.5 fica **aberta até o gráfico de Usage ter dias
+> suficientes**. Uma etapa esperando dado e uma etapa fechada não podem ter a
+> mesma aparência — é a regra de 26/08, aplicada a um dado que o relógio ainda
+> não produziu.
+
+### Prova da Fase 4
+
+`scratchpad/evidencias/egress-fase4/` — **em dado, prints zero.**
+
+| # | Arquivo | O que prova |
+|---|---|---|
+| 1 | `numeros-consolidados.md` | A tabela da §4.1 completa, com a fonte de cada linha |
+| 2 | `edge-logs-producao.txt` | Duas visitas em produção, contadas no log do Supabase |
+| 3 | `usage-egress-dias.md` | O egress diário antes/depois — **escrito na §4.5, dias depois** |
+
+**Quem valida o quê:** o deploy e a leitura de `edge_logs` são do Claude (zero
+Spark, só leitura). O gráfico de **Usage** é do painel do Supabase e **volta para
+o Jorge**, como qualquer dado de custo.
 
 Mais: `docs/decisoes.md` com a entrada datada, este arquivo com os status
 fechados, e o commit + push com a saída de `git log origin/master -1` colada no

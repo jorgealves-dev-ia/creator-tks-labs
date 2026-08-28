@@ -4147,3 +4147,28 @@ E a lição de método: **"1 chamada" não é prova de que nada se perdeu.** Bas
 #### O Lightbox ficou de fora, e está escrito no código por quê
 
 Ele abre por clique, sozinho, muito depois da carga: não há com quem formar lote, e um lote de um é só uma indireção. E ele é o **único** chamador que quer o `full` — mantê-lo à parte deixa isso visível. **A Fase 3 perdeu tempo com um alarme falso justamente porque essa URL parece um vazamento e é a regra**, e uma exceção explicada no lugar certo é mais barata que a mesma investigação de novo.
+
+### 27/08/2026 — Regra do fundador: prova em número; print só quando o número não alcança
+
+Fechada a Fase 5, o Jorge instituiu uma regra de processo que muda o **entregável padrão** de toda validação. Ela vale daqui em diante, para qualquer frente.
+
+**O entregável padrão é dado**: contagens, tabelas, leituras de log, de banco ou do DOM — o que se **analisa, compara e cita**.
+
+| | antes | agora |
+|---|---|---|
+| entregável padrão | um screenshot por item do roteiro | **dado por item** |
+| screenshot como instrumento | livre | **continua livre** |
+| screenshot arquivado | padrão | **só quando a afirmação é inerentemente visual** |
+| quando arquivado | série | **um print decisivo** |
+
+**O racional do dono, na palavra dele:** *"o Jorge analisa números, não pixels; série de prints custa produtividade e tokens sem adicionar decisão."*
+
+E há um ponto que a regra torna explícito: **a casa já dizia isso desde a Fase 0 do egress — o número decide.** A Fase 0 recusou o `transferSize` por não medir; a Fase 3 recusou o Resource Timing e o log da extensão pelo mesmo motivo e foi ao `edge_logs`; a Fase 5 trocou o DevTools pelo log do servidor porque *"houve 72 POSTs"* não separa `signAssetUrls` de `listNodeGenerations`. **Três fases seguidas escolhendo o instrumento pela capacidade de decidir — e ainda arquivando prints por hábito.** A regra só alinhou o entregável ao critério que já governava a medição.
+
+**A distinção que faz a regra funcionar: instrumento não é entregável.** Olhar a tela em tempo real continua sendo trabalho normal — é assim que se descobre que um card não pintou. O que muda é que **olhar não implica arquivar**. Confundir as duas coisas foi o que encheu pastas de imagem que ninguém reabriu.
+
+**Onde o print continua sendo a prova certa:** layout quebrado, imagem renderizando errado, qualquer afirmação **inerentemente visual** que nenhum número carrega. Aí um print decide — e um basta.
+
+**Aplicação imediata, por reclassificação.** O print `02-card-recem-gerado-pinta-a-miniatura.png` da Fase 3 tinha chegado a ficar marcado como AUSENTE enquanto não estava em disco. Sob a regra nova ele nem seria o entregável: **a prova daquele item é a comparação de tokens** — `src` do card em `.thumb.webp`, zoom em `.jpg`, e os dois tokens com o mesmo `iat` (1787876661) —, que é dado, está registrado, e é o que de fato decide. O pixel apenas ilustra.
+
+**O que já está arquivado fica.** Não se reescreve evidência velha: a regra governa o que vem, não o que passou. Reescrever pastas antigas gastaria exatamente a produtividade que a regra existe para poupar.
