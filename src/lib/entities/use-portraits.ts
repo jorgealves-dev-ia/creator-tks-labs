@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { signAssetUrls } from "@/lib/assets/actions";
+import { signAssets } from "@/lib/assets/sign-batch";
 import { useEntitiesStore } from "@/lib/entities/store";
 
 /**
@@ -76,7 +76,7 @@ export function useCharacterPortraits(): Record<string, string> {
 
     let cancelled = false;
 
-    void signAssetUrls(pairs.map(([, assetId]) => assetId)).then((signed) => {
+    void signAssets(pairs.map(([, assetId]) => assetId)).then((signed) => {
       if (cancelled) return;
 
       // Retrato de personagem: um quadradinho ao lado do nome. Miniatura.

@@ -4088,3 +4088,62 @@ O resto fechou sem ressalva: **uma** geração na janela (`succeeded`, `sheet_so
 **177,6× menor** — é esse o buraco que a Fase 3 fechou na primeira visualização de cada geração. E o original **nasceu com o ano**, não com a hora: o `IMMUTABLE_CACHE_CONTROL` roda no caminho de geração, e a limitação dos 57 originais antigos vale só para os antigos, como o plano prometeu.
 
 Três instrumentos independentes — o navegador do dono, o ledger e o Storage — concordando sobre a mesma imagem. **É assim que uma etapa fecha.**
+
+### 27/08/2026 — Fase 5 · a assinatura em lote: 53 chamadas viram 1, e a dedup era metade do ganho
+
+O canvas sofria de **viagens**, não de bytes. A Fase 2 já tinha provado isso sem querer — cortou 97,92% dos bytes e o canvas continuou em 15,24 s. Então a prova desta fase é em contagem de idas, e medir MB aqui daria zero de melhora e estaria certo.
+
+#### O instrumento foi trocado antes de medir, e a troca melhora a medição
+
+O plano dizia **DevTools → Network**. Foi trocado pelo **log do `next dev`**, porque a aba Network não consegue responder a pergunta:
+
+| instrumento | o máximo que ele diz |
+|---|---|
+| DevTools → Network | *"houve 72 POSTs para `/studio`"* — **toda Server Action é o mesmo POST para a mesma URL** |
+| log do `next dev` | *"houve 53 `signAssetUrls`, e estes são os ids"* — nomeia a função e imprime os argumentos |
+
+A pergunta da fase é quantas vezes o canvas pediu **assinatura**, e só o segundo instrumento separa `signAssetUrls` de `listNodeGenerations`. **É a lição da Fase 3 pela terceira vez: quando a pergunta é sobre o servidor, o instrumento é o servidor.** O Resource Timing entrou como segundo instrumento, para o tempo — ele mede a fila do cliente, que é o que a Fase 0.3 mediu.
+
+#### O A/B precisou de guarda-corpos, e eles não eram formalidade
+
+Um antes/depois **acidental** apareceu primeiro, no log: 52 chamadas antes de um Fast Refresh, 1 depois. Parecia a prova, e não era — eram cargas diferentes, e **o React Flow só renderiza os nodes visíveis**, então a diferença podia ser de viewport. O dono impôs três guarda-corpos, e o terceiro é o que mais ensina:
+
+| guarda-corpo | o que ele impede |
+|---|---|
+| janela visível e em primeiro plano | aba escondida não renderiza — um lado medido escondido falsifica o A/B inteiro |
+| viewport intocado entre as recargas | medir dois canvas diferentes e chamar de antes/depois |
+| disciplina de `stash` fotografada | não saber, depois, se o "antes" era mesmo o código velho |
+
+E as três provas de comparabilidade foram medidas, não assumidas: **`visible` nos dois lados, 1440×675 nos dois, 24 nodes nos dois, 43 imagens nos dois.**
+
+#### O resultado
+
+| Métrica | Antes | Depois |
+|---|---|---|
+| **chamadas `signAssetUrls`** | **53** | **1** |
+| Server Actions na carga | 72 | 20 |
+| janela da fila | 6.230 ms | 2.786 ms |
+| **até a última imagem** | **7.199 ms** | **4.736 ms** |
+| razão de serialização | **0,99** | 0,93 |
+
+A razão de **0,99** é a assinatura da doença: a soma das durações é 99% da janela, ou seja **as chamadas não se sobrepõem — esperam umas pelas outras**. É o mesmo 1,01 da Fase 0.3, reencontrado por outro caminho e em outro dia.
+
+#### A pergunta que 53 → 1 obriga a fazer, e que quase não foi feita
+
+Cinquenta e três chamadas viraram uma. **O lote pediu menos?** A resposta precisou de uma contagem a mais, e ela mudou o entendimento do conserto:
+
+| | |
+|---|---|
+| ids pedidos no lado "antes", com repetição | **57** |
+| ids **distintos** entre eles | **15** |
+| ids na chamada única do lado "depois" | **15** |
+
+**Os mesmos quinze.** A diferença entre 57 e 15 é repetição pura — um id foi ao servidor **onze vezes** para trazer onze cópias da mesma string, porque onze cards diferentes mostravam o mesmo asset e cada um perguntava por conta própria.
+
+Isso reclassifica a deduplicação. Ela entrou no plano como uma das quatro garantias de corretude, uma linha defensiva — e a medição mostrou que **ela é mais da metade do ganho**: mesmo que o lote não existisse, deduplicar 57 em 15 já cortaria dois terços das viagens. **O que estava escrito como cuidado era, na verdade, o mecanismo.**
+
+E a lição de método: **"1 chamada" não é prova de que nada se perdeu.** Bastaria o coletor ter um defeito que descartasse ids para o número ficar ainda melhor e a tela ficar pior. Quem fechou a pergunta foi contar os ids distintos dos dois lados — e as **0 imagens quebradas** nos dois lados fechando o outro flanco.
+
+#### O Lightbox ficou de fora, e está escrito no código por quê
+
+Ele abre por clique, sozinho, muito depois da carga: não há com quem formar lote, e um lote de um é só uma indireção. E ele é o **único** chamador que quer o `full` — mantê-lo à parte deixa isso visível. **A Fase 3 perdeu tempo com um alarme falso justamente porque essa URL parece um vazamento e é a regra**, e uma exceção explicada no lugar certo é mais barata que a mesma investigação de novo.

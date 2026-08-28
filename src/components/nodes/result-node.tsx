@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { useLightbox } from "@/components/nodes/lightbox";
 import { NodeHeader } from "@/components/nodes/node-header";
-import { signAssetUrls } from "@/lib/assets/actions";
+import { signAssets } from "@/lib/assets/sign-batch";
 import { usePromptInspector } from "@/lib/canvas/prompt-inspector-store";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { signAssetDownload } from "@/lib/generation/history";
@@ -53,7 +53,7 @@ export function ResultNode({ id, data, selected }: NodeProps<ResultNodeType>) {
   useEffect(() => {
     let cancelled = false;
 
-    void signAssetUrls([assetId]).then((urls) => {
+    void signAssets([assetId]).then((urls) => {
       if (cancelled) return;
 
       setUrl(urls[assetId]?.thumb ?? null);

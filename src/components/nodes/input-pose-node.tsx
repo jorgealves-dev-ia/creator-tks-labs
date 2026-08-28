@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { NodeHeader } from "@/components/nodes/node-header";
 import { NodeIcon } from "@/components/nodes/node-icons";
-import { signAssetUrls } from "@/lib/assets/actions";
+import { signAssets } from "@/lib/assets/sign-batch";
 import { useReferencePicker } from "@/lib/canvas/reference-picker-store";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { t } from "@/lib/i18n/pt-BR";
@@ -65,7 +65,7 @@ export function InputPoseNode({ id, data, selected }: NodeProps<InputPoseNodeTyp
 
     let cancelled = false;
 
-    void signAssetUrls([assetId]).then((urls) => {
+    void signAssets([assetId]).then((urls) => {
       // O card desenha pequeno: miniatura. Ampliar é o Lightbox, que reassina.
       const link = urls[assetId]?.thumb;
 

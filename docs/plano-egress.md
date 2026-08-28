@@ -158,7 +158,7 @@ mudança nos originais, e qualquer coisa que acrescente passo ao fluxo.
 | **2** | A tela lê a miniatura — o corte de 97% aparece | ✅ **fechada — 27/08/2026** (§2.3) |
 | **3** | A URL estável e o cache imutável, que só funcionam juntos | ✅ **fechada — 27/08/2026** (§3.3) |
 | **4** | A prova consolidada e o fechamento | 🟡 **primeira metade feita** — a geração do Jorge de 27/08 (§3.3) |
-| **5** | **A assinatura em lote no canvas** — 66 chamadas em fila, 13,17 s | 🚧 **aberta — 27/08/2026** (§5.1) |
+| **5** | **A assinatura em lote no canvas** — 66 chamadas em fila, 13,17 s | ✅ **fechada — 27/08/2026** (§5.4) |
 
 ---
 
@@ -815,6 +815,61 @@ Mesmo canvas da Fase 0.3, mesma leitura, os dois lados:
 **Quem valida:** carregar canvas não gera nada e não toca em ledger — **prova
 inteira do Claude**, com print por item. O commit espera o ok do Jorge dado
 sobre os prints.
+
+### 5.4 O que a Fase 5 entregou — fechada em 27/08/2026 ✅
+
+Números completos em `scratchpad/evidencias/egress-fase5/numeros-fase5.md`.
+**Zero Spark, zero linha em `generations`, zero lançamento no ledger** — só `F5`
+e leitura de log.
+
+**O instrumento foi trocado antes de medir, e a troca melhora a medição.** O
+plano dizia DevTools → Network; a aba Network só consegue dizer *"houve 72 POSTs
+para `/studio`"*, porque **toda Server Action é o mesmo POST para a mesma URL**.
+O log do `next dev` **nomeia a função e imprime os argumentos** — e a pergunta
+desta fase é quantas vezes o canvas pediu **assinatura**, não quantos POSTs
+houve. A lição da Fase 3 outra vez: **a pergunta é sobre o servidor, então o
+instrumento é o servidor.** O Resource Timing entra como segundo instrumento,
+para o tempo.
+
+**O A/B foi controlado, com os três guarda-corpos pedidos pelo dono:** janela
+visível e em primeiro plano nos dois lados, viewport intocado entre as recargas,
+e disciplina de `stash` fotografada (`00-disciplina-de-stash.txt` — o `pop`
+devolveu a lista idêntica e a pilha ficou vazia).
+
+**As três provas de que os dois lados são comparáveis** — sem elas o A/B mediria
+dois canvas diferentes, que era o defeito do antes/depois acidental que ele veio
+substituir:
+
+| | antes | depois |
+|---|---|---|
+| `visibilityState` | `visible` | `visible` |
+| viewport | 1440 × 675 | 1440 × 675 |
+| nodes renderizados | **24** | **24** |
+| `<img>` em nodes | **43** | **43** |
+
+**O resultado:**
+
+| Métrica | Antes | Depois | |
+|---|---|---|---|
+| **chamadas `signAssetUrls`** | **53** | **1** | **53×** |
+| Server Actions na carga | 72 | 20 | −72% |
+| janela da fila | 6.230 ms | 2.786 ms | −55% |
+| **até a última imagem** | **7.199 ms** | **4.736 ms** | **−2,46 s** |
+| razão de serialização | **0,99** — fila perfeita | 0,93 | |
+| imagens quebradas | 0 | 0 | |
+
+A razão de **0,99** é a assinatura da doença: a soma das durações é 99% da
+janela, ou seja **as chamadas não se sobrepõem** — esperam umas pelas outras. É
+o mesmo 1,01 da Fase 0.3, reencontrado por outro caminho.
+
+**E nenhum card foi perdido — a pergunta que 53 → 1 obriga a fazer.** O lado
+"antes" pediu **57 ids com repetição**, que são **15 distintos**; o lote pediu
+exatamente esses **15**. Um id foi ao servidor **11 vezes** para trazer onze
+cópias da mesma string. **A deduplicação não é otimização de margem: é mais da
+metade do ganho** — e só apareceu porque a contagem de ids distintos foi feita,
+em vez de confiar em que "1 chamada" já bastava como prova.
+
+`lint`, `typecheck` e `build` — **exit 0** nos três, com a porta 3000 livre.
 
 ---
 

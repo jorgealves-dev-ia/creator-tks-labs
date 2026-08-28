@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { NodeHeader } from "@/components/nodes/node-header";
 import { NodeIcon } from "@/components/nodes/node-icons";
-import { signAssetUrls } from "@/lib/assets/actions";
+import { signAssets } from "@/lib/assets/sign-batch";
 import { useReferencePicker } from "@/lib/canvas/reference-picker-store";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { t } from "@/lib/i18n/pt-BR";
@@ -66,7 +66,7 @@ export function InputProductNode({ id, data, selected }: NodeProps<InputProductN
 
     let cancelled = false;
 
-    void signAssetUrls(ids).then((signed) => {
+    void signAssets(ids).then((signed) => {
       if (cancelled) return;
 
       const thumbs = Object.fromEntries(

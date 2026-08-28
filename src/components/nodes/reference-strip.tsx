@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { signAssetUrls } from "@/lib/assets/actions";
+import { signAssets } from "@/lib/assets/sign-batch";
 import {
   anchorLabel,
   positionsLabel,
@@ -193,7 +193,7 @@ export function ReferenceStrip({
 
     let cancelled = false;
 
-    void signAssetUrls(assetIds).then((signed) => {
+    void signAssets(assetIds).then((signed) => {
       if (cancelled) return;
 
       // A faixa é espelho, em quadros de poucas dezenas de pixels. O que viaja

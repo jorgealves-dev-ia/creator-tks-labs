@@ -65,6 +65,13 @@ function LightboxView({ assetId, isVideo }: { assetId: string; isVideo: boolean 
   useEffect(() => {
     let cancelled = false;
 
+    // Direto, sem o coletor de `sign-batch` — e de propósito, não por
+    // esquecimento. O Lightbox abre por clique, sozinho, muito depois da carga
+    // do canvas: não há com quem formar lote, e um lote de um é só uma
+    // indireção a mais. Ele é também o **único** chamador que quer o `full`, e
+    // deixá-lo à parte mantém isso visível no código — a Fase 3 perdeu tempo
+    // com um alarme falso justamente porque esta URL parece um vazamento e é a
+    // regra.
     void signAssetUrls([assetId]).then((signed) => {
       // `full`, e nunca `thumb`: esta é a tela do zoom. A grade atrás dela
       // mostra 20 kB para caber na página; quem clicou pediu a imagem inteira,
