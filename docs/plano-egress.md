@@ -158,7 +158,7 @@ mudança nos originais, e qualquer coisa que acrescente passo ao fluxo.
 | **2** | A tela lê a miniatura — o corte de 97% aparece | ✅ **fechada — 27/08/2026** (§2.3) |
 | **3** | A URL estável e o cache imutável, que só funcionam juntos | ✅ **fechada — 27/08/2026** (§3.3) |
 | **4** | A prova consolidada e o fechamento | 🟡 **primeira metade feita** — a geração do Jorge de 27/08 (§3.3) |
-| **5** | **A assinatura em lote no canvas** — 66 chamadas em fila, 13,17 s | ✅ **aprovada em 27/08/2026, entra no ciclo** |
+| **5** | **A assinatura em lote no canvas** — 66 chamadas em fila, 13,17 s | 🚧 **aberta — 27/08/2026** (§5.1) |
 
 ---
 
@@ -647,9 +647,11 @@ que abre o original **por desenho** — o requisito 1. Numa tela que serve dois
 endereços de propósito, "achei o original" é metade de uma pergunta.)*
 
 **A conferência de ledger, pedida pelo dono antes do commit** — *"memória não
-decide, ledger decide"* —, e o ledger corrigiu a memória em dois números, os
+decide, ledger decide"* —, e o ledger corrigiu **os dois números citados**, os
 dois a favor do produto: a geração foi às **21:24 BRT** (não ~20:44) e custou
-**75 Sparks** (não 15), que é o **preço de catálogo do 2K**. Uma geração, um
+**75 Sparks** (não 15), que é o **preço de catálogo do 2K**. *O −15 não era
+lembrança do dono: era o preço do **roteiro** do Ciclo 2, carregado para o
+produto errado — e um preço válido do produto errado passa por conferido.* Uma geração, um
 débito, `wallets.balance_cents` = `sum(ledger)` = 6.550, **diferença zero**, e
 os dois carimbos idênticos ao microssegundo — `record_generation` numa transação
 só, invariante 5 visível de fora.
@@ -715,6 +717,104 @@ tempo, sem poder atribuir o ganho a nenhuma delas.
 canvas que junta os ids pedidos no mesmo tick e faz **uma** chamada, com os cards
 lendo do mapa em vez de pedirem sozinhos. O `MAX_IDS = 60` que já existe em
 `signAssetUrls` foi escrito para exatamente isto.
+
+---
+
+### 5.1 O que muda, e onde — aberta em 27/08/2026
+
+**Um coletor no cliente, e nove chamadas que trocam de nome.** Nenhum componente
+aprende o que é lote: ele continua pedindo os ids que precisa, e passa a pedir
+para um coletor em vez de pedir para o servidor.
+
+```
+hoje    9 componentes → signAssetUrls([id])  →  66 Server Actions em fila
+depois  9 componentes → signAssets([id])     →  coletor  →  2 Server Actions
+```
+
+O coletor junta tudo que foi pedido **no mesmo tick**, deduplica, quebra em
+pedaços de 60 (o `MAX_IDS` que já existe, escrito para isto) e resolve a promessa
+de cada chamador a partir do resultado compartilhado.
+
+**Por que o tick basta:** o React monta os nodes de um canvas num commit só, então
+os `useEffect` de todos os cards disparam antes de o microtask rodar. Não é
+preciso janela de tempo, `setTimeout` nem debounce — e não ter janela significa
+**zero atraso acrescentado**: o lote sai no mesmo instante em que a primeira
+chamada sairia hoje.
+
+| arquivo | ids que pede |
+|---|---|
+| `result-node.tsx` | 1 |
+| `input-image-node.tsx` | 1 |
+| `input-pose-node.tsx` | 1 |
+| `input-sheet-node.tsx` | 1 |
+| `input-product-node.tsx` | até 5 |
+| `reference-strip.tsx` | âncora + referências |
+| `video-generator-node.tsx` | 1 na montagem, 1 no clique |
+| `use-portraits.ts` | vários |
+| `lightbox.tsx` | 1 — **fica de fora** |
+
+**O Lightbox fica de fora de propósito.** Ele abre por clique, sozinho, muito
+depois da carga. Um lote de um é só uma indireção a mais, e ele é o único
+chamador que quer o `full` — mantê-lo direto deixa óbvio no código que ali o
+original é pedido de propósito, que foi exatamente o alarme falso da Fase 3.
+
+### 5.2 O que o coletor precisa acertar, e o que ele não vai tentar
+
+**Precisa acertar:**
+
+- **Falha não pendura ninguém.** Se a chamada compartilhada quebrar, todos os
+  esperando recebem vazio — que é o que cada um já sabe tratar hoje. Um lote que
+  falha em silêncio deixaria nove cards girando para sempre.
+- **Deduplicação.** A folha da personagem aparece na faixa **e** no card de
+  sheet; hoje são duas viagens pelo mesmo id.
+- **Pedaços de 60.** Canvas grande não vira uma chamada inválida — o `MAX_IDS`
+  é do schema Zod, então estourar não degrada: rejeita.
+- **Cancelamento continua do chamador.** O `cancelled` de cada `useEffect` fica
+  onde está. O coletor não cancela nada: quem desmontou simplesmente ignora a
+  resposta, como já faz.
+
+**Não vai tentar — e vale dizer para não voltar como ideia:**
+
+- **Cache de URL no cliente.** O cache já existe, e está no lugar certo: no
+  servidor, na Fase 3. Um segundo cache no navegador guardaria a mesma string
+  sem saber quando o arquivo sumiu, e o `forgetSignedUrls` — que é o que impede
+  moldura quebrada — não alcança o navegador de ninguém. **Dois caches para um
+  dado, e só um deles sabe esquecer.**
+- **Prefetch no servidor.** Assinar tudo do canvas na renderização da página
+  seria mais rápido ainda, mas muda de onde o dado vem e mistura duas mudanças
+  na mesma prova. Se depois do lote ainda houver espera, isso vira fase própria.
+
+### 5.3 Por que ela não corta byte nenhum, e está certa assim
+
+A galeria sofria de **bytes** (Fases 1–3). O canvas sofre de **viagens**. São
+duas doenças, e a Fase 2 provou isso sem querer: cortou 97,92% dos bytes e o
+canvas continuou em 15,24 s.
+
+Então a prova desta fase **não é MB**. É contagem de idas e tempo até a última
+imagem. Medir bytes aqui daria zero de melhora e estaria certo — e por isso o
+instrumento tem que ser escolhido antes, de novo.
+
+### Prova da Fase 5
+
+Mesmo canvas da Fase 0.3, mesma leitura, os dois lados:
+
+| Métrica | Antes (0.3) | Depois | Como se lê |
+|---|---|---|---|
+| Server Actions numa carga de canvas | **66** | esperado **2** | DevTools → Network, filtro de POST |
+| soma da fila até a última imagem | **13,17 s** | | o último POST menos o primeiro |
+| custo de uma chamada isolada | 111 ms | — | não deve mudar: não é lentidão de servidor |
+| razão de serialização | 1,01 (fila perfeita) | | se cair, deixou de ser fila |
+
+| # | Arquivo | O que prova |
+|---|---|---|
+| 1 | `01-canvas-antes-66-acoes.png` | O retrato da fila, reaproveitado da Fase 0 |
+| 2 | `02-canvas-depois-2-acoes.png` | A mesma carga, com a contagem nova |
+| 3 | `03-canvas-pintado-zero-quebradas.png` | Todos os cards com imagem — o lote não perdeu ninguém |
+| 4 | `numeros-fase5.md` | Os números transcritos |
+
+**Quem valida:** carregar canvas não gera nada e não toca em ledger — **prova
+inteira do Claude**, com print por item. O commit espera o ok do Jorge dado
+sobre os prints.
 
 ---
 

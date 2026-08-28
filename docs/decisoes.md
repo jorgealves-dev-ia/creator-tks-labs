@@ -4044,20 +4044,37 @@ A terceira linha é a que fecha, e ela não era óbvia antes de existir. Os dois
 
 E a lição do alarme: **numa tela que serve dois endereços de propósito, "achei o original" não é achado — é metade de uma pergunta.** A pergunta inteira é *qual elemento* o serviu.
 
-#### O ledger contra a memória, e o ledger ganhou duas vezes
+#### O ledger contra o que foi citado — e o número errado era meu
 
-Antes de commitar, o dono pediu uma leitura de banco em vez de confiar na lembrança: *"memória não decide, ledger decide."* Decidiu — **contra a memória, nos dois números que ela arriscou**:
+Antes de commitar, o dono pediu uma leitura de banco em vez de confiar no que estava escrito: *"memória não decide, ledger decide."* Decidiu — **contra os dois números citados**:
 
-| | a memória dizia | o banco diz |
-|---|---|---|
-| horário | ~20:44 BRT | **21:24:20 BRT** |
-| valor cobrado | −15 Sparks | **−75 Sparks** |
+| | o que foi citado | o banco diz | de quem era o número |
+|---|---|---|---|
+| horário | ~20:44 BRT | **21:24:20 BRT** | lembrança do dono |
+| valor cobrado | −15 Sparks | **−75 Sparks** | **briefing do arquiteto** |
+
+**A autoria do erro foi corrigida pelo próprio dono, e ela importa.** O −15 não
+era memória dele: era o **preço do roteiro** — 15 ⚡, do Ciclo 2, escrito em
+[`plano-storyboard-c2.md`](plano-storyboard-c2.md) — carregado por engano para
+uma imagem 2K, que custa 75. O número existia, estava certo, e estava **no
+produto errado**.
+
+Isso torna a lição mais forte, não mais fraca. Se o erro fosse só de lembrança
+humana, a regra seria "confira o que o dono lembra". Como ele veio de um
+documento aprovado, a regra tem que ser maior: **número citado de cabeça é
+hipótese venha de quem vier** — do dono, do arquiteto, ou de uma linha correta de
+um plano vizinho. **O ledger decide.**
+
+E há uma armadilha específica aqui, que vale nomear: um preço **válido do
+produto errado** é mais perigoso que um número inventado. Inventado, ninguém o
+reconhece e todos desconfiam; válido, ele passa por conferido — porque de fato
+existe, em algum lugar, escrito corretamente.
 
 E o que o banco diz está **certo**: a geração pediu `image_size = "2K"`, e o catálogo cobra 50 no 1K, **75 no 2K**, 110 no 4K. O preço veio do catálogo, não de quem chamou — invariantes 6 e 11 cumpridas no fato.
 
 O resto fechou sem ressalva: **uma** geração na janela (`succeeded`, `sheet_source = version`), **uma** linha de ledger apontando para ela, `wallets.balance_cents` = `sum(ledger)` = 6.550, **diferença zero**. E os dois carimbos de tempo **idênticos ao microssegundo** (`21:24:20.998878`) — que não é coincidência, é `record_generation` gravando e cobrando na mesma transação, a invariante 5 visível de fora.
 
-**O ponto de método:** nenhum dos dois erros era defeito do produto, e é justamente por isso que a conferência valeu. Um número lembrado errado sobre um sistema correto produz exatamente a mesma sensação de que algo está errado — e teria custado uma investigação inteira se tivesse sido tratado como sintoma. **A memória do dono é uma hipótese, não um dado**, e tratá-la assim protege o dono do próprio palpite.
+**O ponto de método:** nenhum dos dois erros era defeito do produto, e é justamente por isso que a conferência valeu. Um número citado errado sobre um sistema correto produz exatamente a mesma sensação de que algo está errado — e teria custado uma investigação inteira se tivesse sido tratado como sintoma. **Todo número citado de memória é hipótese, inclusive o que eu mesmo escrevi num plano**, e tratá-lo assim protege os dois lados do próprio palpite.
 
 #### E o Storage confirma o buraco fechado por um terceiro caminho
 
