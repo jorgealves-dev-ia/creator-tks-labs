@@ -157,7 +157,7 @@ mudança nos originais, e qualquer coisa que acrescente passo ao fluxo.
 | **1** | A miniatura nasce — e o acervo ganha as suas | ✅ **fechada — 27/08/2026** (§1.7) |
 | **2** | A tela lê a miniatura — o corte de 97% aparece | ✅ **fechada — 27/08/2026** (§2.3) |
 | **3** | A URL estável e o cache imutável, que só funcionam juntos | ✅ **fechada — 27/08/2026** (§3.3) |
-| **4** | A prova consolidada e o fechamento | 🚧 **aberta — 27/08/2026** (§4.1); a geração do Jorge é a 1ª metade |
+| **4** | A prova consolidada e o fechamento | ✅ **§4.4 fechada — 27/08/2026**; 🟡 **§4.5 aberta** — aguarda o gráfico de Usage |
 | **5** | **A assinatura em lote no canvas** — 66 chamadas em fila, 13,17 s | ✅ **fechada — 27/08/2026** (§5.4) |
 
 ---
@@ -743,6 +743,57 @@ o Jorge**, como qualquer dado de custo.
 Mais: `docs/decisoes.md` com a entrada datada, este arquivo com os status
 fechados, e o commit + push com a saída de `git log origin/master -1` colada no
 resumo.
+
+### 4.4 A conferência em produção — fechada em 27/08/2026 ✅
+
+Números em `scratchpad/evidencias/egress-fase4/`. **Prova em dado, prints zero.**
+
+Visitas do Jorge em produção, sequência **galeria → studio → galeria → studio**,
+entre 22:43 e 22:44 BRT — **01:43 e 01:44 UTC de 28/08**. *(A conversão vai
+escrita porque foi ela que errou uma data neste mini-ciclo.)*
+
+| minuto UTC | passada | miniaturas | total storage |
+|---|---|---|---|
+| 01:43 | **1ª** | **6** | 13 |
+| 01:44 | **2ª** | **0** | **1** |
+
+**Três coisas que este log decide:**
+
+**1. O cache pegou em produção.** A advertência da Fase 3 — *"localhost mede
+quente, a medição de desenvolvimento mente a favor"* — está honrada: aqui a
+instância esfria, há CDN na frente e rede real no meio, e **o zero apareceu do
+mesmo jeito**.
+
+**2. Zero originais `.jpg` nas duas passadas.** É a prova de produção da Fase 2:
+o caminho de exibição nunca toca no original. A varredura que era o risco real
+daquela fase não deixou vazamento.
+
+**3. A opção A não decepcionou.** Assinaturas em lote: **5** na primeira passada
+(as duas páginas pedindo o que faltava no `Map`) contra **1** na segunda. O `Map`
+em memória foi escolhido em §3.2 com a ressalva explícita de que poderia
+decepcionar em produção — **não decepcionou**, e a opção B (tabela
+`asset_signed_urls`) continua registrada e continua desnecessária.
+
+**Ressalva de comparabilidade, dita antes que alguém compare errado:** os 6 desta
+primeira passada **não** se comparam com os 21 de localhost — canvas e viewport
+diferentes, e o navegador do Jorge já tinha estado ali. **O que se compara é a
+forma:** 1ª passada > 0, 2ª passada = 0. Apareceu igual dos dois lados.
+
+**O veredito do dono, registrado como ele o deu:** *"está carregando visivelmente
+mais rápido que antes"*, com a ressalva honesta de que *"talvez haja ajuste fino
+futuro"* — e o alívio no egress sendo o que tranquiliza. A §5.2 já tem o próximo
+passo natural registrado (**prefetch no servidor**), recusado nesta fase para não
+misturar duas mudanças na mesma prova.
+
+### 4.5 O egress na fatura — 🟡 ABERTA, aguardando o relógio
+
+**O mini-ciclo não está fechado.** Falta o único número que fala da **fatura**:
+o gráfico de **Usage** do Supabase, egress diário antes contra depois, com dias
+suficientes para formar série.
+
+**Nenhum número de uma sessão substitui uma série temporal** — e este é um dado
+que o relógio ainda não produziu, não um trabalho que falta fazer. O Jorge traz
+o número quando houver; a §4.5 e o mini-ciclo fecham juntos, nesse dia.
 
 ---
 

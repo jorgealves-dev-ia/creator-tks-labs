@@ -4172,3 +4172,44 @@ E há um ponto que a regra torna explícito: **a casa já dizia isso desde a Fas
 **Aplicação imediata, por reclassificação.** O print `02-card-recem-gerado-pinta-a-miniatura.png` da Fase 3 tinha chegado a ficar marcado como AUSENTE enquanto não estava em disco. Sob a regra nova ele nem seria o entregável: **a prova daquele item é a comparação de tokens** — `src` do card em `.thumb.webp`, zoom em `.jpg`, e os dois tokens com o mesmo `iat` (1787876661) —, que é dado, está registrado, e é o que de fato decide. O pixel apenas ilustra.
 
 **O que já está arquivado fica.** Não se reescreve evidência velha: a regra governa o que vem, não o que passou. Reescrever pastas antigas gastaria exatamente a produtividade que a regra existe para poupar.
+
+### 27/08/2026 — Fase 4.4 · a produção confirma, e a opção A não decepcionou
+
+Visitas do dono em produção — galeria → studio → galeria → studio, 22:43–22:44 BRT = **01:43–01:44 UTC de 28/08**. A conversão vai escrita porque foi exatamente ela que errou uma data neste mesmo mini-ciclo, horas antes.
+
+| minuto UTC | passada | miniaturas | total storage |
+|---|---|---|---|
+| 01:43 | 1ª | **6** | 13 |
+| 01:44 | 2ª | **0** | **1** |
+
+**A advertência da Fase 3 está honrada.** Estava escrito lá, em maiúsculas de aviso: *"localhost mede quente — um processo Node só, sempre vivo, dá acerto de 100% por construção. A medição de desenvolvimento mente a favor. Quem confirma é a produção."* Confirmou: com instância que esfria, CDN na frente e rede real no meio, **o zero da segunda passada apareceu do mesmo jeito.**
+
+Vale notar o que isso diz sobre escrever advertências. A frase foi escrita quando o resultado ainda era desconhecido, e ela **não** foi escrita para ser desmentida — foi escrita para que, se a produção decepcionasse, ninguém tratasse isso como surpresa ou regressão. **Uma advertência bem colocada torna os dois desfechos legíveis**, e é por isso que ela vale mesmo quando o desfecho é o bom.
+
+#### Zero originais nas duas passadas — a prova de produção da Fase 2
+
+Nenhum `.jpg` no caminho de exibição, nas duas passadas. A varredura era **o risco real** daquela fase — não a tela ficar feia, mas uma URL de exibição vazar para um caminho que alimenta geração paga. A produção diz que não vazou.
+
+#### A opção A não decepcionou, e isso fecha uma escolha que ficou pendurada
+
+Assinaturas em lote: **5** na primeira passada contra **1** na segunda. O `Map` em memória foi escolhido em §3.2 do plano com a linha "contra" explícita — *acerto depende da instância estar quente* — e com o gatilho da opção B (tabela `asset_signed_urls`) registrado para o caso de decepcionar.
+
+**Não decepcionou.** A opção B continua escrita, continua correta como plano de contingência, e continua desnecessária. **Uma alternativa registrada e não usada não é trabalho perdido:** ela é o que permitiu escolher A sem apostar, porque o custo de errar já estava orçado.
+
+#### A ressalva de comparabilidade, dita antes que alguém compare errado
+
+Os **6** da primeira passada em produção **não** se comparam com os **21** de localhost: canvas e viewport diferentes, e o navegador do dono já tinha estado ali. **O que se compara é a forma** — 1ª passada > 0, 2ª passada = 0 —, e essa forma apareceu igual dos dois lados.
+
+Dizer isso **antes** de alguém fazer a conta errada é mais barato que desmentir depois. É a mesma disciplina dos guarda-corpos do A/B da Fase 5: a comparabilidade se declara, não se supõe.
+
+#### O veredito do dono, e por que a ressalva dele fica registrada
+
+*"Está carregando visivelmente mais rápido que antes"*, com a ressalva honesta de que *"talvez haja ajuste fino futuro"* — e o alívio no egress sendo o que tranquiliza.
+
+A ressalva fica escrita porque ela **está certa**: o canvas melhorou 2,46 s e não ficou instantâneo. A §5.2 já registrou o próximo passo natural, o **prefetch no servidor**, recusado na Fase 5 para não misturar duas mudanças na mesma prova. **Uma melhora medida não é uma vitória final, e chamá-la de final é como uma dívida técnica entra sem ninguém notar.**
+
+#### E o mini-ciclo não fechou — §4.5 aguarda o relógio
+
+Falta o único número que fala da **fatura**: o gráfico de Usage do Supabase, egress diário antes contra depois, com dias suficientes para formar série.
+
+**Nenhum número de uma sessão substitui uma série temporal.** E a distinção importa para o status ficar honesto: a §4.5 não é trabalho pendente, é **dado que o relógio ainda não produziu**. Uma etapa esperando o tempo passar e uma etapa esperando alguém trabalhar não podem ter a mesma aparência — pela mesma razão que a regra de 26/08 separou etapa fechada de etapa esperando prova.
