@@ -14,6 +14,7 @@ export type NodeKind =
   | "generator"
   | "video-generator"
   | "storyboard"
+  | "machine"
   | "result"
   | "input-image"
   | "input-product"
@@ -89,6 +90,23 @@ const PATHS: Record<NodeKind, React.ReactNode> = {
       <rect x="1.5" y="2.5" width="13" height="11" rx="2" {...STROKE} />
       <path d="M6.2 2.5v11" {...STROKE} />
       <path d="M8.2 6.1h4.1M8.2 9.9h4.1" {...STROKE} />
+    </>
+  ),
+
+  /**
+   * A Máquina: horizontal, com soquetes em cima e em baixo.
+   *
+   * Deliberadamente NÃO é a moldura da família de três (gerador, resultado,
+   * input) e nem o trilho do Roteiro — ela não faz uma imagem nem guarda uma
+   * ficha, ela **rege**. O que a identifica a baixo zoom é a silhueta deitada
+   * com os pinos: é a única coisa no canvas com essa forma, e é a forma do
+   * esboço que o Jorge trouxe.
+   */
+  machine: (
+    <>
+      <rect x="1" y="5" width="14" height="6" rx="3" {...STROKE} />
+      <path d="M4.5 5V3M8 5V3M11.5 5V3" {...STROKE} />
+      <path d="M4.5 11v2M8 11v2M11.5 11v2" {...STROKE} />
     </>
   ),
 

@@ -4408,3 +4408,75 @@ Os harnesses de fase (o `fase4-ramos.ts` do Ciclo 2, o `fase1-parse-check.mjs`) 
 **`supabase/travas/` e não `supabase/tests/`**, de propósito: o segundo implicaria que `supabase test db` o executa, e não executa. Ele roda à mão, e o nome diz isso.
 
 **E o arquivo rastreado é, byte a byte no que executa, o que produziu o 14/14:** o cabeçalho ganhou o aviso de rodar o arquivo inteiro e a explicação de por que ele está no repositório, e **as 345 linhas executáveis são idênticas** às da rodada — conferido pelo mesmo método que provou os ramos intactos da `record_generation`. Comentário não roda; e um artefato de prova que divergisse da rodada que o validou seria pior que nenhum.
+
+---
+
+### 28/08/2026 — Fase 1 fechada · a fundação, e a medição corrigindo a conta
+
+O node existe, o fio liga, o trilho espelha e a ficha não nasce mais morta. **Nenhum botão que gaste** — os portões são das Fases 2 e 3, e no lugar deles a Máquina **diz** o que ainda não faz.
+
+**O companheiro da D5, em quatro camadas.** A duração deixou de ser constante de arquivo e virou resposta do catálogo: a receita escreve a lista, o schema que viaja restringe por **`enum`**, o Zod recusa nomeando cena e lista, e `ai_model_video_prices` é quem define. A camada que importa é a segunda — *`minimum/maximum` deixa o modelo escrever 8 segundos e nos obriga a recusar **depois de pagar**; um `enum` faz o structured output não conseguir produzir outra coisa*. É a regra de 13/08 uma camada acima: não se **pede** o que não se sabe cobrar. E o caso vazio não recusa a geração — catálogo de vídeo desligado não pode impedir alguém de **escrever** uma história.
+
+**O formato da D3 nasceu aqui**, ainda sem consumidor: `prompt_compiled.structure.storyboard = { ordem, diretiva_pt, instrucao_pt }`. Separados exatamente pelo defeito que a conferência pegou — colados, um ↻ com instrução acenderia "desatualizada" sem a ficha ter mudado.
+
+**Uma coisa que só o `npm run build` pegou, e vale como regra:** um módulo `"use server"` **só pode exportar funções async**. As duas funções puras da derivação de estado quebrariam o build, e nem `tsc` nem ESLint enxergam essa regra — ela é do compilador. Foi a segunda vez no mesmo dia que um verificador disse OK sobre uma coisa que não sabia olhar (a primeira foi o parser e o `max(uuid)`). O acidente saiu bom: a derivação foi para um arquivo sem banco, e passou a se provar por **tabela-verdade** em vez de exigir tela.
+
+**A prova, nas duas metades.** Estrutural: 20/20 na D5, 30/30 no store — inclusive a que mais importa, *aprovada + repetição falhou → continua aprovada*, porque uma imagem boa não se desaprova porque a tentativa seguinte deu errado. Ao vivo, zero Spark: 24 nodes / 18 arestas → 25 / 19 → de volta a 24 / 18; o trilho espelhando as 6 fichas reais com 4 cortes e 2 emendas; a chave `checked = false` ao nascer; e o segundo fio no mesmo roteiro **sem criar aresta nenhuma** (19 antes, 19 depois), com a frase na tela.
+
+**O veredito do dono, que nenhuma consulta dá:** *"olhei e entendi sem explicação"*.
+
+---
+
+### 28/08/2026 — A régua se corrigiu de novo, e desta vez foi a medição em cima da conta
+
+A Fase 4 valia **−2** no plano. Medida na tela, vale **−3**.
+
+A conta original tinha três gestos de montagem — *clicar na prateleira · arrastar · ligar o fio* — e a tela mostrou um quarto que nenhuma conta previa e que é **obrigatório**: **enquadrar**. O node de Roteiro estava em `y = 1162` num viewport de 675 px, e as duas pontas do fio **não cabem na tela juntas**: sem um `fitView` ou um zoom, o arraste não tem como começar e terminar.
+
+**A diferença entre as duas correções da régua deste ciclo vale ser dita.** A primeira (54 → 50) foi uma **incoerência interna** — eu pagava seis imagens e usava quatro dentro da mesma tabela, e bastava reler para ver. Esta não: a conta estava internamente consistente e **errada assim mesmo**, porque contava gestos que se pensam e não gestos que se fazem. **Enquadrar não aparece em nenhuma lista de passos que alguém escreve de cabeça** — só aparece quando as duas pontas estão a 500 px uma da outra e a tela tem 675.
+
+O total de 9 não muda: o caminho de 9 já pressupõe o template. O que muda é **quanto a Fase 4 vale**, e ela vale mais do que estava escrito. Fica como método: **régua se escreve por conta e se fecha por medição** — a conta diz onde procurar, a tela diz quanto é.
+
+---
+
+### 28/08/2026 — Requisito da Fase 2: o portão só é um gesto com default de verdade
+
+Achado na mesma medição, e registrado como **requisito** e não como cuidado.
+
+A régua conta o passo 7 como **um** gesto: *"Gerar as 4 imagens"*, com o total `4 × 75 = 300 ⚡` já na tela. Para o total existir **antes** do clique, a Máquina precisa já saber modelo e qualidade — então os dois **nascem com o default do catálogo**, como o bloco Gerar Imagem já faz (`models.find(isDefault) ?? models[0]`), e o seletor existe para quem quiser trocar, nunca para quem precisa começar.
+
+**Um seletor vazio custa +2 na régua, e são dois gestos que a Fase 4 não recupera:** ela remove *montagem*, e escolher modelo não é montagem. O ciclo entregaria `50 → 11` acreditando ter entregado `50 → 9`.
+
+É também o motivo de os dois **não** existirem na Fase 1: um seletor que configura coisa nenhuma é a promessa vazia de um botão morto com outra roupa.
+
+---
+
+### 28/08/2026 — Lição de ambiente: a permissão da extensão morre com o grupo de abas
+
+A Fase 0 mediu em `localhost:5599` sem nenhum problema. Horas depois, a Fase 1 foi **bloqueada na mesma origem** — com a assinatura já registrada em 18/08: a aba é navegada e **volta sozinha para `chrome://newtab/`**.
+
+A causa não era o app nem a porta: era o **grupo de abas**. Eu fechei as abas no fim da Fase 0 — que é higiene, e continua sendo — e a permissão foi junto. O grupo novo nasceu sem ela.
+
+**A consequência para a regra que já existia:** *uso de navegador se anuncia antes* passa a incluir **pedir a permissão, não só a aba**. Anunciar quatro condições e conseguir três é gastar a rodada do mesmo jeito — e foi exatamente o que aconteceu: o Jorge respondeu "navegador pronto" de boa-fé, e as três primeiras tentativas falharam.
+
+**E o instrumento que separa os dois casos em um segundo é o `curl`:** se o app responde (307 do proxy, no caso), o problema é permissão e não código. Sem ele eu teria ido procurar defeito no que acabara de escrever — que é a mesma armadilha do bloco invisível de 18/08, quando o culpado era a aba em background e eu já estava lendo o bundle do React Flow. **Medir antes de consertar, de novo, e desta vez a medida foi uma linha de terminal.**
+
+---
+
+### 28/08/2026 — 📌 Backlog · Passe de UI/UX: o glifo ⇥ tem contraste fraco
+
+Achado na validação ao vivo da Fase 1, **pelo print** — que é exatamente o caso em que a regra do fundador manda arquivar um: a afirmação é inerentemente visual e nenhum número a carrega.
+
+O ⇥ (continuação) renderiza **sem a barra** na fonte da interface e sai parecido com uma seta simples, o que enfraquece a distinção de relance contra o ✂ (corte). **Não é ambiguidade** — a coluna diz "Continua da cena N" em texto logo abaixo, e o dono confirmou que entendeu sem explicação —, é **contraste**.
+
+Contraste é assunto do Passe de UI/UX, como o ▶ discreto da miniatura de vídeo registrado em 13/08. Fica anotado em vez de consertado agora, pela razão de sempre: um ajuste visual no meio de uma fase de fundação é escopo entrando pela porta dos fundos.
+
+---
+
+### 28/08/2026 — 📌 Backlog · três arestas órfãs no grafo salvo
+
+Notado ao conferir a limpeza da Máquina de teste, e **anterior a este ciclo**: o `workflows.graph` guarda **21 arestas** enquanto a tela desenha **18**. As três da diferença apontam para `node_id` que não existem mais — sobras de nodes removidos em alguma sessão passada.
+
+São **inertes**: o React Flow não as desenha, o Zod as aceita, e a limpeza de órfãs do `onNodesChange` só roda quando um node é removido na mesma sessão. Nenhuma delas é minha — os ids não são de nada que este ciclo criou.
+
+Registrado por honestidade de leitura: quem for contar arestas no grafo salvo daqui em diante vai encontrar três a mais do que a tela mostra, e é melhor saber por quê do que descobrir procurando um bug. Uma faxina é barata e não é deste ciclo.

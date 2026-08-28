@@ -9,8 +9,9 @@ import { ProviderError, providerErrorDetail } from "@/lib/providers/types";
 import { CENTS_PER_SPARK } from "@/lib/sparks";
 import {
   CANAL_KEYS,
-  SCHEMA_JSON,
-  SCHEMA_JSON_CENA,
+  DURACOES_SEM_CATALOGO,
+  buildSchemaJson,
+  buildSchemaJsonCena,
   TETO_CENAS,
   parseCena,
   parseRoteiro,
@@ -140,6 +141,16 @@ type GenerationParams = {
   canal: string | null;
   cenas_pedidas: number | null;
   personagem_handle: string | null;
+  /**
+   * Quais durações o catálogo permitia no instante desta geração.
+   *
+   * Gravada porque a lista MUDA: no dia em que `ai_model_video_prices` ganhar a
+   * linha de 10 segundos, um roteiro antigo só de 5 vai parecer escolha do
+   * modelo, e foi restrição do catálogo. É a mesma razão de `cenas_no_original`
+   * existir — o que identifica é o dado, e um registro que só guarda o valor
+   * atual não responde "com o que isto foi feito?".
+   */
+  duracoes_permitidas: number[];
 };
 
 export async function runStoryboardGeneration(
@@ -240,13 +251,28 @@ export async function runStoryboardGeneration(
   // a receita, que continua sendo função de texto para texto.
   const ctas = await carregarCtas(supabase, canal);
 
-  const receita = montarReceita(request, { personagem, canal, ctas, existente });
+  // -------------------------------------------------------------------------
+  // 4b. As durações que o catálogo sabe cobrar — o companheiro da D5.
+  //
+  //     Uma ficha só é animável se `ai_model_video_prices` precificar a duração
+  //     dela. Recusar isso só no portão de vídeo conserta TARDE: o roteiro já
+  //     teria nascido morto, e a pessoa descobriria duas fases depois. Aqui a
+  //     lista vira `enum` no schema que viaja, então o modelo não CONSEGUE pedir
+  //     uma duração que ninguém sabe cobrar.
+  //
+  //     Lê só de modelo e fornecedor acesos: uma linha de preço de um modelo
+  //     desligado não é oferta.
+  // -------------------------------------------------------------------------
+  const duracoes = await carregarDuracoesAnimaveis(supabase);
+
+  const receita = montarReceita(request, { personagem, canal, ctas, existente, duracoes });
 
   const params: GenerationParams = {
     job_kind: request.job,
     canal,
     cenas_pedidas: request.job === "roteiro" ? request.cenas : null,
     personagem_handle: personagem?.handle ?? null,
+    duracoes_permitidas: duracoes,
   };
 
   const promptUserPt = textoOriginal(request);
@@ -262,7 +288,10 @@ export async function runStoryboardGeneration(
       input: {
         systemPrompt: receita.system,
         userPrompt: receita.user,
-        schema: request.job === "cena" ? SCHEMA_JSON_CENA : SCHEMA_JSON,
+        schema:
+          request.job === "cena"
+            ? buildSchemaJsonCena(duracoes)
+            : buildSchemaJson(duracoes),
       },
     });
   } catch (error) {
@@ -302,7 +331,9 @@ export async function runStoryboardGeneration(
   //    não de quem clicou.
   // -------------------------------------------------------------------------
   const lido =
-    request.job === "cena" ? parseCena(resposta.text) : parseRoteiro(resposta.text);
+    request.job === "cena"
+      ? parseCena(resposta.text, duracoes)
+      : parseRoteiro(resposta.text, duracoes);
 
   if (!lido.ok) {
     await recordFailure(supabase, {
@@ -610,6 +641,46 @@ function generoDaFicha(sheet: unknown): string {
   return lido.success ? (lido.data.dna_visual.genero_apresentacao.valor ?? "androgino") : "androgino";
 }
 
+/**
+ * As durações que o produto sabe animar — lidas do catálogo, nunca fixadas aqui.
+ *
+ * ---------------------------------------------------------------------------
+ * Por que isto mora no motor do ROTEIRO
+ * ---------------------------------------------------------------------------
+ *
+ * Porque é onde a ficha nasce. `storyboard_scenes.duracao_segundos` aceita 1 a
+ * 60 e `ai_model_video_prices` tem uma linha só — então, sem esta consulta, uma
+ * história podia nascer inteira com cenas de 8 segundos que o portão de vídeo
+ * vai recusar duas fases depois. **A Fase 1 não pode terminar produzindo ficha
+ * morta** (decisão do Jorge, 28/08/2026).
+ *
+ * Distintas e ordenadas: a mesma duração aparece uma vez por resolução na
+ * tabela, e o que interessa aqui é o conjunto de durações, não o de preços.
+ *
+ * ---------------------------------------------------------------------------
+ * O caso vazio, e por que ele NÃO recusa a geração
+ * ---------------------------------------------------------------------------
+ *
+ * Catálogo de vídeo vazio significa que nada é animável — e apertar o roteiro
+ * não conserta isso. Recusar aqui seria impedir alguém de **escrever** uma
+ * história porque o catálogo de vídeo está desligado, que é castigar a fase
+ * errada. Então a faixa larga volta, e a limitação continua sendo dita onde ela
+ * é verdade: no portão de vídeo, que lê o mesmo catálogo.
+ */
+async function carregarDuracoesAnimaveis(supabase: Supabase): Promise<number[]> {
+  const { data } = await supabase
+    .from("ai_model_video_prices")
+    .select("duration_seconds, ai_models!inner (enabled, ai_providers!inner (enabled))")
+    .eq("ai_models.enabled", true)
+    .eq("ai_models.ai_providers.enabled", true);
+
+  const distintas = [...new Set((data ?? []).map((row) => row.duration_seconds))].sort(
+    (a, b) => a - b,
+  );
+
+  return distintas.length > 0 ? distintas : DURACOES_SEM_CATALOGO;
+}
+
 async function carregarCtas(supabase: Supabase, canal: Canal): Promise<CtaSugestao[]> {
   const { data } = await supabase
     .from("cta_library")
@@ -683,6 +754,7 @@ function montarReceita(
     canal: Canal;
     ctas: CtaSugestao[];
     existente: RoteiroExistente | null;
+    duracoes: readonly number[];
   },
 ): Receita {
   if (request.job === "roteiro") {
@@ -693,6 +765,7 @@ function montarReceita(
       personagem: contexto.personagem,
       produto: request.produto,
       cenas: request.cenas,
+      duracoes: contexto.duracoes,
     });
   }
 
@@ -703,6 +776,7 @@ function montarReceita(
       ctas: contexto.ctas,
       personagem: contexto.personagem,
       produto: request.produto,
+      duracoes: contexto.duracoes,
     });
   }
 
@@ -718,6 +792,7 @@ function montarReceita(
     ctas: contexto.ctas,
     personagem: contexto.personagem,
     historia: existente.historia,
+    duracoes: contexto.duracoes,
   });
 }
 

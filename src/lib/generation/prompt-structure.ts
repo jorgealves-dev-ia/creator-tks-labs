@@ -72,6 +72,40 @@ export const structureSchema = z.object({
     .nullable()
     .default(null),
   /**
+   * De qual ficha esta geração veio, e o que a pessoa dirigiu por cima dela.
+   *
+   * ---------------------------------------------------------------------------
+   * Por que os dois pedaços viajam SEPARADOS — Ciclo 3, D3
+   * ---------------------------------------------------------------------------
+   *
+   * A Máquina deixa repetir uma cena com uma instrução avulsa ("mais fechado no
+   * rosto"), e essa instrução é **efêmera**: ela dirige aquela tentativa e nunca
+   * volta para a ficha, que é o que mantém uma porta só para editar (Q1).
+   *
+   * Se a instrução fosse colada na diretiva e só o texto somado fosse gravado,
+   * a comparação de "desatualizada" — que é por igualdade contra o que a ficha
+   * compila hoje — acusaria mudança onde não houve, e **uma cena aprovada a
+   * partir de um ↻ com instrução acenderia o selo sem a ficha ter mudado**. O
+   * selo mentiria sobre a única coisa que existe para dizer.
+   *
+   * Separados, `diretiva_pt` é o que a ficha compila e é a única metade que a
+   * comparação lê. A auditoria não perde nada: `prompt_user_pt` continua
+   * guardando o texto exato que foi enviado — os dois pedaços juntos —, e agora
+   * dá para dizer **qual metade veio de onde**, que antes não dava.
+   *
+   * Nulo em toda geração que não veio de uma Máquina, e nulo lê certo para elas.
+   */
+  storyboard: z
+    .object({
+      ordem: z.number(),
+      /** O que `buildSceneDirective` compôs da ficha. A metade comparável. */
+      diretiva_pt: z.string(),
+      /** O que a pessoa dirigiu nesta tentativa. Null quando não dirigiu nada. */
+      instrucao_pt: z.string().nullable().default(null),
+    })
+    .nullable()
+    .default(null),
+  /**
    * Absent on every generation from before the scene adjustments existed.
    * `campo` is a plain string for the same reason `tipo` is: this is history.
    */

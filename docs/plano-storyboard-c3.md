@@ -11,10 +11,12 @@
 > [`nodes-geracao.md`](nodes-geracao.md) quando a Fase 1 fechar.
 >
 > **Nota de procedência.** A versão de 28/08/2026 (`93807c7`) era **inteiramente
-> prospectiva**. Esta é a segunda: a **Fase 0 está descrita a partir do que foi
-> medido** — é história —, e o resto continua sendo intenção. As duas metades estão
+> prospectiva**. Nesta, as **Fases 0 e 1 estão descritas a partir do que foi medido** —
+> são história — e as Fases 2 a 4 continuam sendo intenção. As duas metades estão
 > marcadas, porque um documento que as apresenta com a mesma cara ensina a ler intenção
-> como fato.
+> como fato. Números que a medição corrigiu ficam **com a correção escrita**, nunca
+> trocados em silêncio: a régua já foi corrigida duas vezes assim (54→50 e o −2→−3 da
+> Fase 4).
 >
 > **O que o Jorge decidiu em 28/08/2026, na conferência de `93807c7`:** régua aceita
 > como instrumento; Q1–Q4 aprovadas; Fase 0 aprovada como adição; **D1, D2 e D6 sim
@@ -23,9 +25,9 @@
 > faltava** — o ↻ depois de aprovada e depois do vídeo —, que virou a **D7**, **fechada
 > na conferência seguinte do mesmo dia**, com a recomendação.
 >
-> **Status do ciclo: Fase 0 ✅ fechada, as sete decisões ✅ tomadas, Fase 1 aberta.**
-> A única pergunta que continua sem resposta é a **0.3** — e ela tem nome, dono e data:
-> é a metade do Jorge na Fase 3.
+> **Status do ciclo: Fases 0 e 1 ✅ fechadas, as sete decisões ✅ tomadas, Fase 2
+> aberta.** A única pergunta que continua sem resposta é a **0.3** — e ela tem nome,
+> dono e data: é a metade do Jorge na Fase 3.
 
 ---
 
@@ -109,7 +111,7 @@ que já estava contada).
 | **1** · fundação, anatomia e trilho | **0** | é a fundação, e dizer que ela remove passos seria mentira |
 | **2** · lote de imagens + aprovar/repetir | **−6** | o bloco B (8) vira dois gestos |
 | **3** · lote de vídeo + continuação | **−35** | o bloco C (36) vira um gesto |
-| **4** · o template no sidebar | **−2** | não sai dos 50: remove a montagem **da própria Máquina** (clicar · arrastar · ligar o fio ao Roteiro) em todo projeto novo |
+| **4** · o template no sidebar | **−3** | não sai dos 50: remove a montagem **da própria Máquina** em todo projeto novo — **medido na Fase 1**, não estimado (§8 · Fase 1) |
 
 **A conta fecha exatamente: 50 − 6 − 35 = 9.** As fases 0 e 1 não movem o número, e
 está escrito assim de propósito — uma fase que não corta passo é uma fase que precisa
@@ -579,10 +581,10 @@ duas** — a decisão inteira é leitura de dado que já está gravado.
 | Fase | Entrega | Passos | Status |
 |---|---|---:|---|
 | **0** | O elo em lote, medido antes de desenhado — **zero Spark** | 0 | ✅ **fechada — 28/08/2026** |
-| **1** | Fundação: a cena entra na geração, a Máquina nasce, o trilho espelha, a ficha nasce animável | 0 | 🔵 **aberta — 28/08/2026** |
+| **1** | Fundação: a cena entra na geração, a Máquina nasce, o trilho espelha, a ficha nasce animável | 0 | ✅ **fechada — 28/08/2026** |
 | **2** | Lote de imagens com portão · aprovar e repetir por cena | **−6** | 🟡 não iniciada |
 | **3** | Lote de vídeo com portão · continuação em lote · o desatualizado em cadeia | **−35** | 🟡 não iniciada |
-| **4** | O template no sidebar — o fluxo padrão | **−2** | 🟡 não iniciada |
+| **4** | O template no sidebar — o fluxo padrão | **−3** | 🟡 não iniciada |
 | **Fech.** | O Jorge percorre o caminho do zero, com a régua ao lado | — | 🟡 não iniciada |
 
 ---
@@ -684,11 +686,20 @@ em **`localhost:5599`**, como a memória do projeto já mandava.
 
 **Passos removidos: 0.** É a fundação, e está escrito assim de propósito.
 
-> **Onde ela está — 28/08/2026.** A **metade estrutural fechou**: as duas
-> migrations estão **aplicadas** (`20260828143000` e `20260828160000`), o
-> `database.types.ts` foi regerado do banco, e as travas rodaram **14/14, zero
-> não exercitado**. Faltam os itens 2, 3, 4 e 5 desta lista — o companheiro da
-> D5, o node, a saída do Roteiro e o trilho — mais a metade ao vivo.
+> ### ✅ Fechada em 28/08/2026 — as duas metades
+>
+> **Estrutural.** As duas migrations aplicadas (`20260828143000` e
+> `20260828160000`), `database.types.ts` regerado do banco, e **as travas
+> recusaram 14/14, com zero "não exercitado"** — inclusive o cruzamento entre
+> donos e a cascata do diamante, que exigiram um segundo usuário de verdade.
+> Mais **20/20** no companheiro da D5 e **30/30** no store da Máquina.
+>
+> **Ao vivo, zero Spark.** O canvas foi de 24 nodes / 18 arestas para 25 / 19 e
+> voltou a 24 / 18; o trilho espelhou as 6 fichas reais (4 cortes, 2 emendas); a
+> chave nasceu `checked = false`; e o segundo fio no mesmo roteiro **não criou
+> aresta nenhuma** (19 antes, 19 depois), com a frase na tela. `generations` 64,
+> ledger 49, saldo 6.550 — e a última linha das duas tabelas continua sendo a
+> geração paga do Egress. **Veredito do dono: entendi sem explicação.**
 >
 > A migration nasceu com um erro que a conferência do dono pegou: a aprovação
 > nascera com `ON DELETE SET NULL`, que apagaria uma decisão em silêncio. A
@@ -717,6 +728,23 @@ contagem de `generations`, `ledger_transactions` e saldo **idêntica do primeiro
 ### Fase 2 · o lote de imagens, com portão — e aprovar/repetir por cena
 
 **Entrega.**
+
+> #### ⚠ Requisito medido na Fase 1: o portão só é **1 gesto** com defaults de verdade
+>
+> A régua conta o passo 7 como **um** gesto — *"Gerar as 4 imagens"*, com o total
+> `4 × 75 = 300 ⚡` já na tela. Para o total existir antes do clique, a Máquina
+> precisa **já saber** modelo e qualidade.
+>
+> **Então os dois nascem com o default do catálogo**, como o bloco Gerar Imagem
+> já faz (`models.find(isDefault) ?? models[0]`), e o seletor existe para quem
+> quiser trocar — nunca para quem precisa começar.
+>
+> **Um seletor vazio custa +2 na régua**, e são dois gestos que a Fase 4 **não
+> recupera**: ela remove montagem, e escolher modelo não é montagem. Ficaria
+> `50 → 11` em vez de `50 → 9`.
+>
+> É o mesmo motivo de eles não existirem na Fase 1: um seletor que configura
+> coisa nenhuma é a promessa vazia de um botão morto com outra roupa.
 
 - O portão: **"Gerar as N imagens"** — **N = as cenas de corte** (D4) —, com
   `N × preço(qualidade) = total ⚡ · Saldo` **antes** do clique, somado do catálogo.
@@ -829,9 +857,20 @@ põe no canvas **Roteiro + Máquina, conectados e posicionados**, com a tela ind
 eles. Duplicar e remover funcionam como em qualquer node, porque **são** nodes comuns —
 o template é um gesto de criação, não um tipo novo.
 
-**Passos removidos: 2** — não dos 50, e sim da montagem da própria Máquina em todo
-projeto novo (clicar · arrastar · ligar o fio). É a diferença entre *"aqui estão as
-peças"* e *"aqui está o fluxo"*, que é a frase do esboço do Jorge.
+**Passos removidos: 3** — não dos 50, e sim da montagem da própria Máquina em todo
+projeto novo. É a diferença entre *"aqui estão as peças"* e *"aqui está o fluxo"*, que
+é a frase do esboço do Jorge.
+
+> **O número era 2 e virou 3 por medição, na validação ao vivo da Fase 1.** A conta
+> original tinha *clicar · arrastar · ligar o fio*; a tela mostrou um quarto gesto que
+> nenhuma conta previa e que é **obrigatório**: **enquadrar**. O node de Roteiro estava
+> em `y = 1162` num viewport de 675 px, e as duas pontas do fio simplesmente **não cabem
+> na tela juntas** — sem um `fitView` ou um zoom, o arraste não tem como começar e
+> terminar. O que se remove é *clicar na prateleira · enquadrar · arrastar o fio*, menos
+> o clique que o template gasta por si: **−3**.
+>
+> O total de 9 não muda — o caminho de 9 já pressupõe o template. O que muda é **quanto
+> a Fase 4 vale**, e ela vale mais do que eu tinha escrito.
 
 **Prova:** contagem de nodes e arestas antes e depois (**+2 nodes, +1 aresta**), a
 aresta certa no grafo **salvo** (a corrente sobrevivendo ao reload), e o item na
@@ -905,6 +944,12 @@ mentiu sobre si mesmo duas vezes (13/08 e 17/08).
 - **Antes de validar:** conferir a porta, e **anunciar o navegador antes da primeira
   tentativa**. A Fase 0 aprendeu que **`localhost:3000` recusa execução de JS** pela
   extensão — a validação roda em **`localhost:5599`**.
+- **Anunciar a 5599 inclui pedir a PERMISSÃO, não só a aba** *(medido na Fase 1)*. A
+  permissão da extensão **morre com o grupo de abas**: fechar as abas no fim de uma
+  fase — que é higiene — custa reconceder na fase seguinte. A Fase 0 mediu nesta mesma
+  origem e a Fase 1 foi bloqueada nela, com a assinatura registrada em 18/08: a aba é
+  navegada e **volta sozinha para `chrome://newtab/`**. O `curl` separa os dois casos em
+  um segundo: 307 é o app vivo, e o problema é permissão.
 - **A 5599 entra no protocolo de pausa junto com a 3000** *(regra do Jorge,
   28/08/2026)*. Ao parar para buildar ou ao encerrar, matar **as duas**: um `next dev`
   sobrevivente na 5599 é a mesma armadilha que o da 3000 — um servidor velho validando

@@ -1010,10 +1010,100 @@ export const t = {
    * roteiro não tem resolução, não tem quantidade e não produz arquivo — e a
    * primeira frase que fosse reaproveitada de lá seria a que fala de imagem.
    */
+  /**
+   * A Máquina de Storyboard — FRENTE STORYBOARD · CICLO 3 · Fase 1.
+   *
+   * O trilho é espelho: cada frase aqui descreve um estado LIDO do banco, nunca
+   * um rótulo gravado. E a Fase 1 não tem nenhum botão que gaste — botão sem
+   * função não entra na tela.
+   */
+  machineNode: {
+    title: "Máquina de Storyboard",
+    sidebarHint: "Rege o roteiro inteiro: uma imagem por cena, e o vídeo depois",
+    remove: "Tirar a Máquina do canvas. As imagens e os vídeos continuam no banco.",
+
+    // ── As entradas, no topo ───────────────────────────────────────────────
+    entradaRoteiro: "Roteiro",
+    entradaRoteiroHint: "Ligue um bloco de Roteiro aqui. A Máquina rege as fichas dele.",
+    entradaReferencias: "Referências",
+    entradaReferenciasHint:
+      "Cards de Input que entram em TODAS as cenas — o mesmo produto em dez imagens.",
+
+    // ── Sem roteiro ligado ─────────────────────────────────────────────────
+    semRoteiro: "Nenhum roteiro ligado",
+    semRoteiroHint: "Arraste um fio do bloco de Roteiro até a entrada «Roteiro», aqui em cima.",
+    semFichas: "Este roteiro ainda não tem fichas.",
+    semFichasHint: "Gere o roteiro no bloco de Roteiro e as cenas aparecem aqui.",
+    carregando: "Lendo o roteiro…",
+
+    // ── A recusa do segundo fio ────────────────────────────────────────────
+    /** Um roteiro e uma Máquina são um para um — ver CanvasNotice.board_taken. */
+    roteiroJaRegido:
+      "Este roteiro já é regido por outra Máquina. Um roteiro tem uma Máquina só — " +
+      "duas disputariam o estado das mesmas fichas.",
+    maquinaJaOcupada:
+      "Esta Máquina já rege outro roteiro. Corte o fio atual antes de ligar outro.",
+
+    // ── A configuração ─────────────────────────────────────────────────────
+    configTitle: "Configuração",
+    modelLabel: "Modelo",
+    qualidadeLabel: "Qualidade",
+    formatoDoCanal: (canal: string) => `Formato: ${canal}`,
+    formatoHint: "O formato vem do canal do roteiro — não é escolha da Máquina.",
+    inputsSwitch: "Input Referências",
+    /** Nasce desligada, invariante 12. Sem exceção para a Máquina. */
+    inputsOff: "Desligada: as referências ficam conectadas e visíveis, e não entram na geração.",
+    inputsOn: "Ligada: as referências entram em todas as cenas.",
+
+    // ── O trilho ───────────────────────────────────────────────────────────
+    trilhoTitle: "Cenas",
+    cenaLabel: (ordem: number) => `Cena ${ordem}`,
+    /** ✂ corte · ⇥ continuação — os mesmos glifos do trilho do Roteiro. */
+    transicaoCorte: "Corte — plano novo",
+    transicaoContinuacao: "Continuação — emenda no último quadro da anterior",
+    estados: {
+      rascunho: "sem imagem",
+      emenda: "emenda",
+      pronta: "pronta",
+      aprovada: "aprovada",
+      falhou: "recusada",
+    } as Record<string, string>,
+    /**
+     * A frase da cena de continuação, e ela existe para a coluna não prometer um
+     * primeiro quadro que não vai acontecer (D4).
+     */
+    emendaDe: (ordem: number) => `Continua da cena ${ordem}`,
+    emendaHint:
+      "Cenas de continuação não ganham imagem própria: o primeiro quadro delas é o " +
+      "último quadro do clipe anterior, e ele sai de graça.",
+    videoPronto: "vídeo pronto",
+    videoGerando: "vídeo gerando",
+    videoFalhou: "vídeo falhou",
+    tentativas: (n: number) => (n === 1 ? "1 tentativa" : `${n} tentativas`),
+    semImagem: "A imagem aparecerá aqui",
+
+    // ── O que a Fase 1 ainda não faz, dito em voz alta ─────────────────────
+    /**
+     * Botão sem função não entra na tela (regra da casa, 17/08/2026). Enquanto
+     * os portões não existem, a Máquina diz o que ela ainda não faz em vez de
+     * desenhar um botão que não gasta.
+     */
+    aindaNaoGera:
+      "Esta Máquina ainda não gera. Os portões de imagem e de vídeo chegam nas próximas fases.",
+  },
+
   storyboardNode: {
     title: "Roteiro",
     remove: "Tirar este bloco do canvas. O roteiro gravado continua no banco.",
     sidebarHint: "Uma ideia vira fichas de cena, prontas para virar imagem",
+    /**
+     * A saída do roteiro INTEIRO — Ciclo 3 · Fase 1.
+     *
+     * Fica embaixo, e as das cenas ficam à direita, porque são gestos opostos: a
+     * da direita leva UMA ficha a um bloco de imagem (a ponte da Fase 4), esta
+     * entrega o roteiro TODO a quem vai reger as dez.
+     */
+    roteiroHandle: "Ligar este roteiro a uma Máquina de Storyboard",
 
     // ── A pergunta ─────────────────────────────────────────────────────────
     configTitle: "Configuração",

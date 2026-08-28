@@ -24,6 +24,7 @@ import { InputPoseNode } from "@/components/nodes/input-pose-node";
 import { InputSheetNode } from "@/components/nodes/input-sheet-node";
 import { LegacyProductNode } from "@/components/nodes/legacy-product-node";
 import { ResultNode } from "@/components/nodes/result-node";
+import { MachineNode } from "@/components/nodes/machine-node";
 import { StoryboardNode } from "@/components/nodes/storyboard-node";
 import { useImageCatalog } from "@/components/nodes/use-image-catalog";
 import { defaultModelId, findModel } from "@/components/ui/model-select";
@@ -51,6 +52,7 @@ const nodeTypes: NodeTypes = {
   generator: GeneratorNode,
   "video-generator": VideoGeneratorNode,
   storyboard: StoryboardNode,
+  machine: MachineNode,
   result: ResultNode,
   "input-image": InputImageNode,
   "input-product": InputProductNode,

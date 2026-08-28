@@ -114,7 +114,23 @@ const REGRA_ACAO = `
  * tempo todo. É exigir outro recorte: "quarto, em frente ao espelho" e "quarto,
  * sentada na beira da cama" são o mesmo quarto e dois cenários.
  */
-const REGRAS_COMUNS = `
+/**
+ * A frase da duração é escrita a partir do CATÁLOGO, e não fixada aqui.
+ *
+ * Ela dizia `"duracao_segundos" é sempre 5.` — verdade enquanto
+ * `ai_model_video_prices` tinha uma linha só, e uma mentira silenciosa no dia em
+ * que ganhasse a segunda: a receita continuaria pedindo 5 e o catálogo já
+ * ofereceria 10, com o roteiro produzindo fichas mais curtas do que o produto
+ * consegue animar. Regra da casa desde 13/08 — **o catálogo é quem diz o que um
+ * modelo oferece** —, aplicada ao texto que pede.
+ */
+function regrasComuns(duracoes: readonly number[]): string {
+  const frase =
+    duracoes.length === 1
+      ? `é sempre ${duracoes[0]}`
+      : `é um destes valores, e nenhum outro: ${duracoes.join(", ")}`;
+
+  return `
 ${REGRA_ACAO}
 - "cenario" é o lugar concreto, curto, e é PRÓPRIO de cada cena: "quarto gamer
   com luz roxa", "calçada ensolarada em frente a um café", "deck de madeira ao
@@ -126,9 +142,10 @@ ${REGRA_ACAO}
 - "movimento" é o movimento de câmera ou do corpo: "câmera se aproxima devagar",
   "ela gira mostrando as costas".
 - "fala" é o que a personagem diz, curto e falado — nunca narração literária.
-- "duracao_segundos" é sempre 5.
+- "duracao_segundos" ${frase}.
 - Escreva TUDO em português do Brasil. Nenhum campo em inglês, exceto as chaves
   das listas fechadas.`.trim();
+}
 
 const CABECALHO = `
 Você é diretor de conteúdo para social commerce brasileiro. Escreve roteiros
@@ -224,6 +241,8 @@ export function receitaRoteiro(input: {
   personagem: PersonagemDaReceita | null;
   produto: string | null;
   cenas: number;
+  /** As durações que o catálogo sabe cobrar — ver `regrasComuns`. */
+  duracoes: readonly number[];
 }): Receita {
   return {
     system: `${CABECALHO}
@@ -235,7 +254,7 @@ ${blocoPersonagem(input.personagem)}
 ${blocoCta(input.canal, input.ctas)}
 
 REGRAS:
-${REGRAS_COMUNS}
+${regrasComuns(input.duracoes)}
 ${REGRA_ROSTO_NO_PRIMEIRO_SEGUNDO}
 - Escreva EXATAMENTE ${input.cenas} cenas, numeradas de 1 a ${input.cenas} em "ordem".
 - "historia.cenas_no_original" é null e "historia.ajuste" é null: a história está
@@ -265,6 +284,7 @@ export function receitaEstruturar(input: {
   ctas: readonly CtaSugestao[];
   personagem: PersonagemDaReceita | null;
   produto: string | null;
+  duracoes: readonly number[];
 }): Receita {
   return {
     system: `${CABECALHO}
@@ -280,7 +300,7 @@ ${blocoPersonagem(input.personagem)}
 ${blocoCta(input.canal, input.ctas)}
 
 REGRAS:
-${REGRAS_COMUNS}
+${regrasComuns(input.duracoes)}
 ${REGRA_ROSTO_NO_PRIMEIRO_SEGUNDO}
 - Conte quantas cenas o texto recebido tem e escreva esse número em
   "historia.cenas_no_original". Conte o que o texto tem, não o que você produziu.
@@ -320,6 +340,7 @@ export function receitaCena(input: {
   ctas: readonly CtaSugestao[];
   personagem: PersonagemDaReceita | null;
   historia: Pick<Historia, "titulo" | "formato" | "estilo">;
+  duracoes: readonly number[];
 }): Receita {
   const vizinha = (rotulo: string, c: Cena | null) =>
     c
@@ -339,7 +360,7 @@ ${blocoPersonagem(input.personagem)}
 ${blocoCta(input.canal, input.ctas)}
 
 REGRAS:
-${REGRAS_COMUNS}
+${regrasComuns(input.duracoes)}
 ${REGRA_ROSTO_NO_PRIMEIRO_SEGUNDO}
 - Mantenha a coerência com as cenas vizinhas: a sua entra depois da anterior e
   antes da seguinte, e a emenda tem que continuar fazendo sentido.

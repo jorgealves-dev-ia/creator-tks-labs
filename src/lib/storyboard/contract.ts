@@ -114,7 +114,32 @@ export const TETO_CENAS = 10;
  * `null` obriga o modelo a **decidir** que não há fala, em vez de esquecer que
  * o campo existia.
  */
-const CENA_SCHEMA = {
+/**
+ * As durações que o catálogo sabe cobrar, quando ele não sabe nenhuma.
+ *
+ * Só entra em cena se `ai_model_video_prices` não tiver **nenhuma** linha de
+ * modelo aceso — e aí o problema é de catálogo, não de schema: não existe
+ * duração animável nenhuma, e apertar o roteiro não conserta isso. Nesse caso o
+ * gerador volta a aceitar a faixa larga em vez de recusar todo roteiro, porque
+ * escrever a história continua valendo mesmo com o catálogo de vídeo vazio.
+ */
+export const DURACOES_SEM_CATALOGO = Array.from({ length: 60 }, (_, i) => i + 1);
+
+/**
+ * As durações permitidas viram **enum** no schema que viaja, e não uma faixa.
+ *
+ * A diferença é onde o erro é impedido. `minimum/maximum` deixa o modelo
+ * escrever 8 segundos e nos obriga a recusar **depois de pagar**; um `enum` com
+ * o que o catálogo precifica faz o structured output **não conseguir** produzir
+ * outra coisa. É a regra de 13/08 — *não se oferece o que não se sabe cobrar* —
+ * aplicada uma camada acima: não se **pede** o que não se sabe cobrar.
+ *
+ * Quatro camadas guardam a mesma promessa, como o teto de 10 tem três: a receita
+ * diz por extenso, este schema restringe, o Zod recusa, e `ai_model_video_prices`
+ * é quem define a lista. Nenhuma delas depende de alguém lembrar das outras.
+ */
+function cenaSchemaJson(duracoes: readonly number[]) {
+  return {
   type: "object",
   properties: {
     ordem: { type: "integer", minimum: 1, maximum: TETO_CENAS },
@@ -130,7 +155,11 @@ const CENA_SCHEMA = {
     fala: { type: ["string", "null"] },
     cta_id: { type: ["string", "null"] },
     cta_texto: { type: ["string", "null"] },
-    duracao_segundos: { type: "integer", minimum: 1, maximum: 60 },
+    duracao_segundos: {
+      type: "integer",
+      enum: [...duracoes],
+      description: "Duração do clipe em segundos. Só os valores listados são animáveis.",
+    },
     transicao: { type: "string", enum: [...TRANSICAO_KEYS] },
   },
   required: [
@@ -148,9 +177,11 @@ const CENA_SCHEMA = {
     "transicao",
   ],
   additionalProperties: false,
-} as const;
+  } as const;
+}
 
-export const SCHEMA_JSON = {
+export function buildSchemaJson(duracoes: readonly number[]) {
+  return {
   type: "object",
   properties: {
     historia: {
@@ -195,20 +226,23 @@ export const SCHEMA_JSON = {
       type: "array",
       minItems: 1,
       maxItems: TETO_CENAS,
-      items: CENA_SCHEMA,
+      items: cenaSchemaJson(duracoes),
     },
   },
   required: ["historia", "cenas"],
   additionalProperties: false,
-} as const;
+  } as const;
+}
 
 /** O mesmo schema, para uma cena só — o job_kind `cena`. */
-export const SCHEMA_JSON_CENA = {
-  type: "object",
-  properties: { cena: CENA_SCHEMA },
-  required: ["cena"],
-  additionalProperties: false,
-} as const;
+export function buildSchemaJsonCena(duracoes: readonly number[]) {
+  return {
+    type: "object",
+    properties: { cena: cenaSchemaJson(duracoes) },
+    required: ["cena"],
+    additionalProperties: false,
+  } as const;
+}
 
 // ---------------------------------------------------------------------------
 // A autoridade — Zod
@@ -312,7 +346,38 @@ export type Roteiro = z.infer<typeof roteiroSchema>;
  */
 export type ParseFailure = { ok: false; etapa: "json" | "zod"; erro: string };
 
-export function parseRoteiro(texto: string): { ok: true; roteiro: Roteiro } | ParseFailure {
+/**
+ * A quarta camada da duração — o backstop do enum que viajou.
+ *
+ * O `enum` do `response_format` já impede o modelo de escrever 8 segundos, então
+ * esta função **não deveria** disparar nunca. Ela existe pelo mesmo motivo que o
+ * GN006 existe no banco: no dia em que um provedor novo ignorar o schema, é
+ * melhor uma falha registrada e grátis do que uma ficha morta gravada.
+ *
+ * E ela nomeia a cena e a lista permitida, porque a mensagem vira `error_message`
+ * de uma linha `failed` — e um erro que não diz qual cena não ajuda ninguém.
+ */
+function conferirDuracoes(
+  cenas: readonly Cena[],
+  duracoes: readonly number[],
+): ParseFailure | null {
+  const fora = cenas.find((cena) => !duracoes.includes(cena.duracao_segundos));
+
+  if (!fora) return null;
+
+  return {
+    ok: false,
+    etapa: "zod",
+    erro:
+      `cena ${fora.ordem}: duracao_segundos ${fora.duracao_segundos} não está no ` +
+      `catálogo de vídeo (permitidas: ${duracoes.join(", ")})`,
+  };
+}
+
+export function parseRoteiro(
+  texto: string,
+  duracoes: readonly number[],
+): { ok: true; roteiro: Roteiro } | ParseFailure {
   const bruto = lerJson(texto);
 
   if (!bruto.ok) return bruto;
@@ -323,10 +388,17 @@ export function parseRoteiro(texto: string): { ok: true; roteiro: Roteiro } | Pa
     return { ok: false, etapa: "zod", erro: descreveIssues(lido.error) };
   }
 
+  const duracaoRuim = conferirDuracoes(lido.data.cenas, duracoes);
+
+  if (duracaoRuim) return duracaoRuim;
+
   return { ok: true, roteiro: lido.data };
 }
 
-export function parseCena(texto: string): { ok: true; cena: Cena } | ParseFailure {
+export function parseCena(
+  texto: string,
+  duracoes: readonly number[],
+): { ok: true; cena: Cena } | ParseFailure {
   const bruto = lerJson(texto);
 
   if (!bruto.ok) return bruto;
@@ -336,6 +408,10 @@ export function parseCena(texto: string): { ok: true; cena: Cena } | ParseFailur
   if (!lido.success) {
     return { ok: false, etapa: "zod", erro: descreveIssues(lido.error) };
   }
+
+  const duracaoRuim = conferirDuracoes([lido.data.cena], duracoes);
+
+  if (duracaoRuim) return duracaoRuim;
 
   return { ok: true, cena: lido.data.cena };
 }

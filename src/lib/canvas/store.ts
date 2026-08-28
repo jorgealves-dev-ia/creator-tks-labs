@@ -133,6 +133,24 @@ export type CanvasNotice =
       reason: "scene_overwrite";
       storyboardNodeId: string;
       ordem: number;
+    }
+  /**
+   * Um roteiro e uma Máquina são **um para um**, e o segundo fio é recusado.
+   *
+   * Duas Máquinas sobre o mesmo storyboard disputariam o estado das mesmas
+   * fichas — a mesma cena aprovada por uma e repetida pela outra, com o banco
+   * dando razão a quem escreveu por último. E uma Máquina lendo dois roteiros
+   * não saberia qual trilho desenhar.
+   *
+   * Recusa com frase, e não silêncio: um fio que se desenha e não faz nada é o
+   * que o `onConnect` fazia com este par antes desta fase, e é a pior das três
+   * respostas possíveis.
+   */
+  | {
+      nodeId: string;
+      reason: "board_taken";
+      /** `roteiro` já regido por outra Máquina, ou `maquina` já regendo outro. */
+      lado: "roteiro" | "maquina";
     };
 
 /**
@@ -476,6 +494,60 @@ function detachReference(nodes: Node[], edge: Edge): Node[] {
  * **é** o "corte para assumir" — o prompt passa a ser de quem cortou, e nenhuma
  * linha de código precisou combinar isso com nenhuma outra.
  */
+// ---------------------------------------------------------------------------
+// A Máquina — Ciclo 3 · Fase 1
+// ---------------------------------------------------------------------------
+
+const MACHINE_TARGET = "machine";
+
+/**
+ * O handle por onde um roteiro INTEIRO entra na Máquina.
+ *
+ * Nomeado, e diferente dos `cena-N` do trilho, porque são gestos opostos: aquele
+ * leva **uma** ficha a um bloco de imagem (a ponte da Fase 4), este entrega o
+ * **roteiro todo** a quem vai reger as dez. Um handle só para os dois faria o
+ * `onConnect` ter de adivinhar pela forma do alvo qual dos dois alguém quis.
+ */
+export const BOARD_HANDLE = "roteiro";
+
+/**
+ * De qual node de Roteiro esta Máquina lê — **pela aresta, e só por ela**.
+ *
+ * A Máquina não guarda id nenhum: o vínculo mora no documento salvo, que já
+ * persiste `sourceHandle`, e sobrevive a um reload sem coluna nova. É a decisão
+ * da Fase 4 do Ciclo 2 repetida onde ela vale de novo — *uma segunda cópia só
+ * existiria para poder discordar da primeira*.
+ *
+ * Cortar o fio não apaga nada: as gerações continuam no banco ligadas às cenas,
+ * e a Máquina apenas para de reger. Religar devolve o trilho inteiro, porque ele
+ * nunca esteve nela.
+ */
+export function findGoverningBoard(
+  edges: readonly Edge[],
+  machineId: string,
+): string | null {
+  const edge = edges.find(
+    (candidate) => candidate.target === machineId && candidate.targetHandle === BOARD_HANDLE,
+  );
+
+  return edge?.source ?? null;
+}
+
+/** As duas pontas de um fio que significa "reja este roteiro". */
+function wiredBoard(
+  nodes: readonly Node[],
+  connection: { source?: string | null; target?: string | null; targetHandle?: string | null },
+): { board: Node; machine: Node } | null {
+  if (connection.targetHandle !== BOARD_HANDLE) return null;
+
+  const board = nodes.find((node) => node.id === connection.source);
+  const machine = nodes.find((node) => node.id === connection.target);
+
+  if (board?.type !== SCENE_SOURCE || machine?.type !== MACHINE_TARGET) return null;
+
+  return { board, machine };
+}
+
 const SCENE_HANDLE_PREFIX = "cena-";
 const SCENE_SOURCE = "storyboard";
 const GENERATOR_TARGET = "generator";
@@ -993,6 +1065,57 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         saveStatus: "dirty" as const,
         notice: null,
       };
+
+      /*
+        O fio que entrega um roteiro inteiro à Máquina — Ciclo 3 · Fase 1.
+
+        Resolvido ANTES do fio de ficha porque os dois saem do mesmo node de
+        Roteiro e só o `targetHandle` os distingue: perguntar pelo mais
+        específico primeiro é a mesma ordem que o `wiredScene` já usa.
+      */
+      const board = wiredBoard(state.nodes, connection);
+
+      if (board) {
+        const recusa = { edges: state.edges, revision: state.revision, saveStatus: state.saveStatus };
+
+        // Este roteiro já é regido por outra Máquina?
+        const jaRegido = state.edges.some(
+          (edge) =>
+            edge.source === board.board.id &&
+            edge.targetHandle === BOARD_HANDLE &&
+            edge.target !== board.machine.id,
+        );
+
+        if (jaRegido) {
+          return {
+            ...recusa,
+            nodes: state.nodes,
+            notice: { nodeId: board.machine.id, reason: "board_taken" as const, lado: "roteiro" as const },
+          };
+        }
+
+        // E esta Máquina já rege outro roteiro? Religar a mesma é legítimo — é o
+        // gesto de reconectar o que se cortou —, então só um roteiro DIFERENTE
+        // é recusa.
+        const jaOcupada = state.edges.some(
+          (edge) =>
+            edge.target === board.machine.id &&
+            edge.targetHandle === BOARD_HANDLE &&
+            edge.source !== board.board.id,
+        );
+
+        if (jaOcupada) {
+          return {
+            ...recusa,
+            nodes: state.nodes,
+            notice: { nodeId: board.machine.id, reason: "board_taken" as const, lado: "maquina" as const },
+          };
+        }
+
+        // Nada a escrever no `data`: a aresta É o vínculo, e a Máquina lê o
+        // trilho do banco a partir dela.
+        return { ...connected, nodes: state.nodes };
+      }
 
       /*
         O fio de uma ficha — religar, que é devolver o comando à cena.

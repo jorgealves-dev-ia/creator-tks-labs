@@ -112,6 +112,18 @@ export function NodeSidebar() {
     addNode("storyboard", {}, nodes.length);
   }
 
+  /**
+   * A Máquina nasce vazia e SEM roteiro ligado, pelo mesmo motivo dos outros
+   * três — e com um a mais: ela não escolhe qual roteiro reger. Quem escolhe é o
+   * fio, e pré-ligar a Máquina ao primeiro Roteiro que houvesse no canvas seria
+   * decidir por quem clicou.
+   *
+   * O template que já nasce com o par montado é a Fase 4, e é outro gesto.
+   */
+  function addMachine() {
+    addNode("machine", {}, nodes.length);
+  }
+
   return (
     <>
       <aside
@@ -456,6 +468,33 @@ export function NodeSidebar() {
                 </span>
                 <span className="block truncate text-[11px] text-ink-faint">
                   {t.storyboardNode.sidebarHint}
+                </span>
+              </span>
+            </button>
+
+            {/* A quarta peça da prateleira. O glifo dela é deitado com soquetes —
+                a única silhueta assim no canvas —, para ser achada a baixo zoom
+                antes de qualquer texto ser legível. */}
+            <button
+              type="button"
+              onClick={addMachine}
+              title={t.machineNode.sidebarHint}
+              className="flex w-full items-center gap-3 rounded-lg py-1.5 text-left
+                         transition-colors hover:bg-surface-hover"
+            >
+              <span
+                aria-hidden
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg
+                           border border-line bg-accent-soft text-ink-muted"
+              >
+                <NodeIcon kind="machine" className="size-3.5" />
+              </span>
+              <span className={revealed("min-w-0 flex-1")}>
+                <span className="block truncate text-xs font-medium text-ink">
+                  {t.machineNode.title}
+                </span>
+                <span className="block truncate text-[11px] text-ink-faint">
+                  {t.machineNode.sidebarHint}
                 </span>
               </span>
             </button>

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { NodeHeader } from "@/components/nodes/node-header";
 import { StoryboardSceneDialog } from "@/components/nodes/storyboard-scene-dialog";
 import { useTextCatalog } from "@/components/nodes/use-text-catalog";
-import { sceneHandleId, useCanvasStore } from "@/lib/canvas/store";
+import { BOARD_HANDLE, sceneHandleId, useCanvasStore } from "@/lib/canvas/store";
 import { useEntitiesStore } from "@/lib/entities/store";
 import { useGenerationTick } from "@/lib/generation/generation-feed";
 import { t } from "@/lib/i18n/pt-BR";
@@ -385,6 +385,21 @@ export function StoryboardNode({ id, data, selected }: NodeProps<StoryboardNodeT
                   shadow-black/30 transition-colors
                   ${selected ? "border-accent" : "border-line"}`}
     >
+      {/*
+        A saída do roteiro inteiro — Ciclo 3 · Fase 1.
+
+        Embaixo, e não à direita: à direita ficam os `cena-N`, que levam UMA ficha
+        a um bloco de imagem. Este leva o roteiro TODO à Máquina, e dois gestos
+        diferentes não podem sair do mesmo lado do card sem ensinar a confundi-los.
+      */}
+      <Handle
+        type="source"
+        id={BOARD_HANDLE}
+        position={Position.Bottom}
+        title={copy.roteiroHandle}
+        className="!size-2.5 !border-2 !border-canvas !bg-accent"
+      />
+
       <NodeHeader nodeId={id} kind="storyboard" title={copy.title} removeHint={copy.remove} />
 
       <div className="flex gap-3 p-3">
