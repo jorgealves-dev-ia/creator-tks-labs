@@ -1,23 +1,31 @@
 # Plano — Frente Storyboard · Ciclo 3: A Máquina de Storyboard
 
 > **O que este arquivo é.** O plano do ciclo, em disco, **antes da primeira linha de
-> código** (regra 9 do [`CLAUDE.md`](../CLAUDE.md)). Traz a régua, o mapa, as fases,
-> a prova de cada uma, o status, e as decisões que precisam da palavra do Jorge
-> antes de virarem código.
+> código de produto** (regra 9 do [`CLAUDE.md`](../CLAUDE.md)). Traz a régua, o mapa,
+> as fases, a prova de cada uma, o status, e as decisões — as tomadas e a que ainda
+> espera.
 >
-> **O que ele não é.** Não é diário — o *porquê* de cada decisão tomada continua
-> indo para [`docs/decisoes.md`](decisoes.md) na sessão em que for tomada. Não é
-> especificação de produto: a anatomia normativa do node vai para
+> **O que ele não é.** Não é diário — o *porquê* de cada decisão vai para
+> [`docs/decisoes.md`](decisoes.md) na sessão em que ela acontece. Não é especificação
+> de produto: a anatomia normativa do node vai para
 > [`nodes-geracao.md`](nodes-geracao.md) quando a Fase 1 fechar.
 >
-> **Nota de procedência, dita de uma vez.** Este arquivo é **inteiramente
-> prospectivo** — nenhuma linha dele é história. O que o **Jorge fixou** no brief
-> de abertura (28/08/2026) está marcado como **fixado**; o que **eu** decidi ao
-> investigar o código e detalhar está reunido em **§6 (as quatro respostas)** e em
-> **§7 (as decisões que precisam da sua palavra)**, em vez de espalhado pelo texto.
-> É ali que a conferência tem endereço — e é agora que corrigir sai barato.
+> **Nota de procedência.** A versão de 28/08/2026 (`93807c7`) era **inteiramente
+> prospectiva**. Esta é a segunda: a **Fase 0 está descrita a partir do que foi
+> medido** — é história —, e o resto continua sendo intenção. As duas metades estão
+> marcadas, porque um documento que as apresenta com a mesma cara ensina a ler intenção
+> como fato.
 >
-> **Status do ciclo: 🟡 aguardando conferência do Jorge. Nada executa antes.**
+> **O que o Jorge decidiu em 28/08/2026, na conferência de `93807c7`:** régua aceita
+> como instrumento; Q1–Q4 aprovadas; Fase 0 aprovada como adição; **D1, D2 e D6 sim
+> como escritos**; **D3 sim com conserto obrigatório**; **D4 na alternativa** (a cena
+> de continuação **não** ganha imagem); **D5 sim com companheiro**; e uma **regra que
+> faltava** — o ↻ depois de aprovada e depois do vídeo —, que virou a **D7**, **fechada
+> na conferência seguinte do mesmo dia**, com a recomendação.
+>
+> **Status do ciclo: Fase 0 ✅ fechada, as sete decisões ✅ tomadas, Fase 1 aberta.**
+> A única pergunta que continua sem resposta é a **0.3** — e ela tem nome, dono e data:
+> é a metade do Jorge na Fase 3.
 
 ---
 
@@ -46,14 +54,25 @@ um gesto é **um clique, um arraste ou um campo preenchido**. Não contam pan, z
 rolagem nem olhar. O caso é sempre o mesmo: **um roteiro de 6 cenas com `@luna` já
 vinculada ao projeto, 4 cenas de corte e 2 de continuação, terminando em 6 clipes.**
 
-### 2.1 O caminho de hoje — **54 gestos**
+> ### ⚠ Correção do número publicado em `93807c7`: eram **50**, não 54
+>
+> A primeira versão contou **12 gestos** de imagem (uma imagem por cena) e, três
+> parágrafos abaixo, animou as duas continuações pelo elo — ou seja, **pagava por seis
+> imagens e usava quatro**. A inconsistência era minha e estava dentro da mesma tabela.
+>
+> A decisão **D4** do Jorge tornou a incoerência explícita e a régua se corrigiu junto:
+> o caminho de hoje que produz **este mesmo resultado** gera **4 imagens**, não 6.
+> **50 → 9**, e a correção fica escrita em vez de trocada em silêncio — um número
+> aceito que muda sem dizer por quê é pior que um número errado.
+
+### 2.1 O caminho de hoje — **50 gestos**
 
 | bloco | gestos | detalhe |
 |---|---:|---|
 | **A · o roteiro** | **6** | clicar "Roteiro" na prateleira · canal · nº de cenas · `@luna` · escrever a ideia · Gerar roteiro |
-| **B · as 6 imagens** | **12** | por cena, a ponte da Fase 4: **▸** e **Gerar** |
+| **B · as 4 imagens** | **8** | só as cenas de **corte**; por cena, a ponte da Fase 4: **▸** e **Gerar** |
 | **C · os 6 vídeos** | **36** | ver abaixo |
-| | **54** | |
+| | **50** | |
 
 O bloco C, aberto, porque é onde os números moram:
 
@@ -64,8 +83,7 @@ O bloco C, aberto, porque é onde os números moram:
 
 **E há uma repetição a mais que não é hipótese: é medida.** No fechamento do Ciclo 2 o
 mesmo prompt foi recusado e aceito com **27 segundos de diferença** — o filtro do
-provedor não é função determinística do texto. Com uma recusa no lote, hoje são
-**55**.
+provedor não é função determinística do texto. Com uma recusa no lote, hoje são **51**.
 
 ### 2.2 O caminho com a Máquina — **9 gestos**
 
@@ -74,8 +92,8 @@ provedor não é função determinística do texto. Com uma recusa no lote, hoje
 | 1 | clicar **"Máquina de Storyboard"** no sidebar → Roteiro + Máquina, já conectados |
 | 2–5 | canal · nº de cenas · `@luna` · escrever a ideia |
 | 6 | **Gerar roteiro** |
-| 7 | **Gerar as 6 imagens** — o total já está na tela: `6 × 75 = 450 ⚡ · Saldo: N ⚡` |
-| 8 | **Aprovar as 6** |
+| 7 | **Gerar as 4 imagens** — o total já está na tela: `4 × 75 = 300 ⚡ · Saldo: N ⚡` |
+| 8 | **Aprovar as 4** |
 | 9 | **Animar as 6** — `6 × 210 = 1.260 ⚡ · Saldo: N ⚡` |
 
 Com a mesma recusa medida: **10** (o **↻** da cena recusada, e ela entra na aprovação
@@ -83,17 +101,17 @@ que já estava contada).
 
 ### 2.3 Os dois números, e o que cada fase remove
 
-> ## **54 → 9**   *(com a recusa medida: 55 → 10)*
+> ## **50 → 9**   *(com a recusa medida: 51 → 10)*
 
 | fase | passos que remove | de onde |
 |---|---:|---|
 | **0** · o elo em lote, medido | **0** | fase de medição — não toca a tela |
 | **1** · fundação, anatomia e trilho | **0** | é a fundação, e dizer que ela remove passos seria mentira |
-| **2** · lote de imagens + aprovar/repetir | **−10** | o bloco B (12) vira dois gestos |
+| **2** · lote de imagens + aprovar/repetir | **−6** | o bloco B (8) vira dois gestos |
 | **3** · lote de vídeo + continuação | **−35** | o bloco C (36) vira um gesto |
-| **4** · o template no sidebar | **−2** | não sai dos 54: remove a montagem **da própria Máquina** (clicar · arrastar · ligar o fio ao Roteiro) em todo projeto novo |
+| **4** · o template no sidebar | **−2** | não sai dos 50: remove a montagem **da própria Máquina** (clicar · arrastar · ligar o fio ao Roteiro) em todo projeto novo |
 
-**A conta fecha exatamente: 54 − 10 − 35 = 9.** As fases 0 e 1 não movem o número, e
+**A conta fecha exatamente: 50 − 6 − 35 = 9.** As fases 0 e 1 não movem o número, e
 está escrito assim de propósito — uma fase que não corta passo é uma fase que precisa
 justificar-se por outra coisa, e é melhor que ela diga isso em voz alta.
 
@@ -119,7 +137,7 @@ e existe para que a primeira revisão de código tenha contra o que conferir.
 | `lib/generation/queue.ts` | **reutiliza** (§6 · Q2) | mesmo teto de 4, mesmo `structuredClone`, mesma subtração de saldo |
 | `useBalance` / canal de `wallets` | **herda** | o saldo surdo foi consertado em 14/08; a Máquina não pode reinventá-lo |
 | `generations:<projectId>` (Realtime) | **escuta o que já existe** | um canal por projeto, não um por cena |
-| `lib/assets/last-frame.ts` + `findDerivedFrame` | **reutiliza para o elo** | o passo zero já evita re-extrair |
+| `lib/assets/last-frame.ts` + `findDerivedFrame` | **reutiliza para o elo** | a Fase 0 mediu: 1,5 MB e meio segundo por elo, e a segunda vez custa zero |
 | `signWithThumbnails` / cache de URLs | **herda** | o trilho desenha miniatura; o zoom pede o original |
 | `GN005` / `GN006` | **intactos** | `@` continua resolvendo no servidor, só personagem vinculada **a este projeto** |
 
@@ -147,23 +165,23 @@ de saída embaixo**, plugável em qualquer node existente.
 ├──────────────────────────────────────────────────────────────────────────┤
 │  ┌───────┬───────┬───────┬───────┬───────┬───────┐                       │
 │  │ 1  ✂  │ 2  ⇥  │ 3  ✂  │ 4  ✂  │ 5  ⇥  │ 6  ✂  │                       │
-│  │ [img] │ [img] │   ⟳   │ [img] │   —   │   ⚠   │   o trilho             │
-│  │pronta │aprov. │gerando│aprov. │aguarda│recusada                        │
-│  │ ↻  ✓  │  ▶    │       │  ▶    │ a 4   │  ↻                             │
+│  │ [img] │ ↳ da 1│   ⟳   │ [img] │ ↳ da 4│   ⚠   │   o trilho             │
+│  │aprov. │emenda │gerando│aprov. │emenda │recusada                        │
+│  │ ↻  ▶  │  ▶    │       │ ↻  ▶  │  ▶    │  ↻                             │
 │  └───┬───┴───┬───┴───┬───┴───┬───┴───┬───┴───┬───┘                       │
 ├──────────────────────────────────────────────────────────────────────────┤
-│  [ Gerar as 6 imagens ]      [ Animar as 3 aprovadas ]                   │  os dois portões
-│  6 × 75 = 450 ⚡ · Saldo 6.550 ⚡   3 × 210 = 630 ⚡ · Saldo 6.550 ⚡      │  custo colado no botão
+│  [ Gerar as 4 imagens ]      [ Animar as 4 aprovadas + 2 emendas ]       │  os dois portões
+│  4 × 75 = 300 ⚡ · Saldo 6.550 ⚡   6 × 210 = 1.260 ⚡ · Saldo 6.550 ⚡    │  custo colado no botão
 └────△───────△───────△───────△───────△───────△────────────────────────────┘
      1       2       3       4       5       6        uma saída por cena
 ```
 
-**A ordem normativa da §3 de [`nodes-geracao.md`](nodes-geracao.md), adaptada — e a
-adaptação é decisão minha (§7 · D6).** A anatomia da casa é *cabeçalho →
-configuração → chave de inputs → **prompt** → botão → custo e saldo → resultado*. A
-Máquina **não tem prompt**: as fichas são o prompt. Então a banda do prompt some, o
-trilho ocupa o corpo, e o par **botão + custo logo abaixo dele** fica onde sempre
-esteve. O que não muda: **o custo fala a verdade multiplicada antes do clique.**
+**A ordem normativa da §3 de [`nodes-geracao.md`](nodes-geracao.md), adaptada — D6,
+aprovada.** A anatomia da casa é *cabeçalho → configuração → chave de inputs →
+**prompt** → botão → custo e saldo → resultado*. A Máquina **não tem prompt**: as
+fichas são o prompt. Então a banda do prompt some, o trilho ocupa o corpo, e o par
+**botão + custo logo abaixo dele** fica onde sempre esteve. O que não muda: **o custo
+fala a verdade multiplicada antes do clique.**
 
 **O que cada parte é:**
 
@@ -174,11 +192,12 @@ esteve. O que não muda: **o custo fala a verdade multiplicada antes do clique.*
 | **chave "Input Referências"** | **nasce desligada**, invariante 12, sem exceção para a Máquina. Desligada, os inputs ficam conectados e visíveis, e `referencias_mudas` é gravado em cada cena |
 | **modelo · qualidade** | do catálogo. Uma escolha para o lote inteiro — o preço por resolução vem de `ai_model_image_prices`, nunca de quem chama |
 | **formato** | **não é escolha**: vem do `canal` do storyboard, pelos presets de `format-presets.json`. Um passo a menos, e a informação já existia |
-| **o trilho** | uma coluna por cena: número, glifo de transição (✂ corte · ⇥ continuação), a miniatura, o selo de estado e as ações da cena |
-| **↻ repetir** | por cena, com **instrução opcional** — §7 · D3 |
-| **✓ aprovar** | por cena; e **"Aprovar as N"** no portão, para o caso normal de olhar seis imagens de uma vez |
-| **▶ / △ saída** | o conector de baixo entrega **a imagem aprovada daquela cena** a qualquer node — é o "cada ponto se conecta a um bloco" do esboço |
-| **os dois portões** | separados por requisito. O de vídeo só conta cenas **aprovadas**, e só anima essas |
+| **o trilho** | uma coluna por cena: número, glifo de transição (✂ corte · ⇥ continuação), a miniatura **ou** a frase da emenda, o selo de estado e as ações da cena |
+| **coluna de corte** | miniatura da imagem, **↻ repetir** (D3) e **✓ aprovar** |
+| **coluna de continuação** | **sem imagem própria** (D4). Antes do vídeo diz **"continua da cena N"**; depois, mostra **o quadro derivado do elo** — que é o primeiro quadro de verdade dela |
+| **✓ aprovar** | por cena; e **"Aprovar as N"** no portão, habilitado só quando há N imagens para aprovar |
+| **▶ / △ saída** | o conector de baixo entrega a imagem aprovada da cena (ou, na continuação, o quadro do elo) a qualquer node |
+| **os dois portões** | separados por requisito. O de vídeo conta **aprovadas + as continuações delas**, e só anima essas |
 
 **Fora do escopo deste ciclo, dito aqui para não ser esquecido:** a arte da máquina
 (fundo transparente, soquetes alinhados, flutuação) é **Passe de UI/UX**. Este ciclo
@@ -203,7 +222,7 @@ Transcritos do brief de 28/08/2026, com a consequência de desenho ao lado.
    → §7 · D1 é a decisão que sustenta este requisito, e §7 · D2 é o limite honesto dele.
 5. **Continuação em lote.** Cena de continuação só anima depois do vídeo anterior
    pronto **e** do último quadro extraído. Cenas de corte correm em paralelo dentro do
-   teto de 4. → é a Fase 0 que decide **como** (medindo, não argumentando).
+   teto de 4. → **a Fase 0 mediu e o elo fica como está** (§8 · Fase 0).
 6. **Anatomia da imagem.** §4 acima. A tela é o manual: custo, estado e próximo gesto
    legíveis sem tooltip.
 7. **Template no sidebar.** Roteiro + Máquina conectados e posicionados, duplicáveis e
@@ -215,9 +234,9 @@ Transcritos do brief de 28/08/2026, com a consequência de desenho ao lado.
 
 ---
 
-## 6. As quatro respostas
+## 6. As quatro respostas — **aprovadas em 28/08/2026**
 
-### Q1 · Edição da ficha — **uma porta só. Confirmo a recomendação da casa.**
+### Q1 · Edição da ficha — **uma porta só** ✅
 
 **O Roteiro edita; a Máquina espelha e repete.** O trilho da Máquina **não tem ✎**.
 
@@ -238,11 +257,10 @@ da cena leva o nome da cena como botão — clicar **seleciona o node de Roteiro
 tela até ele e abre o overlay daquela ficha**. Um editor, um clique de distância. É o
 mesmo gesto que o ▸ faz no sentido contrário.
 
-### Q2 · A fila — **reutilizar `useQueue`, com dois campos opcionais e aditivos.**
+### Q2 · A fila — **reutilizar `useQueue`, com dois campos opcionais e aditivos** ✅
 
-Preferência forte do brief, e a investigação concorda. A fila do bloco de imagem é o
-único lugar do cliente que decide **quando uma requisição paga sai**, e ela já resolve
-quatro coisas que a Máquina precisaria resolver de novo:
+A fila do bloco de imagem é o único lugar do cliente que decide **quando uma requisição
+paga sai**, e ela já resolve quatro coisas que a Máquina precisaria resolver de novo:
 
 - o teto de 4 concorrentes (`MAX_CONCURRENT_IMAGES`), que conta **imagens, não cliques**;
 - o `structuredClone` do pedido no instante do clique — um input editado no meio do
@@ -267,46 +285,42 @@ usa — ele continua exatamente como está.
 
 **A alternativa descartada — fila própria:** duas cópias do único código que decide
 quando um pedido pago sai. Elas divergiriam no lugar mais caro possível, e a segunda a
-divergir seria a que ninguém testa. É o mesmo argumento que fez a Galeria ser um *modo*
-do seletor em vez de uma segunda tela.
+divergir seria a que ninguém testa.
 
 > **A exceção que o vídeo já tinha, e que continua valendo:** o lote de vídeo **não**
 > usa esta fila. Lá a linha nasce `queued` no banco antes da chamada, e o estado vivo
 > **é** o banco (decisão de 13/08). A Máquina lê `generations` e o Realtime avisa
 > quando reler — nada em memória para divergir.
 
-### Q3 · Como a Máquina recebe o storyboard — **pela aresta. Ela não guarda id nenhum.**
+### Q3 · Como a Máquina recebe o storyboard — **pela aresta** ✅
 
 Um fio do node de Roteiro (saída nova, `roteiro`) até a entrada `roteiro` da Máquina.
 A Máquina lê `edge.source` → o `node_id` do Roteiro → `(project_id, node_id)` → o
 storyboard. **Nenhum id no `data`, nenhuma coluna nova.**
 
 É a decisão da Fase 4 do Ciclo 2 repetida onde ela vale de novo: *"a corrente mora na
-aresta; uma segunda cópia só existiria para poder discordar da primeira"*. E é o padrão
-que o próprio Roteiro já usa para se reencontrar depois de um reload.
+aresta; uma segunda cópia só existiria para poder discordar da primeira"*.
 
 **Duas consequências que precisam estar escritas:**
 
 - **Uma Máquina por roteiro.** Duas Máquinas no mesmo storyboard disputariam o estado
   das mesmas fichas. O segundo fio é **recusado com frase** — *"este roteiro já é regido
-  por uma Máquina"* —, no mesmo `notice` efêmero que já recusa fios hoje. Mesma doutrina
-  do "garante o par, nunca duplica".
+  por uma Máquina"* —, no mesmo `notice` efêmero que já recusa fios hoje.
 - **Cortar o fio não apaga nada.** As gerações continuam no banco, ligadas às cenas; a
-  Máquina apenas para de reger. Religar devolve o trilho inteiro — porque ele nunca
-  esteve na Máquina.
+  Máquina apenas para de reger. Religar devolve o trilho inteiro.
 
-**Ficha que muda depois da imagem gerada → a cena fica `desatualizada`.** E a
-comparação **não precisa de coluna nova**: `generations.prompt_user_pt` guarda o texto
-PT exato que foi enviado, e `prompt_compiled.structure.ajustes_cena` guarda o ângulo.
-A cena está desatualizada quando `buildSceneDirective(ficha de agora)` difere do que
-está gravado na geração que produziu a imagem aprovada. É a mesma comparação que o
-`matchesDirective` do store já faz para o fio vivo — **uma conta, um lugar**.
+**Ficha que muda depois da imagem gerada → a cena fica `desatualizada`.** A comparação
+lê **a diretiva gravada na geração**, e **não** o `prompt_user_pt` inteiro — essa é a
+correção que a **D3** impôs, e ela está detalhada lá. A cena está desatualizada quando
+`buildSceneDirective(ficha de agora)` difere de
+`prompt_compiled.structure.storyboard.diretiva_pt` **ou** do `ajustes_cena` gravado.
+Mesma comparação que o `matchesDirective` do store já faz para o fio vivo — **uma
+conta, um lugar**.
 
-O selo é **informativo, nunca bloqueante**: a imagem aprovada continua valendo e
-continua animável. Quem decide se a mudança na ficha importa é quem a escreveu — a tela
-só se recusa a fingir que não houve mudança.
+O selo é **informativo, nunca bloqueante**. Quem decide se a mudança na ficha importa é
+quem a escreveu — a tela só se recusa a fingir que não houve mudança.
 
-### Q4 · Onde moram as imagens e os vídeos do lote — **onde sempre moraram.**
+### Q4 · Onde moram as imagens e os vídeos do lote — **onde sempre moraram** ✅
 
 **Assets normais.** `record_generation` grava `generations` + `assets` como em qualquer
 geração; a Galeria os lista; o cartão do projeto os conta; a miniatura e a URL estável
@@ -325,25 +339,25 @@ Todas as tentativas (inclusive as recusadas) já estão em `generations`; a apro
 > responde quem pôs o arquivo aqui, `derived_from_asset_id` responde de onde vieram os
 > pixels.
 
-**"Usar no fluxo" continua existindo, e ganha um irmão:** o conector de saída da cena.
-Arrastar dele para um bloco entrega a imagem aprovada — o mesmo `attachResultCard` /
-`wiredStill` de sempre, com `machine` acrescentado à lista de fontes que já tem cinco
-membros.
+**"Usar no fluxo" continua existindo, e ganha um irmão:** o conector de saída da cena,
+com `machine` acrescentado à lista de fontes que já tem cinco membros.
 
 ---
 
-## 7. As decisões que precisam da sua palavra
+## 7. As decisões
 
-Seis. Se alguma estiver errada, **é agora que sai barato**.
+Sete, **todas decididas pelo Jorge em 28/08/2026**. D1–D6 na conferência de
+`93807c7`; a **D7** nasceu dessa conferência e foi fechada na seguinte, no mesmo dia.
+**Nenhuma decisão deste ciclo está pendente.**
 
-### D1 · `generations.scene_id` — a cena entra na linha da geração
+### D1 · `generations.scene_id` — a cena entra na linha da geração ✅ **SIM**
 
 **O que decide:** requisito 1 pede *"uma linha de extrato por cena, descrição dizendo
 qual cena de qual storyboard"*, e requisito 4 pede o trilho como espelho do banco.
 Nenhum dos dois é possível hoje: uma geração sabe de qual **node** veio, nunca de qual
 **cena**.
 
-**A proposta:** uma coluna `scene_id` em `generations`, com FK composta
+**Como fica:** uma coluna `scene_id` em `generations`, com FK composta
 `(scene_id, user_id) → storyboard_scenes (id, user_id)` e `on delete set null
 (scene_id)` — para que substituir um roteiro (que apaga as fichas) **nunca** apague
 história de quem pagou o quê. Mais o parâmetro `p_scene_id` em `record_generation` e em
@@ -356,96 +370,193 @@ fato, exatamente como o Ciclo 2 fez com `p_media_kind` e `p_job_kind`. O preço 
 vindo do catálogo, a transação continua sendo uma, e **a descrição continua sendo
 composta no servidor** — o navegador aponta uma linha, nunca escreve um nome.
 
-**O que se ganha de graça, e é muito:** o histórico por cena (todas as tentativas,
-inclusive as recusadas), a reconciliação depois de um reload, e o estado da cena sendo
-**leitura**, não memória.
+**O que se ganha de graça:** o histórico por cena (todas as tentativas, inclusive as
+recusadas), a reconciliação depois de um reload, e o estado da cena sendo **leitura**,
+não memória.
 
-**A alternativa que descartei:** um `node_id` composto (`<id da máquina>#cena-3`).
+**A alternativa descartada:** um `node_id` composto (`<id da máquina>#cena-3`).
 Custaria zero migration e funcionaria — mas sobrecarregaria uma coluna cujo comentário
 diz *"the React Flow node id"*, e deixaria o extrato sem como nomear a cena sem
-**parsear uma string em SQL**. Um atalho que a primeira pessoa a ler o extrato paga.
+**parsear uma string em SQL**.
 
 > **Cuidado obrigatório, porque isto encosta na função do dinheiro:** a prova da Fase 1
 > compara o corpo da `record_generation` no banco contra o da migration por md5 e faz o
-> diff das linhas executáveis — o mesmo método da Fase 1 do Ciclo 2, que provou o ramo
-> de imagem inalterado com 22 linhas antes e 22 depois.
+> diff das linhas executáveis — o método da Fase 1 do Ciclo 2.
 
-### D2 · O limite honesto do "estado no banco" — e ele é do produto, não do desenho
+### D2 · O limite honesto do "estado no banco" ✅ **SIM**
 
 Requisito 4 diz que o estado persiste no banco. **Ele persiste — com uma assimetria que
-é da natureza dos dois motores, e que não posso apagar sem inventar um caminho novo:**
+é da natureza dos dois motores:**
 
 | | quem sabe que há trabalho em voo |
 |---|---|
 | **vídeo** | **o banco**. `submit_video_generation` grava `queued` antes de a fal ser chamada |
 | **imagem** | **só o navegador**. `record_generation` grava a linha **depois** de a imagem existir |
 
-Consequência: se a sessão morrer no meio do lote de imagens, as cenas **já concluídas**
-estão no banco (com `scene_id`), e as em voo não aparecem como "gerando" — reaparecem
+Se a sessão morrer no meio do lote de imagens, as cenas **já concluídas** estão no
+banco (com `scene_id`), e as em voo não aparecem como "gerando" — reaparecem
 **prontas** se o servidor terminou, ou **sem imagem** se não. O trilho volta certo em
 qualquer um dos dois casos, porque ele **lê**.
 
-**A recomendação: aceitar a assimetria e não escrever intenção no banco.** Escrever
-"gerando" antes do pedido criaria um estado que ninguém confirma — uma cena travada em
-"gerando" para sempre depois de uma aba fechada, e uma segunda cópia da verdade
-discordando do fato exatamente onde ele custa dinheiro. É a mesma razão pela qual o
-vídeo **não** herdou a fila do cliente, vista pelo outro lado.
+**Aceitar a assimetria, e não escrever intenção no banco.** Escrever "gerando" antes do
+pedido criaria um estado que ninguém confirma — uma cena travada em "gerando" para
+sempre depois de uma aba fechada. É a mesma razão pela qual o vídeo **não** herdou a
+fila do cliente, vista pelo outro lado.
 
 **O que fecha o buraco sem inventar nada:** ao montar, a Máquina lê as gerações **deste
 lote** e reata o que já está ligado por `scene_id`. Uma imagem paga por um lote
 interrompido reaparece na cena dela — não some, e não é paga duas vezes.
 
-### D3 · "Repetir" com instrução — **efêmera, e nunca escreve na ficha**
+### D3 · "Repetir" com instrução — efêmera ✅ **SIM, com conserto obrigatório**
 
-O ↻ da cena aceita uma instrução opcional (*"mais fechado no rosto"*). Ela é **anexada
-ao prompt daquela tentativa** e **não** volta para a ficha — é o que mantém a Q1 de pé:
+O ↻ da cena aceita uma instrução opcional (*"mais fechado no rosto"*). Ela é anexada ao
+prompt **daquela tentativa** e **não** volta para a ficha — é o que mantém a Q1 de pé:
 uma porta só para editar.
 
-Ela fica registrada onde tudo fica: `prompt_user_pt` guarda exatamente o texto que foi
-enviado, então a auditoria mostra a tentativa como ela foi, sem que a ficha tenha
-mudado. **O que a pessoa dirigiu numa tentativa não vira a história da cena.**
+> #### ⚠ O conserto que o Jorge exigiu, e o defeito que ele pegou
+>
+> **Como estava escrito, a D3 quebrava a comparação da Q3.** A instrução ia colada no
+> texto enviado, e a comparação de "desatualizada" era por **igualdade estrita** contra
+> `prompt_user_pt`. Consequência: uma cena aprovada a partir de um ↻ **com instrução**
+> acenderia **"desatualizada" sem a ficha ter mudado** — um selo mentindo sobre a única
+> coisa que ele existe para dizer.
+>
+> **O conserto: diretiva e instrução viajam em campos separados** de
+> `prompt_compiled.structure`, e a comparação lê **só a diretiva**:
+>
+> ```
+> prompt_compiled.structure.storyboard = {
+>   ordem:        3,
+>   diretiva_pt:  "@luna aponta para o liquidificador…",   ← o que a ficha compila
+>   instrucao_pt: "mais fechado no rosto"                  ← o que a pessoa dirigiu
+> }                                                          (null quando não houve)
+> ```
+>
+> **A auditoria continua inteira** — `prompt_user_pt` segue guardando o texto exato que
+> foi enviado, os dois pedaços juntos, e agora dá para dizer **qual metade veio de
+> onde**, que antes não dava.
+>
+> **Controle novo, obrigatório, na prova da Fase 2:** ↻ com instrução → aprovar →
+> **o selo "desatualizada" não acende**. É um controle negativo, e é a única forma de
+> provar que o conserto pegou: um selo que só acende nunca provou que sabe ficar
+> apagado.
 
-### D4 · A cena de continuação **também ganha imagem** — e a tela diz o que ela é
+### D4 · A cena de continuação **não** ganha imagem ✅ **ALTERNATIVA, decidida pelo Jorge**
 
-**O caso.** Uma cena `⇥ continuação` anima a partir do **último quadro do clipe
-anterior** (o elo do Ciclo 1, fixado no requisito 5). Então a imagem gerada para ela
-**não** é o primeiro quadro do vídeo dela.
+**O critério dele, e ele encerra a discussão:** *uma imagem só vale 75 ⚡ se entrar no
+vídeo — e no Kling 2.1 standard, que recebe **um** `image_url`, a imagem de uma cena de
+continuação não entra.* O primeiro quadro dela é o **último quadro do clipe anterior**,
+pelo elo do Ciclo 1.
 
-**A recomendação: gerar a imagem assim mesmo**, por três razões:
+**Como o trilho fica:**
 
-1. A visão da frente (15/08, item b) fixou que **a espinha do storyboard é uma imagem
-   por cena** — a folha montada é feita a partir delas.
-2. Sem imagem, uma cena de continuação **não tem o que aprovar**, e o portão de vídeo
-   perde justamente as cenas em que a emenda pode dar errado.
-3. Trocar `⇥` por `✂` depois de gerar deixaria a cena órfã de imagem, e a pessoa
-   pagaria de novo por uma coisa que o lote já poderia ter.
+| momento | a coluna de uma cena `⇥` mostra |
+|---|---|
+| antes do vídeo | **"continua da cena N"** — sem miniatura, sem custo, sem ↻ de imagem |
+| depois do vídeo | **o quadro derivado do elo**, que é o primeiro quadro de verdade dela |
 
-**E a honestidade fica na tela, não no comentário:** a coluna de uma cena de
-continuação diz, sob a miniatura, **"emenda a cena N — o vídeo começa no último quadro
-dela"**. Sem essa frase, a imagem promete um primeiro quadro que não vai acontecer.
+**A aprovação dela é herdada:** aprovar a cena que ela emenda aprova a emenda junto —
+não há segunda imagem para julgar, e pedir um clique por uma decisão que já foi tomada
+seria burocracia. **O portão de vídeo conta `aprovadas + as continuações delas`**, e é
+por isso que ele diz *"Animar as 4 aprovadas + 2 emendas"* em vez de um número só.
 
-**A alternativa, com o argumento dela, porque ela é boa:** não gerar imagem para cenas
-de continuação economiza `75 ⚡` por cena (`150 ⚡` no caso de 6 cenas com 2
-continuações) e é rigorosamente honesta — *"a imagem é a cena"* só vale quando a imagem
-**é** o primeiro quadro. **Se você preferir esta, ela é barata de adotar agora e cara
-depois:** ela muda o portão, o trilho e a aprovação.
+**O que isso custa e o que economiza:** num roteiro de 6 cenas com 2 continuações,
+**150 ⚡ a menos** por rodada — e uma coluna que nunca promete um primeiro quadro que
+não vai acontecer.
 
-### D5 · Duração fora do catálogo não anima, e a tela diz por quê
+**O que a decisão amenda, e a emenda vai para o diário:** a visão da frente de
+15/08/2026, item **b**, fixou que *"a espinha é uma imagem por cena"*. **Continua
+valendo para as cenas de corte.** Para as de continuação, a espinha é o **quadro do
+elo** — que é uma imagem por cena também, só que **derivada e grátis** em vez de gerada
+e paga. A emenda é registrada em [`decisoes.md`](decisoes.md), não escondida aqui.
 
-`ai_model_video_prices` tem **uma linha: 5 segundos**. A ficha tem
-`duracao_segundos` (1 a 60, default 5). Uma cena de 8 segundos **não é animável** — e a
-regra da casa é de 13/08: *"não se oferece o que não se sabe cobrar"*.
+> **A condição de reversão, escrita pelo Jorge e já resolvida:** *"se a Fase 0 fizer a
+> continuação partir da própria imagem, D4 volta como escrito"*. A Fase 0 mediu e **não
+> fez** — o elo custa 1,5 MB e meio segundo, e continua sendo a partida certa. **D4 fica
+> na alternativa.** A condição continua escrita porque o dia em que entrar no catálogo
+> um modelo de vídeo **multi-referência** ela volta a valer.
+
+### D5 · Duração fora do catálogo não anima ✅ **SIM, com companheiro**
+
+`ai_model_video_prices` tem **uma linha: 5 segundos**. A ficha aceita
+`duracao_segundos` de 1 a 60. Uma cena de 8 segundos **não é animável** — regra de
+13/08: *"não se oferece o que não se sabe cobrar"*.
 
 A coluna dessa cena fica fora do portão de vídeo, com a frase que ensina o conserto
 (*"a duração desta cena não está no catálogo do modelo — ajuste para 5s no Roteiro"*).
-**A ausência é a funcionalidade**, e destravar 10s continua sendo uma linha de SQL.
 
-### D6 · A anatomia adapta a ordem normativa, porque não há prompt
+> #### O companheiro, exigido pelo Jorge: a ficha nasce animável
+>
+> Recusar no portão conserta **tarde**. O gerador do Roteiro passa a **receber as
+> durações do catálogo** e o schema que viaja ao modelo **valida contra elas** — uma
+> ficha com duração que ninguém sabe cobrar deixa de nascer.
+>
+> **Entra na Fase 1**, e não na 3. A razão é a ordem do estrago: consertar só no portão
+> deixaria **duas fases inteiras** produzindo fichas que o portão vai recusar, e o
+> primeiro lote de vídeo do Jorge encontraria cenas mortas que o produto criou sozinho.
+> Também é a fase certa por natureza — é o encanamento que fala com o catálogo, e ela
+> não corta passo nenhum, então não desequilibra a régua.
+>
+> **A frase de D5 continua existindo, e é para o roteiro colado.** O modo
+> `estruturar` recebe texto de fora e o modelo pode devolver qualquer duração; e uma
+> ficha escrita à mão no overlay também pode. **A trava de nascimento não substitui a do
+> portão** — é a doutrina das três camadas do teto de 10, aplicada à duração.
+
+### D6 · A anatomia adapta a ordem normativa ✅ **SIM**
 
 Descrito em §4. A banda do prompt some (as fichas **são** o prompt), o trilho ocupa o
-corpo, e **botão + custo colado abaixo dele** ficam onde a invariante 12 os pôs. Se
-você preferir outra ordem, ela precisa ser decidida antes da Fase 1 — porque a §3 de
-`nodes-geracao.md` é normativa e a Máquina vai entrar nela.
+corpo, e **botão + custo colado abaixo dele** ficam onde a invariante 12 os pôs. A §3
+de `nodes-geracao.md` é normativa e recebe a Máquina no fechamento.
+
+### D7 · O ↻ depois de aprovada e depois do vídeo ✅ **SIM, com a recomendação**
+
+**A regra que faltava, apontada pelo Jorge na conferência de `93807c7`** — ele deu a
+forma da resposta e pediu que ela fosse escrita nos dois sentidos — **e fechada por ele
+no mesmo dia, na recomendação.**
+
+**O ↻ existe em todo estágio, imagem e vídeo, e cada um é uma geração normal.** Uma cena
+nunca fica trancada — nem depois de aprovada, nem depois de virar vídeo. Duas razões:
+
+1. **A recusa não é determinística** (medido, 26/08). Trancar a cena depois do primeiro
+   desfecho transformaria uma repetição de um clique em desmontar o lote.
+2. É a doutrina do Ciclo 1 aplicada aqui: *"a Cena 04 ficou errada — ele volta para a
+   cena 04, não para o roteiro"*. Uma etapa se refaz sem destruir o fluxo.
+
+**E aprovar uma imagem nova tem consequência, que é a metade que o Jorge fixou:**
+
+| o que acontece | efeito |
+|---|---|
+| aprovar imagem nova numa cena **que já tem vídeo** | o vídeo dela vira **`desatualizado`** |
+| e as cenas `⇥` **abaixo dela** | viram `desatualizado` **em cadeia**, até o primeiro corte — o quadro de partida delas veio do vídeo velho |
+
+**A verificação é dado, nunca rótulo — e não custa coluna nenhuma.** O vídeo guarda
+`generations.params.source_asset_id`: a imagem de que ele partiu. O vídeo está
+desatualizado quando esse id **não é** o `imagem_aprovada_asset_id` de agora.
+
+**E a continuação acende sozinha**, sem propagação escrita em lugar nenhum: o quadro
+derivado **carrega o clipe de origem** em `assets.derived_from_asset_id`, então o
+`source_asset_id` de um vídeo de continuação aponta para um quadro que aponta para o
+clipe anterior. Trocar o clipe anterior troca o quadro, e a comparação da cena de baixo
+falha por conta própria. **A cadeia sai da forma do dado** — é o dividendo da coluna de
+15/08 sendo cobrado três ciclos depois.
+
+**Três coisas que a regra deliberadamente não faz:**
+
+- **não apaga nada** — o vídeo antigo continua no acervo, na galeria e no extrato. Foi
+  pago, e o que foi pago não desaparece porque alguém mudou de ideia;
+- **não regera sozinha** — o portão de vídeo passa a dizer *"2 cenas desatualizadas ·
+  reanimar por 420 ⚡"*, e quem clica é uma pessoa;
+- **não bloqueia** — desatualizado é selo informativo, como o da ficha (Q3).
+
+**A alternativa, dita porque o Jorge pediu os dois lados:** ↻ **não** existir depois do
+vídeo. Seria mais simples — nenhuma cadeia, nenhuma propagação, nenhum selo novo — e
+compraria essa simplicidade cobrando de quem menos pode pagar: a pessoa que descobriu
+na cena 4 que a 2 ficou errada teria de recomeçar o lote. **Não recomendo**, e a
+recomendação é a de cima.
+
+**Onde ela entra:** a propagação e o selo de vídeo desatualizado são da **Fase 3** (é lá
+que existe vídeo); o ↻ depois de aprovada é da **Fase 2**. **Nenhuma coluna nova nas
+duas** — a decisão inteira é leitura de dado que já está gravado.
 
 ---
 
@@ -453,48 +564,84 @@ você preferir outra ordem, ela precisa ser decidida antes da Fase 1 — porque 
 
 | Fase | Entrega | Passos | Status |
 |---|---|---:|---|
-| **0** | O elo em lote, medido antes de desenhado — **zero Spark** | 0 | 🟡 não iniciada |
-| **1** | Fundação: a cena entra na geração, a Máquina nasce, o trilho espelha | 0 | 🟡 não iniciada |
-| **2** | Lote de imagens com portão · aprovar e repetir por cena | **−10** | 🟡 não iniciada |
-| **3** | Lote de vídeo com portão · continuação em lote | **−35** | 🟡 não iniciada |
+| **0** | O elo em lote, medido antes de desenhado — **zero Spark** | 0 | ✅ **fechada — 28/08/2026** |
+| **1** | Fundação: a cena entra na geração, a Máquina nasce, o trilho espelha, a ficha nasce animável | 0 | 🔵 **aberta — 28/08/2026** |
+| **2** | Lote de imagens com portão · aprovar e repetir por cena | **−6** | 🟡 não iniciada |
+| **3** | Lote de vídeo com portão · continuação em lote · o desatualizado em cadeia | **−35** | 🟡 não iniciada |
 | **4** | O template no sidebar — o fluxo padrão | **−2** | 🟡 não iniciada |
 | **Fech.** | O Jorge percorre o caminho do zero, com a régua ao lado | — | 🟡 não iniciada |
 
 ---
 
-### Fase 0 · o elo em lote, medido antes de desenhado
+### Fase 0 · o elo em lote, medido antes de desenhado ✅ **fechada em 28/08/2026**
 
-**Por que existe.** O requisito 5 manda **investigar** se a extração atual (navegador,
-vídeo inteiro) serve ao lote *"sem repetir a doença do Egress"*. Uma fase de medição
-custa uma sessão e **zero Spark** — os dois clipes do Ciclo 1 já estão no Storage —, e
-o mini-ciclo de Egress acabou de provar três vezes seguidas que **o instrumento faz
-parte do achado**.
+**Por que existiu.** O requisito 5 mandava **investigar** se a extração atual
+(navegador, vídeo inteiro) serve ao lote *"sem repetir a doença do Egress"*. Custou uma
+sessão, **zero Spark** e nenhuma escrita no banco — os três clipes do Ciclo 1 já
+estavam no Storage.
 
-**A resposta parcial que o diário já dá, e que a medição vai confirmar ou derrubar:** a
-doença do Egress era **repetição de bytes de exibição** (24 imagens de 1,84 MB a cada
-visita, ~193 visitas). O elo baixa **um** vídeo, **uma vez na vida** — `findDerivedFrame`
-já pula a segunda. São classes diferentes de custo. *Isto é hipótese até a Fase 0
-medir.*
+**O veredito em uma linha: o elo não é a doença do Egress, e o portão pré-registrado não
+disparou.**
 
-**As perguntas, e o que cada uma decide:**
-
-| # | pergunta | o que muda conforme a resposta |
+| # | pergunta | resposta medida |
 |---|---|---|
-| 0.1 | quantos **bytes** custa um elo, e quantos custa uma cadeia de 3 continuações? | se for da ordem de MB por elo e uma vez só, fica como está |
-| 0.2 | quanto **tempo** leva o decode encadeado (3 vídeos em sequência, decodificador quente)? | se passar de dezenas de segundos, o portão de vídeo precisa dizer isso antes do clique |
-| 0.3 | a aba escondida trava a cadeia? em que ponto exato? | decide a frase e o comportamento do lote quando alguém troca de aba no meio |
-| 0.4 | a URL estável do mini-ciclo de Egress faz a **segunda** extração custar zero? | se sim, repetir uma cena de continuação é barato; se não, o passo zero é a única defesa |
+| **0.1** | quantos bytes custa um elo? | **~1,5 MB** — e o achado é outro: **a extração não baixa o vídeo inteiro.** Ela pede um **range da cauda**: 1.692.423 e 1.305.548 bytes de arquivos de 4,5 e 4,1 MB (37,5% e 31,9%). Cadeia de 3 ≈ **4,5 MB**, uma vez na vida |
+| **0.2** | quanto tempo leva a cadeia? | **1.531 ms** para três elos (segunda rodada: 1.501 ms). Por elo: 484–538 ms, dos quais 8–13 ms de metadata |
+| **0.3** | a aba escondida trava a cadeia? | 🟡 **ABERTA, com nome e dono.** Não medida — duas tentativas, as duas confundidas pelo instrumento. **Fecha na metade do Jorge na Fase 3**, e o desenho já assume o pior caso. Ver abaixo |
+| **0.4** | a segunda extração custa zero? | **Sim: zero requisições** de Storage no `edge_logs` da janela da segunda rodada |
 
-**O portão pré-registrado — escrito antes de medir, que é o que o torna honesto:** se
-0.1 ou 0.2 mostrarem que a cadeia de continuações é cara ou lenta o bastante para
-mudar o produto, **a alternativa volta para o Jorge como decisão** (extração no
-servidor foi medida em 15/08 e custava 68 MB de bundle; ela não é impossível, é cara).
-**Não** será emendada no meio da Fase 3.
+**O número que decide, e não é nenhum dos quatro.** Um clipe do Kling levou **66 s,
+72 s e 91 s** nas três gerações pagas do Ciclo 1. Três continuações são **3 a 4,5
+minutos** de provedor. **O elo é ~0,6% do tempo da cadeia** — quem manda no relógio é a
+geração, não a extração. E contra a doença do Egress (~44 MB **por visita**, ~193
+visitas, ~8,5 GB), 4,5 MB **uma vez** não é a mesma classe de custo.
 
-**Prova:** um arquivo de números por pergunta, em
-`scratchpad\evidencias\storyboard-c3-fase0\`, com o instrumento nomeado e a razão de
-ele poder responder aquela pergunta. Zero Spark, e a contagem de `generations` e do
-ledger idêntica no começo e no fim.
+**A armadilha de instrumento, registrada porque quase virou achado.** Na carga da
+galeria as três requisições vieram com `Range: bytes=0-` e `content_length` igual ao
+**arquivo inteiro** — 12.221.203 bytes somados. Isso é a **oferta do servidor, não o
+consumo do navegador**: `preload="metadata"` pede, recebe o `moov` (~5,6 kB, medido na
+Fase 0 do Egress) e cancela. Ler `content_length` como egress inflaria o número em
+~2.000×. É a terceira vez neste projeto que um campo de instrumento mente por omissão,
+depois do `transferSize` e do `metadata()` do sharp.
+
+**O que ficou sem prova, dito em vez de contado — e a 0.3 fica ABERTA com nome.** Ela
+não foi medida: duas tentativas, as duas confundidas. Tentativa 1: a aba começou
+escondida (`visAoIniciar: hidden`) e **terminou visível** — o sucesso não é atribuível.
+Tentativa 2: com amostragem de 1 em 1 segundo, a aba **nunca ficou escondida** (12
+amostras, todas `visible`). É a mesma limitação registrada em 15/08: **a extensão ativa
+a aba para executar qualquer script.**
+
+> **E ela ganhou dono, data e instrumento** *(decisão do Jorge, 28/08/2026)*. **A 0.3
+> fecha na metade do dono da Fase 3**, com uma **troca deliberada de aba por 30 s no
+> meio da cadeia** — quem não é dirigido por extensão é o Jorge, e a mão dele **é** o
+> instrumento que faltou aqui. Até lá a pergunta continua aberta e **está escrita como
+> aberta**: uma pergunta sem resposta e uma respondida não podem ter a mesma aparência,
+> pela mesma razão que uma etapa esperando prova não pode parecer fechada.
+
+O que a tentativa 1 mostra assim mesmo, e é sinal real: com a aba escondida,
+`loadedmetadata` levou **1.467 ms** contra **8–13 ms** visível — **110× a 180× mais
+lento**, mesmo arquivo, mesmo cache. Aponta na mesma direção da medição de 15/08 (8
+repetições) sem substituí-la.
+
+**E o desenho não depende de resolver isto.** O `diagnose()` de `last-frame.ts` pergunta
+a visibilidade **antes** do erro e devolve `hidden_tab`. A cadeia **pausa com causa
+nomeada**, nunca gira — que é o que a decisão de 15/08 já mandava.
+
+**Zero Spark, e a prova não é a igualdade dos números: é a data da última linha.**
+`generations` 64, `ledger_transactions` 49, `assets` 58, derivados 1, saldo 6.550 ⚡ —
+e a linha mais recente das três tabelas é de **28/08 às 00:24:20 UTC**, a geração paga
+do fechamento da Fase 3 do Egress. **Nada foi escrito hoje.** A extração desta fase
+nunca chamou `registerDerivedFrame`.
+
+**Nota de ambiente, para a próxima fase não redescobrir:** a `localhost:3000` **recusou
+execução de JS** pela extensão (permissão é por origem, porta inclusa) e a medição rodou
+em **`localhost:5599`**, como a memória do projeto já mandava.
+
+**Evidência** — quatro arquivos, sem nenhuma URL assinada:
+`scratchpad\evidencias\storyboard-c3-fase0\`
+`numeros-fase0.md` · `elo-baixa-a-cauda-nao-o-video-inteiro.txt` ·
+`segunda-extracao-zero-requisicoes.txt` ·
+`aba-escondida-inconclusivo-limite-do-instrumento.txt`
 
 ---
 
@@ -509,15 +656,17 @@ ledger idêntica no começo e no fim.
    `submit_video_generation`; o ramo de descrição do extrato em `record_generation` e em
    `complete_video_generation`; índice em `generations (scene_id)`.
    → **arquivo escrito pelo Claude, aplicado pelo Jorge** via Session pooler.
-2. **O node.** `components/nodes/machine-node.tsx` com a anatomia da §4, o cabeçalho
+2. **O companheiro da D5: a ficha nasce animável.** O gerador do Roteiro recebe as
+   durações de `ai_model_video_prices` e o schema que viaja ao modelo valida contra
+   elas.
+3. **O node.** `components/nodes/machine-node.tsx` com a anatomia da §4, o cabeçalho
    padrão da casa, a entrada `roteiro`, a entrada de referências, a chave **nascendo
    desligada**, e uma saída por cena.
-3. **A saída nova do Roteiro** (`roteiro`) e o ramo `storyboard → machine` no
+4. **A saída nova do Roteiro** (`roteiro`) e o ramo `storyboard → machine` no
    `onConnect`, com a recusa do segundo fio (§6 · Q3).
-4. **O trilho, lendo o banco.** As fichas por `(project_id, node_id do Roteiro)`, as
+5. **O trilho, lendo o banco.** As fichas por `(project_id, node_id do Roteiro)`, as
    gerações por `scene_id`, o estado derivado, o Realtime do projeto avisando quando
-   reler. **Nenhum botão que gaste existe ainda** — regra da casa: *botão sem função não
-   entra na tela*.
+   reler. **Nenhum botão que gaste existe ainda** — *botão sem função não entra na tela*.
 
 **Passos removidos: 0.** É a fundação, e está escrito assim de propósito.
 
@@ -526,14 +675,17 @@ ledger idêntica no começo e no fim.
 *Estrutural:* a migration pelo **parser real do Postgres** (`libpg-query`) com o
 verificador sabotado; as travas novas executadas dentro de `BEGIN … ROLLBACK`,
 incluindo os casos que **reprovam** (uma cena de outro usuário, um asset de outro
-usuário, o `set null` de uma ficha apagada preservando a linha da geração); e o **md5 do
+usuário, o `set null` de uma ficha apagada preservando a linha da geração); o **md5 do
 corpo de `record_generation`** no banco contra o da migration, mais o diff das linhas
-executáveis dos ramos que não mudaram.
+executáveis dos ramos que não mudaram; e o companheiro da D5 provado **pelo caso que
+reprova** — uma duração fora do catálogo recusada pelo schema, com controle positivo
+nos 5 s.
 
 *Ao vivo, zero Spark:* o node na prateleira; o fio ligando; o segundo fio recusado com
-frase; o trilho desenhando as 6 fichas reais do Ciclo 2 com estado `rascunho`; a chave
-**desligada** ao nascer; e a contagem de `generations`, `ledger_transactions` e saldo
-**idêntica do primeiro ao último dado**.
+frase; o trilho desenhando as fichas reais do Ciclo 2, com as de corte e as de
+continuação **desenhadas diferente** (D4); a chave **desligada** ao nascer; e a
+contagem de `generations`, `ledger_transactions` e saldo **idêntica do primeiro ao
+último dado**.
 
 ---
 
@@ -541,36 +693,46 @@ frase; o trilho desenhando as 6 fichas reais do Ciclo 2 com estado `rascunho`; a
 
 **Entrega.**
 
-- O portão: **"Gerar as N imagens"**, com `N × preço(qualidade) = total ⚡ · Saldo`
-  **antes** do clique, somado do catálogo.
+- O portão: **"Gerar as N imagens"** — **N = as cenas de corte** (D4) —, com
+  `N × preço(qualidade) = total ⚡ · Saldo` **antes** do clique, somado do catálogo.
 - **Saldo insuficiente recusa o lote inteiro, dizendo quanto falta.** Tudo ou nada, como
   o `enqueue` já faz — meia quantidade seria a tela decidindo por quem clicou.
 - A execução: `useQueue` com `tag` e `onSettled` (§6 · Q2), teto de 4, uma requisição
   por cena, **débito por imagem executada**.
-- Por cena: **↻ repetir** (com instrução opcional, D3) e **✓ aprovar**; no portão,
-  **"Aprovar as N"**, habilitado só quando há N imagens para aprovar.
+- Por cena de corte: **↻ repetir** (com instrução opcional, D3) e **✓ aprovar**; no
+  portão, **"Aprovar as N"**. As cenas `⇥` mostram **"continua da cena N"** e herdam a
+  aprovação da cena que emendam.
+- **O ↻ continua existindo depois de aprovada** (D7).
 - Os selos: `rascunho · gerando · pronta · aprovada · falhou · recusada · sem saldo ·
-  desatualizada`.
+  desatualizada · emenda`.
 
-**Passos removidos: 10** (o bloco B, de 12 para 2).
+**Passos removidos: 6** (o bloco B, de 8 para 2).
 
 **Prova — as duas metades.**
 
 *Estrutural (o store e a fila rodando fora do React, como a Fase 4 do C2 fez com 49
-verificações):* a soma do portão contra o catálogo em três qualidades; a recusa por
-saldo com o número que falta; o teto de 4 respeitado com 10 cenas; a atribuição
-`slot → cena` sobrevivendo a uma leva parcial; uma cena que falha **não** derrubando as
-outras; `onSettled` escrevendo o desfecho; e a comparação de `desatualizada` nos dois
-sentidos — **inclusive o controle negativo**, uma ficha que não mudou e não acende nada.
+verificações):* a soma do portão contra o catálogo em três qualidades, **contando só as
+cenas de corte**; a recusa por saldo com o número que falta; o teto de 4 respeitado com
+10 cenas; a atribuição `slot → cena` sobrevivendo a uma leva parcial; uma cena que falha
+**não** derrubando as outras; `onSettled` escrevendo o desfecho; e a comparação de
+`desatualizada` nos dois sentidos.
+
+**Os dois controles negativos obrigatórios**, e o primeiro é o conserto da D3:
+
+| controle | o que ele impede |
+|---|---|
+| **↻ com instrução → aprovar → o selo "desatualizada" NÃO acende** | o defeito que o Jorge pegou na conferência: a instrução entrando na comparação e acusando mudança onde não houve |
+| ficha **não** editada → o selo não acende | um selo que só acende nunca provou que sabe ficar apagado |
 
 *Ao vivo, zero Spark:* o portão dizendo o total antes do clique; o botão travado com o
-saldo curto; "Aprovar as N" desabilitado com o trilho vazio; contagem de banco idêntica.
+saldo curto; "Aprovar as N" desabilitado com o trilho vazio; a coluna de continuação
+sem miniatura e sem custo; contagem de banco idêntica.
 
 *A metade do dono — **e a fase não fecha nem commita sem ela** (regra 8):* **um lote
-real de 6 imagens**, com o extrato conferido linha a linha — **6 linhas nomeando as 6
-cenas** (a prova de D1 que nenhum print dá), o saldo caindo exatamente a soma
-anunciada, e o veredito sobre o único item que nenhuma consulta responde: *o trilho
-mostra o storyboard?*
+real de imagens**, com o extrato conferido linha a linha — **uma linha por cena,
+nomeando a cena** (a prova de D1 que nenhum print dá), o saldo caindo exatamente a soma
+anunciada, e o veredito sobre o que nenhuma consulta responde: *o trilho mostra o
+storyboard?*
 
 ---
 
@@ -578,17 +740,28 @@ mostra o storyboard?*
 
 **Entrega.**
 
-- O portão: **"Animar as N aprovadas"**, com o total do catálogo de vídeo. **Vídeo só de
-  cena aprovada**, sem exceção.
+- O portão: **"Animar as N aprovadas + M emendas"**, com o total do catálogo de vídeo.
+  **Vídeo só de cena aprovada** (ou de continuação de uma aprovada), sem exceção.
 - Cenas de **corte** animam em paralelo, dentro do teto de 4.
 - Cenas de **continuação** entram na cadeia: a cena N só é submetida depois de o vídeo
-  de N−1 estar pronto **e** do quadro extraído — o elo do Ciclo 1, com o passo zero
-  (`findDerivedFrame`) evitando re-extração, e o desenho da Fase 0 respondendo às
-  perguntas 0.2 e 0.3.
+  de N−1 estar pronto **e** do quadro extraído — o elo do Ciclo 1, com `findDerivedFrame`
+  como passo zero. **A Fase 0 mediu o custo: 1,5 MB e meio segundo por elo.**
+- **A cláusula da 0.3 aberta — a cadeia é desenhada para o pior caso** *(decisão do
+  Jorge, 28/08/2026)*. A Fase 0 **não** conseguiu medir se a aba escondida trava o elo,
+  então o desenho **assume que trava**: se a aba não estiver à frente quando a cadeia
+  precisar de um quadro, ela **para com a causa nomeada** e a tela diz **"aguardando a
+  aba voltar"** — nunca gira, nunca falha em silêncio, e retoma sozinha quando a aba
+  volta. **Desenhar para o pior caso é o que permite a pergunta continuar aberta sem
+  parar o ciclo:** se a medição da Fase 3 mostrar que o navegador aguenta, o produto já
+  estava certo; se mostrar que trava, o produto já estava certo também.
 - O estado vivo vem do **banco** (`generations` por `scene_id`, `media_kind = 'video'`)
   e o Realtime avisa. **Nenhuma fila de cliente para o vídeo.**
 - Uma cena que falha ou é recusada não trava a cadeia: as de corte seguem; as de
   continuação **abaixo dela** ficam com a frase que diz o que falta.
+- **O desatualizado em cadeia (D7):** aprovar imagem nova numa cena que já tem vídeo
+  marca o vídeo dela e as continuações abaixo, até o primeiro corte — **por comparação
+  de `params.source_asset_id`, nunca por marcação guardada**. Nada é apagado, nada é
+  regerado sozinho, e o portão passa a oferecer *"reanimar N cenas"* com o custo.
 
 **Passos removidos: 35** (o bloco C, de 36 para 1).
 
@@ -596,17 +769,31 @@ mostra o storyboard?*
 
 *Estrutural:* a ordem da cadeia (uma continuação nunca submetida antes do quadro
 anterior existir), o paralelismo das de corte dentro do teto, a soma do portão contra o
-catálogo, a recusa da cena com duração fora do catálogo (D5), e uma falha no meio da
-cadeia **não** apagando nem travando as demais.
+catálogo **contando aprovadas + emendas**, a recusa da cena com duração fora do catálogo
+(D5), uma falha no meio da cadeia **não** apagando nem travando as demais, e a
+**propagação do desatualizado** — com o controle negativo: aprovar a **mesma** imagem de
+novo não marca nada.
 
-*Ao vivo, zero Spark:* o portão contando só as aprovadas; a frase da cena que aguarda a
-anterior; a cena de duração inválida fora do lote com a frase que ensina o conserto.
+*Ao vivo, zero Spark:* o portão contando aprovadas e emendas separadamente; a frase da
+cena que aguarda a anterior; a cena de duração inválida fora do lote com a frase que
+ensina o conserto; a pausa da aba escondida com a causa nomeada.
 
 *A metade do dono — **e a fase não fecha nem commita sem ela**:* **um lote real com pelo
 menos uma continuação**, e as três leituras que fecham o ciclo: o extrato nomeando cada
 cena; a imagem de partida da cena de continuação sendo **o asset derivado** do clipe
 anterior (uma coluna apontando para outra, como em 15/08); e o veredito humano — *os
 clipes emendam?*
+
+> **E a metade do dono é também o instrumento da 0.3** *(fixado pelo Jorge,
+> 28/08/2026)*. Ela inclui uma **troca deliberada de aba por 30 segundos no meio da
+> cadeia**, com o que aconteceu registrado: o elo parou ou seguiu? a frase apareceu? a
+> cadeia retomou sozinha ao voltar?
+>
+> **Isto resolve a 0.3 pelo único caminho que sobrou.** A extensão que dirige o
+> navegador ativa a aba para executar qualquer script, então eu não consigo produzir o
+> estado; **a mão do Jorge produz**. É a mesma divisão de sempre — há metades que
+> nenhuma consulta responde —, aplicada desta vez não a um julgamento, mas a uma
+> **condição de máquina que o meu instrumento não alcança.**
 
 ---
 
@@ -617,7 +804,7 @@ põe no canvas **Roteiro + Máquina, conectados e posicionados**, com a tela ind
 eles. Duplicar e remover funcionam como em qualquer node, porque **são** nodes comuns —
 o template é um gesto de criação, não um tipo novo.
 
-**Passos removidos: 2** — não dos 54, e sim da montagem da própria Máquina em todo
+**Passos removidos: 2** — não dos 50, e sim da montagem da própria Máquina em todo
 projeto novo (clicar · arrastar · ligar o fio). É a diferença entre *"aqui estão as
 peças"* e *"aqui está o fluxo"*, que é a frase do esboço do Jorge.
 
@@ -638,8 +825,7 @@ mentiu sobre si mesmo duas vezes (13/08 e 17/08).
 3. Docs: este arquivo (status das fases + a linha que fecha o ciclo),
    [`decisoes.md`](decisoes.md) (as entradas datadas), [`produto.md`](produto.md) (o
    roadmap) e [`nodes-geracao.md`](nodes-geracao.md) (**a anatomia da Máquina entra na §3,
-   que é normativa** — um node que não estiver lá é um node que a próxima frente não vai
-   saber que existe).
+   que é normativa**).
 4. `npm run lint` + `npm run typecheck`, **commit e push na mesma ação**, com
    `git log origin/master -1` colado no resumo.
 
@@ -647,23 +833,15 @@ mentiu sobre si mesmo duas vezes (13/08 e 17/08).
 
 ## 9. O que este ciclo **não** faz
 
-Fixado pelo Jorge no brief, e repetido aqui porque um plano que não diz o que recusou é
-um plano que vai crescer no meio.
-
 - **Montagem final e trilha sonora.** A Máquina entrega N clipes, não um filme.
 - **Voz e lipsync.** `storyboard_scenes.fala` continua dormente, e a tela continua
   dizendo isso.
-- **Conexões entre projetos.** O `GN005`/`GN006` permanece: `@` só resolve personagem
-  vinculada **a este** projeto.
-- **Modelos novos pelo nome.** O Seedance entra como linha do catálogo quando vier — sem
-  engenharia, pela invariante 2.
-- **A arte da máquina** (neon, flutuação, brilho por estado). Anatomia sim, glamour não:
-  é o Passe de UI/UX.
-- **Máquina de Influencers.** Ela compartilha o maestro futuro (visão de 15/08, item i),
-  e não é deste ciclo.
+- **Conexões entre projetos.** O `GN005`/`GN006` permanece.
+- **Modelos novos pelo nome.** O Seedance entra como linha do catálogo quando vier.
+- **A arte da máquina** (neon, flutuação, brilho por estado) — é o Passe de UI/UX.
+- **Máquina de Influencers.** Compartilha o maestro futuro (15/08, item i), e não é deste ciclo.
 - **Mais de 10 cenas.** O teto de 10 está em três camadas e continua.
-- **Reordenar, inserir e apagar cenas pela tela.** O `unique deferrable` continua
-  esperando; quem o usar precisa de decisão própria, não de um *"já que estamos aqui"*.
+- **Reordenar, inserir e apagar cenas pela tela.** O `unique deferrable` continua esperando.
 - **Folha montada exportável (PDF).** É visão registrada (15/08, item b) e não é escopo.
 
 ---
@@ -672,29 +850,35 @@ um plano que vai crescer no meio.
 
 | risco | por que ele é real | o que o contém |
 |---|---|---|
-| **Mexer em `record_generation`** | é a função do dinheiro, e ela serve imagem, texto e vídeo | md5 do corpo + diff das linhas executáveis dos ramos intactos, como na Fase 1 do C2 |
-| **Dez recusas de política num lote** | o filtro não é determinístico — medido em 26/08 | requisito 2: cada cena é uma geração; recusa custa zero e ganha ↻ próprio |
-| **A cadeia de continuações parar no meio** | o navegador não decodifica vídeo em aba escondida (medido 8×, 15/08) | Fase 0 mede onde exatamente; a tela diz o que falta, em vez de girar |
-| **Validar canvas em aba escondida** | custou uma hora em 18/08 — o React Flow não desenha aresta com node não medido | janela visível e em primeiro plano em toda validação; `browser_batch` para manter a aba ativa |
-| **O canvas ficar lento com 10 blocos a mais** | a Fase 5 do Egress cortou 53 assinaturas para 1, e a Máquina povoa canvas | o trilho assina **em lote**, uma vez, e desenha **miniatura**; nunca uma assinatura por cena |
-| **O plano divergir de si mesmo** | aconteceu no plano do Egress: dois status para a mesma fase | aprovar uma fase é editar **todo** lugar que falava dela no condicional |
+| **Mexer em `record_generation`** | é a função do dinheiro, e serve imagem, texto e vídeo | md5 do corpo + diff das linhas executáveis dos ramos intactos |
+| **Dez recusas de política num lote** | o filtro não é determinístico — medido em 26/08 | cada cena é uma geração; recusa custa zero e ganha ↻ próprio |
+| **A cadeia parar com a aba escondida** | medido 8× em 15/08, e a **0.3 continua aberta** — a Fase 0 não conseguiu reproduzir | a cadeia é **desenhada para o pior caso**: para com causa nomeada, diz *"aguardando a aba voltar"* e retoma sozinha. A pergunta fecha na metade do dono da Fase 3, com uma troca de aba de 30 s |
+| **Validar canvas em aba escondida** | custou uma hora em 18/08 | janela visível e em primeiro plano; `browser_batch` para manter a aba ativa |
+| **O canvas ficar lento com blocos a mais** | a Fase 5 do Egress cortou 53 assinaturas para 1 | o trilho assina **em lote**, uma vez, e desenha **miniatura** |
+| **O plano divergir de si mesmo** | aconteceu no plano do Egress: dois status para a mesma fase | aprovar uma decisão é editar **todo** lugar que falava dela — foi o que esta revisão fez com a régua, a anatomia, a Q3 e as fases |
 
 ---
 
 ## 11. O ritual, e o endereço da prova
 
 - **Prova em número; print só quando o número não alcança** (regra do fundador,
-  27/08/2026). O entregável de cada item é **dado** — contagem, tabela, leitura de log,
-  banco ou DOM. Print entra só quando a afirmação é inerentemente visual, e aí **um**.
+  27/08/2026). O entregável de cada item é **dado**. Print entra só quando a afirmação é
+  inerentemente visual, e aí **um**.
 - **Toda geração paga é do Jorge**, autorizada no momento. A validação do Claude é de
   interface: **zero Spark**, com a contagem de `generations`, `ledger_transactions` e
   saldo idêntica do primeiro ao último dado.
 - **Evidência fecha, commit sela.** Fase com metade da prova pendente fica **aberta e
-  não commitada** — vale para as Fases 2 e 3, que têm metade do dono.
+  não commitada** — vale para as Fases 2 e 3.
 - **Endereço fixo:**
   `D:\Z - Meus Projetos DevIA\Creator TKS Labs\scratchpad\evidencias\storyboard-c3-fase<N>\`,
   um arquivo por item, com nome que diz **o que aquele arquivo prova**.
-- **Antes de validar:** conferir que a porta 3000 serve o código novo
-  (`netstat -ano | grep :3000`), e **anunciar o navegador antes da primeira tentativa**.
+- **URL assinada nunca sai do scratchpad** *(regra do Jorge, 28/08/2026)*. O repositório
+  é público e a URL do Storage carrega **token na query string**. Todo arquivo de
+  evidência guarda **caminho truncado e bytes**, nunca a URL — e evidência **nunca** vai
+  para `docs/`. O `.gitignore` já cobre o scratchpad; esta linha existe para que ninguém
+  precise descobrir o porquê depois.
+- **Antes de validar:** conferir a porta, e **anunciar o navegador antes da primeira
+  tentativa**. A Fase 0 aprendeu que **`localhost:3000` recusa execução de JS** pela
+  extensão — a medição roda em **`localhost:5599`**.
 - **Migrations:** o Claude escreve o arquivo e avisa; **quem aplica é o Jorge**, pelo
   Session pooler.

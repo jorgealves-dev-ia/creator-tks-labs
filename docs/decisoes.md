@@ -4213,3 +4213,115 @@ A ressalva fica escrita porque ela **está certa**: o canvas melhorou 2,46 s e n
 Falta o único número que fala da **fatura**: o gráfico de Usage do Supabase, egress diário antes contra depois, com dias suficientes para formar série.
 
 **Nenhum número de uma sessão substitui uma série temporal.** E a distinção importa para o status ficar honesto: a §4.5 não é trabalho pendente, é **dado que o relógio ainda não produziu**. Uma etapa esperando o tempo passar e uma etapa esperando alguém trabalhar não podem ter a mesma aparência — pela mesma razão que a regra de 26/08 separou etapa fechada de etapa esperando prova.
+
+---
+
+## Frente Storyboard — Ciclo 3: A Máquina
+
+> O ciclo que **rege**. O Ciclo 1 provou que dois capítulos emendam, o Ciclo 2 produziu as fichas que dirigem os dois, e este conduz os motores já auditados **em lote**. Ele não existe para acrescentar capacidade: existe para comprimir o fluxo — e a régua dele é o sinal do fundador de 17/08, *quantos gestos até o vídeo*.
+
+### 28/08/2026 — O plano em disco, e a conferência achou três coisas que só um plano escrito acha
+
+O plano do ciclo foi para `docs/plano-storyboard-c3.md` antes da primeira linha de código (regra 9), com a régua, o mapa, a anatomia, as fases e **seis decisões reunidas numa seção própria** em vez de espalhadas pelo texto — *"é ali que a conferência tem endereço"*.
+
+A conferência do Jorge aprovou a régua como instrumento, as quatro respostas e a Fase 0 como adição. **E achou três defeitos e uma lacuna**, cada um deles caro de descobrir com a tela pronta:
+
+1. **A D3 quebrava a comparação da Q3, e eu não tinha visto.** A instrução opcional do ↻ ia colada no texto enviado, e o selo "desatualizada" comparava o prompt por igualdade estrita. Uma cena aprovada a partir de um ↻ **com instrução** acenderia "desatualizada" **sem a ficha ter mudado** — o selo mentindo sobre a única coisa que ele existe para dizer. O conserto: **diretiva e instrução em campos separados** de `prompt_compiled.structure.storyboard`, e a comparação lendo **só a diretiva**. A auditoria fica mais completa, não menos: `prompt_user_pt` continua guardando o texto exato enviado, e agora dá para dizer **qual metade veio de onde**.
+2. **A D4 foi para a alternativa** — entrada própria, abaixo.
+3. **A D5 ganhou companheiro:** recusar no portão conserta tarde. O gerador do Roteiro passa a receber as durações do catálogo e o schema valida contra elas, na **Fase 1** — *"consertar só no portão deixaria duas fases inteiras produzindo fichas que o portão vai recusar"*. A frase do portão continua existindo para o roteiro colado e para a edição à mão: é a doutrina das três camadas do teto de 10, aplicada à duração.
+4. **A lacuna: o ↻ depois de aprovada e depois do vídeo.** O plano não dizia se existe. O Jorge deu a forma da resposta — *"se existir, imagem nova aprovada torna o vídeo da cena desatualizado e propaga às continuações abaixo; se não existir, escreva isso"* — e ela virou a **D7**, a única que ainda espera resposta.
+
+**O que isso confirma sobre a regra 9, e é o motivo de estar no diário:** as três correções **não são sobre o Ciclo 3**. São sobre o formato. Um plano na cabeça de alguém não se confere contra nada — e as quatro teriam sido descobertas com o código escrito, que é quando corrigir custa o código. É a segunda vez que a regra se paga no mesmo lugar: em 17/08 ela achou o ▸ lido como expansor, hoje achou um selo que mentiria.
+
+---
+
+### 28/08/2026 — D4: a cena de continuação não ganha imagem — emenda do item **b** de 15/08
+
+**A decisão do Jorge, com o critério dele:** *uma imagem só vale 75 ⚡ se entrar no vídeo — e no Kling 2.1 standard, que recebe **um** `image_url`, a imagem de uma cena de continuação não entra.* O primeiro quadro dela é o último quadro do clipe anterior, pelo elo do Ciclo 1.
+
+Eu havia recomendado o contrário — gerar a imagem assim mesmo, com a tela declarando que o vídeo começa em outro lugar. O argumento que perdeu era de completude (a folha montada, o que aprovar); o que ganhou é de dinheiro e de honestidade ao mesmo tempo: **uma coluna que mostra um "primeiro quadro" que não vai acontecer é uma tela mentindo, e cobrando 75 ⚡ para mentir.**
+
+Como fica: antes do vídeo a coluna diz **"continua da cena N"**, sem miniatura e sem custo; depois, mostra **o quadro derivado do elo**, que é o primeiro quadro de verdade. A aprovação é **herdada** da cena que ela emenda — não há segunda imagem para julgar. E o portão de vídeo conta **aprovadas + as continuações delas**, que é por que ele diz *"Animar as 4 aprovadas + 2 emendas"* em vez de um número só.
+
+**A emenda que isto faz, dita em voz alta.** A visão da frente de 15/08, item **b**, fixou que *"a espinha é uma imagem por cena"*. **Continua valendo para as cenas de corte.** Para as de continuação a espinha é o **quadro do elo** — que é uma imagem por cena também, só que **derivada e grátis** em vez de gerada e paga. A frase antiga não foi apagada nem contornada: foi emendada, com data e motivo, porque uma visão que se corrige em silêncio deixa de servir de visão.
+
+**A condição de reversão, escrita pelo Jorge e já resolvida no mesmo dia:** *"se a Fase 0 fizer a continuação partir da própria imagem, D4 volta como escrito"*. A Fase 0 mediu e não fez. **A condição continua escrita** porque no dia em que entrar no catálogo um modelo de vídeo multi-referência ela volta a valer — e aí a decisão já está tomada, com o gatilho nomeado.
+
+**Efeito na régua, no mesmo dia:** ela caiu de 54 para **50** — entrada própria abaixo.
+
+---
+
+### 28/08/2026 — A régua se corrigiu junto com a D4, e o número errado era meu de novo
+
+A primeira versão do plano contou **12 gestos** de imagem no caminho de hoje — uma imagem por cena, seis cenas — e, três parágrafos abaixo, animou as duas continuações **pelo elo**. Ou seja: **pagava por seis imagens e usava quatro**, dentro da mesma tabela.
+
+A D4 tornou a incoerência explícita, e a régua se corrigiu junto: o caminho de hoje que produz **o mesmo resultado** gera 4 imagens, não 6. **50 → 9**, e não 54 → 9. Por fase: a Fase 2 remove 6 (e não 10), a Fase 3 continua removendo 35, e a conta fecha exata.
+
+**A correção ficou escrita no plano, não trocada em silêncio** — um número aceito que muda sem dizer por quê é pior que um número errado, porque quem já o citou continua citando. É a terceira vez que este diário registra um número meu corrigido por conferência, depois do `max()` sobre colunas nulas (27/08) e dos −15 Sparks que eram o preço do produto errado (27/08). A regra da casa segue valendo contra mim com a mesma força: **número citado de cabeça é hipótese, venha de quem vier.**
+
+---
+
+### 28/08/2026 — Fase 0 · o elo baixa a **cauda**, não o vídeo — e não é a doença do Egress
+
+A Fase 0 existia para responder, com número, se a extração do último quadro em lote repetiria o problema que o mini-ciclo de Egress acabou de consertar. Custou uma sessão, **zero Spark** e **nenhuma escrita no banco**.
+
+**O achado principal não era nenhuma das quatro perguntas: a extração não baixa o vídeo inteiro.** O `seek` para `duration` faz o navegador pedir um **range da cauda**, e o `edge_logs` mostra exatamente isso:
+
+| arquivo | `Range` pedido | bytes servidos | % do arquivo |
+|---|---|---:|---:|
+| 4.512.248 bytes | `bytes=2819825-4512247` | **1.692.423** | 37,5% |
+| 4.090.828 bytes | `bytes=2785280-4090827` | **1.305.548** | 31,9% |
+
+**~1,5 MB por elo frio.** Uma cadeia de 3 continuações ≈ **4,5 MB**, e **uma vez na vida** — `findDerivedFrame`, o passo zero do Ciclo 1, impede a segunda. Contra a doença do Egress (~44 MB **por visita**, ~193 visitas, ~8,5 GB), não é a mesma classe de custo.
+
+**E o tempo tem um contraste que decide sozinho.** A cadeia de três elos levou **1.531 ms** (segunda rodada: 1.501 ms). Um clipe do Kling levou **66 s, 72 s e 91 s** nas três gerações pagas do Ciclo 1. **O elo é ~0,6% do tempo da cadeia** — quem manda no relógio é a geração, não a extração. O portão pré-registrado (*"se a cadeia sair cara ou lenta, a alternativa volta como decisão"*) **não disparou**, e o elo fica como está.
+
+**A segunda extração custa zero**, provado pelo instrumento certo: a segunda rodada das mesmas três extrações produziu **0 linhas** de Storage no `edge_logs`. É a lição da Fase 3 do Egress pela quarta vez — *do lado do cliente não existe instrumento que confirme cache*, então a prova é **a requisição que não acontece**, lida no servidor.
+
+**Uma quarta armadilha de instrumento, registrada porque quase virou achado.** Na carga da galeria as requisições vêm com `Range: bytes=0-` e `content_length` igual ao **arquivo inteiro** — 12.221.203 bytes somados. Isso é a **oferta do servidor, não o consumo do navegador**: `preload="metadata"` pede, recebe o `moov` (~5,6 kB) e cancela. Ler `content_length` como egress inflaria o número em ~2.000×. Depois do `transferSize` que dizia zero, do `metadata()` do sharp que ignorava o EXIF e do `503` que era abort, a regra já não é novidade e continua cobrando: **um número que vem de uma API não é um fato até alguém conferir se aquela API podia responder aquela pergunta naquele contexto.**
+
+**O que ficou sem prova, dito em vez de contado: a aba escondida (0.3).** Duas tentativas, as duas confundidas. Na primeira a aba **começou escondida e terminou visível** — o sucesso não é atribuível. Na segunda, com amostragem de 1 em 1 segundo, ela **nunca ficou escondida**: 12 amostras, todas `visible`. É a mesma limitação de 15/08 — **a extensão ativa a aba para executar qualquer script** —, e é a segunda vez que ela impede exatamente esta medição.
+
+O que a primeira tentativa mostra assim mesmo, e é sinal real: com a aba escondida, `loadedmetadata` levou **1.467 ms** contra **8–13 ms** visível — **110× a 180× mais lento**, mesmo arquivo, mesmo cache. Aponta na direção da medição de 15/08 sem substituí-la. E o desenho não depende de resolver isto: o `diagnose()` de `last-frame.ts` pergunta a visibilidade **antes** do erro, então a cadeia **pausa com causa nomeada** em vez de girar.
+
+**Zero Spark, e a prova não é a igualdade dos números — é a data da última linha.** `generations` 64, `ledger_transactions` 49, `assets` 58, derivados 1, saldo 6.550 ⚡; e a linha mais recente das três tabelas é de **28/08 às 00:24:20 UTC**, a geração paga do fechamento da Fase 3 do Egress. Nada foi escrito hoje. A extração da fase nunca chamou `registerDerivedFrame`: os PNGs foram lidos em memória e descartados.
+
+**Nota de ambiente que vale mais que a fase:** a `localhost:3000` **recusou execução de JS** pela extensão. A permissão é por origem e porta faz parte da origem — a medição rodou em `localhost:5599`, exatamente como a memória do projeto já mandava. Confirmado pela falha, e não descoberto por ela: o custo foi uma chamada.
+
+---
+
+### 28/08/2026 — URL assinada nunca sai do scratchpad
+
+**Regra do Jorge, na conferência.** O `.gitignore` já cobre o scratchpad, mas o repositório é **público** e a URL assinada do Storage carrega **token na query string**. Todo arquivo de evidência guarda **caminho truncado e bytes**, nunca a URL — e evidência **nunca** vai para `docs/`.
+
+Vale como regra permanente e não como cuidado desta fase: a Fase 0 foi a primeira a produzir evidência a partir de URLs assinadas de vídeo, e a próxima que fizer isso não deveria precisar redescobrir o porquê. Fica registrada na §11 do plano do ciclo, ao lado do endereço fixo da evidência.
+
+---
+
+### 28/08/2026 — D7: o ↻ existe em todo estágio, e a cadeia do desatualizado sai da forma do dado
+
+**Fechada pelo Jorge na recomendação.** Uma cena nunca fica trancada: o ↻ existe depois de aprovada e depois do vídeo, e **cada repetição é uma geração normal** — mesmo Route Handler, mesmo preço de catálogo, mesma linha de extrato. As duas razões: a recusa de política **não é determinística** (medido em 26/08), e a doutrina do Ciclo 1 vale aqui inteira — *"a Cena 04 ficou errada; ele volta para a cena 04, não para o roteiro"*.
+
+**A consequência, que é a metade que faltava:** aprovar uma imagem nova numa cena que já tem vídeo torna aquele vídeo **desatualizado**, e as continuações abaixo dela também.
+
+**E a propagação não é escrita em lugar nenhum — ela sai da forma do dado.** O vídeo guarda `generations.params.source_asset_id`: a imagem de que partiu. O vídeo está desatualizado quando esse id não é o `imagem_aprovada_asset_id` de agora. Para a continuação, **o quadro derivado carrega o clipe de origem** em `assets.derived_from_asset_id` — então trocar o clipe anterior troca o quadro, e a comparação da cena de baixo falha por conta própria. **Zero coluna nova, zero marcação a manter, zero código de propagação.**
+
+É o `derived_from_asset_id` de 15/08 sendo cobrado três ciclos depois, e vale registrar o que essa coluna já pagou desde então: ela identificou o quadro na galeria sem inventar um valor de enum, ela deu o selo "quadro de vídeo" no seletor, e agora ela é a cadeia. **Uma coluna que responde "de onde vieram os pixels" continua rendendo porque a pergunta é estrutural, não circunstancial.**
+
+Três coisas que a regra deliberadamente não faz: **não apaga** (o vídeo antigo foi pago e continua no acervo, na galeria e no extrato), **não regera sozinha** (o portão passa a oferecer *"reanimar N cenas"* com o custo, e quem clica é uma pessoa) e **não bloqueia** — desatualizado é selo informativo, exatamente como o da ficha na Q3.
+
+**A alternativa registrada e recusada:** o ↻ não existir depois do vídeo. Seria mais simples — nenhuma cadeia, nenhum selo novo — e compraria a simplicidade cobrando de quem menos pode pagar: quem descobre na cena 4 que a 2 ficou errada teria de desmontar o lote.
+
+---
+
+### 28/08/2026 — A 0.3 fica aberta com nome, e o desenho assume o pior caso
+
+**Duas decisões numa, e a segunda é a que importa.**
+
+A primeira é de honestidade de status: a pergunta 0.3 — *a aba escondida trava o elo?* — **não foi medida**, e fica escrita como **aberta**, não como inconclusiva de rodapé. Duas tentativas, as duas confundidas pelo instrumento; é a segunda vez que a mesma limitação impede exatamente esta medição (a primeira foi em 15/08, com a frase `hidden_tab` que nunca apareceu na tela). *Uma pergunta sem resposta e uma respondida não podem ter a mesma aparência*, pela mesma razão que uma etapa esperando prova não pode parecer fechada.
+
+A segunda é de desenho, e é do Jorge: **a cadeia de continuações é construída para o pior caso.** Se a aba não estiver à frente quando o elo precisar de um quadro, ela para com a causa nomeada e a tela diz **"aguardando a aba voltar"** — nunca gira, nunca falha em silêncio, e retoma sozinha.
+
+**Por que isso deixa a pergunta poder ficar aberta sem parar o ciclo:** se a medição da Fase 3 mostrar que o navegador aguenta, o produto já estava certo; se mostrar que trava, o produto já estava certo também. **Desenhar para o pior caso transforma uma incerteza em custo zero** — e é o oposto de esperar a resposta para decidir.
+
+**E a 0.3 ganhou instrumento, dono e data:** ela fecha na **metade do dono da Fase 3**, com uma **troca deliberada de aba por 30 segundos no meio da cadeia**. A extensão que me dirige ativa a aba para executar qualquer script, então o estado é um que eu não consigo produzir — **a mão do Jorge produz**. É a divisão de sempre (*há metades que nenhuma consulta responde*), aplicada desta vez não a um julgamento estético, mas a uma **condição de máquina que o meu instrumento não alcança**.
