@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -539,6 +539,7 @@ export type Database = {
           provider: string
           provider_job_id: string | null
           result_asset_id: string | null
+          scene_id: string | null
           sheet_source: string | null
           sparks_charged: number
           started_at: string | null
@@ -570,6 +571,7 @@ export type Database = {
           provider: string
           provider_job_id?: string | null
           result_asset_id?: string | null
+          scene_id?: string | null
           sheet_source?: string | null
           sparks_charged?: number
           started_at?: string | null
@@ -601,6 +603,7 @@ export type Database = {
           provider?: string
           provider_job_id?: string | null
           result_asset_id?: string | null
+          scene_id?: string | null
           sheet_source?: string | null
           sparks_charged?: number
           started_at?: string | null
@@ -645,6 +648,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "assets"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generations_scene_belongs_to_user"
+            columns: ["scene_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "storyboard_scenes"
+            referencedColumns: ["id", "user_id"]
           },
           {
             foreignKeyName: "generations_workflow_id_fkey"
@@ -814,6 +824,7 @@ export type Database = {
           enquadramento: string
           fala: string | null
           id: string
+          imagem_aprovada_asset_id: string | null
           movimento: string
           ordem: number
           personagem_handle: string | null
@@ -835,6 +846,7 @@ export type Database = {
           enquadramento: string
           fala?: string | null
           id?: string
+          imagem_aprovada_asset_id?: string | null
           movimento?: string
           ordem: number
           personagem_handle?: string | null
@@ -856,6 +868,7 @@ export type Database = {
           enquadramento?: string
           fala?: string | null
           id?: string
+          imagem_aprovada_asset_id?: string | null
           movimento?: string
           ordem?: number
           personagem_handle?: string | null
@@ -867,6 +880,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "storyboard_scenes_aprovada_belongs_to_user"
+            columns: ["imagem_aprovada_asset_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id", "user_id"]
+          },
           {
             foreignKeyName: "storyboard_scenes_belongs_to_user"
             columns: ["storyboard_id", "user_id"]
@@ -1037,6 +1057,7 @@ export type Database = {
           provider: string
           provider_job_id: string | null
           result_asset_id: string | null
+          scene_id: string | null
           sheet_source: string | null
           sparks_charged: number
           started_at: string | null
@@ -1085,6 +1106,7 @@ export type Database = {
           provider: string
           provider_job_id: string | null
           result_asset_id: string | null
+          scene_id: string | null
           sheet_source: string | null
           sparks_charged: number
           started_at: string | null
@@ -1161,6 +1183,7 @@ export type Database = {
           p_prompt_user_pt?: string
           p_real_cost_cents?: number
           p_result_asset_id?: string
+          p_scene_id?: string
           p_sheet_source?: string
           p_status: Database["public"]["Enums"]["generation_status"]
           p_summary?: Json
@@ -1187,6 +1210,7 @@ export type Database = {
           provider: string
           provider_job_id: string | null
           result_asset_id: string | null
+          scene_id: string | null
           sheet_source: string | null
           sparks_charged: number
           started_at: string | null
@@ -1231,6 +1255,7 @@ export type Database = {
           p_prompt_compiled?: Json
           p_prompt_user_pt?: string
           p_resolution: string
+          p_scene_id?: string
           p_summary?: Json
         }
         Returns: {
@@ -1255,6 +1280,7 @@ export type Database = {
           provider: string
           provider_job_id: string | null
           result_asset_id: string | null
+          scene_id: string | null
           sheet_source: string | null
           sparks_charged: number
           started_at: string | null

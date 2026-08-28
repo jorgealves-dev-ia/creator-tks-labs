@@ -4325,3 +4325,86 @@ A segunda é de desenho, e é do Jorge: **a cadeia de continuações é constru�
 **Por que isso deixa a pergunta poder ficar aberta sem parar o ciclo:** se a medição da Fase 3 mostrar que o navegador aguenta, o produto já estava certo; se mostrar que trava, o produto já estava certo também. **Desenhar para o pior caso transforma uma incerteza em custo zero** — e é o oposto de esperar a resposta para decidir.
 
 **E a 0.3 ganhou instrumento, dono e data:** ela fecha na **metade do dono da Fase 3**, com uma **troca deliberada de aba por 30 segundos no meio da cadeia**. A extensão que me dirige ativa a aba para executar qualquer script, então o estado é um que eu não consigo produzir — **a mão do Jorge produz**. É a divisão de sempre (*há metades que nenhuma consulta responde*), aplicada desta vez não a um julgamento estético, mas a uma **condição de máquina que o meu instrumento não alcança**.
+
+---
+
+### 28/08/2026 — Fase 1 · a aprovação não some em silêncio: NO ACTION, e não RESTRICT
+
+**Achado do Jorge na conferência pós-aplicação**, e ele começa com uma pergunta de uma linha: *qual é o `on delete` de `imagem_aprovada_asset_id`?*
+
+Estava `SET NULL`, e eu tinha escolhido pelo precedente errado. Peguei `entities.cover_asset_id` — mas **capa é cosmético**: perder uma capa custa uma miniatura. Isto é **decisão**. Com SET NULL, apagar o asset apagaria a aprovação **sem deixar rastro**: a cena voltaria a ler como "não aprovada", indistinguível de uma que nunca foi aprovada, e a pessoa descobriria no portão de vídeo — *"Animar as 3"* onde ontem eram 4. O precedente certo estava do lado, e já no banco: `entity_images_reject_canonical_delete`, a trava que recusa apagar imagem citada por versão congelada. **Uma imagem aprovada é exatamente isso: uma imagem citada por uma decisão.**
+
+**E a preferência dele — `restrict` — também não era o conserto, por um motivo mecânico que vale registrar porque decide sozinho:**
+
+| | quando a checagem roda |
+|---|---|
+| `RESTRICT` | **imediatamente**, e não pode ser adiada |
+| `NO ACTION` | no **fim do statement** |
+
+Na cascata de exclusão de conta, `assets` e `storyboard_scenes` são apagadas pelo **mesmo** `delete from auth.users` — as duas penduradas em `user_id` com CASCADE — e a cena aponta para o asset. **A ordem em que o Postgres processa as duas cascatas não é definida.** Com RESTRICT, se `assets` sair primeiro, a checagem dispara com a cena ainda de pé e a exclusão de conta **aborta**. Com NO ACTION ela espera o fim do statement, quando as duas já sumiram, e passa.
+
+É a armadilha de 07/08/2026 (*"sem essa exceção, apagar uma conta se tornaria impossível"*) com uma crueldade a mais: **dependente de ordem, ela passaria no teste e falharia em produção.**
+
+**E a cascata não ficou em teoria — virou trava**, por exigência do dono: as travas executadas passaram a exercitar os dois lados, o delete normal que **tem** de reprovar e a cascata do diamante que **tem** de passar com as duas linhas sumindo juntas. *"A cascata não passa por teoria — passa por trava."*
+
+O backlog *"apagar asset com auditoria de referências"* herda um banco que **já recusa**: no dia em que essa porta for construída, ela esbarra na constraint e tem de decidir o que fazer com a aprovação, em vez de descobrir em produção que apagou uma decisão sem avisar.
+
+---
+
+### 28/08/2026 — O parser prova sintaxe, não tipo — e o ponto cego agora tem nome
+
+**A primeira rodada das travas morreu antes do primeiro veredito**, no SQL Editor do Jorge:
+
+```
+ERROR: 42883: function max(uuid) does not exist
+CONTEXT: PL/pgSQL function inline_code_block line 182
+```
+
+Minutos antes, o verificador de sintaxe — o parser real do Postgres, `libpg-query`, o mesmo que a casa usa desde 15/08 — tinha dito *"travas: 6 statements, OK"*. **Ele estava certo e mentia do mesmo jeito**, que é a terceira vez que esta frase aparece neste diário (o `SUBSCRIBED` do canal mudo, o `transferSize` em zero, e agora este).
+
+**A causa é do instrumento, não do script.** O corpo de uma função PL/pgSQL — tudo entre `$$` e `$$` — é uma **string opaca** para o parser: nada lá dentro tem função resolvida até a **execução**. `max(uuid)` é sintaticamente impecável e semanticamente inexistente.
+
+**O ponto cego foi nomeado em vez de anotado**, e é a parte que sobrevive a esta fase. A sabotagem do verificador ganhou uma seção nova (`1b`) com três casos desta classe — `max(uuid)`, coluna inexistente e função inexistente, todos dentro de um `DO` — e eles **têm de PASSAR**. A passagem deles **é** a demonstração do limite, e o dia em que um reprovar é notícia. É a mesma disciplina da sabotagem original invertida: lá o verificador prova que sabe reprovar; aqui ele prova que sabe **até onde** consegue olhar.
+
+**O segundo instrumento, o que de fato decide esta classe:** perguntar ao **catálogo** se a assinatura existe — `to_regprocedure('pg_catalog.max(uuid)')`, nulo quando não existe, read-only, uma linha. É a lição de 27/08 pela quinta vez: *quando a pergunta é sobre o servidor, o instrumento é o servidor* — só que aqui a pergunta não era sobre dado, era sobre **vocabulário**.
+
+**E a passada de tipos se pagou no mesmo minuto em que foi feita.** O conserto óbvio seria trocar `max` por `min`. O catálogo respondeu que **`min(uuid)` também não existe** — o conserto óbvio teria falhado na mesma linha, com a mesma mensagem, custando uma segunda ida e volta do dono. **Uma correção conferida contra o catálogo é diferente de uma correção plausível**, e a diferença aqui foi exatamente uma rodada.
+
+O conserto final não usa agregado nenhum: o `where id =` garante no máximo uma linha, então não há o que agregar.
+
+**A regra que fica, e ela é sobre custo:** *cada rodada falha custa uma ida e volta do dono*. Um script que só uma pessoa pode executar não pode ser entregue com uma classe inteira de erro sem varredura — e a varredura tem de ser **do tipo que o instrumento anterior não faz**. Antes de devolver qualquer script de banco: toda chamada dos blocos `DO` conferida contra `pg_proc`, toda aridade de `insert` contada, todo `%` do `raise` casado com seus argumentos.
+
+**O que a falha não custou:** um byte. `generations` 64, ledger 49, assets 58, fichas 13, saldo 6.550, zero usuários descartáveis, zero temp tables vivas — o erro derrubou a transação inteira antes do primeiro INSERT de veredito, que é precisamente o que o `BEGIN … ROLLBACK` existe para garantir. **O instrumento falhou e o desenho segurou.**
+
+---
+
+### 28/08/2026 — Fase 1 · as travas recusaram 14/14, e a prova reexecutável entrou no repositório
+
+**O placar, contra o estado final com as duas migrations aplicadas: 14 OK, 0 falha, 0 não exercitado.** O zero da terceira coluna é o que vale ser lido devagar: os dois casos que dependiam de um segundo usuário em `auth.users` — o cruzamento entre donos — **foram exercitados**, e não ficaram como "caso conhecido, não visto". Não houve OK por ausência.
+
+Três resultados que decidem coisas diferentes:
+
+**O extrato nomeia a cena** — `Imagem da cena 1 · «Alisando o Cabelo com Prancha»`. É o requisito 1 do ciclo virando uma linha de banco, composta no servidor a partir do dado: o navegador aponta uma linha e nunca escreve um nome.
+
+**E o caminho de hoje não mudou** — o controle negativo, que vale tanto quanto o de cima. A mesma função, sem cena, continua dizendo `Imagem no canvas`, palavra por palavra. **Uma migration que nomeasse a cena e quebrasse o extrato antigo teria passado no teste 9 e reprovado no 10** — e é por isso que o 10 existe.
+
+**A cascata do diamante passou, e ela é a que justifica NO ACTION.** Um usuário com asset e cena aprovada apontando para ele; `delete from auth.users`; as duas linhas sumiram **juntas** (0 e 0). Com RESTRICT isso poderia abortar conforme a ordem em que o Postgres processa as duas cascatas — ordem que não é definida, e que **passaria no teste e falharia em produção**. Deixou de ser argumento e virou trava, por exigência do dono: *"a cascata não passa por teoria — passa por trava."*
+
+**E um achado de instrumento que muda o próximo script:** o relatório chegou pela **exceção**, e a tabela do `select` não apareceu. As duas formas estavam no arquivo de propósito; agora se sabe qual é a prova e qual é o cinto. **Num SQL Editor que mostra o último resultado, só a exceção-relatório é confiável** — o que confirma, por medição e não por doutrina, a escolha de 07/08/2026: *a exceção é o relatório e é também o que desfaz os dados de teste*.
+
+#### Evidência e prova reexecutável são coisas diferentes, e agora moram em lugares diferentes
+
+**Decisão nova, e o Jorge a formulou como pergunta:** o script das travas devia entrar em caminho rastreado?
+
+Entrou — em **`supabase/travas/`** —, e o critério é o que separa as duas coisas:
+
+| | responde | onde mora |
+|---|---|---|
+| **evidência** | *"isto funcionou naquele dia?"* — e depois do dia não responde mais nada | `scratchpad/evidencias/` |
+| **prova reexecutável** | *"isto **ainda** recusa?"* — pergunta que volta toda vez que alguém encostar na função | `supabase/travas/`, versionado |
+
+Os harnesses de fase (o `fase4-ramos.ts` do Ciclo 2, o `fase1-parse-check.mjs`) são do primeiro tipo e continuam no scratchpad. Este é do segundo: as migrations que ele guarda estão versionadas, e **ele fora do repositório seria a constraint sem o teste que prova que ela fecha**. Não carrega segredo nem URL assinada, e não nomeia dado de ninguém — pega o primeiro projeto, a primeira cena e o primeiro asset que encontrar.
+
+**`supabase/travas/` e não `supabase/tests/`**, de propósito: o segundo implicaria que `supabase test db` o executa, e não executa. Ele roda à mão, e o nome diz isso.
+
+**E o arquivo rastreado é, byte a byte no que executa, o que produziu o 14/14:** o cabeçalho ganhou o aviso de rodar o arquivo inteiro e a explicação de por que ele está no repositório, e **as 345 linhas executáveis são idênticas** às da rodada — conferido pelo mesmo método que provou os ramos intactos da `record_generation`. Comentário não roda; e um artefato de prova que divergisse da rodada que o validou seria pior que nenhum.

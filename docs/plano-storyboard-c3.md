@@ -339,6 +339,20 @@ Todas as tentativas (inclusive as recusadas) já estão em `generations`; a apro
 > responde quem pôs o arquivo aqui, `derived_from_asset_id` responde de onde vieram os
 > pixels.
 
+**E ela é `ON DELETE NO ACTION`** *(emenda do Jorge na conferência pós-aplicação,
+28/08/2026)*. Nasceu `SET NULL`, pelo precedente de `entities.cover_asset_id` — e o
+precedente era o errado: **capa é cosmético, aprovação é decisão.** Com SET NULL,
+apagar o asset apagaria a aprovação sem rastro, e a pessoa descobriria no portão de
+vídeo. O precedente certo é `entity_images_reject_canonical_delete`: imagem citada por
+uma versão congelada não pode ser apagada.
+
+**E `NO ACTION`, não `RESTRICT`:** RESTRICT é checado imediatamente e não pode ser
+adiado, então na cascata de exclusão de conta — onde `assets` e `storyboard_scenes`
+caem no mesmo `delete from auth.users` — ele abortaria a exclusão **conforme a ordem,
+que não é definida**. NO ACTION espera o fim do statement, quando as duas já sumiram.
+**E isso não ficou em teoria: a trava 13 exercitou o diamante, e as duas linhas
+sumiram juntas.**
+
 **"Usar no fluxo" continua existindo, e ganha um irmão:** o conector de saída da cena,
 com `machine` acrescentado à lista de fontes que já tem cinco membros.
 
@@ -670,6 +684,17 @@ em **`localhost:5599`**, como a memória do projeto já mandava.
 
 **Passos removidos: 0.** É a fundação, e está escrito assim de propósito.
 
+> **Onde ela está — 28/08/2026.** A **metade estrutural fechou**: as duas
+> migrations estão **aplicadas** (`20260828143000` e `20260828160000`), o
+> `database.types.ts` foi regerado do banco, e as travas rodaram **14/14, zero
+> não exercitado**. Faltam os itens 2, 3, 4 e 5 desta lista — o companheiro da
+> D5, o node, a saída do Roteiro e o trilho — mais a metade ao vivo.
+>
+> A migration nasceu com um erro que a conferência do dono pegou: a aprovação
+> nascera com `ON DELETE SET NULL`, que apagaria uma decisão em silêncio. A
+> segunda migration a trocou por **`NO ACTION`** — nem SET NULL, nem RESTRICT,
+> pela razão registrada na **§6 · Q4** e no diário.
+
 **Prova — as duas metades.**
 
 *Estrutural:* a migration pelo **parser real do Postgres** (`libpg-query`) com o
@@ -879,6 +904,18 @@ mentiu sobre si mesmo duas vezes (13/08 e 17/08).
   precise descobrir o porquê depois.
 - **Antes de validar:** conferir a porta, e **anunciar o navegador antes da primeira
   tentativa**. A Fase 0 aprendeu que **`localhost:3000` recusa execução de JS** pela
-  extensão — a medição roda em **`localhost:5599`**.
+  extensão — a validação roda em **`localhost:5599`**.
+- **A 5599 entra no protocolo de pausa junto com a 3000** *(regra do Jorge,
+  28/08/2026)*. Ao parar para buildar ou ao encerrar, matar **as duas**: um `next dev`
+  sobrevivente na 5599 é a mesma armadilha que o da 3000 — um servidor velho validando
+  o que não vai ser commitado —, e agora ela tem duas portas para se esconder.
+  `netstat -ano | grep -E ":(3000|5599) "` → `taskkill //PID <pid> //T //F`.
 - **Migrations:** o Claude escreve o arquivo e avisa; **quem aplica é o Jorge**, pelo
   Session pooler.
+- **Evidência e prova reexecutável são coisas diferentes, e moram em lugares
+  diferentes** *(decidido em 28/08/2026)*. Evidência é o **retrato de uma rodada** e
+  fica em `scratchpad/evidencias/`. Uma **trava de banco** responde *"isto ainda
+  recusa?"* — pergunta que volta toda vez que alguém encostar na função — e por isso é
+  versionada, em **`supabase/travas/`**. Roda à mão, no SQL Editor ou no psql; não é
+  pgTAP e não entra em `supabase/tests/`, que implicaria um contrato de ferramenta que
+  ela não tem. Sem segredo, sem URL assinada, sem nomear dado de ninguém.
