@@ -36,6 +36,25 @@
 
 export const THUMBNAIL_SUFFIX = ".thumb.webp";
 
+/**
+ * Um ano, e aqui `immutable` é literalmente verdade.
+ *
+ * O caminho de um asset nosso carrega um UUID, e uma segunda geração é um
+ * arquivo novo em outro caminho. **Nada neste bucket muda de conteúdo.** É o
+ * caso de livro para um cache longo — e os poucos caminhos determinísticos que
+ * existem (o último quadro de um vídeo, a miniatura de um original) são
+ * reescritos com **os mesmos bytes**, calculados da mesma fonte.
+ *
+ * Mora aqui, ao lado da regra do caminho, porque é a mesma classe de coisa: uma
+ * convenção de como os nossos arquivos são guardados, que **o servidor e o
+ * navegador precisam conhecer igualmente** — os dois sobem arquivo.
+ *
+ * **Sozinho este header não faz nada**, e vale dizer para ninguém achar que
+ * basta: cache indexa pela URL inteira, e a URL assinada muda a cada
+ * assinatura. Ele só começa a valer junto do cache de URLs em `signing.ts`.
+ */
+export const IMMUTABLE_CACHE_CONTROL = "31536000";
+
 /** O caminho da miniatura de um original. Pura, total, sem parsing. */
 export function thumbnailPath(originalPath: string): string {
   return `${originalPath}${THUMBNAIL_SUFFIX}`;

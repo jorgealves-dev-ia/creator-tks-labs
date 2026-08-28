@@ -9,6 +9,7 @@ import {
   registerUploadedAsset,
   type GalleryItem,
 } from "@/lib/assets/actions";
+import { IMMUTABLE_CACHE_CONTROL } from "@/lib/assets/thumbnail-path";
 import { storeThumbnailInBrowser } from "@/lib/assets/thumbnail-client";
 import { useReferencePicker } from "@/lib/canvas/reference-picker-store";
 import { listProjectGallery } from "@/lib/generation/history";
@@ -245,7 +246,7 @@ function PickerDialog() {
 
     const { error } = await supabase.storage
       .from("assets")
-      .upload(storagePath, file, { contentType: file.type });
+      .upload(storagePath, file, { contentType: file.type, cacheControl: IMMUTABLE_CACHE_CONTROL });
 
     if (error) {
       setUploading(false);

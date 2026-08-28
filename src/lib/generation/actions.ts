@@ -6,8 +6,9 @@ import { z } from "zod";
 import { loadCatalog } from "@/lib/ai/catalog";
 import type { CatalogProvider } from "@/lib/ai/catalog-types";
 import { imageRealCostCents } from "@/lib/ai/pricing";
+import { forgetSignedUrls, signWithThumbnails } from "@/lib/assets/signing";
 import { storeThumbnail } from "@/lib/assets/thumbnail";
-import { thumbnailPath } from "@/lib/assets/thumbnail-path";
+import { IMMUTABLE_CACHE_CONTROL, thumbnailPath } from "@/lib/assets/thumbnail-path";
 import {
   isFolhaSlot,
   slotLabel,
@@ -56,7 +57,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  * A failure of the provider is recorded too, and charges nothing.
  */
 
-const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
 /** The outfit §5.22 falls back to when a model refuses the canonical one. */
 const FALLBACK_OUTFIT = "compressao_esportiva";
@@ -311,7 +311,10 @@ export async function generateCanonicalImage(
 
   const { error: uploadError } = await supabase.storage
     .from("assets")
-    .upload(storagePath, bytes, { contentType: image.mimeType });
+    .upload(storagePath, bytes, {
+      contentType: image.mimeType,
+      cacheControl: IMMUTABLE_CACHE_CONTROL,
+    });
 
   if (uploadError) {
     return { ok: false, reason: "error" };
@@ -341,6 +344,10 @@ export async function generateCanonicalImage(
 
   if (!asset) {
     await supabase.storage.from("assets").remove([storagePath, thumbnailPath(storagePath)]);
+    // O cache de URLs guarda só acertos, e este caminho deixou de existir: sem
+    // esquecê-lo, ele produziria link por dias e a tela mostraria moldura
+    // quebrada em vez de cair no estado vazio.
+    forgetSignedUrls([storagePath, thumbnailPath(storagePath)]);
     return { ok: false, reason: "error" };
   }
 
@@ -393,6 +400,10 @@ export async function generateCanonicalImage(
     // the asset cascades into entity_images, so the link goes with it.
     await supabase.from("assets").delete().eq("id", asset.id);
     await supabase.storage.from("assets").remove([storagePath, thumbnailPath(storagePath)]);
+    // O cache de URLs guarda só acertos, e este caminho deixou de existir: sem
+    // esquecê-lo, ele produziria link por dias e a tela mostraria moldura
+    // quebrada em vez de cair no estado vazio.
+    forgetSignedUrls([storagePath, thumbnailPath(storagePath)]);
 
     return { ok: false, reason: CHARGE_ERROR_CODES[chargeError.code ?? ""] ?? "error" };
   }
@@ -408,11 +419,11 @@ export async function generateCanonicalImage(
     .update({ sheet: sheetToJson(nextSheet) })
     .eq("id", parsed.data.entityId);
 
-  const { data: signed } = await supabase.storage
-    .from("assets")
-    .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS);
+  // Mesma razão do canvas: a coluna desenha a folha assim que ela chega.
+  const signed = await signWithThumbnails(supabase, [storagePath]);
+  const pair = signed.get(storagePath);
 
-  if (!signed) {
+  if (!pair) {
     return { ok: false, reason: "error" };
   }
 
@@ -420,7 +431,7 @@ export async function generateCanonicalImage(
     ok: true,
     slot,
     assetId: asset.id,
-    url: signed.signedUrl,
+    url: pair.thumb,
     sparksCharged: priceSparks,
     balanceSparks: balanceSparks - priceSparks,
     usedFallbackOutfit,

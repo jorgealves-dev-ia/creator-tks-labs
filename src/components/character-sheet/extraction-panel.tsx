@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { defaultModelId, findModel, ModelSelect } from "@/components/ui/model-select";
+import { IMMUTABLE_CACHE_CONTROL } from "@/lib/assets/thumbnail-path";
 import type { CharacterSheet } from "@/lib/character-sheet/schema";
 import {
   getSparkBalance,
@@ -419,7 +420,7 @@ async function uploadReferencePhoto(entityId: string, file: File): Promise<strin
 
   const { error } = await supabase.storage
     .from("assets")
-    .upload(storagePath, file, { contentType: file.type });
+    .upload(storagePath, file, { contentType: file.type, cacheControl: IMMUTABLE_CACHE_CONTROL });
 
   return error ? null : storagePath;
 }

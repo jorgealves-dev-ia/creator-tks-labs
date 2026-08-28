@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import type { SheetUpdater } from "@/components/character-sheet/field-row";
 import { defaultModelId, findModel, ModelSelect } from "@/components/ui/model-select";
+import { IMMUTABLE_CACHE_CONTROL } from "@/lib/assets/thumbnail-path";
 import type { CatalogProvider } from "@/lib/ai/catalog-types";
 import { storeThumbnailInBrowser } from "@/lib/assets/thumbnail-client";
 import {
@@ -150,7 +151,7 @@ export function CanonicalImagesColumn({
 
     const { error: uploadError } = await supabase.storage
       .from("assets")
-      .upload(storagePath, file, { contentType: file.type });
+      .upload(storagePath, file, { contentType: file.type, cacheControl: IMMUTABLE_CACHE_CONTROL });
 
     if (uploadError) {
       setBusySlot(null);

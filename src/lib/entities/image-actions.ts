@@ -25,7 +25,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 /** Postgres restrict_violation — here, the trigger protecting a frozen version. */
 const RESTRICT_VIOLATION = "23001";
 
-const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
 const SLOT_KEYS: readonly ImagemCanonicaSlot[] = TODOS_SLOTS_CANONICOS.map((slot) => slot.key);
 
@@ -126,7 +125,7 @@ export async function attachCanonicalImage(input: unknown): Promise<AttachImageR
     return { ok: false, reason: "error" };
   }
 
-  const signed = await signWithThumbnails(supabase, [parsed.data.storagePath], SIGNED_URL_TTL_SECONDS);
+  const signed = await signWithThumbnails(supabase, [parsed.data.storagePath]);
   const pair = signed.get(parsed.data.storagePath);
 
   if (!pair) {
@@ -160,7 +159,7 @@ export async function loadCanonicalImageUrls(input: unknown): Promise<CanonicalI
 
   // A coluna do editor mostra estas o tempo todo, em quadro pequeno: miniatura.
   // Ampliar é assunto do Lightbox, que reassina por id.
-  const signed = await signWithThumbnails(supabase, paths.map((row) => row.path), SIGNED_URL_TTL_SECONDS);
+  const signed = await signWithThumbnails(supabase, paths.map((row) => row.path));
 
   return paths
     .map((row) => ({ assetId: row.assetId, url: signed.get(row.path)?.thumb ?? null }))

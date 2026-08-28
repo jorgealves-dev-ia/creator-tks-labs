@@ -1,5 +1,6 @@
 import "server-only";
 
+import { IMMUTABLE_CACHE_CONTROL } from "@/lib/assets/thumbnail-path";
 import { findVideoProvider } from "@/lib/providers/registry";
 import { providerErrorDetail, type VideoJobState } from "@/lib/providers/types";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -141,6 +142,7 @@ export async function completeVideoGeneration(input: {
     .from("assets")
     .upload(storagePath, video.bytes, {
       contentType: video.mimeType,
+      cacheControl: IMMUTABLE_CACHE_CONTROL,
       // O que faz a segunda entrega sobrescrever em vez de falhar. Os bytes são
       // os mesmos: é o mesmo vídeo, do mesmo link, da mesma geração.
       upsert: true,

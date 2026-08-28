@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { NodeHeader } from "@/components/nodes/node-header";
 import { useVideoCatalog } from "@/components/nodes/use-video-catalog";
+import { IMMUTABLE_CACHE_CONTROL } from "@/lib/assets/thumbnail-path";
 import { findDerivedFrame, registerDerivedFrame, signAssetUrls } from "@/lib/assets/actions";
 import { storeThumbnailInBrowser } from "@/lib/assets/thumbnail-client";
 import { extractLastFrame, type LastFrameFailure } from "@/lib/assets/last-frame";
@@ -300,7 +301,11 @@ export function VideoGeneratorNode({ id, data, selected }: NodeProps<VideoGenera
 
       const { error: uploadError } = await supabase.storage
         .from("assets")
-        .upload(storagePath, read.frame.blob, { contentType: "image/png", upsert: true });
+        .upload(storagePath, read.frame.blob, {
+          contentType: "image/png",
+          cacheControl: IMMUTABLE_CACHE_CONTROL,
+          upsert: true,
+        });
 
       if (uploadError) return fail("upload");
 

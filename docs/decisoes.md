@@ -3956,3 +3956,118 @@ Os dois caminhos nunca se cruzam, e a varredura da Fase 2 é o **retrato de nasc
 **Quando cinco telas precisariam lembrar de um `if`, mova o `if` para a forma do dado.** `thumb` nunca é nulo: sem miniatura, vem o original. O requisito *"miniatura que falha não bloqueia nada"* deixou de depender de disciplina distribuída e virou **propriedade da resposta** — não há como uma tela esquecer de tratar um caso que não existe no tipo. É a mesma família do `mudo ≠ ausente` e do `o dado identifica, nunca o rótulo`: **a forma carrega a regra, o chamador não precisa saber dela.**
 
 **O canvas inalterado é prova, não pendência.** A Fase 2 cortou 97,92% dos bytes e o canvas continuou em 15,24 s. Isso não é uma falha da Fase 2 — é a **confirmação independente** do diagnóstico da Fase 0.3: se o gargalo de lá fosse peso, ele teria caído junto; como é **contagem de idas ao servidor**, não caiu. Duas medições separadas, tomadas por motivos diferentes, concordando sobre a causa. Fica registrado como evidência a favor do diagnóstico, e não como item novo de dívida.
+
+### 27/08/2026 — Fase 3 · a URL estável e o cache imutável: da segunda visita em diante, zero
+
+**O instrumento foi escolhido antes de medir**, e essa é a parte que vale registrar tanto quanto o resultado. A Fase 0 já tinha estabelecido que `transferSize` não serve, então a prova combinada era **a URL idêntica entre visitas e a requisição que não acontece**.
+
+Duas leituras foram **descartadas por não decidirem nada**, e as duas pareciam decidir:
+
+| leitura | por que não serve |
+|---|---|
+| entrada de Resource Timing | **existe mesmo quando o cache acerta** — "21 requisições" não significa 21 downloads |
+| log de rede da extensão | **registra a requisição que o cache serve** — mesma armadilha, roupa diferente |
+
+Quem respondeu foi o **`edge_logs` do Supabase**. A pergunta do mini-ciclo inteiro é *"os bytes saíram do servidor?"*, e a lição de método é essa: **quando a pergunta é sobre o servidor, o instrumento é o servidor.** Três instrumentos do lado do cliente falharam em responder o que um `group by` do lado de lá respondeu em uma linha.
+
+**O resultado:**
+
+| | |
+|---|---|
+| URLs comparadas entre duas visitas | 24 |
+| idênticas caractere a caractere | **24** (na Fase 0: **0**) |
+| miniaturas que chegaram ao Supabase, 1ª visita | **21** |
+| miniaturas que chegaram ao Supabase, 2ª e 3ª | **0** |
+
+E a galeria pinta completa nas três. **Da segunda visita em diante, navegar até a galeria custa zero byte de egress.** O navegador concorda por outro caminho: `duration: 0 ms` nas 21, contra 170 ms de mediana na primeira — uma busca de rede não leva zero milissegundo.
+
+#### Só o acerto é guardado, nunca a ausência
+
+O cache de URLs guarda apenas assinaturas que deram certo. Uma miniatura que ainda não existe **não vira entrada negativa** — se virasse, um arquivo consertado pelo backfill continuaria "sem miniatura" por dias, e o reparo não repararia nada visível.
+
+E não guardar a ausência **não custa**: o caminho que falta entra na chamada que já vai acontecer de qualquer forma, e enquanto ele falta o `thumb` aponta para o `full`, que está no cache e portanto é estável. A imagem acerta o cache do navegador de qualquer jeito. **Um cache que erra para o lado de perguntar de novo é sempre preferível a um que erra para o lado de lembrar errado.**
+
+O par disso é `forgetSignedUrls` nos pontos que removem do Storage: sem esquecer, um arquivo apagado produziria link por dias e a tela mostraria moldura quebrada em vez de cair no estado vazio — que era o comportamento honesto que a assinatura sem cache dava de graça, ao simplesmente não assinar o que não existe. **Cache que não sabe esquecer troca uma tela honesta por uma quebrada.**
+
+#### Um buraco que só apareceu porque a pergunta foi feita
+
+A URL devolvida **logo após gerar** era a do original — e ela **é exibida**: a coluna de imagens canônicas a desenha assim que chega. Eram ~2,5 MB na **primeira** visualização de cada geração, que é justamente a que sempre acontece. A Fase 2 trocou todos os consumidores de exibição e mesmo assim deixou este passar, porque ele não vem de `signAssetUrls`: vem de dentro do caminho de geração. Fechado aqui.
+
+#### A limitação que fica, medida e dita
+
+Os 57 originais existentes continuam com `max-age=3600`: o header é gravado no upload, e mudá-lo exigiria reenviar 85 MB. **Não vale** — grade, faixa e cards leem miniatura, e o original só é buscado pelo zoom e pelo download, cuja URL já é estável. Arquivo novo já nasce com o ano.
+
+**E a advertência do plano continua de pé:** `localhost` é um processo Node só, sempre quente, então o acerto medido aqui é 100% por construção. **A medição de desenvolvimento mente a favor.** Quem confirma é a produção.
+
+#### A conferência de data: dado contra rótulo, aplicado ao calendário
+
+Esta entrada nasceu datada de **28/08**, e estava errada. A reconstrução da sessão seguinte conferiu o rótulo contra o dado e achou a diferença:
+
+| fonte | diz |
+|---|---|
+| o rótulo escrito à mão | 28/08/2026 |
+| `mtime` dos arquivos de evidência | **27/08, 21:03** |
+| `git log` do commit anterior | **27/08, 20:54 −0300** |
+| `edge_logs` das três visitas | 23:59 · 00:00 · 00:02 — **em UTC** |
+
+O erro tem uma causa exata, e ela é instrutiva: **o log do Supabase marca em UTC, e a máquina vive em BRT.** As visitas às 23:59 / 00:00 / 00:02 UTC são 20:59 / 21:00 / 21:02 de 27/08 no relógio de quem mediu. A virada de dia foi **do fuso do instrumento, não do calendário** — e o rótulo copiou o instrumento sem converter.
+
+É o mesmo princípio que a Fase 2 registrou como **o dado identifica, nunca o rótulo**, agora aplicado ao calendário: quando o rótulo e o dado discordam, ganha o dado. E há três dados independentes aqui — mtime, git e o fuso do log —, todos concordando entre si e discordando do que estava escrito.
+
+A lição de método é a mesma da Metade 2 desta fase, virada do avesso. Lá, **o instrumento certo foi o servidor** porque a pergunta era sobre o servidor. Aqui, o servidor foi o instrumento **errado** porque a pergunta — *"em que dia isto aconteceu para nós?"* — é sobre o nosso relógio, não sobre o dele. **Instrumento certo para uma pergunta não é instrumento certo para todas**, e um timestamp lido sem o fuso é um número sem unidade.
+
+Corrigido em três lugares — a tabela de status, o cabeçalho da §3.3 e o título desta entrada — mais o arquivo de números da evidência.
+
+#### E dois status para a mesma coisa, no mesmo arquivo
+
+A mesma conferência achou o plano dizendo duas coisas sobre a Fase 5. O título e a tabela de status diziam **✅ aprovada em 27/08/2026**; um resíduo do texto anterior à aprovação ainda dizia *"🟡 aguarda decisão do Jorge: entra neste mini-ciclo, ou vira backlog?"*, e um terceiro trecho falava em *"a detalhar **se** o Jorge aprovar"*.
+
+**Plano com dois status para a mesma coisa é plano mentindo por descuido** — e mente pior que um plano desatualizado, porque quem lê acha que leu a versão certa. Os três resíduos foram removidos na mesma passada.
+
+Fica a regra de manutenção: **aprovar uma fase é editar todo lugar que falava dela no condicional**, não só carimbar o ✅ no topo. O status vive em mais de um lugar do arquivo, e é por isso que ele consegue divergir de si mesmo.
+
+#### A metade do dono, e um alarme falso que ensinou a ler
+
+A prova do caminho de geração é do Jorge por regra — é dinheiro e é geração. Ela chegou, e chegou com **um alarme falso pelo meio**, que vale mais registrado que escondido.
+
+O primeiro olhar acusou "a URL é o original — não fechou". Era **a URL do Lightbox**, e o Lightbox abre o original **por desenho**: o requisito 1 manda o zoom carregar o `.jpg`. O alarme apontava para a tela certa e para o **elemento errado**.
+
+A prova real precisou de três leituras juntas:
+
+| leitura | resultado |
+|---|---|
+| `src` do `<img>` do card | **`.thumb.webp`** |
+| `src` do zoom / Lightbox | **`.jpg`** original |
+| `iat` dos dois tokens | **o mesmo — 1787876661** |
+
+A terceira linha é a que fecha, e ela não era óbvia antes de existir. Os dois endereços foram assinados **no mesmo instante, na mesma chamada** — é a forma `{full, thumb}` do `signing.ts` **aparecendo de fora**, e não dois `createSignedUrl` que por acaso deram certo. **Quando o desenho tem uma assinatura observável, procure a assinatura, não só o resultado:** o resultado certo pode vir do caminho errado, o `iat` compartilhado não pode.
+
+E a lição do alarme: **numa tela que serve dois endereços de propósito, "achei o original" não é achado — é metade de uma pergunta.** A pergunta inteira é *qual elemento* o serviu.
+
+#### O ledger contra a memória, e o ledger ganhou duas vezes
+
+Antes de commitar, o dono pediu uma leitura de banco em vez de confiar na lembrança: *"memória não decide, ledger decide."* Decidiu — **contra a memória, nos dois números que ela arriscou**:
+
+| | a memória dizia | o banco diz |
+|---|---|---|
+| horário | ~20:44 BRT | **21:24:20 BRT** |
+| valor cobrado | −15 Sparks | **−75 Sparks** |
+
+E o que o banco diz está **certo**: a geração pediu `image_size = "2K"`, e o catálogo cobra 50 no 1K, **75 no 2K**, 110 no 4K. O preço veio do catálogo, não de quem chamou — invariantes 6 e 11 cumpridas no fato.
+
+O resto fechou sem ressalva: **uma** geração na janela (`succeeded`, `sheet_source = version`), **uma** linha de ledger apontando para ela, `wallets.balance_cents` = `sum(ledger)` = 6.550, **diferença zero**. E os dois carimbos de tempo **idênticos ao microssegundo** (`21:24:20.998878`) — que não é coincidência, é `record_generation` gravando e cobrando na mesma transação, a invariante 5 visível de fora.
+
+**O ponto de método:** nenhum dos dois erros era defeito do produto, e é justamente por isso que a conferência valeu. Um número lembrado errado sobre um sistema correto produz exatamente a mesma sensação de que algo está errado — e teria custado uma investigação inteira se tivesse sido tratado como sintoma. **A memória do dono é uma hipótese, não um dado**, e tratá-la assim protege o dono do próprio palpite.
+
+#### E o Storage confirma o buraco fechado por um terceiro caminho
+
+`storage.objects` da mesma janela, que ninguém tinha pedido e que decide sozinho:
+
+| arquivo | bytes | `cacheControl` |
+|---|---|---|
+| o original recém-gerado | **2.788.806** | **`max-age=31536000`** |
+| a miniatura dele | **15.700** | `max-age=31536000` |
+
+**177,6× menor** — é esse o buraco que a Fase 3 fechou na primeira visualização de cada geração. E o original **nasceu com o ano**, não com a hora: o `IMMUTABLE_CACHE_CONTROL` roda no caminho de geração, e a limitação dos 57 originais antigos vale só para os antigos, como o plano prometeu.
+
+Três instrumentos independentes — o navegador do dono, o ledger e o Storage — concordando sobre a mesma imagem. **É assim que uma etapa fecha.**

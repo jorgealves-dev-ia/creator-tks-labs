@@ -156,8 +156,8 @@ mudança nos originais, e qualquer coisa que acrescente passo ao fluxo.
 | **0** | A régua: medir antes de mexer, e responder as três perguntas em aberto | ✅ **fechada — 27/08/2026** (§0.5) |
 | **1** | A miniatura nasce — e o acervo ganha as suas | ✅ **fechada — 27/08/2026** (§1.7) |
 | **2** | A tela lê a miniatura — o corte de 97% aparece | ✅ **fechada — 27/08/2026** (§2.3) |
-| **3** | A URL estável e o cache imutável, que só funcionam juntos | ⬜ não iniciada — **confirmada pela 0.1** |
-| **4** | A prova consolidada e o fechamento | ⬜ não iniciada |
+| **3** | A URL estável e o cache imutável, que só funcionam juntos | ✅ **fechada — 27/08/2026** (§3.3) |
+| **4** | A prova consolidada e o fechamento | 🟡 **primeira metade feita** — a geração do Jorge de 27/08 (§3.3) |
 | **5** | **A assinatura em lote no canvas** — 66 chamadas em fila, 13,17 s | ✅ **aprovada em 27/08/2026, entra no ciclo** |
 
 ---
@@ -587,11 +587,80 @@ devemos.
 > quem reencontrar a ideia daqui a seis meses saber que ela não foi esquecida —
 > foi recusada.
 
-### Prova da Fase 3
+### 3.3 O que a Fase 3 entregou — fechada em 27/08/2026 ✅
 
-Duas visitas seguidas à galeria com o cache **ligado**: a segunda tem que
-transferir **perto de zero**, com as imagens marcadas como servidas do cache. E a
-mesma URL, copiada das duas visitas, idêntica caractere a caractere.
+Números completos em `scratchpad/evidencias/egress-fase3/numeros-fase3.md`.
+**Zero Spark, zero linha em `generations`, zero lançamento no ledger.**
+
+**O instrumento, escolhido antes de medir.** `transferSize` não serve (a Fase 0
+já sabia). A prova é **a URL idêntica e a requisição que não acontece** — e a
+segunda metade foi lida no **log do Supabase**, o único lugar que responde *"os
+bytes saíram do servidor?"*. Duas leituras do lado do navegador foram
+descartadas por não decidirem nada: a entrada de Resource Timing existe mesmo
+quando o cache acerta, e o log da extensão registra a requisição que o cache
+serve.
+
+**Metade 1 — a URL é a mesma:** 24 caminhos comparados, **24 idênticas
+caractere a caractere, 0 diferentes**. Na Fase 0 o mesmo teste deu 24
+diferentes. Validade do token: **7,0 dias**.
+
+**Metade 2 — a requisição que não acontece**, contando o que chegou ao Supabase:
+
+| minuto | miniaturas que chegaram |
+|---|---|
+| 23:59 — 1ª visita | **21** |
+| 00:00 — 2ª visita | **0** |
+| 00:02 — 3ª visita | **0** |
+
+E a galeria pinta **completa** nas três. **Da segunda visita em diante, navegar
+até a galeria custa zero byte de egress.** Corroboração do navegador, que
+concorda: `duration: 0 ms` nas 21, contra 170 ms de mediana na primeira.
+
+**Um buraco fechado no caminho:** a URL devolvida logo após gerar era a do
+original **e é exibida** — a coluna de canônicas a desenha assim que chega. Era
+~2,5 MB na primeira visualização de cada geração, justamente a que sempre
+acontece. Passou a devolver miniatura.
+
+**Limitação medida e dita:** os 57 originais existentes ficaram com
+`max-age=3600` — o header é gravado no upload, e mudá-lo exigiria reenviar
+85 MB. Não vale: grade, faixa e cards leem miniatura, e o original só é buscado
+pelo zoom e pelo download, cuja URL já é estável. **Arquivo novo já nasce com o
+ano.**
+
+> ⚠️ **`localhost` mede quente** — um processo Node só, sempre vivo, dá acerto
+> de 100%. A confirmação real é da Fase 4, em produção.
+
+**A metade do dono — o caminho de geração, provado em 27/08/2026.** A Fase 3
+mexeu em `canvas-generate.ts` e `generateCanonicalImage`, que só rodam numa
+geração paga. Por regra 8 isso é prova do Jorge, e ela chegou:
+
+| leitura | resultado |
+|---|---|
+| `src` do `<img>` do card recém-gerado | **`.thumb.webp`** |
+| `src` do zoom / Lightbox | **`.jpg`** original, por desenho |
+| `iat` dos dois tokens | **o mesmo — 1787876661** |
+
+O `iat` compartilhado é a leitura que fecha: o par `{full, thumb}` foi assinado
+**numa viagem só**, e não por dois `createSignedUrl` que deram certo por acaso.
+*(Um alarme falso pelo caminho: a primeira URL inspecionada era a do Lightbox,
+que abre o original **por desenho** — o requisito 1. Numa tela que serve dois
+endereços de propósito, "achei o original" é metade de uma pergunta.)*
+
+**A conferência de ledger, pedida pelo dono antes do commit** — *"memória não
+decide, ledger decide"* —, e o ledger corrigiu a memória em dois números, os
+dois a favor do produto: a geração foi às **21:24 BRT** (não ~20:44) e custou
+**75 Sparks** (não 15), que é o **preço de catálogo do 2K**. Uma geração, um
+débito, `wallets.balance_cents` = `sum(ledger)` = 6.550, **diferença zero**, e
+os dois carimbos idênticos ao microssegundo — `record_generation` numa transação
+só, invariante 5 visível de fora.
+
+**E o Storage confirma por um terceiro caminho:** o original recém-gerado tem
+**2.788.806 bytes** e a miniatura dele **15.700** — **177,6× menor** —, e o
+original **nasceu com `max-age=31536000`**, provando que o header novo roda no
+caminho de geração.
+
+Números em `egress-fase3/03-conferencia-ledger-da-geracao-do-jorge.md`.
+Esta geração vale como **primeira metade da Fase 4**, por decisão do dono.
 
 ---
 
@@ -642,13 +711,10 @@ byte nenhum. É a **outra** doença — a galeria sofre de bytes, o canvas sofre
 viagens —, e misturar as duas faria a prova da Fase 2 medir duas coisas ao mesmo
 tempo, sem poder atribuir o ganho a nenhuma delas.
 
-**O desenho provável** (a detalhar se o Jorge aprovar): um coletor no store do
+**O desenho provável** (a detalhar na abertura da fase): um coletor no store do
 canvas que junta os ids pedidos no mesmo tick e faz **uma** chamada, com os cards
 lendo do mapa em vez de pedirem sozinhos. O `MAX_IDS = 60` que já existe em
 `signAssetUrls` foi escrito para exatamente isto.
-
-> 🟡 **Aguarda decisão do Jorge:** entra neste mini-ciclo, ou vira item de
-> backlog para depois do Ciclo 3?
 
 ---
 

@@ -20,7 +20,6 @@ import { isThumbnailPath } from "./thumbnail-path";
  * no row, so it can never produce a link.
  */
 
-const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
 /** A canvas can hold a lot of results; one request should not sign a library. */
 const MAX_IDS = 60;
@@ -65,7 +64,6 @@ export async function signAssetUrls(input: unknown): Promise<SignedAssetUrls> {
   const signed = await signWithThumbnails(
     supabase,
     assets.map((asset) => asset.storage_path),
-    SIGNED_URL_TTL_SECONDS,
   );
 
   return Object.fromEntries(
@@ -183,7 +181,6 @@ export async function listGalleryAssets(input: unknown): Promise<GalleryPage> {
   const signed = await signWithThumbnails(
     supabase,
     page.map((row) => row.storage_path),
-    SIGNED_URL_TTL_SECONDS,
   );
 
   return {
@@ -279,7 +276,7 @@ export async function registerUploadedAsset(input: unknown): Promise<RegisterAss
   }
 
   // O que volta daqui vai direto para a grade do seletor, em ~173 px: miniatura.
-  const signed = await signWithThumbnails(supabase, [parsed.data.storagePath], SIGNED_URL_TTL_SECONDS);
+  const signed = await signWithThumbnails(supabase, [parsed.data.storagePath]);
   const pair = signed.get(parsed.data.storagePath);
 
   if (!pair) {
@@ -483,7 +480,7 @@ async function signFrame(
   row: { id: string; label: string | null; storage_path: string },
   created: boolean,
 ): Promise<RegisterFrameResult> {
-  const signed = await signWithThumbnails(supabase, [row.storage_path], SIGNED_URL_TTL_SECONDS);
+  const signed = await signWithThumbnails(supabase, [row.storage_path]);
   const pair = signed.get(row.storage_path);
 
   if (!pair) return { ok: false, reason: "error" };

@@ -2,7 +2,7 @@ import "server-only";
 
 import sharp from "sharp";
 
-import { thumbnailPath } from "./thumbnail-path";
+import { IMMUTABLE_CACHE_CONTROL, thumbnailPath } from "./thumbnail-path";
 
 /**
  * A miniatura — o derivado que existe para a tela não baixar o original.
@@ -53,20 +53,6 @@ const MAX_EDGE = 512;
 const QUALITY = 72;
 
 export const THUMBNAIL_CONTENT_TYPE = "image/webp";
-
-/**
- * Um ano, imutável — e aqui é literalmente verdade.
- *
- * O caminho de um asset nosso carrega um UUID, e uma segunda geração é um
- * arquivo novo em outro caminho. Nada neste bucket muda de conteúdo, nunca.
- *
- * **Sozinho este header não faz nada**, e vale dizer para ninguém achar que a
- * Fase 1 já resolveu cache: navegador e CDN indexam pela URL **inteira**, query
- * incluída, e a URL assinada muda a cada assinatura (o token carrega o `iat` do
- * servidor — 24 de 24 conferidos na Fase 0). O header só começa a valer quando
- * a URL estabilizar, na Fase 3. Está aqui porque é o lugar dele.
- */
-export const IMMUTABLE_CACHE_CONTROL = "31536000";
 
 export type DerivedThumbnail = {
   /** Os bytes da miniatura, prontos para subir. */

@@ -2,7 +2,7 @@
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-import { thumbnailPath } from "./thumbnail-path";
+import { IMMUTABLE_CACHE_CONTROL, thumbnailPath } from "./thumbnail-path";
 
 /**
  * A miniatura de um arquivo que a pessoa acabou de escolher — feita aqui, no
@@ -43,7 +43,6 @@ import { thumbnailPath } from "./thumbnail-path";
 const MAX_EDGE = 512;
 const QUALITY = 0.72;
 const CONTENT_TYPE = "image/webp";
-const IMMUTABLE_CACHE_CONTROL = "31536000";
 
 export type ClientThumbnail = {
   blob: Blob;

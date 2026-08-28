@@ -1,8 +1,6 @@
 import { signWithThumbnails } from "@/lib/assets/signing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-/** Os links do Storage são privados e de vida curta, como em todo o resto do app. */
-const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
 /**
  * Um projeto como o dashboard precisa dele.
@@ -199,7 +197,6 @@ async function signCovers(
   const signed = await signWithThumbnails(
     supabase,
     assets.map((asset) => asset.storage_path),
-    SIGNED_URL_TTL_SECONDS,
   );
 
   // Uma capa que sumiu do Storage simplesmente não vira URL, e o cartão cai no

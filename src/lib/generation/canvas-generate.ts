@@ -3,8 +3,9 @@ import "server-only";
 import { z } from "zod";
 
 import { imageRealCostCents } from "@/lib/ai/pricing";
+import { forgetSignedUrls, signWithThumbnails } from "@/lib/assets/signing";
 import { storeThumbnail } from "@/lib/assets/thumbnail";
-import { thumbnailPath } from "@/lib/assets/thumbnail-path";
+import { IMMUTABLE_CACHE_CONTROL, thumbnailPath } from "@/lib/assets/thumbnail-path";
 import { SUBJECT_BY_GENERO, type GeneroApresentacao } from "@/lib/character-sheet/dictionary";
 import { parseSheet, type CharacterSheet } from "@/lib/character-sheet/schema";
 import { loadImagePayloads } from "@/lib/generation/asset-payloads";
@@ -61,7 +62,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  *                    numbered them.
  */
 
-const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
 /**
  * What was asked of the API, as stored in generations.params. Named so the
@@ -546,7 +546,10 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
 
   const { error: uploadError } = await supabase.storage
     .from("assets")
-    .upload(storagePath, bytes, { contentType: image.mimeType });
+    .upload(storagePath, bytes, {
+      contentType: image.mimeType,
+      cacheControl: IMMUTABLE_CACHE_CONTROL,
+    });
 
   if (uploadError) {
     return { ok: false, reason: "error" };
@@ -581,6 +584,10 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
 
   if (!asset) {
     await supabase.storage.from("assets").remove([storagePath, thumbnailPath(storagePath)]);
+    // O cache de URLs guarda só acertos, e este caminho deixou de existir: sem
+    // esquecê-lo, ele produziria link por dias e a tela mostraria moldura
+    // quebrada em vez de cair no estado vazio.
+    forgetSignedUrls([storagePath, thumbnailPath(storagePath)]);
     return { ok: false, reason: "error" };
   }
 
@@ -615,15 +622,21 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
     // Nobody keeps an image they were just told they could not afford.
     await supabase.from("assets").delete().eq("id", asset.id);
     await supabase.storage.from("assets").remove([storagePath, thumbnailPath(storagePath)]);
+    // O cache de URLs guarda só acertos, e este caminho deixou de existir: sem
+    // esquecê-lo, ele produziria link por dias e a tela mostraria moldura
+    // quebrada em vez de cair no estado vazio.
+    forgetSignedUrls([storagePath, thumbnailPath(storagePath)]);
 
     return { ok: false, reason: CHARGE_ERROR_CODES[chargeError?.code ?? ""] ?? "error" };
   }
 
-  const { data: signed } = await supabase.storage
-    .from("assets")
-    .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS);
+  // A tela desenha esta imagem assim que ela chega, num card. Devolver o
+  // original aqui seria abrir um buraco de 2,5 MB na **primeira** visualização
+  // de cada geração — justamente a que sempre acontece.
+  const signed = await signWithThumbnails(supabase, [storagePath]);
+  const pair = signed.get(storagePath);
 
-  if (!signed) {
+  if (!pair) {
     return { ok: false, reason: "error" };
   }
 
@@ -631,7 +644,7 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
     ok: true,
     generationId: generation.id,
     assetId: asset.id,
-    url: signed.signedUrl,
+    url: pair.thumb,
     sparksCharged: priceSparks,
     balanceSparks: balanceSparks - priceSparks,
     aspectRatio: format.ratio,

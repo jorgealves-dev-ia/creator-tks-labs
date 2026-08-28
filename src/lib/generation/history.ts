@@ -22,6 +22,17 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  * prompt was to be able to ask who she was then.
  */
 
+/**
+ * Uma hora — e só o download usa isto.
+ *
+ * Um link de download é clicado no segundo seguinte ao pedido, então validade
+ * longa não compra nada aqui. E ele **não entra no cache de URLs**: a assinatura
+ * carrega um `download=<nome>` próprio, que produz uma string diferente da de
+ * exibição e serviria para nada além de ocupar espaço.
+ *
+ * As URLs de exibição têm outro TTL, de sete dias, e ele mora em `signing.ts`
+ * junto do cache que o torna útil.
+ */
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
 export type GenerationRecord = {
@@ -278,7 +289,6 @@ export async function listNodeVideos(input: unknown): Promise<VideoJobRow[]> {
     const signed = await signWithThumbnails(
       supabase,
       (assets ?? []).map((asset) => asset.storage_path),
-      SIGNED_URL_TTL_SECONDS,
     );
 
     for (const asset of assets ?? []) {
@@ -598,7 +608,6 @@ async function withSignedUrls(
   const signed = await signWithThumbnails(
     supabase,
     assets.map((asset) => asset.storage_path),
-    SIGNED_URL_TTL_SECONDS,
   );
   const assetById = new Map(assets.map((asset) => [asset.id, asset]));
 
