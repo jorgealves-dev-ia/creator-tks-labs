@@ -162,7 +162,11 @@ Versão curta. O porquê de cada uma está em [`docs/arquitetura.md`](docs/arqui
 
    **O racional:** o Jorge analisa números, não pixels. Série de print custa produtividade e tokens sem acrescentar decisão — e a casa já dizia isto desde a Fase 0 do egress: **o número decide.** Uma tabela de 53 → 1 se confere, se discute e se cita; uma pasta de dez imagens exige que alguém as abra uma a uma para chegar à mesma frase.
 
-   **A permissão da extensão do Chrome morre com o grupo de abas** *(emenda de 28/08/2026)*. Fechar as abas no fim de uma fase é higiene — e custa **reconceder a permissão** na fase seguinte, mesmo numa origem que funcionou horas antes. Por isso **anunciar o navegador inclui pedir a permissão, não só a aba**: *"esta fase precisa do navegador — confirma quando a extensão estiver conectada **e a origem liberada**"*. O sintoma, quando falta, é o de sempre: a aba é navegada e **volta sozinha para `chrome://newtab/`**. E o `curl` separa os dois casos em um segundo — se o app responde (307 do proxy, por exemplo), o problema é permissão e não código.
+   **A primeira navegação para uma rota nova do `next dev` falha, e não é permissão** *(emenda de 28/08/2026, corrigida no mesmo dia)*. Turbopack compila sob demanda: a primeira requisição a `/studio` leva segundos, a navegação da extensão desiste, **a aba volta sozinha para `chrome://newtab/`** e o `javascript_tool` responde *"Permission denied for JavaScript execution on this domain"* — que é a mensagem errada para a causa certa.
+
+   **O controle, e ele é de um passo:** navegar, **esperar `✓ Compiled /studio` no log do dev**, e navegar de novo — sem ninguém fazer nada. Se passar, era compilação. O `curl` complementa: app respondendo (307 do proxy, por exemplo) já diz que o servidor está de pé.
+
+   > ⚠️ **Esta linha substitui uma afirmação errada minha**, que dizia que a permissão morria com o grupo de abas. **O Jorge não concedeu nada nas duas vezes** — só esperou e mandou tentar de novo. Eu li "funcionou depois que ele falou" como "ele concedeu", e transformei uma coincidência em regra **no arquivo lido em toda sessão**. Uma lição errada aqui custa mais que um número errado: ela manda pedir ao dono uma coisa que ele não precisa fazer, toda vez.
 
    **Nunca rodar `npm run build` com o `npm run dev` no ar** — os dois escrevem no mesmo `.next/`. Parar o dev, buildar, subir o dev de novo.
 

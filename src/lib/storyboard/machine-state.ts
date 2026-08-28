@@ -61,9 +61,34 @@ export type MachineScene = {
   tentativas: number;
   /** O que o provedor disse na última falha, quando houve uma. */
   erro: string | null;
+  /**
+   * Quantas recusas seguidas do **mesmo texto**, contando a última.
+   *
+   * É o que faz o gesto escalar: uma recusa do filtro é ruído e pede *repita*;
+   * três do mesmo texto param de ser ruído e passam a ser sinal — e aí o gesto
+   * certo muda para *reescreva*. Sem esta contagem a tela mandaria repetir para
+   * sempre, que é a mesma inutilidade de "recusada" com outra roupa.
+   *
+   * Do **mesmo texto** e não da mesma cena: um ↻ com instrução é outro texto, e
+   * a contagem recomeça — como tem de recomeçar, porque a pessoa mudou o que
+   * pediu.
+   */
+  recusasSeguidas: number;
   video: SceneVideoState;
   /** A cena que esta emenda, quando é continuação. */
   emendaDe: number | null;
+  /**
+   * A ficha mudou depois de a imagem aprovada ter sido gerada?
+   *
+   * **Anotação, e não estado.** Uma cena aprovada e desatualizada continua
+   * aprovada: a imagem que existe é boa, e o que mudou foi o plano. Fundir as
+   * duas coisas num `estado` só obrigaria a escolher qual delas contar, e as
+   * duas importam.
+   *
+   * Informativo, nunca bloqueante — quem decide se a mudança importa é quem a
+   * escreveu; a tela só se recusa a fingir que não houve mudança.
+   */
+  desatualizada: boolean;
 };
 
 export type MachineBoard = {
@@ -99,6 +124,249 @@ export function estadoDaCena(input: {
   if (input.ultimaFalhou) return "falhou";
 
   return "rascunho";
+}
+
+/**
+ * O formato de cada imagem, decidido pelo **canal do roteiro**.
+ *
+ * Não é escolha da Máquina, e essa ausência é um gesto a menos: a informação já
+ * existe na ficha desde a Fase 1 do Ciclo 2, e pedir de novo o que já se sabe é
+ * exatamente o que a régua deste ciclo existe para cortar.
+ *
+ * Os quatro primeiros canais são vídeo vertical curto — 9:16, o mesmo preset que
+ * o bloco de imagem já oferece. **O Shopee é o que difere**: a vitrine dele é
+ * quadrada, e um 9:16 numa grade 1:1 é cortado nas pontas pelo próprio
+ * marketplace.
+ *
+ * *(Escolha minha ao detalhar a Fase 2 — se o Shopee também for vertical no uso
+ * real, é uma linha para trocar.)*
+ */
+export function presetDoCanal(canal: string): string {
+  return canal === "shopee" ? "quadrado" : "stories_reels_tiktok";
+}
+
+// ---------------------------------------------------------------------------
+// O PORTÃO — Fase 2
+// ---------------------------------------------------------------------------
+
+/**
+ * Quais cenas o lote vai gerar. **Esta lista é a fonte do número no botão.**
+ *
+ * Duas exclusões, e as duas custam dinheiro se erradas:
+ *
+ *   continuação   **não gera** (D4). O primeiro quadro dela é o último do clipe
+ *                 anterior, e ele sai de graça. Contar as 6 cenas de um roteiro
+ *                 com 2 emendas faria a tela pedir 450 ⚡ para gastar 300 — e o
+ *                 gesto único só se sustenta se o número for confiável.
+ *   já tem imagem  `pronta` e `aprovada` não voltam ao lote. Clicar de novo
+ *                 depois de uma falha parcial gera **só o que faltou**, e não
+ *                 paga de novo pelo que deu certo.
+ *
+ * `falhou` volta, e é o caso que a recusa não-determinística do provedor torna
+ * comum: o lote de novo é a resposta certa para ela.
+ */
+export function loteDeImagens(cenas: readonly MachineScene[]): MachineScene[] {
+  return cenas.filter(
+    (cena) =>
+      cena.transicao === "corte" && (cena.estado === "rascunho" || cena.estado === "falhou"),
+  );
+}
+
+export type CustoDoLote = {
+  quantas: number;
+  /** Nulo enquanto o catálogo não respondeu — "ainda não sei", não "zero". */
+  precoPorImagem: number | null;
+  total: number | null;
+};
+
+/**
+ * O total, e ele é **multiplicação do preço do catálogo** — nunca uma constante.
+ *
+ * `precoPorImagem` entra por parâmetro porque quem o lê é o catálogo
+ * (`ai_model_image_prices`, pela qualidade e pelo modelo escolhidos), e esta
+ * função não pode ter opinião sobre preço. Se a linha do catálogo mudar, o
+ * número do botão muda junto **sem tocar em código** — que é a invariante 6
+ * cobrada na tela.
+ *
+ * `null` propaga: preço desconhecido dá total desconhecido, e um total
+ * desconhecido trava o botão em vez de mostrar zero. **Zero é um preço**, e
+ * mostrá-lo enquanto o catálogo não respondeu seria a tela afirmando de graça.
+ */
+export function custoDoLote(input: {
+  cenas: readonly MachineScene[];
+  precoPorImagem: number | null;
+}): CustoDoLote {
+  const quantas = loteDeImagens(input.cenas).length;
+
+  return {
+    quantas,
+    precoPorImagem: input.precoPorImagem,
+    total: input.precoPorImagem === null ? null : quantas * input.precoPorImagem,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// POR QUE UMA CENA NÃO SAIU — e o rótulo não pode ser um balde só
+// ---------------------------------------------------------------------------
+
+/**
+ * As classes de falha que pedem **gestos diferentes**.
+ *
+ * ---------------------------------------------------------------------------
+ * O defeito que isto conserta, medido em 28/08/2026
+ * ---------------------------------------------------------------------------
+ *
+ * O trilho dizia "recusada" para tudo. Num lote de 4 imagens, seis falhas
+ * mandaram o dono **reescrever prompt à toa** — porque "recusada" soa como
+ * *"o que você escreveu não passou"*, e não era isso: o mesmo texto, **byte a
+ * byte** (md5 idêntico), foi recusado e aceito minutos depois nas quatro cenas.
+ *
+ * Um rótulo que cobre filtro, cota e timeout no mesmo balde não é um rótulo: é
+ * a tela desistindo de explicar. E o preço dele não é confusão — é trabalho
+ * inútil de quem confia na frase.
+ *
+ * ---------------------------------------------------------------------------
+ * A classificação lê o TEXTO CRU do provedor, e com fronteira de palavra
+ * ---------------------------------------------------------------------------
+ *
+ * `\b` não é preciosismo: em 13/08 o marcador `"locked"` casou dentro de
+ * **b-locked** e classificou uma recusa de conteúdo como conta travada. A tela
+ * mandou avisar o administrador quando o conserto era outro. Fronteira de
+ * palavra, e testes que exercitam as duas metades do par.
+ */
+export type FalhaClasse =
+  /** O provedor RODOU e bloqueou a saída. Não determinístico — repetir resolve. */
+  | "filtro"
+  /** O provedor recusou a ENTRADA por ritmo/cota. Esperar é o gesto. */
+  | "cota"
+  /** Acabou o saldo na vez desta cena. Nada foi cobrado por ela. */
+  | "saldo"
+  /** Rede, tempo esgotado, provedor fora do ar. Repetir. */
+  | "infra"
+  /** Não classificada — e a tela diz isso em vez de inventar um gesto. */
+  | "desconhecida";
+
+const MARCADORES: readonly (readonly [FalhaClasse, RegExp])[] = [
+  // Cota primeiro: ela é a mais específica e a única cujo gesto é ESPERAR.
+  // Classificar cota como filtro mandaria a pessoa repetir contra uma porta
+  // fechada, que é o oposto do conserto.
+  ["cota", /\b429\b|\bquota\b|\brate.?limit|resource exhausted|too many requests/i],
+  ["saldo", /insufficient.?balance|\bGN001\b|saldo insuficiente/i],
+  // O filtro tem duas caras, e a segunda é SILENCIOSA: esta API bloqueia
+  // devolvendo uma chamada bem-sucedida e vazia (`status=completed`, sem
+  // imagem). O adaptador já a trata como recusa desde 09/08; aqui ela precisa
+  // ser reconhecida pelo texto, senão a cara silenciosa cai em "desconhecida".
+  ["filtro", /\bsafety\b|\bblocked\b|\bviolation|\bpolicy\b|content filter|responsible ai|returned no image/i],
+  ["infra", /\btimeout\b|timed out|ETIMEDOUT|ECONNRESET|fetch failed|\bnetwork\b|\b5\d\d\b/i],
+];
+
+/**
+ * A partir de quantas recusas do mesmo texto o gesto deixa de ser "repita".
+ *
+ * Três, e o número tem origem: o lote de 28/08/2026 teve duas cenas recusadas
+ * **duas vezes** e aceitas na terceira, com md5 idêntico. Cortar em dois
+ * mandaria reescrever justamente o texto que ia passar na tentativa seguinte.
+ */
+export const RECUSAS_ATE_REESCREVER = 3;
+
+/**
+ * O gesto certo — e ele **escala com a contagem**, só no filtro.
+ *
+ * Uma recusa de filtro é ruído: o mesmo texto costuma passar depois, medido. Três
+ * do mesmo texto deixam de ser ruído. Nas outras classes a contagem não muda
+ * nada: cota não vira "reescreva" por insistir, e saldo muito menos.
+ */
+export function gestoDaFalha(classe: FalhaClasse, recusasSeguidas: number): "repetir" | "reescrever" | "esperar" | "recarregar" {
+  if (classe === "cota") return "esperar";
+  if (classe === "saldo") return "recarregar";
+  if (classe === "filtro" && recusasSeguidas >= RECUSAS_ATE_REESCREVER) return "reescrever";
+
+  return "repetir";
+}
+
+export function classificarFalha(erro: string | null | undefined): FalhaClasse {
+  if (!erro) return "desconhecida";
+
+  for (const [classe, padrao] of MARCADORES) {
+    if (padrao.test(erro)) return classe;
+  }
+
+  return "desconhecida";
+}
+
+/**
+ * A ficha de hoje ainda é a que gerou a imagem aprovada? — Ciclo 3 · D3.
+ *
+ * ---------------------------------------------------------------------------
+ * A comparação lê SÓ A DIRETIVA, e é isso que a D3 conserta
+ * ---------------------------------------------------------------------------
+ *
+ * `diretivaDaGeracao` vem de `prompt_compiled.structure.storyboard.diretiva_pt`
+ * — o que a **ficha** compilava quando aquela imagem foi feita, recomposto no
+ * servidor. A instrução de um ↻ mora num campo **separado** e não entra aqui.
+ *
+ * Coladas, uma cena aprovada a partir de um ↻ com instrução acenderia o selo
+ * **sem a ficha ter mudado**: o texto enviado teria a instrução, a ficha de hoje
+ * não, e a igualdade falharia. O selo mentiria sobre a única coisa que ele
+ * existe para dizer.
+ *
+ * `null` — geração anterior a esta fase, sem procedência gravada — devolve
+ * **false**. Não se afirma mudança sobre um registro que não sabe responder;
+ * um selo que acende por ausência de dado é ruído, e ruído ensina a ignorar o
+ * selo verdadeiro.
+ */
+export function estaDesatualizada(input: {
+  diretivaAgora: string;
+  diretivaDaGeracao: string | null;
+}): boolean {
+  if (input.diretivaDaGeracao === null) return false;
+
+  return input.diretivaAgora.trim() !== input.diretivaDaGeracao.trim();
+}
+
+export type PortaoVeredito =
+  | { pode: true; quantas: number; total: number }
+  | { pode: false; motivo: "sem_cenas" }
+  | { pode: false; motivo: "sem_preco" }
+  | { pode: false; motivo: "sem_saldo"; faltam: number; total: number };
+
+/**
+ * O portão decide **antes de qualquer chamada**, e decide pelo lote inteiro.
+ *
+ * ---------------------------------------------------------------------------
+ * Tudo ou nada, e a razão é de confiança e não de aritmética
+ * ---------------------------------------------------------------------------
+ *
+ * Gerar duas e parar na terceira por falta de saldo é o pior desfecho possível:
+ * a pessoa autorizou um lote, pagou parte dele, e a tela nunca prometeu isso.
+ * Meia quantidade é a tela decidindo por quem clicou — a mesma doutrina que o
+ * `enqueue` da fila já aplica desde 13/08.
+ *
+ * Então a conferência é aqui, com o total na mão, e a recusa **diz quanto
+ * falta**: um "sem saldo" sem número obriga a pessoa a fazer a subtração que a
+ * tela já fez.
+ *
+ * O servidor confere de novo na vez de cada imagem (invariante 5), e continua
+ * conferindo: este portão é a recusa **barata e amigável**, não a fechadura.
+ */
+export function vereditoDoPortao(input: {
+  cenas: readonly MachineScene[];
+  precoPorImagem: number | null;
+  saldo: number | null;
+}): PortaoVeredito {
+  const custo = custoDoLote({ cenas: input.cenas, precoPorImagem: input.precoPorImagem });
+
+  if (custo.quantas === 0) return { pode: false, motivo: "sem_cenas" };
+  if (custo.total === null) return { pode: false, motivo: "sem_preco" };
+
+  // `null` é "a carteira ainda não chegou", e não "zero". Recusar aqui seria
+  // recusar por um número que ainda não foi lido — o mesmo cuidado do bloco de
+  // Roteiro com o saldo não semeado.
+  if (input.saldo !== null && input.saldo < custo.total) {
+    return { pode: false, motivo: "sem_saldo", faltam: custo.total - input.saldo, total: custo.total };
+  }
+
+  return { pode: true, quantas: custo.quantas, total: custo.total };
 }
 
 /**

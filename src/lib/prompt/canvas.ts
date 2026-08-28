@@ -226,6 +226,20 @@ export type CanvasPromptStructure = {
    */
   mencao_sujeito: { handle: string; sujeito: string; possessivos?: number } | null;
   ajustes_cena: CanvasSceneAdjustment[];
+  /**
+   * De qual ficha esta geração veio — e o que a pessoa dirigiu por cima dela.
+   *
+   * **Opcional, e o compilador NUNCA o preenche.** Quem o anexa é a rota, depois
+   * de compilar, porque esta é procedência e não texto: o compilador é função
+   * pura do que vai ao modelo, e uma ficha de cena não muda um caractere do que
+   * o modelo lê. Misturar as duas coisas daria ao compilador uma dependência do
+   * storyboard que ele não tem e não deve ter.
+   *
+   * Os dois pedaços viajam separados por causa da D3: `diretiva_pt` é o que a
+   * ficha compila e é a **única** metade que a comparação de "desatualizada" lê.
+   * Coladas, um ↻ com instrução acenderia o selo sem a ficha ter mudado.
+   */
+  storyboard?: { ordem: number; diretiva_pt: string; instrucao_pt: string | null } | null;
   referencias: CanvasReferenceDirective[];
   /**
    * What was attached and silenced. Null when the switch was on, which is also

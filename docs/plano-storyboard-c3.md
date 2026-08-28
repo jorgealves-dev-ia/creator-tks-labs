@@ -25,9 +25,10 @@
 > faltava** — o ↻ depois de aprovada e depois do vídeo —, que virou a **D7**, **fechada
 > na conferência seguinte do mesmo dia**, com a recomendação.
 >
-> **Status do ciclo: Fases 0 e 1 ✅ fechadas, as sete decisões ✅ tomadas, Fase 2
-> aberta.** A única pergunta que continua sem resposta é a **0.3** — e ela tem nome,
-> dono e data: é a metade do Jorge na Fase 3.
+> **Status do ciclo: Fases 0, 1 e 2 ✅ fechadas, as sete decisões ✅ tomadas, Fase 3
+> aberta.** Duas perguntas seguem abertas, as duas com instrumento e gatilho: a
+> **0.3** (aba escondida), que fecha na metade do dono da Fase 3, e **recusa ×
+> concorrência**, que decide em n ≥ 30. O teto continua 4 — nada muda sem medida.
 
 ---
 
@@ -280,7 +281,7 @@ em vez de disparar dez pedidos e voltar tudo junto.
 | campo novo em `QueueSlot` | para quê | por que não dá para viver sem |
 |---|---|---|
 | `tag?: string` | de quem é este slot (`cena-3`) | o slot carrega o pedido congelado; a atribuição precisa viajar **junto** dele, não num mapa paralelo que uma remontagem perde |
-| `onSettled?: (slot) => void` | escrever o desfecho da cena assim que ele existe | é o que faz o estado sobreviver à sessão. Sem ele, o único lugar que sabe que a cena 3 falhou é a memória do navegador |
+| `onSettled?: (slot) => void` | reler o trilho assim que um slot cai | **prontidão, não persistência** *(corrigido em 28/08)*. Quem faz o desfecho sobreviver à sessão é `generations.scene_id`, escrito pelo servidor na transação que cobra; este callback só evita esperar a volta do Realtime. Trocar os dois nomes é como se perde uma garantia sem notar |
 
 Nenhum dos dois muda uma linha do caminho do dinheiro, e o bloco Gerar Imagem não os
 usa — ele continua exatamente como está.
@@ -582,8 +583,8 @@ duas** — a decisão inteira é leitura de dado que já está gravado.
 |---|---|---:|---|
 | **0** | O elo em lote, medido antes de desenhado — **zero Spark** | 0 | ✅ **fechada — 28/08/2026** |
 | **1** | Fundação: a cena entra na geração, a Máquina nasce, o trilho espelha, a ficha nasce animável | 0 | ✅ **fechada — 28/08/2026** |
-| **2** | Lote de imagens com portão · aprovar e repetir por cena | **−6** | 🟡 não iniciada |
-| **3** | Lote de vídeo com portão · continuação em lote · o desatualizado em cadeia | **−35** | 🟡 não iniciada |
+| **2** | Lote de imagens com portão · aprovar e repetir por cena | **−6** | ✅ **fechada — 28/08/2026** |
+| **3** | Lote de vídeo com portão · continuação em lote · o desatualizado em cadeia | **−35** | 🔵 **aberta** |
 | **4** | O template no sidebar — o fluxo padrão | **−3** | 🟡 não iniciada |
 | **Fech.** | O Jorge percorre o caminho do zero, com a régua ao lado | — | 🟡 não iniciada |
 

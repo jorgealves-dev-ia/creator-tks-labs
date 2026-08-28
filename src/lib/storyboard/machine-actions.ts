@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { signWithThumbnails } from "@/lib/assets/signing";
+import { buildSceneDirective } from "@/lib/storyboard/scene-prompt";
 import {
+  estaDesatualizada,
   estadoDaCena,
   estadoDoVideo,
   type MachineBoard,
@@ -102,7 +104,9 @@ export async function loadMachineBoard(input: unknown): Promise<MachineBoard | n
 
   const { data: tentativas } = await supabase
     .from("generations")
-    .select("id, scene_id, media_kind, status, result_asset_id, error_message, created_at")
+    .select(
+      "id, scene_id, media_kind, status, result_asset_id, error_message, created_at, prompt_compiled, prompt_user_pt",
+    )
     .in("scene_id", sceneIds)
     .order("created_at", { ascending: false });
 
@@ -164,6 +168,47 @@ export async function loadMachineBoard(input: unknown): Promise<MachineBoard | n
 
     const assetVisivel = ficha.imagem_aprovada_asset_id ?? boa?.result_asset_id ?? null;
 
+    // Quantas recusas SEGUIDAS do mesmo texto — a contagem que faz o gesto
+    // escalar de "repita" para "reescreva".
+    //
+    // Conta do topo para baixo e PARA no primeiro sucesso ou no primeiro texto
+    // diferente: um ↻ com instrução é outro pedido, e a contagem recomeça. Sem
+    // essa parada, uma cena que já passou uma vez carregaria para sempre as
+    // recusas de antes.
+    const recusadas = imagens.filter((linha) => linha.status === "failed");
+    const textoDaUltimaFalha = recusadas[0]?.prompt_user_pt ?? null;
+    let recusasSeguidas = 0;
+
+    if (textoDaUltimaFalha !== null) {
+      for (const linha of imagens) {
+        if (linha.status !== "failed" || linha.prompt_user_pt !== textoDaUltimaFalha) break;
+        recusasSeguidas += 1;
+      }
+    }
+
+    // A ficha de hoje ainda é a que gerou a imagem APROVADA? (D3)
+    //
+    // Só a aprovada é comparada: uma imagem que ninguém aprovou não prometeu
+    // nada, e acender o selo sobre ela seria avisar de uma divergência que não
+    // interessa a ninguém ainda.
+    //
+    // A diretiva de agora é composta pela MESMA função pura que o servidor usou
+    // ao gerar — uma segunda maneira de compor o texto seria uma segunda chance
+    // de as duas discordarem sem nada ter mudado.
+    const daAprovada = ficha.imagem_aprovada_asset_id
+      ? imagens.find((linha) => linha.result_asset_id === ficha.imagem_aprovada_asset_id)
+      : undefined;
+
+    const diretivaAgora = buildSceneDirective({
+      ordem: ficha.ordem,
+      acao: ficha.acao,
+      cenario: ficha.cenario,
+      movimento: ficha.movimento,
+      enquadramento: ficha.enquadramento,
+      personagem: ficha.personagem_handle,
+      produto: ficha.produto,
+    }).prompt;
+
     return {
       id: ficha.id,
       ordem: ficha.ordem,
@@ -184,11 +229,16 @@ export async function loadMachineBoard(input: unknown): Promise<MachineBoard | n
       thumbUrl: assetVisivel ? (urlPorAsset.get(assetVisivel) ?? null) : null,
       tentativas: imagens.length,
       erro: ultimaImagem?.status === "failed" ? ultimaImagem.error_message : null,
+      recusasSeguidas,
       video: estadoDoVideo(videos[0]?.status ?? null),
       // A cena que ela emenda é sempre a anterior na ordem — a mesma leitura
       // que o Ciclo 1 fez do elo. Nula na cena 1, que o banco já impede de ser
       // continuação (`storyboard_scenes_primeira_nao_continua`).
       emendaDe: continuacao ? (fichas[indice - 1]?.ordem ?? null) : null,
+      desatualizada: estaDesatualizada({
+        diretivaAgora,
+        diretivaDaGeracao: lerDiretiva(daAprovada?.prompt_compiled),
+      }),
     };
   });
 
@@ -203,4 +253,124 @@ export async function loadMachineBoard(input: unknown): Promise<MachineBoard | n
     personagemHandle: cenas.find((cena) => cena.personagemHandle)?.personagemHandle ?? null,
     cenas,
   };
+}
+
+
+// ---------------------------------------------------------------------------
+// A APROVAÇÃO — a única escrita deste arquivo, e a única DECISÃO do ciclo
+// ---------------------------------------------------------------------------
+
+const aprovarSchema = z.object({
+  projectId: z.uuid(),
+  roteiroNodeId: z.string().min(1).max(200),
+  /** As cenas a aprovar, pela ordem. "Aprovar as N" manda todas de uma vez. */
+  ordens: z.array(z.number().int().min(1).max(10)).min(1).max(10),
+});
+
+export type AprovarResult = { ok: true; aprovadas: number } | { ok: false; reason: string };
+
+/**
+ * Aprovar é apontar — e **quem escolhe o asset é o servidor**.
+ *
+ * O navegador diz *"aprove a cena 3"*, e nunca *"aprove o asset X para a cena
+ * 3"*. A diferença não é estilo: é a divisão de 10/08 — pode nomear, nunca pode
+ * alargar. Deixar o cliente nomear o asset abriria a porta para apontar um
+ * arquivo que não é daquela cena, e a chave composta recusaria com uma mensagem
+ * de constraint que ninguém consegue mostrar a alguém.
+ *
+ * O asset aprovado é **a última geração de imagem bem-sucedida daquela cena**,
+ * lida aqui. É a imagem que o trilho está mostrando, então aprovar faz o que a
+ * tela promete: confirma o que se está vendo.
+ *
+ * Idempotente por natureza: aprovar de novo aponta para o mesmo asset. E não
+ * cobra nada — aprovar não é gerar, e as duas coisas moram a centímetros uma da
+ * outra na tela.
+ */
+export async function aprovarCenas(input: unknown): Promise<AprovarResult> {
+  const parsed = aprovarSchema.safeParse(input);
+
+  if (!parsed.success) return { ok: false, reason: "invalid" };
+
+  const supabase = await createSupabaseServerClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+
+  if (!userId) return { ok: false, reason: "unauthenticated" };
+
+  const { data: board } = await supabase
+    .from("storyboards")
+    .select("id, storyboard_scenes (id, ordem, transicao)")
+    .eq("project_id", parsed.data.projectId)
+    .eq("node_id", parsed.data.roteiroNodeId)
+    .maybeSingle();
+
+  if (!board) return { ok: false, reason: "not_found" };
+
+  const alvo = board.storyboard_scenes.filter((cena) =>
+    parsed.data.ordens.includes(cena.ordem),
+  );
+
+  if (alvo.length === 0) return { ok: false, reason: "not_found" };
+
+  // Uma consulta para todas as cenas, e não uma por cena — a lição da Fase 5 do
+  // Egress: o que custa no canvas é a contagem de idas ao servidor.
+  const { data: geracoes } = await supabase
+    .from("generations")
+    .select("scene_id, result_asset_id, created_at")
+    .in(
+      "scene_id",
+      alvo.map((cena) => cena.id),
+    )
+    .eq("media_kind", "image")
+    .eq("status", "succeeded")
+    .not("result_asset_id", "is", null)
+    .order("created_at", { ascending: false });
+
+  let aprovadas = 0;
+
+  for (const cena of alvo) {
+    // Cena de continuação não tem imagem própria (D4) — e aprovar uma coisa que
+    // não existe seria a tela mentindo. A aprovação dela é herdada da cena que
+    // ela emenda, e isso acontece na leitura, não numa escrita.
+    if (cena.transicao === "continuacao") continue;
+
+    const melhor = (geracoes ?? []).find((linha) => linha.scene_id === cena.id);
+
+    if (!melhor?.result_asset_id) continue;
+
+    const { error } = await supabase
+      .from("storyboard_scenes")
+      .update({ imagem_aprovada_asset_id: melhor.result_asset_id })
+      .eq("id", cena.id)
+      .eq("user_id", userId);
+
+    if (!error) aprovadas += 1;
+  }
+
+  return { ok: true, aprovadas };
+}
+
+/**
+ * A diretiva gravada numa geração, se ela souber responder.
+ *
+ * `unknown` porque é `jsonb` vindo do banco, e uma coluna livre é uma fronteira:
+ * o Zod é a regra da casa nelas. Aqui a leitura é estreita o bastante para valer
+ * a checagem manual — e o que ela **não** faz é o ponto: campo ausente devolve
+ * `null`, e `null` significa "esta geração não sabe responder", nunca "mudou".
+ * Toda geração anterior a esta fase cai aqui, e nenhuma delas acende selo.
+ */
+function lerDiretiva(compiled: unknown): string | null {
+  if (typeof compiled !== "object" || compiled === null) return null;
+
+  const structure = (compiled as { structure?: unknown }).structure;
+
+  if (typeof structure !== "object" || structure === null) return null;
+
+  const storyboard = (structure as { storyboard?: unknown }).storyboard;
+
+  if (typeof storyboard !== "object" || storyboard === null) return null;
+
+  const diretiva = (storyboard as { diretiva_pt?: unknown }).diretiva_pt;
+
+  return typeof diretiva === "string" ? diretiva : null;
 }

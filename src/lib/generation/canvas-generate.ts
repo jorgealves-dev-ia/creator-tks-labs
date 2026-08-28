@@ -35,6 +35,7 @@ import {
 import { translateItems } from "@/lib/prompt/translator";
 import { isProviderConfigured } from "@/lib/providers/keys";
 import { findImageProvider } from "@/lib/providers/registry";
+import { buildSceneDirective } from "@/lib/storyboard/scene-prompt";
 import { ProviderError, providerErrorDetail } from "@/lib/providers/types";
 import { CENTS_PER_SPARK } from "@/lib/sparks";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -153,6 +154,18 @@ const generateSchema = z.object({
    * "put four images the caller did not ask about into a paid generation".
    */
   referencesEnabled: z.boolean().default(false),
+  /**
+   * A ficha de cena, quando quem chama é a Máquina — Ciclo 3 · Fase 2.
+   *
+   * Só o id e a instrução daquela tentativa. A **diretiva não vem daqui**: ela é
+   * recomposta abaixo, da própria ficha, porque é a base de comparação do selo
+   * "desatualizada" (D3) e uma base escrita pelo cliente é uma base que ele pode
+   * envenenar.
+   */
+  scene: z
+    .object({ id: z.uuid(), instrucaoPt: z.string().max(1000).nullable().default(null) })
+    .nullish()
+    .default(null),
 });
 
 /**
@@ -265,6 +278,53 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
   // The scene is the prompt minus the mentions: `@luna` alone means "show me
   // her", not a stage direction to translate.
   const scene = sceneWithoutMentions(request.prompt, mentions);
+
+  // -------------------------------------------------------------------------
+  // 2b. A cena, quando a Máquina é quem chama — e a recusa mora AQUI.
+  //
+  //     Ao lado do `@` pelo mesmo motivo aritmético que o `resolveCharacter`
+  //     comenta: **aqui é antes do saldo e muito antes do provedor**, então uma
+  //     ficha que não é desta pessoa ou não é deste projeto custa zero. O GN008
+  //     do banco é o cadeado de baixo — ele existe para o dia em que um caminho
+  //     novo esquecer desta linha, e não deveria disparar nunca.
+  //
+  //     A diretiva é **recomposta da ficha**, e é ela que vai para o registro.
+  //     `buildSceneDirective` é a mesma função pura que a ponte do Ciclo 2 usa,
+  //     chamada aqui pela mesma razão de lá: uma segunda maneira de compor o
+  //     texto seria uma segunda chance de as duas discordarem.
+  // -------------------------------------------------------------------------
+  let sceneProvenance: { ordem: number; diretiva_pt: string; instrucao_pt: string | null } | null =
+    null;
+
+  if (request.scene) {
+    const { data: ficha } = await supabase
+      .from("storyboard_scenes")
+      .select(
+        "ordem, acao, cenario, movimento, enquadramento, personagem_handle, produto, storyboards!inner (project_id)",
+      )
+      .eq("id", request.scene.id)
+      .eq("user_id", userId)
+      .eq("storyboards.project_id", request.projectId)
+      .maybeSingle();
+
+    if (!ficha) {
+      return { ok: false, reason: "unknown_scene" };
+    }
+
+    sceneProvenance = {
+      ordem: ficha.ordem,
+      diretiva_pt: buildSceneDirective({
+        ordem: ficha.ordem,
+        acao: ficha.acao,
+        cenario: ficha.cenario,
+        movimento: ficha.movimento,
+        enquadramento: ficha.enquadramento,
+        personagem: ficha.personagem_handle,
+        produto: ficha.produto,
+      }).prompt,
+      instrucao_pt: request.scene.instrucaoPt,
+    };
+  }
 
   // 3. Nothing to draw. Style alone would produce "a photograph" and bill for it.
   if (scene === "" && !character) {
@@ -497,7 +557,14 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
     sem_folha: character !== null && character.folhaAssetId === null,
   };
 
-  const promptCompiled = { text: prompt.text, structure: prompt.structure };
+  // A procedência é anexada AQUI e não no compilador: ela não muda um caractere
+  // do que o modelo lê, e o compilador é função pura do que vai ao modelo.
+  const promptCompiled = {
+    text: prompt.text,
+    structure: sceneProvenance
+      ? { ...prompt.structure, storyboard: sceneProvenance }
+      : prompt.structure,
+  };
 
   // 10. The call. No retry: a repeated image generation is a second image billed
   //     by the provider, which cannot know the first may have succeeded on their
@@ -616,6 +683,7 @@ export async function runCanvasGeneration(input: unknown): Promise<CanvasGenerat
     // base. Naming the size is not naming the price — the catalogue still
     // answers that, which is the whole shape of this rule.
     p_image_size: request.imageSize,
+    p_scene_id: request.scene?.id ?? undefined,
   });
 
   if (chargeError || !generation) {
@@ -871,6 +939,7 @@ async function recordFailure(
     // A failed generation is free, so this changes no money — it is recorded so
     // the history can answer "which size was being attempted when it broke?".
     p_image_size: input.request.imageSize,
+    p_scene_id: input.request.scene?.id ?? undefined,
   });
 }
 

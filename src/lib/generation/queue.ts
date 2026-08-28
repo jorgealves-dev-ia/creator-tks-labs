@@ -111,6 +111,28 @@ export type QueueSlot = {
   id: string;
   status: QueueSlotStatus;
   request: CanvasGenerationRequest;
+  /**
+   * De quem é este slot — a Máquina põe aqui o id da cena.
+   *
+   * Viaja DENTRO do slot, e não num mapa paralelo, porque o slot já é o retrato
+   * congelado do pedido: um dicionário ao lado seria uma segunda cópia da mesma
+   * associação, com uma chance a mais de sobreviver a um remount sem o slot que
+   * ela descreve. O bloco Gerar Imagem não usa este campo e não mudou por ele.
+   */
+  tag?: string;
+  /**
+   * O que fazer quando este slot cair — de pé ou não.
+   *
+   * É o que faz o desfecho de uma cena **sobreviver à sessão**: sem ele, o único
+   * lugar que sabe que a cena 3 falhou é a memória do navegador, e o requisito 4
+   * do Ciclo 3 diz o contrário. A Máquina grava aqui; o bloco de imagem não
+   * passa nada e continua exatamente como estava.
+   *
+   * Nunca lança: quem chama trata o próprio erro. Uma exceção aqui derrubaria o
+   * `pump` e os slots seguintes junto — e um desfecho não gravado não pode
+   * impedir os outros de acontecerem.
+   */
+  onSettled?: (slot: QueueSlot) => void;
   /** A resposta, qualquer que tenha sido. Null enquanto não chegou. */
   result: CanvasGenerationResult | null;
   /**
@@ -143,6 +165,8 @@ type QueueState = {
     nodeId: string;
     request: CanvasGenerationRequest;
     quantity: number;
+    tag?: string;
+    onSettled?: (slot: QueueSlot) => void;
   }) => boolean;
 };
 
@@ -161,7 +185,7 @@ export function freeSlots(slots: readonly QueueSlot[] | undefined): number {
 export const useQueue = create<QueueState>((set, get) => ({
   byNode: {},
 
-  enqueue: ({ nodeId, request, quantity }) => {
+  enqueue: ({ nodeId, request, quantity, tag, onSettled }) => {
     const current = get().byNode[nodeId] ?? [];
 
     if (quantity < 1 || quantity > freeSlots(current)) return false;
@@ -183,6 +207,8 @@ export const useQueue = create<QueueState>((set, get) => ({
       request: frozen,
       result: null,
       settledOrder: null,
+      tag,
+      onSettled,
     }));
 
     set((state) => ({
@@ -268,6 +294,23 @@ async function runSlot(nodeId: string, slotId: string, set: Set, get: Get): Prom
   // vez de confiar no `balanceSparks` de cada resposta é o que faz várias ao
   // mesmo tempo fecharem a conta — ver o comentário do balance-store.
   if (result.ok) useBalance.getState().spend(result.sparksCharged);
+
+  // O desfecho, entregue a quem pediu — com o slot já atualizado, para o
+  // callback ler `status` e `result` em vez de reconstruí-los.
+  //
+  // Protegido: um erro aqui não pode derrubar o `pump` e levar os slots
+  // seguintes junto. Gravar o desfecho de uma cena é importante; impedir as
+  // outras de acontecerem por causa disso, não.
+  const caido = (get().byNode[nodeId] ?? []).find((entry) => entry.id === slotId);
+
+  if (caido?.onSettled) {
+    try {
+      caido.onSettled(caido);
+    } catch {
+      // Silêncio deliberado: quem passou o callback é quem sabe o que fazer com
+      // a falha dele, e a fila não tem opinião sobre isso.
+    }
+  }
 
   pump(nodeId, set, get);
 }

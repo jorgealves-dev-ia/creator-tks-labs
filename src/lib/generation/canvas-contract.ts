@@ -90,6 +90,16 @@ export type CanvasGenerationRequest = {
    * compile them, which is a different thing from never having heard of them.
    */
   referencesEnabled: boolean;
+  /**
+   * De qual ficha de cena esta imagem é — só a Máquina manda isto.
+   *
+   * O navegador aponta uma linha (`id`) e diz o que a pessoa dirigiu naquela
+   * tentativa (`instrucaoPt`). **A diretiva ele não manda**: o servidor a
+   * recompõe da própria ficha, porque ela é a base de comparação do selo
+   * "desatualizada" e uma base que o cliente escreve é uma base que o cliente
+   * pode envenenar. Mesma divisão de 10/08 — pode nomear, nunca pode alargar.
+   */
+  scene?: { id: string; instrucaoPt: string | null } | null;
 };
 
 export type CanvasGenerationFailure =
@@ -106,6 +116,11 @@ export type CanvasGenerationFailure =
    * ensina o conserto em vez de só dizer não, porque a tela é o manual.
    */
   | "not_linked"
+  /**
+   * A ficha existe? é desta pessoa? é deste projeto? — a recusa barata da
+   * Máquina, irmã da `not_linked`, e pelo mesmo motivo: antes do provedor.
+   */
+  | "unknown_scene"
   | "no_version"
   | "unknown_version"
   | "multiple_characters"

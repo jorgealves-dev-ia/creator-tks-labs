@@ -4480,3 +4480,110 @@ Notado ao conferir a limpeza da Máquina de teste, e **anterior a este ciclo**: 
 São **inertes**: o React Flow não as desenha, o Zod as aceita, e a limpeza de órfãs do `onNodesChange` só roda quando um node é removido na mesma sessão. Nenhuma delas é minha — os ids não são de nada que este ciclo criou.
 
 Registrado por honestidade de leitura: quem for contar arestas no grafo salvo daqui em diante vai encontrar três a mais do que a tela mostra, e é melhor saber por quê do que descobrir procurando um bug. Uma faxina é barata e não é deste ciclo.
+
+---
+
+### 28/08/2026 — Fase 2 · o lote com portão, e a recusa que não era do texto
+
+O portão soma **pelo catálogo**, conta **só o que vai gerar** e recusa **o lote inteiro** quando o saldo não cobre. Três requisitos que o Jorge fixou antes de autorizar o gasto, e os três provados nos dois sentidos: as mesmas 6 cenas dão 200, 300 e 440 ⚡ conforme a linha de preço — três totais diferentes é o que prova que o preço é parâmetro e não constante.
+
+**O total conta 4, não 6**, e essa é a diferença que sustenta o gesto único: as duas cenas de continuação não geram imagem (D4), e uma tela que pedisse 450 para gastar 300 ensinaria a não confiar no número que ela mesma anuncia. O que já tem imagem também não volta — clicar de novo depois de uma falha parcial cobra **só o que faltou**.
+
+E a recusa por saldo é **de tipo, não de disciplina**: o veredito negativo não carrega `quantas`. Não existe como a tela oferecer "gere 3 das 4", porque a forma do dado não permite. Testado com o teto forçado que o Jorge pediu — saldo de 225 contra um lote de 300 recusa dizendo **faltam 75**, em vez de gerar três e parar.
+
+---
+
+### 28/08/2026 — O lote pago: a recusa não era do texto, e o md5 prova
+
+Dez tentativas, quatro imagens, **300 ⚡**. Extrato com quatro linhas nomeando as quatro cenas de corte, nenhuma emenda, nenhuma órfã, `wallets` = `sum(ledger)` = 6.250. As seis recusas custaram **zero** e não escreveram no livro.
+
+**A hipótese do dono era cota** — o padrão sugeria: 4 de 4 recusadas no primeiro bloco, individuais passando. Os dados derrubaram, e é o tipo de queda que vale registrar porque foi o **dado que decidiu**, não o argumento:
+
+| evidência | o que ela diz |
+|---|---|
+| texto cru | zero ocorrências de `429`, `quota`, `rate limit`, `resource exhausted`. Todas as seis são bloqueio de conteúdo, em duas caras |
+| **duração** | as recusas levaram **8,2 a 20,1 s**. Cota nega a ENTRADA, e nega rápido — admissão negada não custa vinte segundos de inferência |
+| **md5** | o `prompt_user_pt` é **byte a byte idêntico** entre a falha e o sucesso nas quatro cenas, e `instrucao_pt` é null nas dez |
+| metade passou | 2 de 4 entraram no segundo bloco. Cota não deixa metade passar |
+
+**A cara silenciosa do filtro** é a que mais ensina: `status=completed` sem imagem, sem erro, sem razão. É a forma documentada de um bloqueio nesta API, e o adaptador já a tratava como recusa desde 09/08 — o comentário estava lá, escrito antes de alguém precisar dele.
+
+**É a medição de 26/08 com n=4 em vez de n=1.** Lá o mesmo prompt foi recusado e aceito com 27 segundos de diferença, e a conclusão foi *"o filtro não é função determinística do prompt"*. Aqui, quatro cenas, texto idêntico conferido por md5, e todas passaram na tentativa seguinte.
+
+**E o custo do rótulo errado ficou medido:** a tela dizia "recusada" para tudo, e o dono **reescreveu prompt à toa** — porque "recusada" soa como *"o que você escreveu não passou"*. Não havia o que reescrever.
+
+---
+
+### 28/08/2026 — O rótulo em cinco classes: um balde não é um rótulo
+
+"Recusada" cobria filtro, cota, timeout e saldo no mesmo balde. Agora são cinco classes, cada uma com **selo, frase e gesto** — e a do filtro diz, em voz alta, **"Repita — e não mexa no texto."**
+
+O preço de não ter feito isso antes não foi confusão: foi **trabalho inútil de quem confiou na frase**. Um rótulo que não distingue o que fazer é a tela desistindo de explicar e passando a conta para quem lê.
+
+**A ordem das classes é decisão, e não arrumação:** cota é conferida **antes** de filtro. Um texto que traga as duas palavras vira cota, porque o gesto dela é *esperar* — e classificar cota como filtro mandaria repetir contra uma porta fechada, que é o oposto do conserto.
+
+**E o gesto escala com a contagem** *(refinamento pedido pelo Jorge, e o dado já existia)*: a primeira recusa do mesmo texto pede *repita*; a **terceira** pede *reescreva*. O corte em três tem origem no lote real — duas cenas foram recusadas **duas vezes** e aceitas na terceira. Cortar em dois mandaria reescrever justamente o texto que ia passar. A contagem é do **mesmo texto**, não da mesma cena: um ↻ com instrução é outro pedido, e ela recomeça.
+
+---
+
+### 28/08/2026 — O `\b` virou backspace, e é o `b-locked` duas vezes no mesmo dia
+
+Ao escrever os marcadores do classificador — com um comentário logo acima explicando que a fronteira de palavra existe **por causa do `b-locked` de 13/08** — meu próprio escape transformou os **21 `\b` em caractere backspace** (`\x08`). As regexes ficaram procurando um caractere de controle no lugar de uma fronteira.
+
+Não foi pego por typecheck, nem por lint, nem por leitura: foi pego **olhando os bytes crus** com `repr()`. É a quinta ocorrência da mesma família neste diário — `"reference image image 1"`, os dois NUL, o `b-locked`, o `toGridItem` — e a primeira em que o defeito nasce **dentro do conserto do defeito**.
+
+A lição não é "tomar cuidado com escape". É de instrumento: **quando o valor certo e o errado têm a mesma aparência no editor, só olhar os bytes separa os dois.** Um `\b` e um `\x08` são indistinguíveis num `grep` colorido.
+
+O conserto veio com teste: o harness exercita as duas metades do par `b-locked` — `blocked` tem de virar filtro, `account locked` **não pode** virar filtro por causa dele.
+
+---
+
+### 28/08/2026 — 🔁 Correção: a permissão do Chrome NÃO morre com o grupo de abas
+
+**Retificação de uma entrada minha do mesmo dia, e de uma linha que eu tinha posto no `CLAUDE.md`.**
+
+Eu escrevi que a permissão da extensão morria ao fechar o grupo de abas, e que anunciar o navegador passava a incluir *pedir a permissão*. **Estava errado.** O Jorge não concedeu nada nas duas ocasiões — só esperou e mandou tentar de novo.
+
+**O que de fato acontece:** o Turbopack compila sob demanda, a primeira requisição a `/studio` demora, a navegação da extensão desiste, a aba volta para `chrome://newtab/` e o `javascript_tool` responde *"Permission denied for JavaScript execution on this domain"* — **a mensagem errada para a causa certa**.
+
+**Como eu errei:** funcionou depois que ele falou, então eu li *"ele concedeu"*. Era coincidência com a espera. E o erro é pior que um número errado porque **virou regra no arquivo lido em toda sessão**: mandaria pedir ao dono, toda vez, uma coisa que ele não precisa fazer.
+
+**O controle, proposto por ele:** navegar, esperar `✓ Compiled /studio` no log do dev, e navegar de novo **sem ninguém fazer nada**.
+
+**O que o controle mediu, e o que ele não mediu.** A tentativa passou **de primeira**, com `/studio` compilando em **3,6 s** — no mesmo grupo de abas que havia falhado horas antes, sem ninguém conceder coisa alguma. Isso **derruba definitivamente** a hipótese da permissão. Não prova a da compilação: com o cache do Turbopack quente, não consegui produzir uma compilação lenta de propósito. Fica assim escrito — **hipótese consistente, não confirmada** —, e o controle operacional vale de qualquer jeito: se falhar, esperar o log e repetir **antes** de pedir qualquer coisa a alguém.
+
+---
+
+### 28/08/2026 — 📌 Pergunta aberta: recusa × concorrência, com instrumento e gatilho
+
+A taxa de recusa caiu com a concorrência **nesta amostra**: 4 de 4 com quatro em voo, 2 de 4 com quatro em voo, 0 de 2 uma a uma.
+
+O **mecanismo** de cota está descartado (texto e duração). O que fica é a **correlação**, e n=10 não separa "o filtro é não-determinístico e isto é ruído" de "a concorrência aumenta a recusa".
+
+**O instrumento, decidido agora para não depender de lembrança:** todo lote real grava quantas estavam em voo — o dado já existe em `generations.created_at` e a conta é a mesma que este diagnóstico usou (`hora do registro − duração = início`). **A decisão fica para n ≥ 30.**
+
+**O teto continua 4, e nada muda sem medida.** Se a diferença aparecer, o teto vira **coluna de `ai_models`** — nunca constante no código, pela invariante 6, e pelo mesmo motivo que a duração de vídeo virou linha de preço.
+
+---
+
+### 28/08/2026 — 📌 A alavanca de segurança do Google existe e nunca foi olhada
+
+Pergunta de leitura do Jorge, respondida sem gastar nada.
+
+**O adaptador não manda nada.** `ai.interactions.create()` é chamado com `model`, `input` e `response_format`, e mais nada — **o limiar do provedor é o padrão dele**, e nunca foi uma escolha nossa.
+
+**A alavanca existe:** o SDK aceita `safety_settings?: Array<SafetySetting_2>` na mesma chamada, com `threshold: Threshold` e `type: HarmCategory_2`, e o enum de limiar vai de `BLOCK_LOW_AND_ABOVE` a `BLOCK_NONE` e `OFF`.
+
+**E há uma segunda coisa, que a leitura achou sem procurar:** a resposta desta superfície **não traz `safety_ratings` nem `prompt_feedback`** — só `status` e `errors` de diagnóstico. Ou seja, a cara silenciosa do bloqueio é silenciosa **na API**, não no nosso adaptador. Não estamos descartando um motivo que existe; motivo nenhum é entregue.
+
+**Nada muda agora, e a ressalva importa:** não sabemos se o bloqueio que medimos é sequer governado por `safety_settings` — bloqueio de imagem pode vir de um filtro de saída próprio, e o *"blocked for unspecified reasons"* é indício de que não vem por categoria de dano. Mexer no limiar sem medir seria trocar um padrão que ninguém escolheu por outro que ninguém mediu. Fica como **decisão do dono, medida antes de adotar**.
+
+---
+
+### 28/08/2026 — "Aprovar as 0 imagens", e por que o irmão dele também estava quebrado
+
+Achado olhando a tela: o botão desabilitado dizia **"Aprovar as 0 imagens"** — português que ninguém escreve, e justamente no estado mais comum, o do trilho recém-carregado. Um botão desabilitado ainda é lido.
+
+Consertado para **"Nada para aprovar"**. E, ao **re-verificar o conserto**, o irmão apareceu: **"Gerar as 0 imagens"**, com o mesmo defeito, no mesmo card.
+
+Fica a regra: **um defeito de contagem em texto quase nunca é único.** Quem escreveu o primeiro escreveu o segundo do mesmo jeito, na mesma tarde — e a re-verificação de um conserto é o momento mais barato de encontrar o par. Se eu tivesse commitado sem reabrir a tela, teria consertado metade e chamado de fase fechada.

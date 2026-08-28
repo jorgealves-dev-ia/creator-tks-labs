@@ -1069,6 +1069,68 @@ export const t = {
       falhou: "recusada",
     } as Record<string, string>,
     /**
+     * Por que a cena não saiu — **uma frase e um gesto por classe**.
+     *
+     * "Recusada" cobria filtro, cota e timeout no mesmo balde, e o preço disso
+     * foi medido em 28/08/2026: num lote de 4, seis falhas mandaram o dono
+     * reescrever prompt à toa. O mesmo texto, **md5 idêntico**, foi recusado e
+     * aceito minutos depois nas quatro cenas — não havia o que reescrever.
+     *
+     * Por isso cada classe diz **o que aconteceu** e **o que fazer**, e a do
+     * filtro diz explicitamente para NÃO mexer no texto.
+     */
+    falhas: {
+      filtro: {
+        selo: "bloqueada pelo filtro",
+        frase:
+          "O provedor gerou e bloqueou a saída. O filtro dele não é determinístico: " +
+          "a mesma cena costuma passar na tentativa seguinte.",
+        gesto: "Repita — e não mexa no texto.",
+      },
+      cota: {
+        selo: "provedor no limite",
+        frase: "O provedor está limitando o ritmo de pedidos. Não é o seu texto.",
+        gesto: "Espere alguns instantes e repita.",
+      },
+      saldo: {
+        selo: "sem saldo",
+        frase: "O saldo acabou antes desta cena. Nada foi cobrado por ela.",
+        gesto: "Recarregue e repita.",
+      },
+      infra: {
+        selo: "sem resposta",
+        frase: "A chamada não completou — rede ou provedor fora do ar.",
+        gesto: "Repita.",
+      },
+      desconhecida: {
+        selo: "falhou",
+        frase: "Não consegui classificar esta falha. O texto do provedor está no detalhe.",
+        gesto: "Repita.",
+      },
+    } as Record<string, { selo: string; frase: string; gesto: string }>,
+    /**
+     * O gesto, e ele **escala com a contagem** — só no filtro.
+     *
+     * Uma recusa é ruído: o mesmo texto costuma passar depois, e mandar
+     * reescrever ali faria a pessoa desfazer o que ia funcionar. Três do mesmo
+     * texto deixam de ser ruído, e a tela para de dizer "repita" para sempre.
+     */
+    gestos: {
+      repetir: "Repita — e não mexa no texto.",
+      reescrever: "Reescreva a cena no Roteiro.",
+      esperar: "Espere alguns instantes e repita.",
+      recarregar: "Recarregue o saldo e repita.",
+    } as Record<string, string>,
+    recusouTresVezes: "Recusou três vezes o mesmo texto — reescreva a cena no Roteiro.",
+    /** O texto cru do provedor, para quem for investigar. Nunca é a frase principal. */
+    erroCru: (texto: string) => `Provedor: ${texto}`,
+
+    /** Anotação, não estado: uma cena aprovada e desatualizada continua aprovada. */
+    desatualizada: "a ficha mudou",
+    desatualizadaHint:
+      "A ficha desta cena mudou depois de esta imagem ter sido aprovada. A imagem continua "
+      + "valendo — quem decide se a mudança importa é você.",
+    /**
      * A frase da cena de continuação, e ela existe para a coluna não prometer um
      * primeiro quadro que não vai acontecer (D4).
      */
@@ -1082,14 +1144,78 @@ export const t = {
     tentativas: (n: number) => (n === 1 ? "1 tentativa" : `${n} tentativas`),
     semImagem: "A imagem aparecerá aqui",
 
-    // ── O que a Fase 1 ainda não faz, dito em voz alta ─────────────────────
+    // ── O portão de imagens — Fase 2 ───────────────────────────────────────
     /**
-     * Botão sem função não entra na tela (regra da casa, 17/08/2026). Enquanto
-     * os portões não existem, a Máquina diz o que ela ainda não faz em vez de
-     * desenhar um botão que não gasta.
+     * Com zero, o botão fala do estado — o mesmo conserto do "Aprovar as 0".
+     *
+     * Achado na re-verificação da própria correção do outro botão: eu tinha
+     * consertado um dos dois e o irmão ficou. **Um defeito de contagem em texto
+     * quase nunca é único**, porque quem escreveu o primeiro escreveu o segundo
+     * do mesmo jeito, na mesma tarde.
      */
-    aindaNaoGera:
-      "Esta Máquina ainda não gera. Os portões de imagem e de vídeo chegam nas próximas fases.",
+    portaoGerar: (n: number) =>
+      n === 0 ? "Nada para gerar" : n === 1 ? "Gerar 1 imagem" : `Gerar as ${n} imagens`,
+    /**
+     * O custo fala a verdade MULTIPLICADA antes do clique (invariante 12) — e a
+     * conta aparece inteira, não só o total: quem confere um número que não
+     * entende, confere de novo.
+     */
+    portaoCusto: (n: number, preco: number, total: number, saldo: number) =>
+      `Custará ${n} × ${preco} = ${total} ⚡ · Saldo: ${saldo} ⚡`,
+    portaoSemCenas: "Todas as cenas de corte já têm imagem.",
+    portaoSemCenasVazio: "Este roteiro não tem cena de corte para gerar.",
+    portaoSemPreco: "Este modelo não vende essa qualidade. Escolha outra.",
+    /** A recusa diz QUANTO falta: um "sem saldo" sem número faz a pessoa subtrair. */
+    portaoSemSaldo: (faltam: number) => `Faltam ${faltam} ⚡ para este lote.`,
+    portaoSemSaldoHint:
+      "O lote é recusado inteiro, e nada foi gerado. Gerar metade seria a tela decidindo por você.",
+    portaoLoteCheio:
+      "Ainda há imagens em andamento neste bloco. Espere a leva atual terminar.",
+    portaoGerando: (feitas: number, total: number) => `Gerando ${feitas} de ${total}…`,
+
+    /** Só as cenas de corte contam — a emenda não tem imagem própria (D4). */
+    contaSoCortes: "As cenas de continuação não entram: elas não geram imagem.",
+
+    /**
+     * Com zero, o botão fala do estado e não de uma contagem.
+     *
+     * "Aprovar as 0 imagens" é português que ninguém escreve — e ele aparece
+     * justamente no estado mais comum, o do trilho recém-carregado. Um botão
+     * desabilitado ainda é lido.
+     */
+    aprovarTodas: (n: number) =>
+      n === 0 ? "Nada para aprovar" : n === 1 ? "Aprovar a imagem" : `Aprovar as ${n} imagens`,
+    aprovarCena: "Aprovar esta imagem",
+    /** Aprovar não gasta, e a tela diz isso ao lado de um botão que gasta. */
+    aprovarSemCusto: "Aprovar não custa Spark nenhum.",
+    repetir: "Gerar esta cena de novo",
+    repetirInstrucaoLabel: "Instrução para esta tentativa (opcional)",
+    repetirInstrucaoPlaceholder: "mais fechado no rosto…",
+    /**
+     * A instrução é EFÊMERA — dirige esta tentativa e não volta para a ficha.
+     * É o que mantém uma porta só para editar (Q1).
+     */
+    repetirInstrucaoHint:
+      "Dirige só esta tentativa. A ficha não muda — para reescrevê-la, abra o Roteiro.",
+    repetirConfirmar: "Gerar de novo",
+    repetirCancelar: "Cancelar",
+
+    erroCena: (frase: string) => `Cena recusada: ${frase}`,
+    erroDesconhecido: "Não foi possível gerar esta cena. Tente de novo.",
+    erroCenaSumiu: "Essa cena não está mais no roteiro. Recarregue a página.",
+    erroSemSaldoNaVez:
+      "O saldo acabou antes desta cena. Nada foi cobrado por ela.",
+
+    /**
+     * O que ainda falta, dito em voz alta — e a frase encolheu com a Fase 2.
+     *
+     * Ela dizia "os portões de imagem e de vídeo chegam nas próximas fases".
+     * O de imagem chegou; deixar a frase inteira seria a prateleira mentindo
+     * sobre si mesma pela terceira vez (13/08 e 17/08). Ela encolhe para o que
+     * ainda não existe de verdade: o vídeo.
+     */
+    aindaNaoAnima:
+      "O portão de vídeo chega na próxima fase. Por enquanto, a Máquina gera as imagens.",
   },
 
   storyboardNode: {
