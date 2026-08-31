@@ -40,7 +40,9 @@ autorizou)** —, cada uma com simulação vermelha→verde reexecutável. Mais 
 endereço de retorno, uma ida à rede por clique.
 
 **Os números do dia 31/08:** dois cliques pagos, **630 ⚡**, **3 clipes**, **0
-submissões acidentais** — contra 4.200 ⚡ e 626 submissões dois dias antes.
+submissões acidentais** — contra 4.200 ⚡ e 626 submissões dois dias antes. **E o
+painel da fal fechou a conta por id: 3 requisições, nenhuma além das nossas** — a
+conferência *log × painel*, aberta desde o incidente, fecha nos dois sentidos.
 
 ---
 

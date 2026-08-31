@@ -858,6 +858,7 @@ storyboard?*
 > | **caminho de volta** — o webhook fechando sozinho | ✅ 78 s e 66 s, zero reconciliação à mão |
 > | **cadeia** — a emenda partindo do quadro do clipe NOVO | ✅ quadro derivado 2 s antes da submissão |
 > | **D7 em cascata** — a de baixo acende e **espera clique** | ✅ cena 6 acesa e parada |
+> | **log × painel** — a contagem do lado deles, aberta desde 29/08 | ✅ **3 requisições no painel da fal, conferidas por id**, nenhuma além das nossas |
 >
 > **A régua do dia: 630 ⚡, 3 clipes, 0 submissões acidentais** — contra 4.200 ⚡ e
 > 626 submissões dois dias antes.

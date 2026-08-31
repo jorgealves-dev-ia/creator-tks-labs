@@ -5073,3 +5073,20 @@ O primeiro provou o **teto** e achou a **mira**. O segundo provou a mira. **Nenh
 **A régua do dia: 630 ⚡ gastos, 3 clipes entregues, 0 submissões acidentais.** Contra 4.200 ⚡ e 626 submissões há dois dias.
 
 📌 **Fica aberto e nomeado:** a **0.3** (a aba escondida trava o elo?) continua sem resposta — os dois cliques foram deliberadamente com a aba à frente. E o **veredito do elo** segue **NÃO MEDIDO com gatilho**, como está desde 28/08.
+
+---
+
+### 31/08/2026 — ✅ O painel da fal fechou a conta, por id: 3 requisições, nenhuma além das nossas
+
+A última metade da prova da Fase 3, e ela chegou depois do commit — está registrada aqui porque é onde a conferência **log × painel** finalmente fecha, aberta desde o incidente de 29/08.
+
+O dono conferiu no painel da fal **por identificador**, e não por total: o dia inteiro deu **3 requisições, todas de 5 s de vídeo** — `01a0586b…` (clique das 12:15, cena 1) e `01a058f0-771d…` + `01a058f0-7dbb…` (clique das 14:49, cenas 5 e 2). **Nenhuma além das nossas.**
+
+**Ela fecha nos dois sentidos, e os dois importam:**
+
+- **o painel não tem nada que o nosso log não tenha** — nenhuma requisição saiu sem linha em `generations`. É esta metade que o incidente destruiu: em 29/08, 626 submissões chegaram à fal e o nosso lado só sabia de 20 cobranças;
+- **o nosso log não tem nada que o painel não confirme** — nenhuma submissão nossa se perdeu no caminho.
+
+**Conferir por id, e não por contagem, é o que torna a prova forte.** Um total bate por acidente com facilidade — três de um lado e três do outro pode ser coincidência de dois erros que se cancelam. Três identificadores que casam um a um não podem.
+
+📌 **A regra de 29/08 sobrevive intacta e agora tem o caso positivo:** *quando existe um painel, o painel é a fonte*. Naquele dia ela nasceu de um erro meu de 8× por inferir custo sem ler o provedor; hoje ela fecha uma fase — e nas duas vezes o que decidiu foi o dado do lado de lá, nunca a conta de cabeça do lado de cá.
