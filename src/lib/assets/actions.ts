@@ -110,6 +110,20 @@ export type GalleryItem = {
    * nunca o rótulo.**
    */
   derivedFromAssetId: string | null;
+  /**
+   * Se o arquivo é vídeo — **obrigatório, e não opcional**.
+   *
+   * Era ausente, e a ausência custou o defeito de 28/08/2026: a Galeria do
+   * projeto (o modal do estúdio) desenhava `<img src="…mp4">` e abria o clipe
+   * como "Imagem ampliada" que nunca carregava, enquanto a `/galeria` mostrava
+   * o mesmo arquivo certo. **Dois caminhos de exibição para um arquivo só.**
+   *
+   * A causa não estava em nenhuma das duas telas: estava aqui. O conversor que
+   * traz um item da galeria para cá declarava um parâmetro sem `isVideo`, então
+   * o campo era **derrubado no caminho** — em silêncio, com o TypeScript
+   * satisfeito. Obrigatório, essa omissão deixa de compilar.
+   */
+  isVideo: boolean;
 };
 
 export type GalleryPage = { items: GalleryItem[]; hasMore: boolean };
@@ -192,6 +206,9 @@ export async function listGalleryAssets(input: unknown): Promise<GalleryPage> {
         source: row.source,
         createdAt: row.created_at,
         derivedFromAssetId: row.derived_from_asset_id,
+        // Esta consulta filtra `kind = 'image'`, então aqui é sempre falso — e
+        // dizê-lo por extenso é melhor que deixá-lo implícito no filtro.
+        isVideo: false,
       }))
       .filter((item): item is GalleryItem => item.url !== null),
     hasMore,
@@ -293,6 +310,7 @@ export async function registerUploadedAsset(input: unknown): Promise<RegisterAss
       createdAt: asset.created_at,
       // Um arquivo que alguém acabou de enviar não veio de arquivo nenhum.
       derivedFromAssetId: null,
+      isVideo: false,
     },
   };
 }

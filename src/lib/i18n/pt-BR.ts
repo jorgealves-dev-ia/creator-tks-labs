@@ -2,6 +2,18 @@
  * Every user-facing string lives here. Identifiers stay in English, copy stays
  * in pt-BR — see the code conventions in CLAUDE.md.
  */
+/**
+ * Um número de Sparks como quem lê escreve: 1.260, e não 1260.
+ *
+ * Vive aqui e não em `lib/sparks` porque é decisão de **texto**, não de dinheiro
+ * — o valor continua sendo inteiro em toda conta. E vive numa função só porque
+ * dois portões a centímetros um do outro mostrando "6250" e "6.250" seriam a
+ * mesma carteira com duas caras na mesma tela.
+ */
+function sparks(n: number): string {
+  return n.toLocaleString("pt-BR");
+}
+
 export const t = {
   app: {
     name: "Creator TKS Labs",
@@ -954,6 +966,10 @@ export const t = {
      * sintoma seria uma espera de quinze segundos terminando em "não deu".
      */
     continueErrors: {
+      /** A cláusula da 0.3 — o navegador só decodifica vídeo com a aba à frente. */
+      aba_escondida:
+        "Volte para esta aba para ler o último quadro: o navegador só decodifica vídeo com a " +
+        "aba à frente. Nada foi perdido.",
       hidden_tab:
         "O navegador não lê vídeo com a aba escondida. Deixe esta janela na frente e clique de novo.",
       expired_link:
@@ -991,6 +1007,15 @@ export const t = {
       mention_not_supported:
         "Neste bloco a personagem entra pela imagem, não pelo @. Tire a menção do texto.",
       unsupported_duration: "Este modelo não vende esta duração.",
+      /** A ficha apontada sumiu do roteiro entre o clique e o pedido. */
+      unknown_scene: "Essa cena não está mais no roteiro. Recarregue a página.",
+      /**
+       * Presente e errada custa o mesmo que ausente — com a diferença de que
+       * não avisa. Medido em 28/08/2026: quatro clipes pagos, zero entregas.
+       */
+      webhook_url_invalid:
+        "O endereço de retorno configurado não aponta para /api/webhooks/fal. " +
+        "Sem ele o vídeo seria gerado, cobrado e nunca voltaria.",
       translation_failed:
         "Não foi possível traduzir a descrição do movimento. Tente de novo em instantes.",
       refused:
@@ -1161,12 +1186,12 @@ export const t = {
      * entende, confere de novo.
      */
     portaoCusto: (n: number, preco: number, total: number, saldo: number) =>
-      `Custará ${n} × ${preco} = ${total} ⚡ · Saldo: ${saldo} ⚡`,
+      `Custará ${n} × ${preco} = ${sparks(total)} ⚡ · Saldo: ${sparks(saldo)} ⚡`,
     portaoSemCenas: "Todas as cenas de corte já têm imagem.",
     portaoSemCenasVazio: "Este roteiro não tem cena de corte para gerar.",
     portaoSemPreco: "Este modelo não vende essa qualidade. Escolha outra.",
     /** A recusa diz QUANTO falta: um "sem saldo" sem número faz a pessoa subtrair. */
-    portaoSemSaldo: (faltam: number) => `Faltam ${faltam} ⚡ para este lote.`,
+    portaoSemSaldo: (faltam: number) => `Faltam ${sparks(faltam)} ⚡ para este lote.`,
     portaoSemSaldoHint:
       "O lote é recusado inteiro, e nada foi gerado. Gerar metade seria a tela decidindo por você.",
     portaoLoteCheio:
@@ -1206,16 +1231,188 @@ export const t = {
     erroSemSaldoNaVez:
       "O saldo acabou antes desta cena. Nada foi cobrado por ela.",
 
+    // ── O portão de vídeo — Fase 3 ─────────────────────────────────────────
+    //
+    // A frase "o portão de vídeo chega na próxima fase" morreu aqui, e morrer é
+    // o certo: ela existia para não mentir sobre o que não havia, e mantê-la
+    // depois de o portão existir seria a mesma mentira ao contrário.
+    videoTitle: "Vídeo",
     /**
-     * O que ainda falta, dito em voz alta — e a frase encolheu com a Fase 2.
+     * O botão diz o QUE, a linha de baixo diz a CONTA — a ordem normativa da
+     * invariante 12, a mesma do portão de imagem. Lidos juntos, dão a frase que
+     * o dono fixou antes de autorizar o gasto:
      *
-     * Ela dizia "os portões de imagem e de vídeo chegam nas próximas fases".
-     * O de imagem chegou; deixar a frase inteira seria a prateleira mentindo
-     * sobre si mesma pela terceira vez (13/08 e 17/08). Ela encolhe para o que
-     * ainda não existe de verdade: o vídeo.
+     *   «Animar as 6 · 4 aprovadas + 2 emendas · 6 × 210 = 1.260 ⚡ · Saldo 6.250»
      */
-    aindaNaoAnima:
-      "O portão de vídeo chega na próxima fase. Por enquanto, a Máquina gera as imagens.",
+    animarBotao: (n: number) =>
+      n === 0 ? "Nada para animar" : n === 1 ? "Animar 1 cena" : `Animar as ${n}`,
+    animarComposicao: (aprovadas: number, emendas: number) =>
+      [
+        aprovadas === 0 ? null : `${aprovadas} ${aprovadas === 1 ? "aprovada" : "aprovadas"}`,
+        emendas === 0 ? null : `${emendas} ${emendas === 1 ? "emenda" : "emendas"}`,
+      ]
+        .filter(Boolean)
+        .join(" + "),
+    animarCusto: (n: number, preco: number, total: number, saldo: number) =>
+      `${n} × ${preco} = ${sparks(total)} ⚡ · Saldo: ${sparks(saldo)} ⚡`,
+    /**
+     * Quando as cenas do lote não custam o mesmo, a tela mostra a SOMA e não um
+     * produto. Um "6 × 210" que não bate com o que vai ser cobrado é pior que
+     * número nenhum — e o dia em que o catálogo vender duas durações chega sem
+     * avisar.
+     */
+    animarCustoSoma: (total: number, saldo: number) =>
+      `Total ${sparks(total)} ⚡ · Saldo: ${sparks(saldo)} ⚡`,
+    animarGerando: (feitos: number, total: number) => `Animando ${feitos} de ${total}…`,
+    /**
+     * O tempo, ao lado do dinheiro — conserto de 28/08/2026.
+     *
+     * "Animar as 2" com uma cena dizendo "espera o clipe da 5" são duas frases
+     * verdadeiras que, juntas e caladas, parecem uma contradição. O botão conta
+     * o que vai ser cobrado; esta linha conta o que começa agora.
+     */
+    animarComEspera: (agora: number, depois: number) =>
+      `${agora} ${agora === 1 ? "parte" : "partem"} agora, ` +
+      `${depois} ${depois === 1 ? "entra" : "entram"} quando o clipe anterior ficar pronto`,
+    animarSemCenas: "Nenhuma cena aprovada esperando vídeo.",
+    animarSemCenasVazio: "Aprove a imagem de uma cena para poder animá-la.",
+    animarSemPreco: "O catálogo de vídeo ainda não respondeu.",
+    animarSemSaldo: (faltam: number) => `Faltam ${sparks(faltam)} ⚡ para este lote.`,
+    animarSemSaldoHint:
+      "O lote é recusado inteiro. Animar metade deixaria o filme cortado no meio.",
+    /** Vídeo só de cena aprovada — sem exceção, e a tela diz isso onde se clica. */
+    animarSoAprovadas:
+      "Vídeo só de cena aprovada. As emendas herdam a aprovação da cena que emendam.",
+    animarLoteCheio: "Ainda há vídeos em andamento neste bloco. Espere a leva atual terminar.",
+
+    // ── D7 · reanimar ──────────────────────────────────────────────────────
+    reanimarBotao: (n: number) => (n === 1 ? "Reanimar 1 cena" : `Reanimar ${n} cenas`),
+    reanimarCusto: (total: number) => `por ${sparks(total)} ⚡`,
+    /**
+     * O ↻ do vídeo — a segunda metade da D7, 29/08/2026.
+     *
+     * Ele **marca**, não gasta. O dinheiro continua saindo num lugar só: o
+     * portão, que soma as marcadas com as desatualizadas e diz o total antes do
+     * clique. Um botão de 9 px que dispara 210 ⚡ seria a invariante 12 furada
+     * pelo lugar mais fácil de furar.
+     */
+    refazerClipe: "↻ refazer o clipe",
+    refazerClipeMarcada: "✓ vai ser refeito",
+    refazerClipeHint:
+      "Marca esta cena para ganhar um clipe novo. Nada é gasto agora: o custo aparece no " +
+      "portão, somado, e é lá que você autoriza. O clipe atual não é apagado.",
+    refazerClipeMarcadaHint: "Clique de novo para desmarcar. O custo está no portão, abaixo.",
+    reanimarHint:
+      "Estas cenas têm vídeo feito a partir de uma imagem que já não é a aprovada. Nada foi " +
+      "apagado e nada se refaz sozinho — quem clica é você.",
+
+    /** Anotação, como a da ficha: informa, nunca bloqueia. */
+    videoDesatualizado: "vídeo desatualizado",
+    videoDesatualizadoHint:
+      "Este clipe partiu de uma imagem que já não é a aprovada — ou de um quadro de um clipe " +
+      "que foi refeito. O vídeo continua valendo; quem decide se a mudança importa é você.",
+
+    /**
+     * Por que esta cena não está no lote — **uma frase por motivo**.
+     *
+     * Cada uma aponta um gesto diferente, e é a lição da Fase 2 aplicada ao
+     * vídeo: "não anima" num balde só mandaria a pessoa procurar o conserto no
+     * lugar errado. "aprove" se conserta aqui; "ajuste no Roteiro" se conserta
+     * lá; "a cena N não tem clipe" não se conserta nesta coluna nenhuma.
+     */
+    videoMotivos: {
+      gerando: "gerando o vídeo…",
+      ja_tem_video: "vídeo pronto",
+      nao_aprovada: "aprove para animar",
+      falhou_no_lote: "falhou neste lote",
+      fora_do_lote: "fica para o próximo",
+      sem_catalogo: "",
+    } as Record<string, string>,
+    /**
+     * R2.4 — a cena é candidata, mas **não é deste lote**. 31/08/2026.
+     *
+     * A frase existe porque a tela lê o mesmo `situacao` que o motorista obedece.
+     * No clique de campo de 31/08, a cena 1 dizia "entra no lote" durante um lote
+     * de reanimação que não era dela — e o motorista concordou com a tela e a
+     * animou. Agora as duas dizem a mesma coisa, e a coisa é a verdade.
+     */
+    videoForaDoLoteHint:
+      "Este lote é o das cenas que você mandou refazer. Esta cena continua candidata — " +
+      "ela entra quando você clicar em Animar, e não antes.",
+    /**
+     * O contador do cabeçalho — o conserto A de 29/08/2026.
+     *
+     * O defeito que ele fecha foi medido no DOM: quando um clipe chegava, o
+     * único pixel do node que mudava era a linha de 9 px da coluna daquela cena
+     * — **1.192 px² de 245.670, 0,49% do node**. O caminho estava íntegro (~250 ms
+     * do webhook ao pixel); o que faltava era alguém **poder ver**.
+     *
+     * Aqui em cima porque é onde o olho já está, e porque é o único lugar do node
+     * que fala do lote inteiro. Some quando não há vídeo nenhum: um "0 de 0"
+     * ensinaria a ignorar o contador justamente antes de ele importar.
+     */
+    videoContador: (prontos: number, total: number) => `▶ ${prontos} de ${total}`,
+    videoContadorHint: (prontos: number, total: number) =>
+      `${prontos} de ${total} ${total === 1 ? "cena tem clipe" : "cenas já têm clipe"}. ` +
+      "O número sobe sozinho quando cada vídeo fica pronto — não é preciso sair e voltar.",
+    /** O quadro de partida de uma emenda — a segunda linha da D4. */
+    quadroDePartida: "quadro de partida",
+    quadroDePartidaHint: (ordem: number) =>
+      `O último quadro do clipe da cena ${ordem}, que é o primeiro quadro de verdade desta. ` +
+      "Não foi gerado nem cobrado: saiu do clipe anterior.",
+    /**
+     * A trava de vida do endereço de retorno — 29/08/2026.
+     *
+     * Três modos de falhar, três frases, porque o conserto de cada um é
+     * diferente e "não deu" mandaria procurar no lugar errado. O terceiro é o que
+     * nasceu de um túnel morto com forma perfeita.
+     */
+    videoRetornoConferindo: "conferindo o endereço de retorno…",
+    videoRetornoMorto: {
+      nao_configurado:
+        "O endereço de retorno não está configurado. Sem ele o vídeo seria gerado e cobrado " +
+        "sem nunca voltar — por isso nada foi enviado.",
+      forma_invalida:
+        "O endereço de retorno existe mas não aponta para o webhook desta casa. Nada foi " +
+        "enviado: um trabalho com retorno errado é um trabalho pago que não volta.",
+      sem_resposta:
+        "O endereço de retorno não responde. Ele tem a forma certa, mas ninguém atende do " +
+        "outro lado — um túnel que caiu, por exemplo. Nada foi enviado e nada foi cobrado.",
+      unauthenticated: "Sua sessão expirou. Entre de novo antes de animar.",
+    } as Record<string, string>,
+    videoNoLote: "entra no lote",
+    videoNoLoteHint: "Esta cena vai virar clipe assim que houver vaga na leva.",
+    videoEsperaDe: (ordem: number) => `espera o clipe da cena ${ordem}`,
+    videoEsperaDeHint: (ordem: number) =>
+      `O primeiro quadro desta cena é o último do clipe da cena ${ordem}. Ela parte assim que ` +
+      "aquele clipe ficar pronto — sozinha, sem mais nenhum clique.",
+    videoCadeiaParadaHint: (ordem: number) =>
+      `A cena ${ordem} não produziu clipe neste lote, e o primeiro quadro desta vem de lá. ` +
+      "Resolva a cena de cima e anime de novo — esta espera não termina sozinha.",
+    videoCadeiaSemAprovacaoHint: (ordem: number) =>
+      `Esta cena não tem imagem própria: ela emenda no clipe da cena ${ordem}. Aprove a imagem ` +
+      "daquela cena e as duas entram no lote juntas.",
+    videoCadeiaParada: (ordem: number) => `a cena ${ordem} não tem clipe`,
+    videoCadeiaSemAprovacao: (ordem: number) => `aprove a cena ${ordem}`,
+    videoDuracaoFora: (segundos: number) => `${segundos}s fora do catálogo`,
+    videoDuracaoForaHint: (segundos: number) =>
+      `A duração desta cena (${segundos}s) não está no catálogo do modelo. Ajuste-a no Roteiro ` +
+      "para uma duração que o modelo vende.",
+
+    // ── A cláusula da 0.3 — a pausa com a causa nomeada ───────────────────
+    pausaDaAba: "Aguardando a aba voltar",
+    pausaDaAbaHint:
+      "Para emendar um clipe no anterior é preciso ler o último quadro dele, e o navegador só " +
+      "decodifica vídeo com a aba à frente. A cadeia retoma sozinha quando você voltar — nada " +
+      "foi perdido, e nada foi cobrado por esta espera.",
+
+    /** Um webhook que não chega travaria não um node, mas as cenas de baixo. */
+    /** O clipe pronto abre no mesmo visualizador da /galeria. */
+    videoAbrir: "Abrir o clipe",
+    videoVerificar: "Verificar agora",
+    videoVerificarHint:
+      "Este clipe está demorando mais do que o normal. Perguntar ao provedor não custa Spark " +
+      "nenhum — e enquanto ele não responde, as cenas que emendam nele ficam paradas.",
   },
 
   storyboardNode: {

@@ -9,6 +9,7 @@ import {
   estaDesatualizada,
   estadoDaCena,
   estadoDoVideo,
+  videoDaCena,
   type MachineBoard,
   type MachineScene,
 } from "@/lib/storyboard/machine-state";
@@ -105,7 +106,7 @@ export async function loadMachineBoard(input: unknown): Promise<MachineBoard | n
   const { data: tentativas } = await supabase
     .from("generations")
     .select(
-      "id, scene_id, media_kind, status, result_asset_id, error_message, created_at, prompt_compiled, prompt_user_pt",
+      "id, scene_id, media_kind, status, result_asset_id, error_message, created_at, started_at, params, prompt_compiled, prompt_user_pt",
     )
     .in("scene_id", sceneIds)
     .order("created_at", { ascending: false });
@@ -122,6 +123,60 @@ export async function loadMachineBoard(input: unknown): Promise<MachineBoard | n
   }
 
   // -------------------------------------------------------------------------
+  // O CLIPE DE CADA CENA, e de qual quadro ele partiu — Ciclo 3 · Fase 3
+  //
+  // Feito antes do resto porque a D7 precisa de uma segunda leitura: o quadro de
+  // partida de uma emenda carrega, em `assets.derived_from_asset_id`, o CLIPE de
+  // onde ele saiu. É essa seta que faz a cena de baixo envelhecer sozinha quando
+  // a de cima é reanimada — sem propagação escrita em lugar nenhum.
+  //
+  // Uma consulta para todas as emendas, e não uma por cena: a lição da Fase 5 do
+  // Egress é que o canvas sofre de viagens, não de bytes.
+  // -------------------------------------------------------------------------
+  const videoPorCena = new Map<string, NonNullable<typeof tentativas>[number]>();
+
+  // `videoDaCena` e não `find(media_kind === "video")`: a última tentativa não é
+  // o vídeo da cena quando existe um clipe bom mais antigo — 31/08/2026, e é o
+  // que punha a cena 1 (22 clipes bons, 606 linhas mortas do incidente) no lote
+  // comum como se nunca tivesse animado.
+  //
+  // A escolha é feita UMA vez e serve às duas leituras — o estado da coluna e a
+  // linhagem da D7. Duas escolhas seriam duas chances de a tela falar de um
+  // clipe e a cadeia de outro.
+  for (const ficha of fichas) {
+    const video = videoDaCena(
+      (porCena.get(ficha.id) ?? []).filter((linha) => linha.media_kind === "video"),
+    );
+
+    if (video) videoPorCena.set(ficha.id, video);
+  }
+
+  const quadrosDePartida = new Set<string>();
+
+  for (const ficha of fichas) {
+    if (ficha.transicao !== "continuacao") continue;
+
+    const fonte = lerFonteDoVideo(videoPorCena.get(ficha.id)?.params);
+
+    if (fonte) quadrosDePartida.add(fonte);
+  }
+
+  const clipeDoQuadro = new Map<string, string | null>();
+
+  if (quadrosDePartida.size > 0) {
+    const { data: quadros } = await supabase
+      .from("assets")
+      .select("id, derived_from_asset_id")
+      .in("id", [...quadrosDePartida]);
+
+    for (const quadro of quadros ?? []) {
+      clipeDoQuadro.set(quadro.id, quadro.derived_from_asset_id);
+    }
+  }
+
+  const agora = Date.now();
+
+  // -------------------------------------------------------------------------
   // As miniaturas, assinadas EM LOTE — uma viagem para o trilho inteiro
   // -------------------------------------------------------------------------
   const assetIds = new Set<string>();
@@ -135,6 +190,14 @@ export async function loadMachineBoard(input: unknown): Promise<MachineBoard | n
 
     if (ultimaBoa?.result_asset_id) assetIds.add(ultimaBoa.result_asset_id);
   }
+
+  // E os quadros de partida das emendas — a segunda linha da D4.
+  //
+  // Eles entram na MESMA viagem de assinatura, e é por isso que a segunda linha
+  // da decisão custa uma linha de código: o Set já estava montado acima, para a
+  // leitura de linhagem da D7. Uma consulta a mais aqui seria a doença que a
+  // Fase 5 do Egress diagnosticou — o canvas sofre de viagens, não de bytes.
+  for (const quadro of quadrosDePartida) assetIds.add(quadro);
 
   const urlPorAsset = new Map<string, string>();
 
@@ -161,7 +224,9 @@ export async function loadMachineBoard(input: unknown): Promise<MachineBoard | n
   const cenas: MachineScene[] = fichas.map((ficha, indice) => {
     const linhas = porCena.get(ficha.id) ?? [];
     const imagens = linhas.filter((linha) => linha.media_kind === "image");
-    const videos = linhas.filter((linha) => linha.media_kind === "video");
+    const video = videoPorCena.get(ficha.id) ?? null;
+    const videoVivo = video !== null && (video.status === "queued" || video.status === "running");
+    const fonteDoVideo = lerFonteDoVideo(video?.params);
     const ultimaImagem = imagens[0] ?? null;
     const boa = imagens.find((linha) => linha.status === "succeeded" && linha.result_asset_id);
     const continuacao = ficha.transicao === "continuacao";
@@ -230,11 +295,33 @@ export async function loadMachineBoard(input: unknown): Promise<MachineBoard | n
       tentativas: imagens.length,
       erro: ultimaImagem?.status === "failed" ? ultimaImagem.error_message : null,
       recusasSeguidas,
-      video: estadoDoVideo(videos[0]?.status ?? null),
+      video: estadoDoVideo(video?.status ?? null),
+      // O clipe só existe quando o vídeo ficou pronto: um `result_asset_id` de
+      // uma linha `failed` não existe, e um de uma linha viva ainda não existe.
+      videoAssetId: video?.status === "succeeded" ? video.result_asset_id : null,
+      videoFonteAssetId: fonteDoVideo,
+      // Só em emenda: numa cena de corte a fonte é uma imagem, e imagem não
+      // deriva de clipe nenhum. Perguntar ali devolveria nulo sempre, com uma
+      // consulta a mais para chegar nele.
+      videoFonteClipeId:
+        continuacao && fonteDoVideo ? (clipeDoQuadro.get(fonteDoVideo) ?? null) : null,
+      videoErro: video?.status === "failed" ? video.error_message : null,
+      videoGeracaoId: videoVivo ? video.id : null,
+      videoIdadeSegundos: videoVivo
+        ? Math.max(
+            0,
+            Math.round((agora - new Date(video.started_at ?? video.created_at).getTime()) / 1000),
+          )
+        : null,
+      imagemAprovadaAssetId: ficha.imagem_aprovada_asset_id,
       // A cena que ela emenda é sempre a anterior na ordem — a mesma leitura
       // que o Ciclo 1 fez do elo. Nula na cena 1, que o banco já impede de ser
       // continuação (`storyboard_scenes_primeira_nao_continua`).
       emendaDe: continuacao ? (fichas[indice - 1]?.ordem ?? null) : null,
+      // Só em continuação, e só depois do despacho: antes dele não existe quadro
+      // nenhum, e a coluna diz "continua da cena N", que é a primeira linha da D4.
+      quadroDePartidaUrl:
+        continuacao && fonteDoVideo ? (urlPorAsset.get(fonteDoVideo) ?? null) : null,
       desatualizada: estaDesatualizada({
         diretivaAgora,
         diretivaDaGeracao: lerDiretiva(daAprovada?.prompt_compiled),
@@ -359,6 +446,22 @@ export async function aprovarCenas(input: unknown): Promise<AprovarResult> {
  * `null`, e `null` significa "esta geração não sabe responder", nunca "mudou".
  * Toda geração anterior a esta fase cai aqui, e nenhuma delas acende selo.
  */
+/**
+ * De qual imagem um vídeo partiu — `generations.params.source_asset_id`.
+ *
+ * `unknown` pelo mesmo motivo de `lerDiretiva`: `params` é `jsonb`, e coluna
+ * livre é fronteira. E o que ela **não** faz é o ponto — campo ausente devolve
+ * `null`, e `null` significa "esta geração não sabe responder", nunca "mudou".
+ * Todo vídeo anterior a esta fase cai aqui, e nenhum deles acende selo.
+ */
+function lerFonteDoVideo(params: unknown): string | null {
+  if (typeof params !== "object" || params === null) return null;
+
+  const fonte = (params as { source_asset_id?: unknown }).source_asset_id;
+
+  return typeof fonte === "string" ? fonte : null;
+}
+
 function lerDiretiva(compiled: unknown): string | null {
   if (typeof compiled !== "object" || compiled === null) return null;
 

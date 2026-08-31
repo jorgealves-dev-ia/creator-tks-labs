@@ -4587,3 +4587,489 @@ Achado olhando a tela: o botão desabilitado dizia **"Aprovar as 0 imagens"** �
 Consertado para **"Nada para aprovar"**. E, ao **re-verificar o conserto**, o irmão apareceu: **"Gerar as 0 imagens"**, com o mesmo defeito, no mesmo card.
 
 Fica a regra: **um defeito de contagem em texto quase nunca é único.** Quem escreveu o primeiro escreveu o segundo do mesmo jeito, na mesma tarde — e a re-verificação de um conserto é o momento mais barato de encontrar o par. Se eu tivesse commitado sem reabrir a tela, teria consertado metade e chamado de fase fechada.
+
+---
+
+### 28/08/2026 — 🔒 DECISÃO do Jorge: a alavanca de segurança se mede no próximo lote, com portão pré-registrado
+
+Fecha a pergunta aberta da entrada anterior (*"a alavanca de segurança do Google existe e nunca foi olhada"*). **A decisão é do dono**, e vem inteira: com instrumento, com linha de base e com portão.
+
+**Nada muda agora, e nada muda na Fase 3.** O adaptador continua chamando `ai.interactions.create()` sem `safety_settings` — o limiar segue sendo o padrão do provedor, que nunca foi escolha nossa. A Fase 3 é vídeo; mexer no limiar de imagem no meio dela misturaria duas medições numa só.
+
+**O instrumento é o próximo lote real de imagens.** Ele roda com o limiar **um degrau abaixo do padrão**, e a taxa de recusa dele é comparada com a única linha de base que existe: **6 recusas em 10 tentativas**, medidas no lote pago de 28/08/2026 — com o md5 provando que o texto era byte a byte o mesmo entre a falha e o sucesso nas quatro cenas.
+
+**O portão, escrito ANTES de a medida existir: se a recusa não cair, volta ao padrão.** O adaptador para de mandar `safety_settings` e o assunto fecha. Um portão redigido depois do número é um número escolhendo o próprio critério — e este projeto já tem a régua de 27/08 dizendo que o que decide é o dado, não a impressão que ele deixa.
+
+**A ressalva da entrada anterior continua valendo, e é exatamente ela que a medida testa.** Não se sabe se o bloqueio medido é sequer governado por `safety_settings`: a cara silenciosa dele (`status=completed`, sem imagem, sem erro, sem razão) é indício de filtro de saída próprio, que limiar de categoria nenhum alcança. Se a recusa não cair, a leitura mais provável não é *"o limiar não ajuda"* — é *"o limiar não é a alavanca deste bloqueio"*. As duas levam ao mesmo gesto, e é por isso que o portão pode ser um só.
+
+**Quando o produto abrir a outros, o limiar vira política de plataforma — nunca configuração.** Ele não desce para o painel do usuário nem para o node. Um limiar por conta seria cada usuário escolhendo o próprio risco de conteúdo em cima da **nossa** chave e do **nosso** contrato com o fornecedor. É decisão de casa, uma para todo mundo, e muda por decisão registrada — como esta.
+
+> **Nota minha ao registrar, porque é um buraco na instrução e não no plano:** *"um degrau abaixo"* só vira instrução executável depois de **o degrau de cima ter nome**. O SDK expõe o enum (`BLOCK_LOW_AND_ABOVE` → `BLOCK_MEDIUM_AND_ABOVE` → `BLOCK_ONLY_HIGH` → `BLOCK_NONE`/`OFF`), mas **não expõe qual deles esta superfície usa quando ninguém manda nada**. Então o primeiro ato da medição é identificar o padrão; se ele não for identificável, o degrau aplicado é **`BLOCK_ONLY_HIGH`**, e o registro do lote diz qual foi. Um limiar aplicado sem nome não se compara com nada depois — seria repetir o erro que a régua de 27/08 fechou, com outra roupa.
+
+---
+
+### 28/08/2026 — Fase 3 · a cadeia de vídeo, e o portão que conta emendas à parte
+
+O portão de imagem soma cenas independentes. O de vídeo soma uma **cadeia** — a 2 espera o clipe da 1, a 6 espera o da 5 —, e essa diferença muda o que precisa ser provado: uma tabela-verdade responde "quanto custa"; ela não responde "em que ordem".
+
+Então a prova estrutural desta fase é uma **simulação**: o lote roda tick a tick, e a cada submissão o invariante é conferido no instante em que a cena parte. **73 verificações, zero falhas** — e o que elas dizem, em número:
+
+| o que se mediu | o que saiu |
+|---|---|
+| o caso do dono, 6 cenas | **duas ondas: `[1,3,4,5]` e `[2,6]`** — os quatro cortes juntos, as duas emendas depois dos clipes de que dependem |
+| o teto, com 10 cenas de corte | **3 ondas de 4+4+2**, pico de 4 em voo |
+| o preço como parâmetro | 210 → 1.260 · 350 → 2.100 · 95 → 570, mesma cena |
+| D5, uma cena de 8s no meio | fora do lote, e o total cai de 1.260 para **1.050** |
+| saldo 1.000 contra lote de 1.260 | **recusa, dizendo "faltam 260"** — e a recusa é de tipo: o veredito negativo não carrega `quantas`, então não existe "anime 4 das 6" |
+| a cena 5 falhando no meio | 1, 3 e 4 terminam inteiras; a **2 anima assim mesmo** (não depende da 5); a 6 não parte |
+
+**A linha que o dono pediu para ler antes do clique sai do próprio núcleo puro**, e não de uma frase escrita na tela:
+
+> «Animar as 6 · 4 aprovadas + 2 emendas · 6 × 210 = 1.260 ⚡ · Saldo 6.250»
+
+---
+
+### 28/08/2026 — O laço infinito que só a simulação acharia
+
+A primeira versão passou em tudo o que era tabela-verdade e **falhou na corrida**: com a cena 5 recusada pelo provedor, o lote a devolvia ao plano no tick seguinte (a regra "falhou volta ao lote", que está certa), o motorista a submetia de novo, ela falhava de novo — e assim para sempre.
+
+**O defeito não aparecia em lugar nenhum onde a casa costuma olhar.** Falha de vídeo não cobra, então o saldo ficava correto; o extrato ficava correto; a tela ficava correta. O que existiria seria uma aba batendo no fornecedor indefinidamente, e a descoberta viria dias depois, do lado deles.
+
+**A distinção que conserta:** *"falhou volta ao lote"* é verdade para o **clique seguinte** — a recusa não é determinística e repetir é o gesto certo (medido em 26/08 e de novo em 28/08). O que não pode é repetir **sem ninguém pedir**. Então o plano passou a receber `jaTentadas`, o conjunto do que **este lote em curso** já despachou: com o portão parado ele é vazio e a cena volta a ser oferecida; com o lote rodando ela fica de fora.
+
+**E a pergunta é "já tentei?", não "falhou?"** — de propósito. Uma submissão **recusada** (saldo que acabou na vez dela, provedor fora do ar) deixa a cena como `nenhum`, e perguntar pela falha do clipe a devolveria ao lote pela outra porta. O mesmo laço, com outro nome.
+
+**A lição de método, que é o que fica:** uma tabela-verdade prova estados; ela não prova **trajetórias**. Onde há fila, cadeia ou retentativa, a prova precisa **rodar** — e precisa rodar com um teto de ticks, porque um laço infinito num harness é um harness que trava, não um harness que reprova.
+
+---
+
+### 28/08/2026 — A D7 tinha duas metades, e a segunda precisou de uma linha escrita
+
+A decisão diz duas coisas que eu tinha lido como uma só:
+
+1. *"a continuação acende **sozinha**"* — o quadro derivado carrega o clipe de origem em `assets.derived_from_asset_id`, então trocar o clipe de cima faz a comparação da cena de baixo falhar por conta própria. **É verdade, e é lindo: a cadeia sai da forma do dado.**
+2. *"e as cenas ⇥ **abaixo dela**, até o primeiro corte"*.
+
+**As duas só coincidem em cadeia de comprimento 1.** Numa cadeia 1→2→3, reanimar a 1 muda o quadro da 2 e **não** muda o da 3 — o quadro da 3 continua vindo do clipe da 2, que ainda é o mesmo. O mecanismo alcança a vizinha imediata, e para ali.
+
+A decisão está certa no nível que importa: a 3 continua um trecho que ficou velho. Então a transitividade é **escrita**, numa passada que já ia em ordem, e para sozinha no primeiro corte porque só continuação herda. **A comparação de dado continua sendo a origem**; a herança é o alcance.
+
+Fica registrado porque é o tipo de diferença que ninguém vê depois: o código faria a coisa certa e a decisão pareceria implementada ao pé da letra. Se a preferência for a outra — só a vizinha imediata acender, e as de baixo acenderem conforme forem refeitas —, **é uma linha para tirar**.
+
+---
+
+### 28/08/2026 — Reanimar não é botão novo: é o mesmo lote com uma cena a mais
+
+A D7 pede um portão que ofereça *"reanimar N cenas por X ⚡"*. A saída óbvia seria um segundo caminho de submissão — e um segundo caminho seria uma segunda chance de a cadeia sair errada.
+
+Em vez disso, `reanimando` é **um conjunto de ids que o plano aceita de volta apesar de já terem clipe**. Tudo o mais é o lote de sempre: mesmo portão, mesma soma, mesma cadeia, mesmo teto.
+
+**E o dividendo apareceu numa armadilha que eu não tinha visto.** Ao reanimar 1, 2 e 3, a cena 2 tem um clipe pronto na cena de cima — o **velho**. A regra ingênua ("pode partir se a de cima tem clipe") a faria partir imediatamente, do quadro errado, produzindo uma emenda que **já nasce desatualizada** e custa 210 ⚡ para isso.
+
+A regra certa não olha para o clipe que existe: olha para **quem vai produzir um neste lote**. Com ela, a 2 espera a 1 — e a mesma linha serve ao lote comum, onde a cena de cima também está no lote. Uma regra, dois casos, e o caso caro coberto por acidente de estar certo.
+
+---
+
+### 28/08/2026 — O elo saiu do bloco Gerar Vídeo, e a cláusula da 0.3 foi morar junto do decodificador
+
+O elo — o último quadro de um clipe virando asset com linhagem — nasceu dentro de *"Continuar deste vídeo"*, no Ciclo 1. A Máquina precisa **do mesmo quadro**, e a saída óbvia (copiar os cinco passos) seria duas maneiras de derivá-lo, com a segunda envelhecendo calada no primeiro dia em que alguém consertasse só uma.
+
+Ele virou `lib/assets/derive-frame.ts`. O que ficou no bloco foi o que é dele: pôr o par de nodes no canvas e levar a tela até eles.
+
+**E a cláusula da 0.3 foi morar lá dentro**, e não em quem chama. A razão é que o **passo zero dispensa a aba**: um quadro que já foi extraído está no Storage, e ler uma linha do banco não passa por decodificador nenhum. Fosse a decisão tomada do lado de fora, quem chamasse precisaria saber dessa exceção — que é justamente a regra que a função existe para esconder de todo mundo.
+
+Então `garantirQuadroDerivado` recebe `abaVisivel` e devolve `aba_escondida` como recusa nomeada. A tela diz **"Aguardando a aba voltar"**, a cadeia **para em vez de girar**, nada é cobrado pela espera, e o `visibilitychange` a retoma sozinha. **Desenhado para o pior caso** — é isso que permite a 0.3 seguir aberta sem parar o ciclo.
+
+---
+
+### 28/08/2026 — 🔴 O caminho de volta não existiu: 4 clipes pagos, 0 entregas, 4 reconciliações à mão
+
+O primeiro lote de vídeo da Máquina produziu os quatro clipes e cobrou certo. **E nada disso veio pelo caminho automático.**
+
+O log do dev, que é a prova, não tem espaço para interpretação:
+
+| o que se procurou | quantas |
+|---|---:|
+| `POST /api/webhooks/fal` durante o lote | **0** |
+| `POST /api/generations/video/reconcile` | **4** |
+| qualquer requisição de fora entre a submissão e o fechamento | **0** |
+
+E o relógio diz a mesma coisa por outro caminho. Os três vídeos do Ciclo 1, com o túnel funcionando, fecharam em **66, 72 e 93 segundos**. Estes quatro fecharam em **739, 910, 913 e 1100** — cada um no instante em que uma mão clicou "Verificar agora".
+
+**A causa, e ela é minha.** Entreguei ao Jorge o endereço do túnel — `https://….trycloudflare.com` — e escrevi que *"a `FAL_WEBHOOK_URL` é essa raiz"*. A frase era ambígua e a leitura natural dela é a errada: a variável é o **endpoint**, `…/api/webhooks/fal`, e `buildWebhookUrl` só acrescenta `?g=`, nunca o caminho. A fal recebeu um endereço de retorno que não era o nosso e entregou em lugar nenhum.
+
+**E o produto deixou passar, o que é o achado maior.** A trava de 13/08 nasceu exatamente para impedir este desfecho — *"sem endereço de retorno, o trabalho seria aceito, geraria, cobraria nós, e ninguém aqui jamais saberia"*. Ela conferia **presença**, e uma variável **presente e errada custa exatamente o mesmo que uma ausente** — com a diferença de que não avisa. O desfecho que a trava existia para impedir aconteceu **com a trava ligada**.
+
+**O conserto: a trava passou a conferir forma.** `apontaParaOWebhook` compara o `pathname` com `/api/webhooks/fal` (constante compartilhada com a rota, para não haver duas grafias) e recusa com `webhook_url_invalid`. Só o caminho é comparado, de propósito: o host muda a cada túnel novo e a query carrega o segredo do Protection Bypass em produção.
+
+**Recusar, e não completar em silêncio.** Uma URL que a casa consertasse sozinha seriam dois formatos válidos, e a documentação teria de descrever os dois para sempre. Silêncio foi o que custou os quinze minutos.
+
+**A trava também virou o instrumento do diagnóstico, e sem ler a variável.** Com ela no ar, a sonda que antes devolvia `unknown_scene` passou a devolver `webhook_url_invalid` — o que prova qual era o valor colado sem que ele precise aparecer em lugar nenhum. **Um booleano calculado no servidor no lugar de um segredo lido**, que é a regra da casa desde o motor de extração.
+
+**A reconciliação manual salvou o dinheiro, e vale dizer o que ela é.** Sem ela, quatro vídeos pagos ficariam presos em "Gerando" para sempre. O botão nasceu no Ciclo 1 contra um webhook que não chegou, e a Fase 3 o levou para a coluna da cena porque aqui o estrago é maior: um clipe que não fecha não trava um node, **trava as cenas de baixo**. Foi escrito antes de alguém precisar dele — de novo.
+
+---
+
+### 28/08/2026 — O extrato do primeiro lote de vídeo: 4 linhas, 4 cenas, nenhuma duplicata
+
+```
+00:36:21  −210  Vídeo da cena 4 · «Liquidificador Potente em Oferta Relâmpago»
+00:39:11  −210  Vídeo da cena 3 · «Liquidificador Potente em Oferta Relâmpago»
+00:39:16  −210  Vídeo da cena 1 · «Liquidificador Potente em Oferta Relâmpago»
+00:42:22  −210  Vídeo da cena 5 · «Liquidificador Potente em Oferta Relâmpago»
+```
+
+`count(*) over (partition by generation_id) = 1` nas quatro. Saldo 6.250 → **5.410**, que é 4 × 210 cobrado **uma vez cada**.
+
+É a prova da D1 que nenhum print dá: a descrição **nomeia a cena**, e ela é composta no banco a partir do `scene_id` gravado na submissão — o chamador aponta uma linha, nunca escreve um nome.
+
+**E o teste de duplicata importava mais aqui do que em qualquer lote anterior**, porque os quatro fecharam por reconciliação e não por webhook. Se os dois caminhos pudessem cobrar, seria justamente neste lote que apareceria. `complete_video_generation` trava a linha e devolve o que já era quando o status é terminal — a idempotência vem antes de qualquer escrita, e o extrato mostra que ela segurou.
+
+---
+
+### 28/08/2026 — A Galeria do projeto abria vídeo como imagem, e a causa não estava em nenhuma das duas telas
+
+O modal do estúdio desenhava `<img src="…mp4">` e abria o clipe como *"Imagem ampliada"* que nunca carregava. A `/galeria` mostrava o mesmo arquivo certo, com `<video>` e controles. **Dois caminhos de exibição para um arquivo só.**
+
+A causa não estava em nenhuma das duas telas: estava num **conversor**. `toGalleryItem` declarava um parâmetro com `assetId`, `url`, `label` e `createdAt` — e **sem `isVideo`**. `GenerationThumb` sempre trouxe o campo; era o parâmetro que não o pedia. O campo era derrubado no caminho, em silêncio, com o TypeScript satisfeito, e a partir dali as duas telas eram obrigadas a discordar.
+
+**O conserto não foi passar o campo: foi tornar impossível não passar.** `GalleryItem.isVideo` virou **obrigatório**, e os três produtores passaram a declará-lo — dois deles com `false` por extenso, com o comentário dizendo que a consulta filtra `kind = 'image'`. Passar o campo consertaria hoje; exigi-lo consertou também o próximo conversor.
+
+> **E o comentário do `lightbox.tsx` já dizia:** *"O parâmetro é opcional e vale `false` por omissão… O dia em que um cartão Resultado mostrar vídeo, é aqui que ele precisa passar `isVideo` — e este parágrafo é o aviso."*
+>
+> O aviso estava certo, foi escrito antes, e **ninguém o leu no momento em que valia** — porque um aviso escrito num arquivo não interrompe quem trabalha em outro. É o argumento para a trava de tipo em vez do parágrafo: o parágrafo esperou; o tipo teria falado.
+
+---
+
+### 28/08/2026 — "Animar as 2" com uma delas esperando: duas frases verdadeiras que juntas mentem
+
+O portão dizia **"Animar as 2"** enquanto a coluna da cena 6 dizia **"espera o clipe da cena 5"**. Nenhuma das duas está errada — o lote autoriza duas cenas, e uma delas de fato parte depois. Juntas e caladas, parecem uma contradição, e a leitura do dono foi essa.
+
+**O conserto separa o dinheiro do tempo.** O número do botão continua sendo o **dinheiro** — o que o lote inteiro vai custar, que é a informação que a invariante 12 exige antes do clique. A linha de baixo passa a dizer o **tempo**: *"1 parte agora, 1 entra quando o clipe anterior ficar pronto"*. Ela só aparece quando os dois números diferem.
+
+`partemAgora` entrou no plano puro, e não numa conta da tela, pelo motivo de sempre neste ciclo: a tela e o motorista leem o mesmo objeto. E ganhou verificação estrutural no estado exato em que o defeito foi lido — três cortes prontos, a 5 ainda gerando: lote 2, total 420, **`partemAgora` 1**.
+
+---
+
+### 28/08/2026 — 📌 A 0.3 vai medir a espera do webhook, não a do elo — e é a do elo que estava aberta
+
+Fixado pelo Jorge ao planejar a segunda metade do lote.
+
+A troca de aba de 30 segundos acontece **esperando um clipe**. Essa é a espera do **webhook** — o navegador não tem trabalho nenhum nela. A pergunta da 0.3 é outra: *a aba escondida trava o decodificador de vídeo, que é quem lê o último quadro?*
+
+**As duas esperas se parecem na tela e não são a mesma coisa.** O que a troca de aba vai provar é o **nosso** comportamento: a cadeia para com a causa nomeada, não cobra nada pela espera, e retoma sozinha quando a aba volta. O que ela **não** prova é o comportamento do navegador.
+
+**E há uma ironia que merece registro: o nosso próprio desenho fechou o caminho da medição.** Desenhamos para o pior caso, então a extração **nunca é tentada** com a aba escondida — logo nunca se descobre se ela falharia. Medir exigiria deliberadamente desligar a trava, que é trabalho de instrumentação e não de produto.
+
+**Fica aberta, e sem custo por ficar:** se o navegador aguenta, o produto está certo e pausou à toa por alguns segundos; se não aguenta, o produto está certo. É exatamente a propriedade que a decisão de 28/08 comprou ao desenhar para o pior caso.
+
+---
+
+### 28/08/2026 — 📌 Backlog nomeado pelo dono, fora deste ciclo: filtros e busca na Galeria
+
+**"Galeria — filtros por tipo (imagens · avatares · vídeos) e busca por nome."**
+
+Nasceu de olhar o acervo depois do primeiro lote de vídeo: com imagens, folhas canônicas, quadros derivados e agora clipes no mesmo lugar, achar um arquivo passou a custar rolagem.
+
+**Não entra no Ciclo 3, e a razão é a régua.** Este ciclo mede *quantos gestos até o vídeo*, e filtro de galeria não remove gesto nenhum desse caminho — ele melhora um lugar por onde o caminho curto nem passa. Entrar agora seria trocar escopo medido por escopo confortável.
+
+Registrado com nome próprio para não voltar como ideia nova daqui a um mês. O modal do estúdio já tem os três filtros (`todas · geradas · enviadas`) e busca; a `/galeria` não tem nenhum dos dois — então parte do trabalho é **espalhar o que já existe**, não inventar.
+
+---
+
+### 28/08/2026 — As emendas voltaram sozinhas, e o relógio é a prova do caminho de volta
+
+Segundo lote: **"Animar as 2"**, as cenas 2 e 6. As duas partiram, leram o último quadro do clipe anterior, subiram, registraram e submeteram — **sem ninguém tocar em nada**. E voltaram pelo webhook.
+
+O relógio diz isso melhor do que qualquer print:
+
+| cenas | como fecharam | segundos |
+|---|---|---:|
+| 1, 3, 4, 5 | reconciliação **à mão** | 739 · 910 · 913 · 1100 |
+| **2, 6** | **webhook** | **68 · 70** |
+
+Uma ordem de grandeza, no mesmo produto, no mesmo dia, com a mesma fal do outro lado. **A única variável que mudou foi o caminho no fim da `FAL_WEBHOOK_URL`.**
+
+E há uma prova independente de que ninguém as fechou à mão: o botão "Verificar agora" só aparece aos **90 segundos**, e as duas fecharam aos 68 e 70. **Ele nem chegou a existir na tela.**
+
+**A cadeia, provada por uma coluna apontando para a outra:** o `params.source_asset_id` de cada emenda é um quadro cujo `assets.derived_from_asset_id` **é** o `result_asset_id` do clipe anterior — `c77276bd` para a cena 2, `fd74a28b` para a 6, os dois batendo. É a coluna de linhagem de 15/08 cobrada três ciclos depois, e é o que faz a D7 não precisar de propagação escrita.
+
+Extrato: duas linhas nomeando as cenas 2 e 6, `linhas_por_geracao = 1`, saldo **5.410 → 4.990**.
+
+---
+
+### 28/08/2026 — 🔴 Defeito da Fase 3: o lote funciona e não se anuncia
+
+Relato do dono: *"antes de sair da aba a tela não tinha atualizado: precisei sair e voltar para ver."*
+
+**A hipótese óbvia está descartada pelo log, e vale registrar que ela estava errada** — porque era a que eu teria consertado primeiro:
+
+| linha do log | evento |
+|---:|---|
+| 84, 85 | as duas submissões |
+| 87, 89, 91, 93 | **4 × `loadMachineBoard`** — as releituras que o despacho pediu |
+| **151** | `POST /api/webhooks/fal` #1 → 200 em 3,0 s |
+| **153** | **`loadMachineBoard`, 187 ms depois** |
+| **154** | `POST /api/webhooks/fal` #2 → 200 em 1,2 s |
+| **156** | **`loadMachineBoard`, 183 ms depois** |
+
+**A Máquina não relê só ao acordar.** O canal do Realtime disparou nas duas entregas, o `bump` por `node_id` funcionou, e o trilho foi relido em menos de 200 ms cada vez, com a aba à frente. Canal, tick e efeito de leitura estão íntegros — **o defeito está depois da releitura.**
+
+**H1, que o dado sustenta:** a mudança existe e é invisível. A coluna de uma cena de emenda não tem miniatura nem indicador de progresso; entre *"entra no lote"* e *"gerando o vídeo…"* ela troca **uma frase de 9 px** dentro de um cartão de 691. O estado chegou; nada chama a atenção para ele.
+
+**H2, que não se descarta e explica uma parte:** a troca de aba foi aos ~30 s e os clipes só existiram aos **68 e 70**. No instante em que o dono olhou, **não havia o que mostrar**. Ignorar isso levaria a consertar o que não está quebrado.
+
+**O que o dado não responde:** o log do servidor termina em `loadMachineBoard` e não diz **quando o pixel mudou**. O instrumento que fecha a questão é do cliente — carimbo no `setLido` e no render da coluna, comparados com o `POST` no log. Três números.
+
+**Por que isto é defeito DA FASE 3, e não polimento:** a régua do ciclo é o fluxo curto, e **quem sai e volta não sente fluxo curto — sente que precisou conferir.** Um lote que funciona e não se anuncia obriga a pessoa a vigiar, que é exatamente o gesto que a Máquina existe para remover. O conserto abre a próxima sessão.
+
+---
+
+### 28/08/2026 — 📌 O veredito do elo continua sem resposta
+
+O dono devolveu o campo como `[emenda / corta]`, sem escolher.
+
+Fica registrado **como pendente, e não como aprovado**. É a última prova da Fase 3 sem dono e sem dado: nenhuma consulta responde se dois clipes emendam, e o produto inteiro do Ciclo 1 existe por causa dessa pergunta. Uma fase que fechasse com ela em branco fecharia sobre a única coisa que ninguém verificou.
+
+---
+
+### 28/08/2026 — 🔬 Veredito do elo: **NÃO MEDIDO** — e por que isso vale mais que um "passou"
+
+Decisão do dono, fechando o campo que ele tinha devolvido em branco.
+
+**A resposta não é "emenda" nem "corta". É que o instrumento não alcança.** Sem áudio e sem roteiro falado, dois clipes de 5 segundos da mesma personagem **não deixam distinguir uma emenda de um corte suave**. Os dois produzem a mesma impressão em quem assiste, e uma impressão que os dois produzem não separa nada.
+
+**Vai para o ciclo de voz, e o gatilho é esse:** quando houver fala, a avaliação passa a ter três coisas conferíveis **juntas** — a fala atravessando o ponto de junção, o cenário, e a personagem. Aí a pergunta tem como ser respondida; hoje não tem.
+
+**Registrado como não medido, e não como aprovado**, porque a diferença entre os dois é o ciclo inteiro do vídeo. Um "passou" aqui viraria premissa em três documentos e ninguém voltaria a olhar.
+
+---
+
+### 28/08/2026 — 🔁 O que isso faz com a frase "o Ciclo 1 provou que dois capítulos emendam"
+
+Ela aparece como **premissa** na abertura dos planos do Ciclo 2 e do Ciclo 3, e no diário. Vale conferir contra o que foi de fato medido, agora que o instrumento ficou mais estrito.
+
+O que o dono escreveu em 15/08, assistindo os dois clipes: *"os dois capítulos emendam — parece uma história contínua, a @luna atravessa o corte."*
+
+**As duas frases não se contradizem, e é importante dizer por quê.** "Parece uma história contínua" é uma afirmação sobre **continuidade narrativa** — e ela continua verdadeira e continua sendo o que o Ciclo 1 precisava provar: que o elo produz um segundo capítulo que pertence ao primeiro. O que a leitura de hoje acrescenta é que **isso não distingue emenda de corte suave**, porque as duas coisas produzem exatamente essa impressão.
+
+**Então a frase da abertura é mais forte do que a medição a sustenta**, e fica com a correção escrita em vez de trocada em silêncio — a mesma regra que já corrigiu a régua duas vezes (54→50 e o −2→−3 da Fase 4).
+
+**Leitura precisa, para os três documentos:** o Ciclo 1 provou que **o elo funciona** — o último quadro vira o primeiro do capítulo seguinte, com linhagem, e a história atravessa. Ele **não** provou que a junção é imperceptível. Essa segunda pergunta nunca foi medida, e agora tem endereço: o ciclo de voz.
+
+**E há um dividendo prático:** o produto não depende da resposta. A cadeia, a D7 e o quadro derivado funcionam igual sendo emenda ou corte suave — o que muda é só o que se pode **prometer** ao usuário. É por isso que a pergunta pode ficar aberta sem parar nada, exatamente como a 0.3.
+---
+
+### 29/08/2026 — 🔴🔴 POST-MORTEM: um clique de 210 ⚡ virou 626 submissões
+
+O incidente da sessão, escrito inteiro porque cada metade dele ensina uma coisa diferente.
+
+**O que aconteceu.** O dono clicou uma vez em «Reanimar 1 cena · por 210 ⚡». Em três minutos saíram **626 submissões de vídeo** para a fal, todas da **mesma cena**. Saldo 4.990 → **790 ⚡** (20 cobranças de 210). Custo real: **US$ 21,56**, 77 clipes de uma cena que precisava de um.
+
+**Quem parou não fomos nós.** Das 606 que ficaram em voo, **549 (90,6%) voltaram com `403 User is locked. Reason: TOP_UP.`** — a fal recusou porque o saldo pré-pago dela ficou negativo. **O freio foi o provedor.** O `taskkill` chegou depois.
+
+#### O laço, em quatro linhas
+
+`situacaoDaCena` tinha três guardas, e uma cena **reanimada** passava pelas três:
+
+| guarda | por que não pegou |
+|---|---|
+| `video === "gerando"` | na janela entre submeter e o banco refletir, ela ainda é `"pronto"` |
+| `video !== "pronto" && jaTentadas.has(id)` | **ela É `"pronto"`** — o `!== "pronto"` a deixava escapar |
+| `video === "pronto" && !reanimando.has(id)` | está em `reanimando`, por definição |
+
+O último freio era a ref `submetendo.current`, e o motorista a desarmava sozinho a cada passada com `if (cena.video !== "nenhum") submetendo.current.delete(...)` — condição verdadeira **desde antes do clique** numa cena que já tinha clipe. Com o `setRecarga(n => n+1)` no fim de cada despacho redisparando o efeito, virou rajada.
+
+#### O buraco tem nome: "cena que já tinha clipe"
+
+O conserto de 28/08 (*"falhou volta ao lote para o clique seguinte, nunca para o motorista"*) **é** a guarda 2, e ela foi escrita para o lote comum, onde a cena nasce `"nenhum"`. Ninguém escreveu a frase para o caso em que a cena **começa com clipe** — e esse caso só existe na reanimação.
+
+#### O papel do ↻ de hoje, dito sem atenuação
+
+O botão «↻ refazer o clipe» é **meu, de hoje**. Ele não criou o laço: as duas peças (o `for` do desarme e o `reanimarLote`) são de 28/08, idênticas, conferidas contra o backup do arquivo. **Mas ele abriu a porta.** Antes dele, «Reanimar» só aparecia com cena desatualizada, e ninguém tinha clicado nesse botão ao vivo. Eu tirei a tranca de uma porta sem olhar o que havia atrás — e o que havia era um poço que a suíte estrutural declarava seguro.
+
+#### A lição maior: provar reanimação só no estrutural não era prova
+
+A simulação de 28/08 (`fase3-cadeia.ts`) roda o lote tick a tick e **achou** um laço de reenvio. Ela não achou este por três simplificações que, juntas, o tornam invisível:
+
+1. **nunca passa `reanimando`** — só exercita o lote comum;
+2. **marca `gerando` no mesmo tick da submissão** — a janela não existe nela;
+3. **não modela `submetendo.current`** nem o `for` que o desarma.
+
+Uma simulação que instantaneiza o que a realidade demora **não simula a realidade**: ela simula a versão do sistema em que o defeito não cabe. E o item 8 daquela suíte se chama *"a reanimação, e a emenda esperando o clipe NOVO"* — ou seja, **havia um teste com o nome certo e o conteúdo errado**, que é pior do que não ter teste, porque ele responde "coberto" quando alguém pergunta.
+
+#### O erro de diagnóstico do dia — e ele é meu
+
+Com 606 em voo, estimei **US$ 170 / R$ 933** de custo real, multiplicando submissões por preço unitário. O dono foi ao painel da fal e trouxe o dado: **430 s faturados, US$ 24,08**. Eu errei por **8×**, e a causa é uma só: **tratei "submissão aceita" como "clipe faturado"**. Nove em cada dez nunca chegaram a gerar.
+
+**Inferir custo de provedor sem ler o painel do provedor é chute com cara de medição** — e ele é pior que o silêncio, porque um número errado dito com confiança vira base de decisão. A regra que fica: quando existe um painel, o painel é a fonte; a conta de cabeça é hipótese até ele confirmar. É a regra de 27/08 (*número citado é hipótese, o ledger decide*) aplicada a um ledger que não é o nosso.
+
+#### O que foi feito
+
+| | |
+|---|---|
+| fila da fal | 606 consultadas — **0 em fila, 0 em progresso, 606 já concluídas**; nada a cancelar |
+| desfecho real | **549** recusadas (`403 TOP_UP`) · **57** com vídeo |
+| no banco | 549 → `failed` · 57 → `canceled`, **sparks 0** nas duas · `cost_real_cents` só nas 57 |
+| os 57 clipes | **descartados** por decisão do dono — 57 cópias da mesma cena. **Uma** amostra em `scratchpad/evidencias/` |
+| conserto | R2.1 (`jaTentadas` vence sempre) + R2.1 (desarme só em `gerando`) + **R2.2 (teto absoluto do lote)** |
+| prova | `scratchpad/storyboard-c3/motorista-teto.ts` — **vermelho 200 submissões → verde 1** |
+
+#### As três regras que nasceram disto
+
+Estão no [`CLAUDE.md`](../CLAUDE.md), seção *Dinheiro e limites de estrago*: **R1** (todo clique pago declara o pior caso por escrito, e se ele ≠ o número do portão o clique não acontece), **R2** (o teto absoluto no motorista, com a simulação vermelha→verde como prova reexecutável antes de todo commit que o toque) e **R3** (na fal, o saldo pré-pago pequeno é o teto de estrago; recarga automática nunca).
+
+**A R1 é a que teria evitado tudo.** O portão dizia `1 × 210 = 210 ⚡`; o pior caso real era **ilimitado**. Ninguém tinha escrito o pior caso, então não havia o que comparar — e a diferença entre os dois números é, literalmente, o dinheiro que saiu.
+
+---
+
+### 29/08/2026 — O teto de concorrência nunca foi teto de total, e a confusão custou o incidente
+
+Vale isolar, porque é o tipo de engano que volta com outra roupa.
+
+`TETO_DE_VIDEOS = 4` limita **quantas correm juntas**. Ele nunca limitou **quantas saem no total** — e com 4 vagas sempre livres (porque a cena reanimada nunca aparecia como `gerando` na janela), um lote de **uma** cena produziu **626 submissões sem estourar teto nenhum**. As duas grandezas têm nomes parecidos e naturezas diferentes: uma é sobre pressão instantânea, a outra sobre orçamento.
+
+**R2.2 é a segunda**, e ela é deliberadamente burra: `tamanhoDoLote - jaSubmetidas`. Não olha o banco, não olha a rede, não olha ordem de efeito. **É uma subtração** — e é isso que a torna a última linha de defesa quando todo o resto falhar, que foi exatamente o que aconteceu.
+
+---
+
+### 29/08/2026 — A simulação achou um defeito no MEU conserto, antes de ele virar código
+
+Registro porque é o argumento inteiro a favor da R2 numa frase.
+
+A primeira versão do conserto desligava o desarme da ref por completo. A simulação passou no cenário do incidente (1 submissão) e **falhou no lote normal de 6: só 4 partiram.** Sem o desarme, `submetendo` nunca esvaziava, `emVoo` ficava preso em 4 e as cenas 5 e 6 nunca partiam — eu teria trocado um laço infinito por um lote que emperra.
+
+A condição certa não era "nunca desarmar", era **desarmar em `gerando`** — o único estado que significa *"o banco reconheceu a submissão nova"*, e que vale igual para o lote comum e para a reanimação.
+
+**Um conserto sem teste que o exercite é um palpite com a aparência de solução.** Este teria passado em qualquer revisão de código: era uma linha a menos, parecia mais seguro, e quebrava o caso normal.
+
+---
+
+### 29/08/2026 — 🔒 DECISÃO do Jorge: entidade com história financeira não se apaga
+
+O incidente deixou **20 clipes ingeridos na galeria**, todos da mesma cena, e eu propus apagar 19 deles e manter o devido. **O dono recusou, e a razão é mais geral que este caso.**
+
+**"Entidade com história financeira não se apaga."** Cada um daqueles 20 assets tem um débito de 210 ⚡ no ledger apontando para a geração que o produziu. Apagar o asset deixaria o extrato apontando para o vazio: a linha de dinheiro continuaria lá — porque o ledger é append-only e **não pode** ser apagada —, e o que ela nomeia teria sumido. O estorno corrige o **valor**; ele não desfaz o **fato** de que aqueles clipes foram gerados e pagos.
+
+**A assimetria que decide:** um acervo poluído é um problema de **arrumação**, e arrumação se resolve depois, sem perder nada. Uma referência quebrada entre dinheiro e artefato é um problema de **integridade**, e não se resolve nunca — a informação que faltaria já não existe em lugar nenhum. Trocar o segundo pelo primeiro é o pior negócio possível, e é exatamente o que a minha proposta fazia.
+
+**Vale reparar em como os dois lados desta sessão se contradizem só na aparência.** Os **57** clipes foram descartados; os **20** ficam. A diferença não é o número: os 57 **nunca foram ingeridos** e nunca tiveram linha no ledger — descartá-los não quebra referência nenhuma, porque não havia nenhuma. Os 20 têm. **O critério não é "quanto lixo", é "o que aponta para isto".**
+
+📌 **Backlog nomeado:** *arquivar/ocultar* na galeria — a maneira certa de tirar da vista o que não pode sair do banco. É a mesma família do backlog de filtros e busca na Galeria, nomeado pelo dono em 28/08.
+
+---
+
+### 31/08/2026 — 🔴 O clique de campo: o teto segurou, e a mira errou
+
+O primeiro clique pago depois do incidente. Um clique em «Reanimar 1 cena · por 210 ⚡», com o pior caso escrito antes e igual ao número do portão (R1 cumprida pela primeira vez), a aba na frente o tempo todo.
+
+**O que saiu: um.** `POST /api/generations/video 200` uma vez no log, uma linha em `generations`, uma no ledger, um retorno do webhook, saldo 4.780 → 4.570. **Contra as 626 de 29/08.** O caminho completo levou 76 s (submissão 15:23:36 → webhook 15:24:52). A trava de vida foi consultada **uma** vez, como desenhado — por clique, não por submissão.
+
+**Mas a submissão foi da cena errada.** O clique autorizou a **cena 5** (marcada com ↻) e o motorista animou a **cena 1**. O extrato não deixa dúvida, porque ele nomeia a cena: *"Vídeo da cena 1 · «Liquidificador Potente em Oferta Relâmpago» −210 ⚡"*.
+
+#### A causa: autorização e despacho eram duas listas diferentes
+
+`loteAlvo` guardava o que o clique pagou; o motorista despachava de `plano.lote`, que é *"toda cena que deveria animar"*. **Enquanto as duas coincidiam, ninguém via** — e num lote de reanimação elas divergem por desenho: a cena 1 lia `falhou`, era candidata do lote **comum**, vinha antes na ordem do roteiro, e ocupou a única vaga que a R2.2 permitia.
+
+**O teto e a mira são perguntas diferentes:** *quantas saem* contra *quais saem*. A simulação de 29/08 respondia a primeira com precisão e **nunca fez a segunda**. É a segunda vez no mesmo ciclo que uma prova verde convive com um defeito — em 29/08 foi um teste com o nome certo e o conteúdo errado; agora foi uma pergunta que ninguém tinha feito. **Prova não cobre o que ela não pergunta**, e a maneira de descobrir o que não se perguntou continua sendo o campo.
+
+#### O conserto: R2.4, e ele mora no plano
+
+`planoDeVideo` passa a receber `autorizadas` — o lote em curso é uma **lista fechada**, e fora dela a cena não anima, com motivo (`fora_do_lote`) e frase próprios (*"fica para o próximo"*).
+
+**Por que no plano e não no motorista:** a tela lê o mesmo `situacao` que o motorista obedece, e essa unidade é deliberada — ela existe para a tela e a máquina nunca discordarem sobre a mesma cena no instante em que alguém decide se clica num botão que gasta. Filtrar só no despacho consertaria o dinheiro e deixaria a tela dizendo "entra no lote" para uma cena que o lote não vai animar. Foi exatamente o que o dono viu: **a tela concordava com o motorista, e os dois estavam errados juntos.**
+
+**Prova:** `scratchpad/storyboard-c3/mira-do-lote.ts`, vermelho→verde com o cenário exato do campo (uma "entra no lote" + uma marcada, clique em Reanimar). O vermelho **omite** o parâmetro novo em vez de guardar uma cópia do código defeituoso — o defeito é a ausência, então a ausência é o vermelho. Junto vão o controle do sentido contrário (o «Animar» não toca na desatualizada) e **a cadeia de 3 com emenda continuando a submeter as 3 na ordem certa**, que é o controle que existe porque em 29/08 o primeiro conserto do laço passou no incidente e quebrou o lote de 6.
+
+---
+
+### 31/08/2026 — O vídeo da cena lia a última tentativa, e não a última boa
+
+A causa da causa, e ela é uma linha.
+
+`find(media_kind === "video")` sobre a lista em `created_at desc` devolve **a última tentativa, seja ela qual for**. A cena 1 tinha **22 clipes bons e 606 linhas mortas** do incidente (549 `failed` + 57 `canceled`); como a mais recente era uma falha de 29/08 às 14:34, a cena inteira lia `falhou` — e o portão comum se oferecia para pagar de novo um clipe que existia desde sempre. **Foi isso que a pôs na fila.**
+
+`videoDaCena()` escolhe na ordem: a tentativa **viva** (uma submissão em voo vence tudo, senão a de baixo não esperaria por ela), senão o último clipe **bom**, senão a última tentativa. É a **mesma doutrina que o lado da imagem já usava desde a Fase 1** — *"repetir uma cena aprovada e a repetição falhar não desaprova o que estava aprovado"* —, que estava escrita em `estadoDaCena` e não tinha irmã no vídeo.
+
+A escolha passou a ser feita **uma vez** e serve às duas leituras — o estado da coluna e a linhagem da D7. Duas escolhas seriam duas chances de a tela falar de um clipe e a cadeia de outro.
+
+📌 E fica a pergunta que o dado responde sozinho: **uma cena com 628 tentativas é normal?** Não é — é a cicatriz do incidente. Mas a leitura errada não precisava de 628 linhas para machucar: **duas bastavam**, uma boa e uma falha depois dela.
+
+---
+
+### 31/08/2026 — A quarta maneira de o endereço de retorno falhar: o túnel morre no MEIO
+
+A tabela do `CLAUDE.md` tinha três linhas — ausente (13/08), errada (28/08), morta desde ontem (29/08). Hoje apareceu a quarta, e ela é diferente das três: **o túnel estava vivo, foi provado vivo, e morreu no meio da sessão** com o servidor de pé.
+
+A trava recusou com `{vivo: false, motivo: "sem_resposta", status: 530}` — e o 530 é justamente a resposta que a regra *"só 401 e 405 são vida"* existe para rejeitar: **é a Cloudflare dizendo que não achou a origem**, ou seja, alguém respondendo que **não é o webhook**.
+
+**Ela é a primeira que a trava pega acontecendo, e não herdada.** As três anteriores eram estado de partida — alguma coisa errada antes do primeiro clique. Esta prova o que o desenho supunha e ninguém tinha visto: **uma ida à rede por clique** não é zelo excessivo, porque o endereço pode morrer entre um clique e o seguinte. Uma conferência feita só na subida do ambiente teria dado "vivo" e deixado o clique passar.
+
+---
+
+### 31/08/2026 — 🔒 DECISÃO do Jorge: a regra 8 recalibrada — prova ao vivo só onde há dinheiro
+
+**A regra.** A metade do dono é obrigatória em **portões, motorista, cobrança e estorno** — onde um clique pode gastar. Fora dali, a etapa sela com **prova estrutural + validação de tela** feita pelo Claude e **vai para produção no mesmo dia**.
+
+**O que a regra antiga dizia** (11/08, reafirmada três vezes): *qualquer item que envolva geração ou dado financeiro volta para o Jorge*, e a etapa fica aberta e não commitada até a metade dele chegar.
+
+**O que estava errado nela:** "geração" e "gasto" foram tratados como a mesma coisa. O efeito medido foi **fila** — trabalho pronto, provado e verde dormindo no disco esperando um clique que não tinha nada a decidir. O risco que justifica esperar é o **irreversível**: Spark que sai, linha que nasce no ledger, requisição que chega ao provedor. Onde nada sai da carteira, esperar não protege nada.
+
+**O critério, na forma em que se usa:** *"isto pode gastar?"* — nunca *"isto parece importante?"*. E onde pode, nada mudou: o pior caso escrito antes (R1), a simulação verde (R2), a etapa aberta até a prova do dono chegar.
+
+---
+
+### 31/08/2026 — 🔒 DECISÃO do Jorge: documentação para qualquer agente, e a regra 9 passa a exigir o ESTADO
+
+Três arquivos, entregues na Fase 4 junto com o template:
+
+- **`AGENTS.md`** na raiz — o mesmo conteúdo do `CLAUDE.md` ou um ponteiro. A convenção que outros agentes procuram tem outro nome, e regra que o agente não acha é regra que não existe.
+- **`README.md`** na raiz — o mapa do projeto: o que é, como sobe, onde ficam as coisas.
+- **`docs/ESTADO.md`** — **uma página**, reescrita em **toda pausa**: o que está provado, o que está aberto, o próximo gesto. **É o checklist do projeto**, na frase do dono.
+
+**Por que o ESTADO, tendo plano e diário.** O diário guarda o **porquê** e é cronológico; o plano guarda **onde paramos numa frente**. Nenhum dos dois responde *"em que pé está o projeto inteiro, agora"* sem alguém ler muita coisa e somar de cabeça — e essa soma feita por adivinhação é exatamente o que a regra 9 nasceu para impedir, um nível acima.
+
+**O ESTADO foi escrito no mesmo dia**, antes da Fase 4: a regra que o exige em toda pausa entrou hoje, e uma regra que aponta para um arquivo inexistente não é regra. O que a Fase 4 entrega é o **hábito** — a reescrita virando parte do ritual —, com os outros dois arquivos.
+
+---
+
+### 31/08/2026 — 🔒 DECISÃO do Jorge: a ordem dos próximos ciclos
+
+**4 Catálogo aberto → 5 Modo Take → 6 Voz e áudio → Passe de UI/UX → Publicação.**
+
+Registrada no `plano-storyboard-c3.md` (§9c) porque a pergunta *"e depois?"* voltava a cada pausa, e **uma ordem decidida e não escrita volta a ser discutida** — que é a mesma razão da regra 9.
+
+O **Catálogo aberto** vem primeiro porque é a invariante 2 e a 6 saindo do papel: *"modelo novo = linha no catálogo + adaptador"*, começando pelos modelos que o dono vai usar. O rascunho de `docs/plano-catalogo-c4.md` sai **quando o Ciclo 3 fechar**, e **só o plano — nada executa**.
+
+---
+
+### 31/08/2026 — ✅ Fase 3 FECHADA: o teto, a mira, o caminho de volta e a cadeia, provados em campo
+
+O segundo clique de campo do dia, e o que fecha a fase. «Reanimar 2 cenas · por 420 ⚡», pior caso escrito antes e **igual ao número do portão**, aba na frente.
+
+**A mira, que era o que faltava:** **2 submissões, e só 2** — cenas **5** e **2**, exatamente as autorizadas. Nenhuma terceira (`count` no banco = 2). A cena 1, que no clique das 12:15 tinha roubado a vaga, leu *"fica para o próximo"* na tela e `fora_do_lote` no plano. O extrato traz duas linhas nomeadas, cada uma com `generation_id`. Saldo 4.570 → 4.150.
+
+**O teto**, de novo e sem sustos: uma consulta à trava de vida (por clique, não por cena), duas submissões para um lote de dois.
+
+**A cadeia, com o relógio contando a história:**
+
+```
+17:49:07.52   nasce o quadro 796003f0…   derived_from = 828968f1…  (o clipe NOVO da cena 1)
+17:49:09.33   a cena 2 é submetida       source_asset_id = 796003f0…
+```
+
+Dois segundos entre extrair o quadro e submeter — **o elo do Ciclo 1 rodando como passo zero**, não como coisa guardada. Antes, o quadro da cena 2 vinha de `c77276bd…`, um clipe velho. **A emenda deixou de estar desatualizada porque o dado foi consertado, não porque alguém apagou uma bandeira.**
+
+**A D7 em cascata, e ela é a prova mais bonita do dia:** a cena 6 acendeu «vídeo desatualizado» com «Reanimar 1 cena · 210 ⚡» **oferecido**, e **nada partiu sozinho**. O dono não clicou de propósito — *"a prova dela é estar acesa e parada"*. No dado: o quadro da 6 aponta para `fd74a28b…` e o clipe atual da 5 é `8b1db8b7…`. **Duas colunas discordando** — é assim que a D7 acende, por comparação, e não por marcação guardada.
+
+**O caminho de volta:** 78 s e 66 s, as duas em paralelo dentro do teto de 4, as duas voltando sozinhas pelo túnel. **Zero reconciliação à mão** — que era exatamente o que faltava em 28/08.
+
+**A tela, e o que ela prova sobre o desenho:** «Animando 0 de 2», as duas do lote em `gerando`, **as outras quatro dizendo "fica para o próximo"**. A tela e o motorista concordaram — e desta vez os dois estavam certos. É o argumento inteiro a favor de a R2.4 morar no **plano**: uma leitura só, obedecida pelos dois.
+
+#### O que os dois cliques do dia ensinaram juntos
+
+O primeiro provou o **teto** e achou a **mira**. O segundo provou a mira. **Nenhuma simulação teria achado o defeito do primeiro**, porque ele não estava no comportamento simulado — estava na pergunta que ninguém tinha feito. E nenhum clique teria bastado sozinho: o primeiro sem o conserto seria só um prejuízo, e o segundo sem o primeiro seria uma prova de uma coisa que ninguém sabia estar quebrada.
+
+**A régua do dia: 630 ⚡ gastos, 3 clipes entregues, 0 submissões acidentais.** Contra 4.200 ⚡ e 626 submissões há dois dias.
+
+📌 **Fica aberto e nomeado:** a **0.3** (a aba escondida trava o elo?) continua sem resposta — os dois cliques foram deliberadamente com a aba à frente. E o **veredito do elo** segue **NÃO MEDIDO com gatilho**, como está desde 28/08.

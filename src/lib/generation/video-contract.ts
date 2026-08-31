@@ -30,6 +30,17 @@ export type VideoGenerationRequest = {
   sourceAssetId: string;
   /** Travado em 5 pelo catálogo, não por esta linha. */
   durationSeconds: number;
+  /**
+   * De qual ficha de cena este clipe é — Ciclo 3 · Fase 3.
+   *
+   * Só o **id** viaja, e é de propósito: é a divisão de 10/08 no seu caso mais
+   * estrito — quem chama aponta uma linha, nunca escreve um nome. A descrição do
+   * extrato ("Vídeo · cena 3 de «Luna testa o gloss»") é composta no banco, por
+   * `complete_video_generation`, a partir desta seta.
+   *
+   * Ausente num vídeo comum do bloco Gerar Vídeo, que não sabe de cena nenhuma.
+   */
+  scene?: { id: string } | null;
 };
 
 export type VideoGenerationFailure =
@@ -45,6 +56,20 @@ export type VideoGenerationFailure =
    * vídeo pago que não chega.
    */
   | "webhook_not_configured"
+  /**
+   * A `FAL_WEBHOOK_URL` existe, mas **não aponta para o endpoint de retorno**.
+   *
+   * Nasceu de um estrago medido em 28/08/2026: quatro vídeos pagos foram
+   * submetidos com uma URL de retorno que não era a nossa, e **nenhum voltou** —
+   * os quatro tiveram de ser fechados à mão, quinze minutos depois. A trava de
+   * presença não bastava: uma variável **presente e errada** custa exatamente o
+   * mesmo que uma ausente, com a diferença de que ela não avisa.
+   *
+   * Recusar é melhor do que consertar em silêncio: uma URL que a casa completa
+   * sozinha seria dois formatos válidos, e a documentação teria de descrever os
+   * dois para sempre.
+   */
+  | "webhook_url_invalid"
   | "insufficient_balance"
   /** Sem imagem no fio. O Kling é image-to-video: sem still não há o que animar. */
   | "no_source_image"
@@ -57,6 +82,14 @@ export type VideoGenerationFailure =
    */
   | "mention_not_supported"
   | "unsupported_duration"
+  /**
+   * A ficha apontada não existe, não é de quem pediu, ou não é deste projeto.
+   *
+   * Irmão do `unknown_scene` da imagem, e o banco recusa de qualquer jeito
+   * (VD008): a diferença é que aqui a recusa vira uma frase que a tela mostra,
+   * em vez de uma mensagem de constraint que ninguém consegue ler.
+   */
+  | "unknown_scene"
   | "translation_failed"
   | "refused"
   /** A conta do fornecedor está travada — o erro nomeado do item 7 do briefing. */
@@ -88,6 +121,16 @@ export type VideoReconcileResult =
   | { ok: true; status: "succeeded"; assetId: string; sparksCharged: number }
   | { ok: true; status: "failed"; detail: string }
   | { ok: false; reason: "invalid" | "unauthenticated" | "not_found" | "error" };
+
+/**
+ * O caminho do nosso endpoint de retorno.
+ *
+ * Constante porque duas peças precisam concordar sobre ele: a rota que atende
+ * (`app/api/webhooks/fal/route.ts`) e a **trava de forma** que confere se a
+ * `FAL_WEBHOOK_URL` aponta mesmo para cá. Escrito duas vezes, seria escrito
+ * diferente uma vez.
+ */
+export const FAL_WEBHOOK_PATH = "/api/webhooks/fal";
 
 export const VIDEO_GENERATE_ENDPOINT = "/api/generations/video";
 export const VIDEO_RECONCILE_ENDPOINT = "/api/generations/video/reconcile";
@@ -135,3 +178,33 @@ export async function reconcileVideo(generationId: string): Promise<VideoReconci
     return { ok: false, reason: "error" };
   }
 }
+
+export const VIDEO_WEBHOOK_ALIVE_ENDPOINT = "/api/generations/video/webhook-alive";
+
+/**
+ * O que o portão pergunta antes de autorizar o primeiro Spark.
+ *
+ * Nunca lança, como as duas acima. E o **fracasso conta como morto**: se nem
+ * chegamos a perguntar, não há motivo para apostar que o retorno funcionaria —
+ * a trava existe justamente para o caso em que ninguém vai descobrir o contrário
+ * até a fatura chegar.
+ */
+export async function checkWebhookAlive(): Promise<WebhookAliveCheck> {
+  try {
+    const response = await fetch(VIDEO_WEBHOOK_ALIVE_ENDPOINT, { method: "POST" });
+
+    if (!response.ok) return { vivo: false, motivo: "sem_resposta" };
+
+    return (await response.json()) as WebhookAliveCheck;
+  } catch {
+    return { vivo: false, motivo: "sem_resposta" };
+  }
+}
+
+export type WebhookAliveCheck =
+  | { vivo: true }
+  | {
+      vivo: false;
+      motivo: "nao_configurado" | "forma_invalida" | "sem_resposta" | "unauthenticated";
+      status?: number;
+    };

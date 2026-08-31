@@ -25,16 +25,30 @@
 > faltava** — o ↻ depois de aprovada e depois do vídeo —, que virou a **D7**, **fechada
 > na conferência seguinte do mesmo dia**, com a recomendação.
 >
-> **Status do ciclo: Fases 0, 1 e 2 ✅ fechadas, as sete decisões ✅ tomadas, Fase 3
-> aberta.** Duas perguntas seguem abertas, as duas com instrumento e gatilho: a
-> **0.3** (aba escondida), que fecha na metade do dono da Fase 3, e **recusa ×
-> concorrência**, que decide em n ≥ 30. O teto continua 4 — nada muda sem medida.
+> **Status do ciclo: Fases 0, 1, 2 e 3 ✅ fechadas; as sete decisões ✅ tomadas.
+> A Fase 3 fechou em 31/08/2026**, com dois cliques de campo — o primeiro provando o
+> teto e achando a mira, o segundo provando a mira. **Abertas: a Fase 4** (o template
+> no sidebar, mais `AGENTS.md`, `README.md` e o hábito do `ESTADO.md`) **e o
+> Fechamento** (a régua percorrida pelo dono e o veredito do fluxo curto).
+>
+> O **defeito da atualização da tela** — o lote funcionava e não se anunciava — foi
+> medido e consertado em 29/08 (o contador `▶ N de M`), e os dois cliques de 31/08 o
+> confirmaram em campo: as miniaturas trocaram com a aba parada. O **veredito do elo**
+> saiu da lista em 28/08 como **NÃO MEDIDO com gatilho** (ciclo de voz), que não é o
+> mesmo que aprovado. Duas perguntas seguem abertas, as duas com instrumento e gatilho:
+> a **0.3** (aba escondida) — que os cliques de 31/08 **não** responderam, os dois
+> feitos deliberadamente com a aba à frente —, e **recusa × concorrência**, que decide
+> em n ≥ 30. Uma terceira
+> saiu da lista em 28/08: a **alavanca de segurança** virou decisão do dono, com
+> instrumento (o próximo lote real de imagens), linha de base (6/10) e portão
+> pré-registrado — o porquê está em [`decisoes.md`](decisoes.md). O teto continua 4 —
+> nada muda sem medida.
 
 ---
 
 ## 1. O ciclo em duas linhas
 
-O ciclo que **rege**. O Ciclo 1 provou que dois capítulos de vídeo emendam; o Ciclo 2
+O ciclo que **rege**. O Ciclo 1 provou que dois capítulos de vídeo emendam[^elo]; o Ciclo 2
 produziu as fichas que dirigem os dois. A Máquina lê essas fichas — as que já estão no
 banco — e conduz os motores existentes **em lote**: gera a imagem de cada cena, deixa
 o dono aprovar ou repetir cena a cena, e anima só as aprovadas.
@@ -43,6 +57,17 @@ o dono aprovar ou repetir cena a cena, e anima só as aprovadas.
 mesmo Route Handler, com o preço do mesmo catálogo e a mesma linha de extrato. O que
 ela acrescenta é **caminho curto** — e é por isso que a régua deste ciclo não é "as
 peças funcionam".
+
+---
+
+[^elo]: **Correção escrita, 28/08/2026 — a frase é mais forte do que a medição
+    sustenta.** O que o Ciclo 1 provou é que **o elo funciona**: o último quadro vira o
+    primeiro do capítulo seguinte, com linhagem, e a história atravessa. Ele **não**
+    provou que a junção é imperceptível — o dono verificou em 28/08 que, sem áudio e
+    sem roteiro falado, dois clipes de 5 s da mesma personagem **não deixam distinguir
+    emenda de corte suave**. Essa segunda pergunta nunca foi medida e agora tem
+    endereço: o **ciclo de voz**. Fica escrita em vez de trocada em silêncio, como a
+    régua já foi corrigida duas vezes. Ver [`decisoes.md`](decisoes.md).
 
 ---
 
@@ -819,6 +844,96 @@ storyboard?*
 
 **Passos removidos: 35** (o bloco C, de 36 para 1).
 
+> #### ✅ A Fase 3 FECHOU — 31/08/2026, com dois cliques de campo
+>
+> **Fechada e commitada**, depois de dois cliques pagos no mesmo dia. O primeiro
+> (12:15, 210 ⚡) **provou o teto e achou a mira**: uma submissão de um clique,
+> mas para a cena errada. O segundo (14:49, 420 ⚡), com o conserto, **provou a
+> mira**: duas submissões, as duas autorizadas, nenhuma terceira.
+>
+> | o que a fase precisava provar em campo | resultado |
+> |---|---|
+> | **teto** — um clique, N submissões para um lote de N | ✅ 1/1 e 2/2 |
+> | **mira** — só as autorizadas, nunca a candidata do outro botão | ✅ cenas 5 e 2, nenhuma terceira |
+> | **caminho de volta** — o webhook fechando sozinho | ✅ 78 s e 66 s, zero reconciliação à mão |
+> | **cadeia** — a emenda partindo do quadro do clipe NOVO | ✅ quadro derivado 2 s antes da submissão |
+> | **D7 em cascata** — a de baixo acende e **espera clique** | ✅ cena 6 acesa e parada |
+>
+> **A régua do dia: 630 ⚡, 3 clipes, 0 submissões acidentais** — contra 4.200 ⚡ e
+> 626 submissões dois dias antes.
+>
+> O quadro abaixo é o estado de **29/08**, preservado como história: é o que a
+> fase era depois do incidente e antes dos dois cliques.
+>
+> #### 🔴 Onde a Fase 3 estava — 29/08/2026, depois do incidente
+>
+> **A fase está ABERTA e NÃO COMMITADA**, e agora por um motivo maior do que o
+> defeito de tela que abriu o dia: **um clique de 210 ⚡ produziu 626 submissões**.
+> O post-mortem inteiro está em [`decisoes.md`](decisoes.md); aqui fica só o
+> estado.
+>
+> **O que foi provado e está de pé**
+>
+> | prova | estado |
+> |---|---|
+> | o portão, com a linha que o dono fixou | ✅ |
+> | estrutural: cadeia, teto, D5, D7, reanimação, 0.3 | ✅ **78/78** |
+> | lote pago de imagens → vídeo, com o extrato nomeando cada cena | ✅ |
+> | reconciliação manual fechando e cobrando certo | ✅ |
+> | webhook pelo túnel, com as emendas voltando sozinhas | ✅ |
+> | a fechadura do webhook (3 × 401, 3 causas, zero escrita) | ✅ **refeita hoje** |
+> | **a trava de VIDA do endereço de retorno, nos dois sentidos** | ✅ **29/08** |
+> | **o defeito da atualização — medido e consertado (A + B)** | ✅ **29/08** |
+> | **R2 · o teto do motorista — simulação vermelho 200 → verde 1** | ✅ **29/08** |
+>
+> **O que o incidente acrescentou ao código desta fase**
+>
+> - **A trava de vida** (`webhookResponde` + rota + portão): uma ida à rede por
+>   clique, só `401`/`405` são vida, recusa antes do primeiro Spark. Nasceu do
+>   achado "presente e **morta**" — a linha de ontem sobreviveu no `.env.local`
+>   apontando para um túnel derrubado, e a trava de forma não distingue os dois.
+> - **A segunda linha da D4** — a coluna de uma cena `⇥` passa a mostrar o quadro
+>   derivado depois do vídeo, como a decisão sempre dizia. Não é emenda: é a
+>   metade que a Fase 3 não tinha entregado.
+> - **O contador `▶ N de M`** no cabeçalho. O defeito da atualização era de
+>   anúncio, não de propagação: **0,49% do node mudava** quando um clipe chegava.
+> - **O ↻ do vídeo por cena** — a D7 dizia "o ↻ existe em todo estágio, imagem e
+>   vídeo", e um clipe em dia estava trancado para sempre.
+> - **R2.1 e R2.2, o teto do motorista** — o conserto do laço.
+>
+> ### ⛔ O que falta para fechar
+>
+> 1. ~~**A contagem no fal**~~ → ✅ **feita em 31/08, e ela achou outra coisa.**
+>    Um clique, **uma** submissão — o teto segurou em campo. **Mas a mira errou:**
+>    «Reanimar 1 cena» animou a cena **1** (candidata do lote comum) em vez da
+>    cena **5** (a marcada). Consertado no mesmo dia — **R2.4**, o lote é uma
+>    lista fechada — com vermelho→verde em `mira-do-lote.ts`. **Falta o clique de
+>    campo do conserto.**
+> 2. ~~**O estorno dos 4.200 ⚡**~~ → ✅ **aplicado pelo dono em 29/08 18:22 UTC**:
+>    19 linhas `refund`, +3.990 ⚡, saldo conferido (`10.000 − 9.210 + 3.990 = 4.780`).
+> 3. ~~**Os 19 clipes na galeria**~~ → ✅ **decidido: ficam.** *Entidade com
+>    história financeira não se apaga.* Arquivar/ocultar virou backlog.
+> 4. **D5 ao vivo**, deliberadamente fora (provada no estrutural).
+> 5. ~~O veredito do elo~~ → **NÃO MEDIDO com gatilho** (ciclo de voz).
+>
+> **Nenhum clique pago acontece antes de** (R1 + R2): simulação verde ✅, teto
+> provado ✅, e **o pior caso do próximo clique escrito e igual ao número do
+> portão**.
+>
+> #### O que o clique de campo de 31/08 acrescentou ao código
+>
+> - **R2.4 · a mira** — `planoDeVideo` recebe `autorizadas` e o lote em curso vira
+>   uma **lista fechada**. A pergunta mora no plano, não no motorista, porque a
+>   tela lê o mesmo `situacao`: filtrar só no despacho consertaria o dinheiro e
+>   deixaria a tela mentindo. Frase própria na coluna (*"fica para o próximo"*).
+> - **A leitura do vídeo da cena** — `videoDaCena()`: a tentativa **viva**, senão o
+>   último clipe **bom**, senão a última tentativa. Era "a última, qualquer que
+>   fosse", e por isso a cena 1 — 22 clipes bons e 606 linhas mortas do incidente —
+>   lia `falhou` e o portão comum se oferecia para pagá-la de novo.
+> - **A quarta maneira de o endereço de retorno falhar**: o túnel caiu **no meio da
+>   sessão**, com o servidor vivo. A trava recusou com `status: 530` — e é a
+>   primeira vez que ela pega a morte acontecendo, e não a herdada de ontem.
+
 **Prova — as duas metades.**
 
 *Estrutural:* a ordem da cadeia (uma continuação nunca submetida antes do quadro
@@ -878,6 +993,27 @@ aresta certa no grafo **salvo** (a corrente sobrevivendo ao reload), e o item na
 prateleira com glifo próprio — **e o rodapé da prateleira conferido**, porque ele já
 mentiu sobre si mesmo duas vezes (13/08 e 17/08).
 
+#### E, junto com o template: a documentação para **qualquer** agente *(Jorge, 31/08/2026)*
+
+Três arquivos, e eles não são sobre este ciclo — são sobre o repositório ser legível
+por quem chegar, seja o Claude Code de amanhã ou outro agente qualquer:
+
+| arquivo | o que é |
+|---|---|
+| **`AGENTS.md`** (raiz) | o mesmo conteúdo do `CLAUDE.md`, ou um ponteiro para ele. A convenção que outros agentes procuram tem outro nome, e um repositório com regras invisíveis é um repositório sem regras |
+| **`README.md`** (raiz) | o **mapa do projeto**: o que é o produto, como subir, onde ficam as coisas, para onde ir a seguir |
+| **`docs/ESTADO.md`** | **uma página**: o que está provado, o que está aberto, o próximo gesto. **Reescrita em toda pausa** — a regra 9 do `CLAUDE.md` passou a exigi-la em 31/08/2026 |
+
+> **O ESTADO nasceu antes da Fase 4**, na sessão de 31/08: a regra que o exige em toda
+> pausa foi escrita naquele dia, e uma regra que pede um arquivo inexistente não é
+> regra. O que a Fase 4 entrega dele é o **hábito** — a reescrita virando parte do
+> ritual de fechamento —, junto com os outros dois arquivos.
+>
+> **Por que os três juntos.** O `CLAUDE.md` diz as invariantes, o `plano-*.md` diz onde
+> paramos numa frente e o `decisoes.md` diz por quê. Falta a porta de entrada: alguém
+> que abre este repositório hoje não tem uma página que responda *"o que é isto e em
+> que pé está"* sem ler seis arquivos. **É o checklist do projeto**, na frase do dono.
+
 ---
 
 ### Fechamento · a régua, e o veredito
@@ -908,6 +1044,38 @@ mentiu sobre si mesmo duas vezes (13/08 e 17/08).
 - **Mais de 10 cenas.** O teto de 10 está em três camadas e continua.
 - **Reordenar, inserir e apagar cenas pela tela.** O `unique deferrable` continua esperando.
 - **Folha montada exportável (PDF).** É visão registrada (15/08, item b) e não é escopo.
+
+---
+
+## 9b. Backlog nomeado — fora deste ciclo
+
+Itens que o dono nomeou durante o ciclo e que **deliberadamente não entram nele**,
+registrados aqui para não voltarem como ideia nova daqui a um mês.
+
+| item | por que fica fora |
+|---|---|
+| **Galeria — filtros por tipo (imagens · avatares · vídeos) e busca por nome** | A régua do ciclo é *quantos gestos até o vídeo*, e filtro de galeria não remove gesto desse caminho. Parte do trabalho é espalhar o que já existe: o modal do estúdio tem três filtros e busca, a `/galeria` não tem nenhum dos dois. |
+| **Passe de UI/UX: o glifo ⇥ tem contraste fraco** | Registrado em 28/08, junto com as três arestas órfãs do grafo salvo. |
+| **O «Reanimar» é tudo-ou-nada** | Achado em 31/08: uma cena desatualizada entra no lote de reanimação sozinha, e não há gesto para deixá-la de fora. É desenho da D7, não defeito — mas quem quer refazer só uma paga pelas duas. Decide-se com uso, não agora. |
+
+---
+
+## 9c. A ordem dos próximos ciclos — **decidida pelo Jorge em 31/08/2026**
+
+Não é escopo deste ciclo; está aqui porque a pergunta *"e depois?"* voltava a cada
+pausa, e uma ordem decidida e escrita não se rediscute.
+
+| # | ciclo | o que ele resolve |
+|---:|---|---|
+| **4** | **Catálogo aberto** | provedores e modelos como **dado**: *"modelo novo = linha no catálogo + adaptador"*, começando pelos que o dono vai usar. É a invariante 2 + a 6 saindo do papel. |
+| **5** | **Modo Take** | a repetição barata do que já existe, no lugar de refazer tudo. |
+| **6** | **Voz e áudio** | `storyboard_scenes.fala` deixa de dormir. |
+| — | **Passe de UI/UX** | a arte da máquina, o contraste do ⇥, o acabamento. |
+| — | **Publicação** | o produto saindo para fora. |
+
+**O rascunho do `docs/plano-catalogo-c4.md` sai quando o Ciclo 3 fechar — e só o
+plano, nada executa** *(instrução literal do dono)*. Pela regra 9, ele volta para
+conferência antes de qualquer código.
 
 ---
 

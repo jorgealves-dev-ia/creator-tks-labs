@@ -5,11 +5,9 @@ import { useCallback, useEffect, useState } from "react";
 
 import { NodeHeader } from "@/components/nodes/node-header";
 import { useVideoCatalog } from "@/components/nodes/use-video-catalog";
-import { IMMUTABLE_CACHE_CONTROL } from "@/lib/assets/thumbnail-path";
-import { findDerivedFrame, registerDerivedFrame } from "@/lib/assets/actions";
+import { garantirQuadroDerivado } from "@/lib/assets/derive-frame";
 import { signAssets } from "@/lib/assets/sign-batch";
-import { storeThumbnailInBrowser } from "@/lib/assets/thumbnail-client";
-import { extractLastFrame, type LastFrameFailure } from "@/lib/assets/last-frame";
+import { type LastFrameFailure } from "@/lib/assets/last-frame";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { useGenerationTick } from "@/lib/generation/generation-feed";
 import { listNodeVideos, type VideoJobRow } from "@/lib/generation/history";
@@ -19,7 +17,6 @@ import {
   requestVideoGeneration,
   type VideoGenerationFailure,
 } from "@/lib/generation/video-contract";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { t } from "@/lib/i18n/pt-BR";
 import { useBalance } from "@/lib/sparks/balance-store";
 
@@ -264,73 +261,24 @@ export function VideoGeneratorNode({ id, data, selected }: NodeProps<VideoGenera
     setContinuing(true);
     setContinueNote(null);
 
-    const fail = (reason: LastFrameFailure | "upload" | "not_a_video") => {
+    const fail = (reason: LastFrameFailure | "upload" | "not_a_video" | "aba_escondida") => {
       setContinueNote(copy.continueErrors[reason] ?? copy.continueErrors.error);
       setContinuing(false);
     };
 
-    // 0. Já lemos este vídeo antes? Uma consulta indexada, e ela poupa os
-    //    quatro passos seguintes inteiros.
-    const known = await findDerivedFrame(featured.assetId);
-    let frameAssetId = known?.assetId ?? null;
+    // 0 a 4 — o elo, que desde o Ciclo 3 mora em `lib/assets/derive-frame`.
+    //         Saiu daqui porque a Máquina precisa do MESMO quadro, e duas
+    //         maneiras de derivá-lo seriam duas chances de divergirem.
+    const quadro = await garantirQuadroDerivado(featured.assetId, {
+      // O clique acabou de acontecer, então a aba está à frente — mas quem
+      // responde é o navegador, e não a suposição. Trocar de aba durante a
+      // leitura é possível, e aí a frase certa é a da pausa.
+      abaVisivel: document.visibilityState === "visible",
+    });
 
-    if (!frameAssetId) {
-      // 1. Link fresco, sempre.
-      const urls = await signAssets([featured.assetId]);
-      // `full`, e a distinção aqui vale dinheiro: estes pixels viram o primeiro
-      // quadro do próximo clipe, numa geração paga. Miniatura é para olhar;
-      // isto é matéria-prima.
-      const fresh = urls[featured.assetId]?.full;
+    if (!quadro.ok) return fail(quadro.reason);
 
-      if (!fresh) return fail("expired_link");
-
-      // 2. O quadro.
-      const read = await extractLastFrame(fresh);
-
-      if (!read.ok) return fail(read.reason);
-
-      // 3. O Storage. O caminho diz o que o arquivo é — o último quadro
-      //    **deste** vídeo —, e é por ser determinístico que uma segunda
-      //    leitura sobrescreve em vez de duplicar.
-      const supabase = createSupabaseBrowserClient();
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id;
-
-      if (!userId) return fail("upload");
-
-      const storagePath = `${userId}/frames/${featured.assetId}-ultimo.png`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("assets")
-        .upload(storagePath, read.frame.blob, {
-          contentType: "image/png",
-          cacheControl: IMMUTABLE_CACHE_CONTROL,
-          upsert: true,
-        });
-
-      if (uploadError) return fail("upload");
-
-      // 3b. A miniatura do quadro. Ele é um PNG de ~1,2 MB que vira card no
-      //     canvas — mesma regra de todo o resto, e best-effort como todo o
-      //     resto: falhar aqui não pode custar o quadro que já está no Storage.
-      await storeThumbnailInBrowser(storagePath, read.frame.blob);
-
-      // 4. A escrituração, com a linhagem.
-      const registered = await registerDerivedFrame({
-        storagePath,
-        sourceAssetId: featured.assetId,
-        atMs: read.frame.atMs,
-        width: read.frame.width,
-        height: read.frame.height,
-        byteSize: read.frame.blob.size,
-      });
-
-      if (!registered.ok) {
-        return fail(registered.reason === "not_a_video" ? "not_a_video" : "upload");
-      }
-
-      frameAssetId = registered.assetId;
-    }
+    const frameAssetId = quadro.assetId;
 
     // 5. O par — o card com o quadro e o bloco do capítulo seguinte, já ligados.
     const chain = addContinuation({ videoNodeId: id, assetId: frameAssetId });

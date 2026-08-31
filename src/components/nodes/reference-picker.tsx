@@ -161,6 +161,12 @@ function PickerDialog() {
     url: string;
     label: string | null;
     createdAt: string;
+    /**
+     * O campo que faltava aqui, e que fazia a Galeria do projeto abrir vídeo
+     * como imagem. `GenerationThumb` sempre o trouxe; era este parâmetro que
+     * não o pedia, e por isso ele se perdia na conversão.
+     */
+    isVideo: boolean;
   }): GalleryItem {
     // `derivedFromAssetId` é sempre nulo aqui, e não por omissão: a Galeria do
     // projeto lê `generations`, e um quadro derivado não tem geração nenhuma —
@@ -173,7 +179,9 @@ function PickerDialog() {
     // Na Galeria o clique amplia: não há nada para selecionar, e uma grade que
     // marcasse itens prometeria uma ação que este modo não tem.
     if (browsing) {
-      openLightbox(item.assetId);
+      // Com `isVideo`, o mesmo visualizador da /galeria: um caminho de exibição,
+      // não dois.
+      openLightbox(item.assetId, { isVideo: item.isVideo });
       return;
     }
 

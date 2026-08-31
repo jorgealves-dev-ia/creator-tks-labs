@@ -10,6 +10,7 @@
 
 | Arquivo | Quando consultar |
 |---|---|
+| [`docs/ESTADO.md`](docs/ESTADO.md) | **Primeiro, sempre.** Uma página com o que está provado, o que está aberto e o próximo gesto — reescrita em toda pausa (regra 9). É o checklist do projeto: se ele estiver certo, a sessão começa trabalhando em vez de reconstruindo. |
 | [`docs/produto.md`](docs/produto.md) | Antes de decidir **o que** construir, para quem, ou como uma funcionalidade deve se comportar para o usuário. Contém visão, público-alvo, princípio de UX, funcionalidades e o roadmap das 4 fases. |
 | [`docs/arquitetura.md`](docs/arquitetura.md) | Antes de qualquer mudança estrutural — novo provedor, mudança de schema, novo fluxo. Contém as 7 decisões **com o porquê de cada uma**, o modelo de dados, a stack, a estratégia de providers, a estrutura de pastas e as variáveis de ambiente. |
 | [`docs/character-sheet.md`](docs/character-sheet.md) | Ao trabalhar com entidades `@`, consistência de personagem ou compilação de prompt. É a especificação v1 **final e aprovada**: estrutura JSON, listas fechadas com tradução fixa em inglês e as regras de compilação. |
@@ -70,6 +71,46 @@ Versão curta. O porquê de cada uma está em [`docs/arquitetura.md`](docs/arqui
 7. **GitHub com secret scanning + push protection ativados.** Se um segredo vazar em commit, a resposta é rotacionar a chave imediatamente — apagar o commit não basta.
 8. **Dependências**: lockfile sempre commitado; rodar `npm audit` ao adicionar dependências; desconfiar de pacotes obscuros ou recém-publicados.
 9. **Nunca colar chaves reais em chats, prompts ou issues.** Manuseio de valores de segredo é tarefa manual do Jorge, por design.
+
+---
+
+## Dinheiro e limites de estrago *(nascidas do incidente de 29/08/2026)*
+
+Um clique de **210 ⚡** submeteu **626 gerações** em três minutos. Quem parou não fomos nós: foi o **saldo pré-pago da fal ficando negativo** — 549 das 606 voltaram com `403 User is locked. Reason: TOP_UP.`. Custo real: **US$ 21,56** e 77 clipes de uma cena que precisava de um. As três regras abaixo existem para que o freio nunca mais seja o provedor.
+
+### R1 · Regra do pior caso
+
+**Todo clique pago declara por escrito o pior caso antes de acontecer:** *"se tudo der errado, custa no máximo X."* **Se X ≠ o número que o portão mostra, o clique não acontece** — a diferença entre os dois é exatamente o buraco por onde o dinheiro sai.
+
+Vale para o Jorge, para o Claude e para o Claude Code, sem exceção. No incidente, o portão dizia `1 × 210 = 210 ⚡` e o pior caso real era **ilimitado**; ninguém tinha escrito o pior caso, então ninguém teve o que comparar.
+
+### R2 · Teto absoluto no motorista
+
+O motorista de lote obedece três limites, e eles são a **única trava do nosso lado**:
+
+1. **uma submissão por cena por clique** — jamais duas, dê no que der;
+2. **limite do lote = tamanho do lote** — um lote de N nunca produz mais de N submissões;
+3. **nunca resubmissão automática** — o que refaz é o clique, nunca o efeito;
+4. **o lote é uma lista fechada** *(R2.4, nascida do clique de campo de 31/08)* — **o motorista só despacha o que aquele clique autorizou**, e a pergunta mora no **plano**, onde a tela lê. As três de cima limitam **quantas** saem; esta limita **quais**, e a prova de uma não cobre a outra: em 31/08 o teto segurou com precisão (uma submissão de um clique) enquanto a submissão saía para a cena errada.
+
+**A simulação vermelha→verde é PROVA REEXECUTÁVEL**, com caminho rastreado como as travas de banco: ela reproduz as 626 submissões, **falha** com o código defeituoso e **passa** com o conserto. **Roda antes de qualquer commit que toque o motorista.** Um conserto sem teste que o exercite seria a terceira vez que confiamos nessa peça no escuro.
+
+### R3 · fal: o saldo pré-pago é o teto de estrago
+
+- **Recarga automática: NUNCA.** Ela transforma o único teto existente numa torneira aberta.
+- **Compras pequenas.** O saldo em conta é o limite superior do estrago de um incidente — e um incidente já aconteceu.
+- Alerta por e-mail ativado (US$ 10). **Alerta não é limite:** ele avisa depois, e a fal **não oferece limite de gasto**.
+
+### R4 · Estorno: só por autorização do Jorge, e um por geração
+
+O ledger é **append-only** — correção é lançamento novo, nunca `UPDATE`. Sobre isso, quatro condições:
+
+1. **Só o Jorge autoriza.** O Claude escreve o script e apresenta a auditoria; **quem roda é ele**, no SQL Editor. Nenhum estorno sai de código de produto nem de ferramenta de IA.
+2. **Um lançamento por geração**, com `generation_id` preenchido — nunca um agregado. `generation_id` é o que liga o estorno ao débito que ele corrige; um agregado nasce com o campo nulo, e a auditoria de daqui a um ano não consegue dizer **quais** linhas foram estornadas.
+3. **A descrição nomeia o incidente.** *"Estorno · incidente do laço de reanimação, 29/08/2026 · …"* — quem ler o extrato depois precisa chegar ao post-mortem sem perguntar a ninguém.
+4. **O script deriva as linhas do banco e é idempotente.** Listar UUIDs à mão são N chances de estornar a geração errada; sem `NOT EXISTS`, rodar duas vezes paga duas vezes. E ele abre `BEGIN`, mostra a conferência (carteira = soma do ledger) e só então `COMMIT`.
+
+O primeiro está em `supabase/correcoes/20260829_estorno_incidente_laco_reanimacao.sql`, e serve de modelo.
 
 ---
 
@@ -135,6 +176,35 @@ Versão curta. O porquê de cada uma está em [`docs/arquitetura.md`](docs/arqui
   ```
   O `supabase link` está com bug nesta máquina, por isso a connection string vai explícita. Use a do **Session pooler (IPv4)** do painel do Supabase — a *Direct connection* é IPv6 e **falha nesta rede**. O Claude Code nunca aplica migrations: escreve o arquivo e avisa.
 
+### O túnel do webhook vive no COMANDO, nunca no arquivo *(regra do Jorge, 29/08/2026)*
+
+Quando a sessão precisa que a fal responda para esta máquina, a URL do túnel entra **na subida do dev**, e o dev sobe assim:
+
+```bash
+FAL_WEBHOOK_URL="https://<tunel-de-hoje>.trycloudflare.com/api/webhooks/fal" npm run dev
+```
+
+A `FAL_WEBHOOK_URL` **não mora no `.env.local`.** Ela não é segredo — o segredo continua no arquivo —, é um **endereço com prazo de validade de algumas horas**, e um valor perecível guardado num arquivo permanente é uma armadilha que arma sozinha.
+
+**Por que a regra existe, com as três vezes que custaram:**
+
+| data | o que a variável era | o que aconteceu |
+|---|---|---|
+| 13/08 | **ausente** | a trava nasceu: sem retorno, o vídeo geraria e cobraria sem voltar |
+| 28/08 | **presente e errada** (a raiz do túnel) | 4 clipes pagos, **0 entregas**, 4 reconciliações à mão |
+| 29/08 | **presente e morta** (o túnel da véspera) | achada por sonda, antes de gastar — a forma estava perfeita |
+| 31/08 | **viva no início e morta no meio** | o túnel caiu com o servidor de pé; a trava recusou com `status: 530` |
+
+As três primeiras são o mesmo desfecho, e a terceira fecha o argumento: **a trava de forma não distingue um túnel vivo de um morto**, porque os dois têm o mesmo `pathname`. Um valor que morre com o processo nunca chega ao dia seguinte para enganar ninguém.
+
+**A quarta é de outra natureza, e é a que justifica a trava rodar por clique.** O endereço foi provado vivo e morreu **no meio da sessão**: uma conferência feita só na subida do ambiente teria dito "vivo" e deixado o clique passar. Um `530` é a Cloudflare dizendo que não achou a origem — alguém respondendo que **não é o webhook** —, e é por isso que só `401` e `405` contam como vida.
+
+**Como funciona:** o Next não sobrescreve variável que já está no `process.env`, então a do comando **vence** a do arquivo, se alguma sobrar lá. Mesmo assim, a linha fica comentada no `.env.local` — duas fontes para o mesmo valor é a próxima maneira de errar.
+
+**O que continua sendo do Jorge:** subir o `cloudflared` é do Claude; o `.env.local` é do Jorge, sempre. Quem pega a URL do log do túnel e a põe no comando é quem sobe o dev.
+
+E a **trava de vida** (29/08) cobre o resto: o portão de vídeo faz **uma ida à rede por clique**, aceita só `401`/`405` — as duas respostas do nosso endpoint — e recusa antes do primeiro Spark quando ninguém atende.
+
 ---
 
 ## Regras para o Claude Code
@@ -148,9 +218,13 @@ Versão curta. O porquê de cada uma está em [`docs/arquitetura.md`](docs/arqui
 7. **Invariantes do character sheet.** As regras de compilação da seção 6 de [`docs/character-sheet.md`](docs/character-sheet.md) são invariantes do projeto, com o mesmo status das 7 decisões de arquitetura: **nunca podem ser violadas pelo código sem decisão explícita registrada.**
 8. **Fluxo de encerramento de toda tarefa:** apresentar resumo enxuto do que foi feito → rodar `git status` e mostrar a lista de arquivos a commitar → pedir ok ao Jorge → só então fazer commit e push. Se aparecer qualquer arquivo fora do escopo declarado da tarefa, **parar e avisar antes de commitar**.
 
-   **Quem valida no navegador depende do risco** (emenda de 11/08/2026, com o porquê em [`docs/decisoes.md`](docs/decisoes.md)). Tarefa **sem geração** — zero Sparks, sem tocar em ledger, compilador ou escrita no banco: o Claude valida em `localhost:3000`, com **prova por item do roteiro de teste colada no resumo** — em número, pela regra de 27/08/2026 abaixo. "Conferi e passou" sem prova não vale. Qualquer item que envolva **geração ou dado financeiro volta para o Jorge**. O commit continua esperando o ok dele, dado sobre a prova.
+   **A prova ao vivo é obrigatória onde há DINHEIRO — e só ali** *(recalibração do Jorge, 31/08/2026; a emenda original é de 11/08, e o porquê das duas está em [`docs/decisoes.md`](docs/decisoes.md))*.
 
-   **Evidência fecha, commit sela — e quando a prova tem duas metades, vale a última** *(reafirmação de 26/08/2026, a terceira; o porquê em [`docs/decisoes.md`](docs/decisoes.md))*. Se parte da prova é do Jorge — qualquer item de geração ou de dado financeiro —, a etapa continua **aberta e não commitada** até essa metade chegar, mesmo com a metade do Claude inteira e passando. A metade do Claude fica pronta primeiro, e ficar pronta primeiro não é ser a última: **uma etapa esperando prova e uma etapa fechada não podem ter a mesma aparência no git.**
+   **Onde há dinheiro** — portões que autorizam gasto, o motorista de lote, cobrança, estorno, qualquer caminho que possa submeter a um provedor pago: a metade do Jorge é **obrigatória**, a etapa fica **aberta e não commitada** até ela chegar, e o pior caso (R1) é escrito antes do clique. **Uma etapa esperando prova e uma etapa fechada não podem ter a mesma aparência no git.**
+
+   **Fora dali** — tela, estado, leitura, compilação, texto, layout, migração sem cobrança: sela com **prova estrutural + validação de tela** feita pelo Claude em `localhost:3000`, com **prova por item colada no resumo**, em número. "Conferi e passou" sem prova continua não valendo. Passando, **vai para produção no mesmo dia** — não espera a próxima sessão do dono.
+
+   **Por que a régua mudou.** A regra antiga mandava a metade do dono para *toda* etapa com geração, e o efeito medido foi fila: trabalho pronto, provado e verde dormindo no disco à espera de um clique que não tinha o que decidir. O risco que justifica esperar é o **irreversível** — Spark que sai, linha que nasce no ledger, requisição que chega ao provedor —, e não o mero fato de a tela mostrar uma imagem. Onde nada sai da carteira, esperar não protege nada e só atrasa. **O critério é "isto pode gastar?", nunca "isto parece importante?".**
 
    **Evidência tem endereço fixo:** `D:\Z - Meus Projetos DevIA\Creator TKS Labs\scratchpad\evidencias\<etapa>-<fase>\`, um arquivo por item, com **nome que diz o que aquele arquivo prova** (`trilho-fechado-luna-foto.png`, `numeros-fase5.md`), e a lista de caminhos no resumo. Pasta de temp com timestamp no nome não é evidência — daqui a uma semana ninguém acha, e prova que ninguém acha não prova nada.
 
@@ -185,3 +259,7 @@ Versão curta. O porquê de cada uma está em [`docs/arquitetura.md`](docs/arqui
    **Sessão não é lugar de guardar plano.** O Jorge fecha tudo entre sessões, e isso é o **modo normal de operar**, não exceção: um plano que só existe no contexto da conversa some no fechamento, e a sessão seguinte recomeça reconstruindo por adivinhação o que já tinha sido decidido — que é como uma decisão aprovada volta a ser discutida. O commit e o diário guardam o **porquê**; o arquivo de plano guarda o **onde estamos e o que falta**, que é justamente a pergunta que nenhum dos dois responde.
 
    Na dúvida sobre a fase seguinte, a ordem de leitura é: o arquivo de plano diz **o que** fazer e em que ponto paramos; [`docs/decisoes.md`](docs/decisoes.md) diz **por quê**; o código diz **como está hoje**. Se o arquivo de plano não existir para o trabalho em curso, **escrevê-lo é a primeira tarefa** — e ele volta para o Jorge conferir antes de qualquer código.
+
+   **E toda pausa reescreve [`docs/ESTADO.md`](docs/ESTADO.md)** *(regra do Jorge, 31/08/2026)*. **Uma página**, sempre a mesma, com três seções: **o que está provado**, **o que está aberto**, **o próximo gesto**. Ela é reescrita — não apendada — a cada pausa do trabalho, e é a **primeira leitura de qualquer agente** que chega ao repositório, seja ele o Claude Code de amanhã ou outro.
+
+   Por que ela existe tendo plano e diário: o diário é longo e cronológico, o plano é por frente, e nenhum dos dois responde *"em que pé está o projeto inteiro, agora"* sem que alguém leia muita coisa e some de cabeça. **O ESTADO é o checklist do projeto** — se ele estiver certo, uma sessão nova começa trabalhando em vez de arqueologando.

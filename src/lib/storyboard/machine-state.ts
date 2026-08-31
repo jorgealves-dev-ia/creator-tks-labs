@@ -75,8 +75,69 @@ export type MachineScene = {
    */
   recusasSeguidas: number;
   video: SceneVideoState;
+  /**
+   * O clipe desta cena, quando existe — Ciclo 3 · Fase 3.
+   *
+   * É dele que sai o primeiro quadro da cena de continuação de baixo, e é ele o
+   * lado direito da comparação da D7 na cena de baixo: trocar o clipe daqui faz
+   * o quadro de partida de lá envelhecer **sozinho**, sem propagação escrita.
+   */
+  videoAssetId: string | null;
+  /**
+   * De qual imagem o clipe partiu — `generations.params.source_asset_id`.
+   *
+   * Numa cena de **corte** é a imagem aprovada de então; numa de **continuação**
+   * é o quadro derivado do clipe anterior. É o lado esquerdo da comparação da D7,
+   * e a razão de a regra não custar coluna nenhuma: o dado já estava gravado.
+   */
+  videoFonteAssetId: string | null;
+  /**
+   * De qual **clipe** veio esse quadro — `assets.derived_from_asset_id` da fonte.
+   *
+   * Só existe em cena de continuação, e é o dividendo da coluna de linhagem de
+   * 15/08 sendo cobrado três ciclos depois: o quadro carrega o clipe de origem,
+   * então a cena de baixo sabe sozinha que partiu de um vídeo que já não é o de
+   * hoje. Nulo em cena de corte, onde a fonte é uma imagem e não deriva de nada.
+   */
+  videoFonteClipeId: string | null;
+  /** O que o provedor disse quando o vídeo falhou. */
+  videoErro: string | null;
+  /**
+   * A geração do vídeo vivo, e há quanto tempo ela está em voo.
+   *
+   * Existem para o mesmo botão que o bloco Gerar Vídeo já tem: um webhook que não
+   * chega deixaria a cadeia esperando um clipe que nunca vai ficar pronto — e
+   * aqui isso não trava um node, trava as cenas **de baixo**.
+   */
+  videoGeracaoId: string | null;
+  videoIdadeSegundos: number | null;
+  /**
+   * A imagem aprovada de hoje, pelo id.
+   *
+   * O outro lado da comparação da D7 numa cena de corte, e a razão de ela viajar
+   * separada de `thumbUrl`: a URL assinada muda a cada leitura, o id não. Comparar
+   * URLs acusaria mudança a cada hora.
+   */
+  imagemAprovadaAssetId: string | null;
   /** A cena que esta emenda, quando é continuação. */
   emendaDe: number | null;
+  /**
+   * A miniatura do **quadro de partida** de uma emenda — a D4, segunda linha.
+   *
+   * A D4 fixou a coluna de uma cena `⇥` em dois momentos: *antes do vídeo*,
+   * "continua da cena N"; *depois do vídeo*, **o quadro derivado do elo, que é o
+   * primeiro quadro de verdade dela**. A Fase 3 entregou só o primeiro, e o
+   * segundo é este campo.
+   *
+   * Nada é gerado e nada é cobrado: o asset já existe desde o despacho, extraído
+   * do clipe anterior por `garantirQuadroDerivado`. O que faltava era assiná-lo
+   * junto com as outras miniaturas e deixá-lo chegar à tela.
+   *
+   * Separado de `thumbUrl` de propósito. `thumbUrl` é "a imagem aprovada desta
+   * cena", e uma emenda não tem imagem aprovada — nem deve passar a parecer que
+   * tem. São duas coisas diferentes, e a coluna as desenha diferente.
+   */
+  quadroDePartidaUrl: string | null;
   /**
    * A ficha mudou depois de a imagem aprovada ter sido gerada?
    *
@@ -384,4 +445,45 @@ export function estadoDoVideo(status: string | null): SceneVideoState {
   if (status === "failed" || status === "canceled") return "falhou";
 
   return "nenhum";
+}
+
+/**
+ * **Qual das tentativas de vídeo É o vídeo desta cena** — 31/08/2026.
+ *
+ * Era `find(media_kind === "video")` sobre a lista em `created_at desc`, ou seja
+ * **a última tentativa, fosse ela qual fosse**. A cena 1 do storyboard de teste
+ * tinha 22 clipes bons e 606 linhas mortas do incidente de 29/08; como a mais
+ * recente era `failed`, a cena inteira lia `falhou` e o portão comum a oferecia
+ * para pagar de novo — uma cena que tinha clipe desde sempre.
+ *
+ * A ordem das perguntas é a mesma doutrina do `estadoDaCena`, e vai da mais
+ * forte para a mais fraca:
+ *
+ *   viva        uma submissão em voo vence tudo: a coluna precisa dizer
+ *               "gerando", e a de baixo precisa esperar por ela;
+ *   boa         o último clipe que EXISTE. Uma tentativa posterior que deu
+ *               errado não apaga o clipe que está lá — a mesma frase que o lado
+ *               da imagem já dizia desde a Fase 1 ("repetir uma cena aprovada e
+ *               a repetição falhar não desaprova o que estava aprovado");
+ *   a última    só quando não há nem viva nem boa. Aí sim a cena é `falhou`, e
+ *               o motivo dela é o que a coluna mostra.
+ *
+ * **Exige a lista em `created_at desc`** — é o `find` que traduz "a primeira que
+ * casa" em "a mais recente que casa". A consulta de `loadMachineBoard` ordena
+ * assim, e é a única que alimenta esta função.
+ */
+export function videoDaCena<T extends { status: string; result_asset_id: string | null }>(
+  tentativasDeVideo: readonly T[],
+): T | null {
+  const viva = tentativasDeVideo.find(
+    (linha) => linha.status === "queued" || linha.status === "running",
+  );
+
+  if (viva) return viva;
+
+  const boa = tentativasDeVideo.find(
+    (linha) => linha.status === "succeeded" && linha.result_asset_id !== null,
+  );
+
+  return boa ?? tentativasDeVideo[0] ?? null;
 }

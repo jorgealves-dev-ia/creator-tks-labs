@@ -1,4 +1,4 @@
-import { findMentions } from "@/lib/generation/mentions";
+import { findMentions, sceneWithoutMentions } from "@/lib/generation/mentions";
 import { ENQUADRAMENTO_KEYS } from "@/lib/storyboard/contract";
 
 /**
@@ -123,6 +123,38 @@ function mentionFor(handle: string | null): string | null {
   const mentions = findMentions(raw);
 
   return mentions.length === 1 && mentions[0].raw === raw ? raw : null;
+}
+
+/**
+ * O que a ficha manda para o motor de VÍDEO — Ciclo 3 · Fase 3.
+ *
+ * ---------------------------------------------------------------------------
+ * Três diferenças em relação ao prompt de imagem, e as três são deliberadas
+ * ---------------------------------------------------------------------------
+ *
+ *   sem cenário    o cenário já está na imagem de partida. Repeti-lo aqui pediria
+ *                  ao motor que redesenhasse o que ele deveria apenas mover.
+ *   sem menção     o Kling é image-to-video e recebe UMA imagem, que já é a
+ *                  personagem. Uma `@` no texto não teria para onde ir — e a rota
+ *                  de vídeo a recusa por isso (`mention_not_supported`), o que
+ *                  quebraria a cadeia numa cena que parece perfeita na tela. A
+ *                  remoção usa o MESMO parser que a rota usa para recusar, então
+ *                  o que esta função aceita é exatamente o que ela aceita.
+ *   ação e câmera  `acao` já vem escrita como direção com marcas de tempo
+ *                  ("ri por meio segundo, depois encara a câmera por dois") — é
+ *                  literalmente um prompt de movimento. `movimento` é a câmera.
+ *                  Juntas, são os 5 segundos.
+ *
+ * Pura como a irmã dela, e pelo mesmo motivo: a Máquina compõe seis destas antes
+ * de gastar um Spark, e o servidor recompõe a mesma para o registro.
+ */
+export function buildSceneMotion(cena: Pick<SceneFields, "acao" | "movimento">): string {
+  const bruto = [cena.acao, cena.movimento]
+    .map(sentence)
+    .filter((parte) => parte !== "")
+    .join(" ");
+
+  return sceneWithoutMentions(bruto, findMentions(bruto));
 }
 
 /** Um campo da ficha virando frase: aparada, e terminada uma vez só. */
