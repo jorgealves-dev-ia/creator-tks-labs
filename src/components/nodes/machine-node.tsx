@@ -186,11 +186,6 @@ export function MachineNode({ id, data, selected }: NodeProps<MachineNodeType>) 
   const tickRoteiro = useGenerationTick(roteiroNodeId ?? "");
   const tickMaquina = useGenerationTick(id);
 
-  // INSTRUMENTO TEMPORARIO — carimbo 1. SAI ANTES DO COMMIT.
-  useEffect(() => {
-    carimbo("1-tick", "roteiro=" + tickRoteiro + " maquina=" + tickMaquina);
-  }, [tickRoteiro, tickMaquina]);
-
   const referencesEnabled = data.referencesEnabled === true;
 
   // Resolvidos, nunca gravados na montagem: escrever um default no `data` ao
@@ -209,8 +204,6 @@ export function MachineNode({ id, data, selected }: NodeProps<MachineNodeType>) 
       // Uma resposta que chega depois de o fio ter mudado é uma resposta sobre
       // outro roteiro. O `cancelado` a descarta antes de ela virar tela.
       if (!cancelado) {
-        // INSTRUMENTO TEMPORARIO — carimbo 2. SAI ANTES DO COMMIT.
-        carimbo("2-lido", mapaDeVideo(loaded));
         setLido({ forNode: roteiroNodeId, board: loaded });
       }
     });
@@ -219,26 +212,6 @@ export function MachineNode({ id, data, selected }: NodeProps<MachineNodeType>) 
       cancelado = true;
     };
   }, [projectId, roteiroNodeId, tickRoteiro, tickMaquina, recarga]);
-
-  // INSTRUMENTO TEMPORARIO — carimbo 3, depois do paint. SAI ANTES DO COMMIT.
-  //
-  // rAF duplo de proposito: um rAF dentro de useEffect ainda pode rodar ANTES
-  // do paint; o segundo so roda depois que o quadro foi para a tela. E o que
-  // separa "o React commitou" de "a pessoa poderia ter visto".
-  useEffect(() => {
-    if (board === null) return;
-
-    const mapa = mapaDeVideo(board);
-    let interno = 0;
-    const externo = requestAnimationFrame(() => {
-      interno = requestAnimationFrame(() => carimbo("3-pintado", mapa));
-    });
-
-    return () => {
-      cancelAnimationFrame(externo);
-      cancelAnimationFrame(interno);
-    };
-  }, [board]);
 
   const recusaDeFio =
     notice?.nodeId === id && notice.reason === "board_taken"
@@ -1235,33 +1208,6 @@ function ColunaDaCena({
  * oferecer conserto para o que está funcionando ensina a desconfiar do normal.
  */
 const SEGUNDOS_ATE_VERIFICAR = 90;
-
-/**
- * INSTRUMENTO TEMPORARIO — Fase 3, o defeito da atualizacao. SAI ANTES DO COMMIT.
- *
- * Tres carimbos do lado do cliente, para bater com o POST do webhook no log do
- * servidor: 1-tick (o Realtime avisou), 2-lido (o board novo entrou no estado) e
- * 3-pintado (o DOM ja carrega o estado novo — rAF duplo = depois do paint).
- */
-function carimbo(fase: string, extra: string): void {
-  if (process.env.NODE_ENV !== "development") return;
-  const agora = new Date();
-  console.log(
-    "[c3-carimbo] " +
-      agora.toISOString().slice(11, 23) +
-      " epoch=" +
-      agora.getTime() +
-      " " +
-      fase +
-      " " +
-      extra,
-  );
-}
-
-/** INSTRUMENTO TEMPORARIO — o mapa "ordem:estado-do-video" das cenas. */
-function mapaDeVideo(b: MachineBoard | null): string {
-  return (b?.cenas ?? []).map((c) => c.ordem + ":" + c.video).join(" ");
-}
 
 /**
  * O que dizer sobre o vídeo desta cena — **uma frase por situação**.

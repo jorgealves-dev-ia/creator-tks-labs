@@ -5090,3 +5090,25 @@ O dono conferiu no painel da fal **por identificador**, e não por total: o dia 
 **Conferir por id, e não por contagem, é o que torna a prova forte.** Um total bate por acidente com facilidade — três de um lado e três do outro pode ser coincidência de dois erros que se cancelam. Três identificadores que casam um a um não podem.
 
 📌 **A regra de 29/08 sobrevive intacta e agora tem o caso positivo:** *quando existe um painel, o painel é a fonte*. Naquele dia ela nasceu de um erro meu de 8× por inferir custo sem ler o provedor; hoje ela fecha uma fase — e nas duas vezes o que decidiu foi o dado do lado de lá, nunca a conta de cabeça do lado de cá.
+
+---
+
+### 02/09/2026 — 🧹 Os instrumentos estavam marcados para sair, e foram commitados: a marca não bastou
+
+A investigação da Fase 4 achou, no `machine-node.tsx` **em `master`**, cinco blocos com a mesma frase escrita à mão: `// INSTRUMENTO TEMPORARIO — … SAI ANTES DO COMMIT.` Mais as funções `carimbo()` e `mapaDeVideo()` que eles chamam. **53 linhas, no HEAD**, desde o fechamento da Fase 3.
+
+Eram os três carimbos de cliente da caçada ao *defeito da atualização* de 28-29/08 — `1-tick` (o Realtime avisou), `2-lido` (o board novo entrou no estado), `3-pintado` (rAF duplo, depois do paint) —, escritos para bater com o `POST` do webhook no log do servidor. Fizeram o trabalho: o defeito foi medido e consertado, e o contador `▶ N de M` nasceu deles.
+
+**O estrago é pequeno e o ensinamento não.** Em produção eles não custam nada — `carimbo` retorna cedo quando `NODE_ENV !== "development"` —, então nenhum usuário viu nada. Mas a Fase 4 faz a Máquina nascer em **todo projeto novo**, e o que ia continuar caindo no console de desenvolvimento era um instrumento de uma caçada encerrada.
+
+**Por que a marca não bastou.** Ela estava escrita, em maiúsculas, cinco vezes, no arquivo — e mesmo assim atravessou o commit de fechamento de uma fase que teve prova de campo, conferência de painel por identificador e resumo detalhado. **Uma frase em comentário não é uma trava: ela depende de alguém reler o arquivo inteiro no momento certo.** É a mesma forma do `config/models.json`, que sobreviveu dois meses em três lugares a uma decisão que o tinha matado.
+
+**O que muda, e é o que torna isto uma decisão em vez de uma limpeza:** o ritual de fechamento da regra 8 passa a exigir que
+
+```bash
+git grep -n "SAI ANTES DO COMMIT" -- src/ supabase/
+```
+
+**volte vazio antes de commitar.** Escopado a `src/` e `supabase/` de propósito: sem o escopo, a trava dispara na própria documentação que a descreve — este parágrafo faria o comando achar alguma coisa, e uma trava que acusa a si mesma é uma trava que se aprende a ignorar.
+
+**A conferência que precedeu a remoção**, porque apagar instrumento tem o mesmo risco de apagar prova: `git grep` no repositório inteiro, mais `supabase/travas/` e os harnesses do scratchpad. **Nada** os importa — as ocorrências fora do `machine-node.tsx` são prosa em evidências e no diário, usando a palavra "carimbo" no sentido de marca de tempo. A remoção saiu em `chore:` próprio, antes da primeira linha da Fase 4, com `lint` e `typecheck` verdes e **54 deleções e zero inserções** no diff.
