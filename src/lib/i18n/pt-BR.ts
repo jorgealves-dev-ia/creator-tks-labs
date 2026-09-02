@@ -204,6 +204,22 @@ export const t = {
     noProjectsBody: "Crie seu primeiro projeto para abrir o canvas.",
     sidebarTitle: "Arsenal",
     sidebarBlocks: "Blocos",
+    /**
+     * A seção que vem ANTES de «Blocos», e a ordem é a mensagem: primeiro o
+     * fluxo montado, depois as peças soltas. É a frase do esboço do Jorge —
+     * *"aqui está o fluxo"* em vez de *"aqui estão as peças"*.
+     */
+    sidebarFlows: "Fluxos",
+    templateStoryboard: {
+      /**
+       * Não se chama "Máquina de Storyboard": esse nome já é de um item de
+       * «Blocos», três centímetros abaixo. Dois itens com o mesmo nome no mesmo
+       * trilho seria a terceira vez que a prateleira se contradiz — depois do
+       * vídeo em 13/08 e do storyboard em 17/08.
+       */
+      title: "Fluxo de Storyboard",
+      hint: "Roteiro + Máquina, já conectados e enquadrados",
+    },
     // O vídeo chegou em 13/08/2026 e esta linha ficou logo abaixo dele dizendo
     // que ele não tinha chegado. Uma prateleira que desmente o que ela mesma
     // oferece ensina a não ler o rodapé.

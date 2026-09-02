@@ -555,6 +555,50 @@ const GENERATOR_TARGET = "generator";
 /** Matches `w-[46rem]` on the storyboard block — used only to place a block beside it. */
 const STORYBOARD_NODE_WIDTH = 736;
 
+/**
+ * A altura do bloco de Roteiro, para pôr a Máquina **debaixo** dele.
+ *
+ * 554 é o card recém-criado e vazio — que é o estado exato no instante em que o
+ * template roda —, e é também o **máximo** que ele alcança. Medido em 02/09/2026,
+ * junto com a pergunta que ele responde: *"a Máquina não fica embaixo do Roteiro
+ * depois que as fichas chegam?"*
+ *
+ * **Não fica, e o card ENCOLHE em vez de crescer.** A altura é a da coluna mais
+ * alta, e quem dirige é sempre a coluna da pergunta, nunca o trilho de fichas:
+ * vazio ela mede 491 contra 91 do trilho; com seis cenas, 481 contra 260 — os
+ * 10 px de diferença são uma linha de dica que some depois que o roteiro existe.
+ * Cada cena a mais custa 34 px ao trilho e ele não tem rolagem, mas precisaria de
+ * **12** cenas para assumir a altura, e o teto do produto é **10**: projetado
+ * para dez, o trilho dá 396 contra os 481 da pergunta.
+ *
+ * Então a folga abaixo só aumenta com o uso — de 72 px para 82 —, e nunca fecha.
+ */
+const STORYBOARD_NODE_HEIGHT = 554;
+
+/** Matches `w-[54rem]` on the machine block — used only to centre the pair on screen. */
+const MACHINE_NODE_WIDTH = 864;
+
+/**
+ * O quanto a Máquina anda para a direita para o fio sair **vertical**.
+ *
+ * A saída do roteiro inteiro fica embaixo do card e é centrada (736 / 2 = 368); a
+ * entrada «Roteiro» da Máquina fica em cima e em `left: 18%` (0,18 × 864 = 155,5).
+ * A diferença é o que alinha os dois handles na mesma vertical — sem ela o fio
+ * sai torto e o par deixa de ler como uma coisa só, que é a metade do que este
+ * template entrega.
+ */
+const MACHINE_HANDLE_OFFSET = 212;
+
+/**
+ * A Máquina recém-criada, **antes de qualquer ficha** — que é o estado dela no
+ * instante em que o template roda. Só para enquadrar o par; ela cresce depois,
+ * para baixo, onde não esbarra em nada.
+ */
+const MACHINE_NODE_HEIGHT = 143;
+
+/** A folga entre os dois cards do par. A mesma da casa em todo lugar que empilha. */
+const PAIR_GAP = 72;
+
 /** O handle de saída da linha da cena N, no trilho de fichas. */
 export function sceneHandleId(ordem: number): string {
   return `${SCENE_HANDLE_PREFIX}${ordem}`;
@@ -871,6 +915,31 @@ type CanvasState = {
     storyboardNodeId: string;
     ordem: number;
   }) => { id: string; created: boolean } | null;
+  /**
+   * O template «Fluxo de Storyboard»: Roteiro + Máquina, conectados, num clique.
+   *
+   * **Não é um tipo novo de node** — são os dois blocos de sempre, com o fio que
+   * qualquer um desenharia à mão. Duplicar, remover e religar continuam
+   * funcionando porque não há nada de especial neles depois que nascem; o que o
+   * template encurta é a **montagem**, que a Fase 1 mediu em três gestos
+   * (clicar na prateleira · enquadrar · arrastar o fio).
+   *
+   * Um `set` só, de propósito: os dois nodes e a aresta sobem numa revisão
+   * única, então o debounce do autosave grava **os três juntos** em vez de
+   * disparar três vezes.
+   *
+   * Devolve os dois ids e a caixa que os contém, para quem chamou levar a tela
+   * até lá — um clique que faz a coisa certa fora da vista parece um clique que
+   * não fez nada.
+   */
+  addStoryboardMachine: (input: {
+    /** Onde a pessoa está olhando, em coordenadas de fluxo. O par nasce centrado nisto. */
+    center: { x: number; y: number };
+  }) => {
+    roteiroId: string;
+    machineId: string;
+    bounds: { x: number; y: number; width: number; height: number };
+  };
   /**
    * "Assumir o prompt": o corte, pelo botão.
    *
@@ -1571,6 +1640,78 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     });
 
     return { id, created: true };
+  },
+
+  addStoryboardMachine: ({ center }) => {
+    const state = get();
+
+    const largura = MACHINE_HANDLE_OFFSET + MACHINE_NODE_WIDTH;
+    const altura = STORYBOARD_NODE_HEIGHT + PAIR_GAP + MACHINE_NODE_HEIGHT;
+
+    // O par nasce **centrado** em onde a pessoa está olhando, e não com o canto
+    // ali: são 1.076 × 769, e largar o canto no meio da tela jogaria a Máquina
+    // inteira para fora dela pela direita e por baixo.
+    const roteiro = freePosition(state.nodes, {
+      x: Math.round(center.x - largura / 2),
+      y: Math.round(center.y - altura / 2),
+    });
+
+    const roteiroId = crypto.randomUUID();
+    const machineId = crypto.randomUUID();
+
+    set({
+      nodes: [
+        ...state.nodes.map((node) => (node.selected ? { ...node, selected: false } : node)),
+        {
+          id: roteiroId,
+          type: SCENE_SOURCE,
+          position: roteiro,
+          // Nascem os dois selecionados: são as duas peças que a pessoa acabou de
+          // pedir, e num canvas com vinte cards as novas precisam se identificar.
+          selected: true,
+          // Vazios, como quando nascem pela prateleira. Os defaults do Roteiro
+          // (canal, nº de cenas, modelo) são resolvidos DENTRO do card — semear
+          // um canal aqui congelaria a escolha de hoje no grafo de quem nunca
+          // abriu o seletor.
+          data: {},
+        },
+        {
+          id: machineId,
+          type: MACHINE_TARGET,
+          position: {
+            x: roteiro.x + MACHINE_HANDLE_OFFSET,
+            y: roteiro.y + STORYBOARD_NODE_HEIGHT + PAIR_GAP,
+          },
+          selected: true,
+          data: {},
+        },
+      ],
+      edges: [
+        ...state.edges,
+        {
+          id: `${roteiroId}-${BOARD_HANDLE}->${machineId}`,
+          source: roteiroId,
+          // **Os dois handles, e o que decide é o de baixo.** `findGoverningBoard`
+          // lê só o `targetHandle`; escrever apenas o `sourceHandle` daria um fio
+          // que se desenha e não rege nada. O `sourceHandle` vai junto para esta
+          // aresta ficar indistinguível de uma arrastada à mão — construir aresta
+          // pelo store **não passa pelo `onConnect`**, então o que ele preencheria
+          // sozinho tem de ser escrito aqui.
+          sourceHandle: BOARD_HANDLE,
+          target: machineId,
+          targetHandle: BOARD_HANDLE,
+        },
+      ],
+      revision: state.revision + 1,
+      saveStatus: "dirty",
+      notice: null,
+    });
+
+    return {
+      roteiroId,
+      machineId,
+      bounds: { x: roteiro.x, y: roteiro.y, width: largura, height: altura },
+    };
   },
 
   cutSceneWire: ({ generatorId }) =>

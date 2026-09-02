@@ -1,6 +1,6 @@
 "use client";
 
-import { useReactFlow } from "@xyflow/react";
+import { getViewportForBounds, useReactFlow, useStore } from "@xyflow/react";
 import { useState } from "react";
 
 import { CharacterPicker } from "@/components/character-sheet/character-picker";
@@ -23,7 +23,21 @@ import { t } from "@/lib/i18n/pt-BR";
  * what makes the rail useful at 56px wide instead of merely present.
  */
 export function NodeSidebar() {
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, setCenter, getZoom } = useReactFlow();
+
+  /**
+   * O painel e os limites de zoom, lidos do próprio React Flow.
+   *
+   * Nunca copiados: o `minZoom`/`maxZoom` são props do `<ReactFlow>` e uma
+   * segunda cópia aqui só existiria para poder discordar da primeira no dia em
+   * que alguém mudasse uma delas.
+   */
+  const pane = useStore((state) => ({
+    width: state.width,
+    height: state.height,
+    minZoom: state.minZoom,
+    maxZoom: state.maxZoom,
+  }));
   const characters = useEntitiesStore((state) => state.characters);
   const order = useEntitiesStore((state) => state.order);
   const linkedIds = useEntitiesStore((state) => state.linkedIds);
@@ -122,6 +136,62 @@ export function NodeSidebar() {
    */
   function addMachine() {
     addNode("machine", {}, nodes.length);
+  }
+
+  /**
+   * O template: Roteiro + Máquina, ligados e enquadrados, num clique.
+   *
+   * **O enquadramento é metade da entrega, e é medido.** A Fase 1 contou três
+   * gestos de montagem — clicar na prateleira · **enquadrar** · arrastar o fio —
+   * e o do meio não era um capricho: o Roteiro estava em `y = 1162` num viewport
+   * de 675 px, e as duas pontas do fio não cabiam na tela juntas. Um template que
+   * põe o par onde ninguém o vê remove dois gestos dos três.
+   *
+   * **`setCenter` e não `fitView`, e a razão é mecânica.** O `fitView` descobre
+   * os limites a partir de `measured`, que só existe depois de o node ter sido
+   * desenhado; pedido para dois nodes criados neste instante, ele os descarta,
+   * cai num retângulo de área zero e manda a tela para a origem no zoom máximo.
+   * Aqui os limites não precisam ser descobertos — o store acabou de escolher as
+   * duas posições e conhece os dois tamanhos, e devolve a caixa pronta.
+   *
+   * **O zoom é derivado, nunca uma constante.** Quem calcula é o
+   * `getViewportForBounds` do próprio React Flow — a mesma função que o `fitView`
+   * usa por dentro, com os mesmos limites e o mesmo arredondamento —, alimentada
+   * com a caixa do par em vez de com nodes medidos. O `Math.min` com o zoom atual
+   * é a única diferença de comportamento: aproximar quem estava longe seria
+   * mexer no enquadramento de quem não pediu.
+   */
+  function addStoryboardFlow() {
+    const { bounds } = useCanvasStore.getState().addStoryboardMachine({
+      center: screenToFlowPosition({
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2,
+      }),
+    });
+
+    // 80px em cada lado, e a margem é SIMÉTRICA de propósito: o `setCenter`
+    // centra o par no painel, então uma margem assimétrica teria o zoom
+    // calculado por ela e a posição decidida por outra coisa — a folga extra que
+    // se pedisse em cima reapareceria metade em cima e metade embaixo.
+    //
+    // 80 porque o painel ocupa a janela inteira e o cabeçalho (56px) e o trilho
+    // recolhido (56px) ficam POR CIMA dele. Com 80 simétricos, o par nasce 24px
+    // abaixo do cabeçalho em vez de encostado nele — medido: com uma margem
+    // menor a folga do topo dava exatamente 56, e um card colado no cabeçalho lê
+    // como um card cortado por ele.
+    const { zoom: cabe } = getViewportForBounds(
+      bounds,
+      pane.width,
+      pane.height,
+      pane.minZoom,
+      pane.maxZoom,
+      "80px",
+    );
+
+    void setCenter(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, {
+      zoom: Math.min(getZoom(), cabe),
+      duration: 400,
+    });
   }
 
   return (
@@ -389,6 +459,68 @@ export function NodeSidebar() {
               </div>
             </>
           ) : null}
+
+          {/*
+            Os Fluxos vêm ANTES dos Blocos, e a ordem é a mensagem: o fluxo
+            montado primeiro, as peças soltas depois.
+
+            Um fluxo NÃO é um tipo de node — é um gesto que cria dois dos que já
+            existem, ligados. Por isso o glifo é desenhado aqui e não em
+            `node-icons.tsx`: aquele arquivo é indexado por `NodeKind`, a união
+            dos tipos que o canvas sabe desenhar, e um "template" ali faria a
+            união deixar de significar o que significa. A Galeria abriu esse
+            caminho — item de trilho que não é node, com o seu SVG na mão.
+          */}
+          <RailSection label={t.studio.sidebarFlows} />
+
+          <div className="px-3">
+            <button
+              type="button"
+              onClick={addStoryboardFlow}
+              title={t.studio.templateStoryboard.hint}
+              className="flex w-full items-center gap-3 rounded-lg py-1.5 text-left
+                         transition-colors hover:bg-surface-hover"
+            >
+              <span
+                aria-hidden
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg
+                           border border-line bg-accent-soft text-ink-muted"
+              >
+                {/* O par e o fio: em cima a moldura dividida do Roteiro, embaixo a
+                    silhueta deitada da Máquina, e o traço que as liga. É
+                    literalmente o que o clique faz — e a baixo zoom se distingue
+                    dos dois itens de «Blocos» que ele combina, porque nenhum
+                    deles tem duas formas empilhadas. */}
+                <svg viewBox="0 0 16 16" className="size-3.5" aria-hidden>
+                  <rect
+                    x="3.25" y="1.5" width="9.5" height="5" rx="1.4"
+                    stroke="currentColor" strokeWidth="1.3" fill="none"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M6.4 1.5v5" stroke="currentColor" strokeWidth="1.3"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M8 6.5v3" stroke="currentColor" strokeWidth="1.3"
+                    strokeLinecap="round"
+                  />
+                  <rect
+                    x="1.5" y="9.5" width="13" height="5" rx="2.5"
+                    stroke="currentColor" strokeWidth="1.3" fill="none"
+                  />
+                </svg>
+              </span>
+              <span className={revealed("min-w-0 flex-1")}>
+                <span className="block truncate text-xs font-medium text-ink">
+                  {t.studio.templateStoryboard.title}
+                </span>
+                <span className="block truncate text-[11px] text-ink-faint">
+                  {t.studio.templateStoryboard.hint}
+                </span>
+              </span>
+            </button>
+          </div>
 
           <RailSection label={t.studio.sidebarBlocks} />
 
