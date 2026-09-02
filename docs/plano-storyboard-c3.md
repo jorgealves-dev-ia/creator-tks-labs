@@ -1017,6 +1017,131 @@ por quem chegar, seja o Claude Code de amanhã ou outro agente qualquer:
 
 ---
 
+#### O detalhamento — **aprovado pelo Jorge em 02/09/2026**, com as quatro respostas
+
+> Escrito **antes da primeira linha de código** (regra 9). A investigação que o
+> produziu foi de custo zero: leitura de código, de `node_modules` e de git — nenhum
+> túnel, nenhum clique pago. **Pior caso desta fase inteira: 0 ⚡, 0 submissões.**
+
+**As quatro respostas do dono:**
+
+1. **Nome:** «**Fluxo de Storyboard**», hint *"Roteiro + Máquina, já conectados e
+   enquadrados"*, em **seção nova «Fluxos», acima de «Blocos»**. A Máquina crua **fica**
+   em «Blocos» com o nome de hoje — um segundo roteiro no mesmo projeto precisa de uma
+   segunda Máquina, e sem o item ela ficaria inalcançável.
+2. **`AGENTS.md`: ponteiro**, mais as quatro linhas duplicadas de propósito (segredo ·
+   migration é do Jorge · provedor só no servidor · R1/R2 antes de todo clique pago),
+   fora dos marcadores do Next, em LF, **com frase de precedência**: *se isto e o
+   `CLAUDE.md` divergirem, vale o `CLAUDE.md`*.
+3. **Os instrumentos temporários do `machine-node.tsx` saem**, em `chore:` próprio,
+   **antes** da 4.1.
+4. **O repositório é PÚBLICO**, e o `README.md` diz isso na linha de status.
+
+---
+
+##### Por que a régua da Fase 4 é «prova estrutural + tela», e não a metade do dono
+
+Nada nesta fase encosta em portão, motorista, cobrança ou estorno. O template **cria
+dois cards e um fio** — não chama provedor, não lê preço, não escreve em `generations`
+nem no ledger. Pela regra 8 recalibrada (31/08), o critério é *"isto pode gastar?"*, e a
+resposta aqui é não: **sela com prova estrutural + validação de tela feita pelo Claude,
+com prova por item em número, e vai para produção no mesmo dia.**
+
+##### Três correções de mecanismo que a investigação achou
+
+**a · A aresta se identifica pelo `targetHandle`, não pelo `sourceHandle`.**
+`BOARD_HANDLE = "roteiro"` (`store.ts:511`) é handle **source** no Roteiro
+(`storyboard-node.tsx:397`, `Position.Bottom`) e **target** na Máquina
+(`machine-node.tsx:604`, `Position.Top`, `left: 18%`). E `findGoverningBoard`
+(`store.ts:525-533`) lê **`targetHandle === BOARD_HANDLE`** — o `sourceHandle` nunca é
+consultado. A aresta do template carrega **os dois**: o `sourceHandle` para ficar byte a
+byte igual a uma desenhada à mão, o `targetHandle` porque é ele que faz funcionar.
+*Escrever só o `sourceHandle` produziria um fio que se desenha e não faz nada* — o
+defeito que a Fase 1 nomeou.
+
+**b · `fitView` não serve para node recém-criado, e a razão está no xyflow.**
+`getFitViewNodes` (`@xyflow/system`, `index.js:415-438`) filtra por
+`Boolean(n.measured.width && n.measured.height)`, e um node adicionado neste tick **não
+tem `measured`** — o React Flow escreve isso depois de medir o DOM. Com os dois pedidos
+filtrados fora, `getInternalNodesBounds` devolve `{x:0,y:0,width:0,height:0}` (linha 352)
+e a viewport vai para a origem no zoom máximo: **pior que não fazer nada.** A casa já
+resolveu e escreveu o porquê em `generator-node.tsx:1252-1258` — *"um palpite errado por
+alguns pixels desloca o centro por alguns pixels; esperar a medida deslocaria o clique
+por um quadro inteiro"* — e o precedente de enquadrar um **par** é
+`video-generator-node.tsx:301-314`. **Usa-se `setCenter`.**
+
+**c · A geometria é forçada pelos handles: Roteiro ACIMA, Máquina ABAIXO.**
+Saída do Roteiro embaixo, entrada da Máquina em cima. Lado a lado, o fio sairia por
+baixo e subiria, e o par não leria como conectado. Para o fio ficar vertical, os dois
+handles precisam do mesmo `x`: o do Roteiro está em `+368` (centrado em 736), o da
+Máquina em `+155` (`left: 18%` de 864) → **`machine.x = roteiro.x + 212`**.
+
+##### Um clique = uma revisão = um save
+
+Um `set` só → `revision + 1` **uma vez** → `saveStatus: "dirty"` uma vez → o debounce de
+1200 ms do `useWorkflowAutosave` (`use-autosave.ts:128-133`) → **um save carregando node,
+node e aresta juntos**. E o enquadramento não suja o canvas: `onMoveEnd` só chama
+`markDirty()` quando o evento é não-nulo, e mudança programática de viewport passa `null`
+(`flow-canvas.tsx:210-213`).
+
+##### O rodapé da prateleira: ele não conta, e por isso não muda
+
+`node-sidebar.tsx:501-503` renderiza **uma frase estática** — `t.studio.sidebarComingSoon`
+= *"A voz chega numa fase futura."* (`pt-BR.ts:215`). **Não há contagem em lugar nenhum do
+trilho.** Ele nunca mentiu contando errado: mentiu **prometendo o que já tinha chegado**,
+o vídeo em 13/08 e o storyboard em 17/08, e em 17/08 encolheu para nomear só o que de fato
+ainda não existe. O template não toca em voz, **então o rodapé continua verdadeiro e não
+se mexe nele** — e a conferência é ler o `textContent` e citá-lo.
+
+---
+
+##### As fases
+
+| fase | o que faz | arquivos | prova | custo |
+|---|---|---|---|---|
+| **chore** | **Os instrumentos saem.** As 5 marcas `SAI ANTES DO COMMIT` + `carimbo()` + `mapaDeVideo()`. Conferido antes: **nada** no repositório, em `supabase/travas/` ou nos harnesses os importa. | `machine-node.tsx` | `git grep "SAI ANTES DO COMMIT"` volta vazio; `lint` + `typecheck` | 0 ⚡ |
+| **4.0** | **A medida — DUAS alturas do Roteiro**, vazio e com cenas. O Roteiro tem handle por cena (`storyboard-node.tsx:842`) e **cresce quando as fichas chegam**: a Máquina posta 72 px abaixo do Roteiro vazio ficaria **embaixo dele** depois da geração. Zero código. | — | os dois números | 0 ⚡ |
+| **4.1** | **O gesto.** `addStoryboardMachine()` em `store.ts`: 2 nodes + 1 aresta num `set`, `sourceHandle` **e** `targetHandle` = `BOARD_HANDLE`, `freePosition`, ids por `crypto.randomUUID()`, ambos `selected`. Constantes `MACHINE_NODE_WIDTH = 864` e `STORYBOARD_NODE_HEIGHT`. **A folga é escolhida com os dois números da 4.0 na mão, e a escolha fica declarada no código com o porquê.** | `src/lib/canvas/store.ts` | `lint` + `typecheck` | 0 ⚡ |
+| **4.2** | **A prateleira.** Seção «Fluxos» acima de «Blocos», item «Fluxo de Storyboard» com **SVG inline** (padrão da Galeria — o glifo **não** entra em `NodeKind`, que é a união dos tipos de node). Enquadramento por `setCenter` com **zoom derivado**. | `node-sidebar.tsx`, `pt-BR.ts` | `lint` + `typecheck` | 0 ⚡ |
+| **4.3** | **A prova ao vivo** — as 7 abaixo, mais o harness estrutural. **PARA E REPORTA antes da documentação.** | — | a tabela das 7 | 0 ⚡ |
+| **4.4** | **`AGENTS.md` + `README.md` + `.gitattributes`.** | raiz | `npm run dev`, matar, `git status` limpo | 0 ⚡ |
+| **4.5** | **O hábito.** A linha do ESTADO **e a trava do `git grep`** entram no ritual de fechamento da regra 8. `docs/ESTADO.md` reescrito. | `CLAUDE.md`, `docs/ESTADO.md` | — | 0 ⚡ |
+| **4.6** | **Fechamento.** Status aqui, entradas datadas em `decisoes.md`, `lint` + `typecheck`, **commit e push na mesma ação**, `git log origin/master -1` no resumo. | `docs/` | o hash | 0 ⚡ |
+
+##### As sete provas — pré-registradas
+
+| # | o que prova | como | forma |
+|---|---|---|---|
+| 1 | **+2 nodes, +1 aresta** | `useCanvasStore.getState()` lido antes e depois | número |
+| 2 | **a aresta certa no grafo SALVO, sobrevivendo ao reload** | esperar `saveStatus === "saved"` → ler `workflows.graph` por MCP read-only → `{source, sourceHandle, target, targetHandle}` → **F5** → a Máquina mostra o roteiro em vez de *"Nenhum roteiro ligado"* | número + banco |
+| 3 | **o item na prateleira com glifo próprio** | **um** print do trilho aberto — único item inerentemente visual | print (um) |
+| 4 | **o rodapé conferido** | `textContent` citado literal | texto |
+| 5 | **"são nodes comuns"** | duplicar a Máquina do template e contar; remover e contar | número |
+| 6 | **zero Spark** | `generations`, `ledger_transactions`, `assets`, saldo **e o timestamp da última linha** idênticos antes e depois | número |
+| 7 | **o par CABE na tela depois do clique** | `getViewport()` + posições + tamanhos → bounds do par ⊂ viewport. **O gesto removido é *enquadrar*: se o par não cabe, o gesto não foi removido.** | número |
+
+**Mais uma prova estrutural, sem navegador:** um harness `npx tsx` que lê o
+`workflows.graph` gravado, passa pelo `graphSchema` **real** e roda o
+`findGoverningBoard` **real**, afirmando `findGoverningBoard(edges, machineId) ===
+roteiroId`. São as funções de produção contra os bytes gravados de verdade — sem mock.
+
+**Evidência:** `scratchpad\evidencias\storyboard-c3-fase4\`, um arquivo por item, com
+nome que diz o que aquele arquivo prova.
+
+##### Riscos nomeados
+
+| risco | por que é real | o que o contém |
+|---|---|---|
+| **`fitView` em node não medido** | provado no código do xyflow: filtro por `measured`, bounds zerado, viewport na origem | `setCenter` com constantes declaradas — a doutrina que a casa já escreveu |
+| **A Máquina nascendo embaixo do Roteiro** | o Roteiro **cresce** com as fichas (handle por cena) | a 4.0 mede **as duas** alturas; a folga é escolhida com os dois números |
+| **Zoom fixo que não enquadra** | `0,55` é um palpite; um par de 864 px num viewport estreito não cabe nele | zoom **derivado** do par e do viewport, respeitando o `minZoom` do canvas — e a prova 7 confere |
+| **Glifo entrando em `NodeKind`** | a união deixaria de significar "tipo de node no canvas" | SVG inline, precedente da Galeria |
+| **Ler o banco antes de o save cair** | 1200 ms de debounce + ida à rede | conferir `saveStatus === "saved"` no DOM antes de consultar |
+| **CRLF no `AGENTS.md`** | `detectEol` normaliza o bloco do Next para o EOL do arquivo | `.gitattributes` com `AGENTS.md text eol=lf` — mecanismo, não disciplina |
+| **`next dev` sobrevivente** | um servidor velho valida o que não vai ser commitado | matar 3000 **e** 5599 antes; `curl` separa app de permissão |
+
+---
+
 ### Fechamento · a régua, e o veredito
 
 1. **O Jorge percorre o caminho do zero**, num projeto novo, com a régua ao lado —
