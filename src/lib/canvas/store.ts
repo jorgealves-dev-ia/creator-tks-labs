@@ -1812,10 +1812,22 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         // they attached did. Leaving them behind would give the copy a reference
         // with no wire — the asymmetry that attachReference and detachReference
         // exist to prevent. Outgoing wires lead to results, which do not come.
+        //
+        // **Menos o fio de roteiro, que não é referência: é vínculo exclusivo.**
+        // Um roteiro tem uma Máquina só — o `onConnect` recusa a segunda com
+        // frase na tela desde a Fase 1 —, e copiar este fio chegava ao mesmo
+        // estado por fora do portão, com as duas Máquinas disputando as fichas.
+        // O ⧉ foi escrito antes de a Máquina existir e nunca soube do
+        // `BOARD_HANDLE`; a regra que ele conhecia — *toda aresta de entrada é
+        // uma referência anexada* — deixou de valer para todo mundo no dia em
+        // que nasceu um handle de entrada que significa outra coisa.
+        //
+        // A entrada «referencias» da Máquina continua vindo: aquela É referência,
+        // e a invariante 12 vale nela como em qualquer bloco.
         edges: [
           ...state.edges,
           ...state.edges
-            .filter((edge) => edge.target === id)
+            .filter((edge) => edge.target === id && edge.targetHandle !== BOARD_HANDLE)
             .map((edge) => ({ ...edge, id: `${edge.source}->${cloneId}`, target: cloneId })),
         ],
         revision: state.revision + 1,

@@ -5112,3 +5112,36 @@ git grep -n "SAI ANTES DO COMMIT" -- src/ supabase/
 **volte vazio antes de commitar.** Escopado a `src/` e `supabase/` de propósito: sem o escopo, a trava dispara na própria documentação que a descreve — este parágrafo faria o comando achar alguma coisa, e uma trava que acusa a si mesma é uma trava que se aprende a ignorar.
 
 **A conferência que precedeu a remoção**, porque apagar instrumento tem o mesmo risco de apagar prova: `git grep` no repositório inteiro, mais `supabase/travas/` e os harnesses do scratchpad. **Nada** os importa — as ocorrências fora do `machine-node.tsx` são prosa em evidências e no diário, usando a palavra "carimbo" no sentido de marca de tempo. A remoção saiu em `chore:` próprio, antes da primeira linha da Fase 4, com `lint` e `typecheck` verdes e **54 deleções e zero inserções** no diff.
+
+---
+
+### 02/09/2026 — 🔴 O ⧉ Duplicar nunca soube do `BOARD_HANDLE`, e chegava por fora num estado que o portão recusa
+
+Achado pela **prova 5** da Fase 4 — a que existia só para confirmar a frase do plano, *"são nodes comuns, duplicar e remover funcionam"*. Funcionam. E, funcionando, produziam isto:
+
+```
+                    nodes   máquinas   arestas
+o par do template     2         1          1
+depois do ⧉           3         2          2     <- as DUAS regendo o mesmo Roteiro
+```
+
+A Fase 1 provou, em campo e com frase na tela, que **um roteiro tem uma Máquina só**: arrastando um segundo fio, o `onConnect` recusa e diz *"duas disputariam o estado das mesmas fichas"*. O ⧉ chegava ao mesmo lugar **sem passar por essa porta**.
+
+**A causa é uma decisão certa que envelheceu.** `duplicateNode` copia todas as arestas de entrada, e o comentário ao lado explica por quê: num bloco de imagem, a aresta de entrada **é** a referência anexada, e deixá-la para trás daria à cópia uma referência sem fio — a assimetria que a invariante 12 existe para impedir. A função está certa para o mundo em que nasceu. O que mudou é que **a Máquina chegou depois**, e nela a aresta de entrada não é referência: é vínculo exclusivo. *A regra "toda aresta de entrada é uma referência" deixou de valer para todo mundo no dia em que nasceu um handle de entrada que significa outra coisa.*
+
+É a terceira aparição da mesma armadilha, e o código já a nomeia duas vezes por escrito: **construir aresta pelo store não passa pelo `onConnect`**. Antes foi em `addContinuation` e em `addSceneBlock`, dos dois lados de quem cria. Desta vez foi do lado de quem copia.
+
+**O que o template muda.** Não causa — quem ligasse à mão desde 28/08 chegaria aqui. Mas **encurta o caminho**: a Máquina agora nasce ligada, então "Máquina com fio de roteiro" virou o estado padrão e o ⧉ ficou a um clique dele. Foi por isso que o dono mandou consertar agora em vez de mandar para o backlog.
+
+**O inventário antes da linha**, porque cortar aresta errada é criar o defeito oposto. A Máquina tem **dois** handles de entrada: o `roteiro` (vínculo) e o `referencias` (referência de verdade, que entra em todas as cenas). As arestas de cena **não entram na conta** — os `cena-N` são de **saída**, e o filtro só olha `target`. Então há exatamente um vínculo, e a linha é cirúrgica:
+
+```
+- .filter((edge) => edge.target === id)
++ .filter((edge) => edge.target === id && edge.targetHandle !== BOARD_HANDLE)
+```
+
+**A prova tem duas metades, e a segunda é o que torna a primeira segura.** O harness roda o `duplicateNode` **de produção** sobre dois grafos: (A) a Máquina ligada, (B) um card de imagem com duas referências. **Vermelho: 3 falhas, todas em A.** **Verde: 11/11.** E **B passa nas duas rodadas** — se a linha tivesse cortado referência junto com vínculo, a invariante 12 teria sido a vítima e B teria acusado.
+
+Ao vivo, o mesmo em dois lugares: o ⧉ na Máquina dá **3 nodes e 1 aresta**, com a cópia dizendo *"Nenhum roteiro ligado"*; e o ⧉ num gerador com duas referências dá uma cópia com **as duas**, das mesmas fontes — conferido no banco, que é fonte melhor que o DOM.
+
+📌 **E uma nota de instrumento que quase virou falso negativo:** a primeira leitura das duas Máquinas usou `innerText` e disse que as duas regiam. `innerText` só devolve o que está **renderizado**, e a cópia tinha nascido fora da vista — texto vazio não contém a frase que eu procurava. Com `textContent`, o número saiu certo. **Ausência de prova lida como prova do contrário**, e num dia em que eu estava justamente procurando um defeito: a medição tem de ser conferida com a mesma desconfiança que o código.
