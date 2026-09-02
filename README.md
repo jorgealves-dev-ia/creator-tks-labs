@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Creator TKS Labs
 
-## Getting Started
+Estúdio de criação de conteúdo com IA baseado em **canvas infinito de nodes**, para
+gerar imagens, vídeos e influencers de IA com consistência de personagem — criativos
+para Instagram, TikTok/TikTok Shop, Shopee, YouTube e anúncios.
 
-First, run the development server:
+O princípio que decide as dúvidas de desenho: **poder de profissional, simplicidade de
+leigo.** Os nodes têm nomes de intenção — *Input de Produto*, *Gerar Imagem*, *Máquina
+de Storyboard* —, nunca de implementação.
+
+---
+
+## Como subir
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev            # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Precisa de um `.env.local` com as chaves do Supabase e dos provedores de IA. O
+`.env.example` traz a lista com placeholders — **os valores são manuais, por design.**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Para gerar vídeo, o endereço de retorno do webhook vive NO COMANDO:**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+FAL_WEBHOOK_URL="https://<tunel-de-hoje>.trycloudflare.com/api/webhooks/fal" npm run dev
+```
 
-## Learn More
+Ele **não mora no `.env.local`**. Não é segredo — é um endereço com validade de
+algumas horas, e um valor perecível guardado num arquivo permanente é uma armadilha
+que arma sozinha. Já custou quatro vezes; as quatro estão contadas no
+[`CLAUDE.md`](CLAUDE.md).
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run lint           # eslint
+npm run typecheck      # next typegen && tsc --noEmit
+npm run build          # NUNCA com o dev no ar: os dois escrevem no mesmo .next/
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Migrations são criadas com `supabase migration new <nome>` e **aplicadas à mão pelo
+dono** — ver [`CLAUDE.md`](CLAUDE.md).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## Onde ficam as coisas
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+src/app/                    rotas, Route Handlers e webhooks
+src/components/
+  canvas/                   o canvas, o trilho lateral, o autosave
+  nodes/                    um componente por tipo de node
+src/lib/
+  canvas/                   store (zustand), grafo salvo, ações
+  providers/                os adaptadores de IA — nada chama modelo direto
+  generation/               fila, capacidade, cobrança
+  storyboard/               roteiro e a Máquina
+  sparks/                   dinheiro, em centavos inteiros
+  i18n/pt-BR.ts             TODO texto de UI, num lugar só
+supabase/
+  migrations/               toda mudança de schema
+  travas/                   provas reexecutáveis das travas de banco
+docs/                       a documentação (abaixo)
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Para onde ir a seguir
+
+| # | leia | para saber |
+|---|---|---|
+| 1 | [`docs/ESTADO.md`](docs/ESTADO.md) | **em que pé o projeto está agora.** Uma página, reescrita a cada pausa |
+| 2 | [`docs/produto.md`](docs/produto.md) | o que é, para quem, e o roadmap |
+| 3 | [`docs/arquitetura.md`](docs/arquitetura.md) | as decisões estruturais **com o porquê de cada uma**, o modelo de dados e a stack |
+| 4 | `docs/plano-*.md` | o que falta em cada frente, e o que prova cada fase |
+| 5 | [`docs/decisoes.md`](docs/decisoes.md) | **por que** as coisas são como são — diário cronológico |
+
+As especificações fechadas vivem ao lado: character sheet, versionamento de entidades,
+motor de extração, geração canônica e a anatomia dos nodes. O índice completo está no
+[`CLAUDE.md`](CLAUDE.md).
+
+**Se você é um agente de IA**, comece por [`AGENTS.md`](AGENTS.md) e
+[`CLAUDE.md`](CLAUDE.md): eles trazem as invariantes que o código não pode violar e os
+limites do que dá para fazer sem perguntar.
+
+---
+
+## Stack
+
+Next.js (App Router) · TypeScript strict · React Flow (`@xyflow/react`) ·
+Tailwind · Supabase (Postgres + Auth + Storage + Realtime, com RLS default-deny) ·
+Vercel.
+
+---
+
+## Status
+
+Em desenvolvimento ativo.
+
+**Código proprietário, todos os direitos reservados. Repositório público durante o
+desenvolvimento.**

@@ -5145,3 +5145,57 @@ A Fase 1 provou, em campo e com frase na tela, que **um roteiro tem uma Máquina
 Ao vivo, o mesmo em dois lugares: o ⧉ na Máquina dá **3 nodes e 1 aresta**, com a cópia dizendo *"Nenhum roteiro ligado"*; e o ⧉ num gerador com duas referências dá uma cópia com **as duas**, das mesmas fontes — conferido no banco, que é fonte melhor que o DOM.
 
 📌 **E uma nota de instrumento que quase virou falso negativo:** a primeira leitura das duas Máquinas usou `innerText` e disse que as duas regiam. `innerText` só devolve o que está **renderizado**, e a cópia tinha nascido fora da vista — texto vazio não contém a frase que eu procurava. Com `textContent`, o número saiu certo. **Ausência de prova lida como prova do contrário**, e num dia em que eu estava justamente procurando um defeito: a medição tem de ser conferida com a mesma desconfiança que o código.
+
+---
+
+### 02/09/2026 — ✅ Fase 4 FECHADA: o template, e três correções de mecanismo que a investigação achou antes de a primeira linha existir
+
+O item «**Fluxo de Storyboard**» põe Roteiro + Máquina no canvas conectados e enquadrados num clique. Seção nova «Fluxos», acima de «Blocos» — a ordem é a mensagem: o fluxo montado antes das peças soltas. A Máquina crua fica onde estava, porque um segundo roteiro no mesmo projeto precisa de uma segunda Máquina.
+
+**O nome não podia ser o óbvio**, e essa foi a única pergunta de produto da fase: «Blocos» já tem um item chamado *Máquina de Storyboard*. Dois itens com o mesmo nome no mesmo trilho seria a **terceira** vez que a prateleira se contradiz — depois do vídeo em 13/08 e do storyboard em 17/08.
+
+**As três correções, todas achadas lendo código e todas com prova:**
+
+**1. A aresta se identifica pelo `targetHandle`, não pelo `sourceHandle`.** O briefing pedia `sourceHandle = BOARD_HANDLE`, e está metade certo: os dois lados usam o mesmo id, mas quem `findGoverningBoard` consulta é o **`targetHandle`**. Escrever só o de cima daria **um fio que se desenha e não rege nada** — o defeito que a Fase 1 nomeou. O template escreve os dois: o de baixo porque decide, o de cima para a aresta ficar indistinguível de uma arrastada à mão. *O harness carrega o controle que torna isso demonstrado em vez de afirmado: a mesma aresta sem `targetHandle` devolve `null`.*
+
+**2. `fitView` não serve para node recém-criado, e a razão está no código do xyflow.** `getFitViewNodes` filtra por `measured`, que só existe depois do desenho; com os dois pedidos filtrados fora, o bounds zera e a viewport vai para a origem no zoom máximo — **pior que não fazer nada**. A casa já tinha resolvido isso e escrito o porquê em `generator-node.tsx`: *"um palpite errado por alguns pixels desloca o centro por alguns pixels; esperar a medida deslocaria o clique por um quadro inteiro"*. Usa-se `setCenter`, com o zoom **derivado** pelo `getViewportForBounds` do próprio React Flow — a mesma matemática do `fitView`, alimentada com a caixa que o store acabou de escolher em vez de com nodes medidos. **É o `fitView` sem a dependência que o quebra.**
+
+**3. A premissa da altura estava invertida, e a favor.** O dono pediu duas medidas do Roteiro — vazio e com cenas — supondo que ele **cresce** com as fichas e que a Máquina 72 px abaixo acabaria embaixo dele. Medido: **554 vazio, 544 com seis cenas — ele encolhe.** Quem dirige a altura é sempre a coluna da pergunta, nunca o trilho (491×91 vazio; 481×260 com seis). Cada cena custa 34 px e o trilho não tem rolagem, mas precisaria de **12** para assumir, e o teto do produto é **10**. Então `STORYBOARD_NODE_HEIGHT = 554` não é o valor provável: é o **máximo**, e é a altura no instante exato em que o template roda. A folga abaixo **abre** com o uso, de 72 para 82.
+
+**Um conserto durante a própria prova, que vale mais que a prova.** A prova 7 mediu a folga do topo em **exatamente 56 px** — a altura do cabeçalho, com o par encostado nele. A causa: pedi margem assimétrica ao `getViewportForBounds`, mas ela alimenta só o **zoom**; o `setCenter` recentra e joga a assimetria fora. **Meu comentário no código afirmava uma coisa que o código não fazia.** Trocado por 80 px simétricos, o número saiu como está escrito: folga de 80 contra 56 de cabeçalho, 24 px de respiro.
+
+**As sete provas, em número:** +2 nodes e +1 aresta (delta exato); os dois handles gravados no `workflows.graph` e o par sobrevivendo ao F5, com a Máquina dizendo *"ainda não tem fichas"* em vez de *"Nenhum roteiro ligado"*; o item com glifo próprio (**o único print da fase** — a afirmação é inerentemente visual e nenhum número a carrega); o rodapé intacto; duplicar/remover; zero Spark; e **o par cabendo na tela**, que é o gesto que a fase promete remover. Mais o harness estrutural, **16/16**, rodando o `graphSchema` e o `findGoverningBoard` reais sobre os bytes do banco.
+
+**O rodapé da prateleira, conferido e não tocado.** Ele **não conta nada** — nunca contou. É uma frase estática que nomeia o que ainda não existe, e mentiu duas vezes prometendo o que **já** tinha chegado. O template não é voz, então *"A voz chega numa fase futura."* continua verdadeiro.
+
+📌 **Uma nota de método:** as três correções vieram de **ler o código do `node_modules`**, não de rodar e ver quebrar. As três teriam custado uma rodada de campo cada uma para aparecer — e a do `fitView` teria aparecido como *"o clique manda a tela para um lugar aleatório"*, que é o tipo de sintoma que se atribui a outra coisa.
+
+---
+
+### 02/09/2026 — 🔒 A documentação para qualquer agente: ponteiro, e a prova de que o Next respeita o que é nosso
+
+`AGENTS.md`, `README.md` e `.gitattributes`, entregues junto com o template.
+
+**O `AGENTS.md` é ponteiro, com quatro exceções deliberadas.** Ele aponta para o `CLAUDE.md` e diz por escrito quem ganha se os dois divergirem — *"se isto e o `CLAUDE.md` divergirem, vale o `CLAUDE.md`"*. Contra a própria regra de fonte única, **quatro regras estão duplicadas de propósito**: segredo, migration é do Jorge, provedor só no servidor, e R1/R2 antes de todo clique pago. São curtas, são estáveis, e o custo de não saber cada uma é dinheiro real ou um segredo vazado.
+
+**O argumento contra o espelho é do próprio repositório**, e já foi pago: o `config/models.json` sobreviveu dois meses em três lugares a uma decisão que o tinha matado. Um espelho de 37 KB que muda toda sessão diverge em silêncio, e um agente obedecendo à metade velha com confiança total é pior que um agente que precisou abrir mais um arquivo.
+
+**A prova não foi "rodei e a árvore ficou limpa".** Isso passaria trivialmente. Primeiro veio a leitura do `generate-agent-files.js`: `upsertAgentRulesBlock` monta `before + bloco + after`, então só o trecho delimitado é trocado. Depois a conferência de que o caminho é mesmo exercitado aqui — o detector do Next devolve `isAgent: true`. E aí o teste que vale: **apaguei o bloco do Next e subi o servidor.** Ele voltou (no fim do arquivo, exatamente como o código previa) e **o nosso conteúdo sobreviveu 8 de 8**, com zero CRLF. O md5 depois de restaurar o layout voltou byte a byte ao de antes.
+
+📌 **Achado colateral que vale mais que o teste:** é o `AGENTS.md` **existir** que protege o `CLAUDE.md`. Se ele fosse apagado, a mesma função cairia no ramo do `claudeMdExists` e enfiaria o bloco do Next **dentro do nosso `CLAUDE.md`**.
+
+**O `.gitattributes` ganhou o lugar por uma razão melhor do que a que eu tinha dado.** Eu havia escrito que o CRLF sujaria a árvore sozinho; medindo, esta máquina tem `core.autocrlf = true` e **já absorve** isso hoje. Mas isso é configuração **de máquina**, não do repositório — outro clone, outra máquina ou o build da Vercel têm a sua. A linha `AGENTS.md text eol=lf` move a garantia para dentro do repositório. Custo conferido antes: `git status` depois de criá-lo mostrou só o arquivo novo, e nenhum dos outros 250 rastreados mudou.
+
+**O `README.md` diz que o repositório é público**, a pedido do dono — *"Código proprietário, todos os direitos reservados. Repositório público durante o desenvolvimento."* O sumário foi relido inteiro atrás de outro trecho que assumisse repositório privado; não havia nenhum.
+
+---
+
+### 02/09/2026 — 🔒 DECISÃO do Jorge: o ritual de fechamento ganha duas travas e um caminho novo do sobrevivente
+
+Três linhas na regra 8, e as três nasceram de uma falha medida nesta sessão — nenhuma de uma ideia.
+
+**1. O ESTADO entra no MESMO commit do fechamento.** A regra 9 já exigia a reescrita a cada pausa desde 31/08, mas ela morava num parágrafo sobre **pausa**, e o ritual de fechamento não a nomeava. Cumprir a regra 8 dependia de lembrar da 9 no instante certo — que é a **forma exata** da falha que a regra 9 nasceu para impedir, um nível acima. O "mesmo commit" é a parte que faz trabalho: transforma a reescrita em algo que o `git status` do próprio ritual mostra, em vez de algo que depende de memória. Num commit à parte, é um ESTADO que se esquece.
+
+**2. `git grep -n "SAI ANTES DO COMMIT" -- src/ supabase/` tem de voltar vazio.** Cinco blocos com essa frase, em maiúsculas, atravessaram o commit de fechamento de uma fase que teve prova de campo, conferência de painel por identificador e resumo detalhado — e ficaram em `master` por dois dias. **Uma frase em comentário não é uma trava**: ela depende de alguém reler o arquivo inteiro na hora certa, e não releu. Um comando não depende de ninguém. **Escopado a `src/` e `supabase/` de propósito** — sem o escopo ele dispara na própria documentação que o descreve, e uma trava que acusa a si mesma é uma trava que se aprende a ignorar.
+
+**3. O servidor sobrevivente tem um caminho a mais, e é o pior deles.** A regra de 13/08 cobria o caso da porta ocupada: o `next dev` velho ouve a 3000, o novo sobe na 3001 e morre, e o navegador valida código antigo. Medido hoje: a **tarefa de fundo** que segura o dev pode ser dada como **encerrada** com o processo **ainda ouvindo** — a notificação disse *killed*, o `netstat` mostrou o PID de pé, e o log já estava fora de alcance. É a mesma armadilha chegando pelo lado onde ninguém procura, **porque o sinal que deveria avisar já disse que acabou**. A emenda: depois de encerrar um dev, **conferir a porta em vez de acreditar no aviso**, e matar pelo PID — que é o que sobra quando o dono do processo não responde mais.

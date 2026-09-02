@@ -25,11 +25,12 @@
 > faltava** — o ↻ depois de aprovada e depois do vídeo —, que virou a **D7**, **fechada
 > na conferência seguinte do mesmo dia**, com a recomendação.
 >
-> **Status do ciclo: Fases 0, 1, 2 e 3 ✅ fechadas; as sete decisões ✅ tomadas.
+> **Status do ciclo: Fases 0 a 4 ✅ fechadas; as sete decisões ✅ tomadas.
 > A Fase 3 fechou em 31/08/2026**, com dois cliques de campo — o primeiro provando o
-> teto e achando a mira, o segundo provando a mira. **Abertas: a Fase 4** (o template
-> no sidebar, mais `AGENTS.md`, `README.md` e o hábito do `ESTADO.md`) **e o
-> Fechamento** (a régua percorrida pelo dono e o veredito do fluxo curto).
+> teto e achando a mira, o segundo provando a mira. **A Fase 4 fechou em 02/09/2026** — o template
+> «Fluxo de Storyboard», mais `AGENTS.md`, `README.md`, `.gitattributes` e o hábito do
+> `ESTADO.md` virando passo do ritual. **Aberto: só o Fechamento** (a régua percorrida
+> pelo dono e o veredito do fluxo curto).
 >
 > O **defeito da atualização da tela** — o lote funcionava e não se anunciava — foi
 > medido e consertado em 29/08 (o contador `▶ N de M`), e os dois cliques de 31/08 o
@@ -967,7 +968,7 @@ clipes emendam?*
 
 ---
 
-### Fase 4 · o template no sidebar — o fluxo padrão
+### Fase 4 · o template no sidebar — o fluxo padrão ✅ **fechada em 02/09/2026**
 
 **Entrega.** Um item **"Máquina de Storyboard"** no trilho lateral que, num clique,
 põe no canvas **Roteiro + Máquina, conectados e posicionados**, com a tela indo até
@@ -1182,6 +1183,7 @@ registrados aqui para não voltarem como ideia nova daqui a um mês.
 |---|---|
 | **Galeria — filtros por tipo (imagens · avatares · vídeos) e busca por nome** | A régua do ciclo é *quantos gestos até o vídeo*, e filtro de galeria não remove gesto desse caminho. Parte do trabalho é espalhar o que já existe: o modal do estúdio tem três filtros e busca, a `/galeria` não tem nenhum dos dois. |
 | **Passe de UI/UX: o glifo ⇥ tem contraste fraco** | Registrado em 28/08, junto com as três arestas órfãs do grafo salvo. |
+| 🆕 **O canvas às vezes não desenha as arestas** | Achado em 02/09 na Fase 4, e **pré-existente** — provado com `git stash` das mudanças da fase: o sintoma é igual sem elas. Numa carga fria do «Primeiros Testes», **19 arestas válidas desenham zero**; o `workflows.graph` tem as 22 (3 órfãs, o item abaixo). **Nenhum dado se perde** — o vínculo funciona, o desenho é que falta. Hipótese declarada como hipótese: os `handleBounds` são medidos depois do render, e aresta recém-criada ou grafo grande em carga fria caem nessa janela. Reprodução em `scratchpad/evidencias/storyboard-c3-fase4/achado-arestas-nao-desenham-dado-intacto.md`. |
 | **O «Reanimar» é tudo-ou-nada** | Achado em 31/08: uma cena desatualizada entra no lote de reanimação sozinha, e não há gesto para deixá-la de fora. É desenho da D7, não defeito — mas quem quer refazer só uma paga pelas duas. Decide-se com uso, não agora. |
 
 ---

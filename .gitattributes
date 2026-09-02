@@ -1,0 +1,6 @@
+# O AGENTS.md e reescrito pelo `next dev`, e o `detectEol` dele copia o fim de
+# linha do arquivo. Em LF sempre, o bloco do Next volta sempre igual e a arvore
+# nao suja sozinha — mecanismo, em vez de disciplina. E a garantia passa a ser
+# do REPOSITORIO: o `core.autocrlf` e configuracao de maquina, e a proxima
+# maquina (ou o build da Vercel) tem a dela.
+AGENTS.md text eol=lf

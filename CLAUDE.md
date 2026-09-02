@@ -216,7 +216,13 @@ E a **trava de vida** (29/08) cobre o resto: o portão de vídeo faz **uma ida �
 5. Respeitar a divisão de autonomia da seção "Ferramentas conectadas e autonomia".
 6. **Manutenção da documentação.** Toda mudança de arquitetura, de produto ou de especificação deve, **na mesma sessão**, atualizar o doc correspondente em `docs/` e registrar uma entrada datada em [`docs/decisoes.md`](docs/decisoes.md). Ao concluir uma fase, atualizar o roadmap em [`docs/produto.md`](docs/produto.md). Manter este arquivo enxuto: detalhe novo vai para `docs/`, não para cá.
 7. **Invariantes do character sheet.** As regras de compilação da seção 6 de [`docs/character-sheet.md`](docs/character-sheet.md) são invariantes do projeto, com o mesmo status das 7 decisões de arquitetura: **nunca podem ser violadas pelo código sem decisão explícita registrada.**
-8. **Fluxo de encerramento de toda tarefa:** apresentar resumo enxuto do que foi feito → rodar `git status` e mostrar a lista de arquivos a commitar → pedir ok ao Jorge → só então fazer commit e push. Se aparecer qualquer arquivo fora do escopo declarado da tarefa, **parar e avisar antes de commitar**.
+8. **Fluxo de encerramento de toda tarefa:** reescrever [`docs/ESTADO.md`](docs/ESTADO.md) → conferir que `git grep -n "SAI ANTES DO COMMIT" -- src/ supabase/` volta **vazio** → apresentar resumo enxuto do que foi feito → rodar `git status` e mostrar a lista de arquivos a commitar → pedir ok ao Jorge → só então fazer commit e push. Se aparecer qualquer arquivo fora do escopo declarado da tarefa, **parar e avisar antes de commitar**.
+
+   **Os dois primeiros passos são novos, e cada um nasceu de uma falha medida** *(02/09/2026)*.
+
+   **O ESTADO entra no MESMO commit do fechamento.** A regra 9 já exigia a reescrita a cada pausa, mas ela morava num parágrafo sobre *pausa* e o fechamento não a nomeava — então cumprir a regra 8 dependia de alguém lembrar da 9 no instante certo, que é a forma exata da falha que a regra 9 existe para impedir. No mesmo commit, ele é a última coisa que o fechamento toca e a primeira que a sessão seguinte lê; num commit à parte, é um ESTADO que se esquece.
+
+   **E a trava do `git grep` existe porque uma frase em comentário não é uma trava.** Cinco blocos marcados `SAI ANTES DO COMMIT`, em maiúsculas, atravessaram o commit de fechamento de uma fase que teve prova de campo e conferência de painel — e ficaram em `master` por dois dias. Uma marca depende de alguém reler o arquivo inteiro na hora certa; um comando não depende de ninguém. **Escopado a `src/` e `supabase/` de propósito:** sem o escopo ele dispara na própria documentação que o descreve, e uma trava que acusa a si mesma é uma trava que se aprende a ignorar.
 
    **A prova ao vivo é obrigatória onde há DINHEIRO — e só ali** *(recalibração do Jorge, 31/08/2026; a emenda original é de 11/08, e o porquê das duas está em [`docs/decisoes.md`](docs/decisoes.md))*.
 
@@ -245,6 +251,8 @@ E a **trava de vida** (29/08) cobre o resto: o portão de vídeo faz **uma ida �
    **Nunca rodar `npm run build` com o `npm run dev` no ar** — os dois escrevem no mesmo `.next/`. Parar o dev, buildar, subir o dev de novo.
 
    **E antes de toda validação no navegador, conferir que a porta 3000 está servindo o código novo** *(emenda de 13/08/2026, nascida de um achado da Fase 4 do Ciclo Fila)*. Um `next dev` sobrevivente de uma etapa anterior continua ouvindo a 3000; o `npm run dev` novo vê a porta ocupada, sobe na 3001 e **morre** avisando que já existe outro servidor — e o navegador, apontado para a 3000, valida o código antigo com toda a aparência de estar validando o novo. **Um servidor velho valida o que não vai ser commitado.** Matar o sobrevivente (`netstat -ano | grep :3000` → `taskkill //PID <pid> //T //F`) e só então validar.
+
+   **E o sobrevivente tem um caminho a mais, que não é o da porta ocupada** *(02/09/2026)*. A tarefa de fundo que segura o `npm run dev` pode ser dada como **encerrada** com o `next dev` **ainda ouvindo** — foi medido: a notificação disse *killed*, e o `netstat` mostrou o processo de pé, com o log agora fora de alcance. É a mesma armadilha chegando pelo lado onde ninguém a procura, porque o sinal que deveria avisar já disse que acabou. **Depois de encerrar um dev, conferir a porta em vez de acreditar no aviso** — e matar pelo PID, que é o que sobra quando o dono do processo já não responde.
 
    **O commit de fechamento e o `git push` são a mesma ação, nunca duas.** Commitar sem empurrar deixa a etapa pronta num lugar onde ninguém a vê — o deploy da Vercel sai do `origin/master`, então o que fica só no local não existe para o produto. Não há etapa "commitada mas ainda não empurrada": ou as duas rodaram, ou o fechamento não aconteceu.
 
