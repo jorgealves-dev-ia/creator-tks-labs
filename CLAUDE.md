@@ -25,6 +25,7 @@
 | [`docs/notas-modo-take.md`](docs/notas-modo-take.md) | Antes de planejar o **Ciclo C (Modo Take)** — a análise do Seedance 2.5: papéis de referência, linha do tempo, preço citado e o que **não** copiar. Só registro. |
 | [`docs/notas-voz.md`](docs/notas-voz.md) | Antes de planejar o **Ciclo D (Voz)** — *voz é identidade*, a identidade de voz na ficha, os dois caminhos para o campo `fala`, e a regra a criar **antes do primeiro `voice_id`**. Só registro. |
 | [`docs/plano-egress.md`](docs/plano-egress.md) | Ao retomar o **Mini-ciclo Faxina de Egress** — miniaturas, URL assinada estável e cache imutável. Qual fase está aberta, os números medidos do acervo, e as duas decisões que esperam o Jorge (declarar o `sharp`; onde a URL assinada fica guardada). |
+| [`docs/runbook-conta-fal.md`](docs/runbook-conta-fal.md) | Ao fim de toda sessão que submeteu **vídeo** a provedor pago. O procedimento para conferir que o painel da fal e o nosso banco contam a mesma história — **por id, nunca por total** —, com o SQL dos dois lados, a armadilha da *Recent History* sem filtro de data, e o que fazer quando não fecha. A metade que só o Jorge fecha. |
 | [`docs/decisoes.md`](docs/decisoes.md) | Quando quiser saber **por que** algo é do jeito que é, ou antes de reverter uma escolha que parece estranha. Diário cronológico de decisões. |
 
 ---

@@ -5243,3 +5243,11 @@ Quatro perguntas do dono sobre o que ele viu na tela. As quatro respondidas com 
 Os três carimbos são de 22:27:43, 22:27:54 e 22:28:09 — **antes das imagens**, com 11 s e 15 s entre eles: o ritmo de alguém abrindo três fichas em sequência. O dono aprovou três e a tela o acusou de ter editado três.
 
 📌 **E não é cosmético.** O aviso existe para segurar o dedo de quem vai gerar por cima e perder trabalho manual. Disparando por aprovação, ele avisa quando não há nada a perder — e **um aviso que aparece à toa é um aviso que se aprende a fechar sem ler**, que é a mesma lição do rodapé da prateleira, por outra porta.
+
+---
+
+### 03/09/2026 — ✅ O painel da fal fechou a conta do percurso, por id — e a *Recent History* é que escondeu o dia
+
+**3 requisições de 02/09, conferidas uma a uma pelo `provider_job_id` — `01a0643e-d1ff…`, `01a0643e-d326…`, `01a0643e-d464…` —, nenhuma além das nossas.** A conferência quase não aconteceu por um detalhe do painel: **a *Recent History* da fal não tem filtro de data.** Ela lista o *recente*, não o *dia*; quem chega procurando "02/09" não acha o dia e está a um passo de concluir que não há nada lá. **É mais uma razão para o procedimento ser por id: aqui ele não é só mais forte que o total, é o único que funciona** — a lista de ids vira a pergunta, e o painel só responde sim ou não para cada linha dela.
+
+📌 **O procedimento virou arquivo:** [`runbook-conta-fal.md`](runbook-conta-fal.md), com o SQL dos dois lados conferido contra o banco, as duas direções do fechamento, a armadilha da *Recent History* e a tabela do que fazer quando **não** fecha. Estava na cabeça desde 31/08 e foi refeito de memória duas vezes; um procedimento que se refaz de memória é um procedimento que um dia se refaz errado.
