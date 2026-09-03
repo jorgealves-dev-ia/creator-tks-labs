@@ -5251,3 +5251,39 @@ Os três carimbos são de 22:27:43, 22:27:54 e 22:28:09 — **antes das imagens*
 **3 requisições de 02/09, conferidas uma a uma pelo `provider_job_id` — `01a0643e-d1ff…`, `01a0643e-d326…`, `01a0643e-d464…` —, nenhuma além das nossas.** A conferência quase não aconteceu por um detalhe do painel: **a *Recent History* da fal não tem filtro de data.** Ela lista o *recente*, não o *dia*; quem chega procurando "02/09" não acha o dia e está a um passo de concluir que não há nada lá. **É mais uma razão para o procedimento ser por id: aqui ele não é só mais forte que o total, é o único que funciona** — a lista de ids vira a pergunta, e o painel só responde sim ou não para cada linha dela.
 
 📌 **O procedimento virou arquivo:** [`runbook-conta-fal.md`](runbook-conta-fal.md), com o SQL dos dois lados conferido contra o banco, as duas direções do fechamento, a armadilha da *Recent History* e a tabela do que fazer quando **não** fecha. Estava na cabeça desde 31/08 e foi refeito de memória duas vezes; um procedimento que se refaz de memória é um procedimento que um dia se refaz errado.
+
+---
+
+## Mini-ciclo — «O vídeo final»
+
+### 03/09/2026 — ✅ Fase 0: o vencedor da montagem não usa `ffmpeg`, e três achados mudaram o desenho da Fase 1
+
+**As quatro perguntas do plano foram respondidas pelo dono** e viraram decisão, no §7 do [`plano-video-final.md`](plano-video-final.md): a **ordem é 5 → 0 → 1 → 2 → 3 → 4** (a Fase 5 sobe porque é barata e mexe na porta de entrada); o filme **nasce como cartão de Resultado no canvas E como asset na galeria — e o asset é a verdade**; cena sem clipe deixa o botão **desabilitado com a contagem do que falta**; e o `produto` fora do prompt **não entra neste mini-ciclo**. Duas fases novas entraram na mesma conversa, família *"a tela mente"*: a **6** (o terceiro braço do ternário) e a **7** (aprovar não carimba `edited_at`).
+
+**O vencedor: montagem em JavaScript puro, sem `ffmpeg`.** Nos 3 clipes reais do percurso de 02/09 — **122 ms** contra 202 ms do `ffmpeg -f concat -c copy` e 1.571 ms recodificando. O que decidiu não foi o tempo, foi **o que cada técnica exige carregar**: o binário `ffmpeg-static` de linux pesa **75,0 MB**; a biblioteca pesa **0,63 MB**. **119×**, num runtime onde o pacote da função é orçamento.
+
+📌 **A prova é mais forte que "funcionou": é idêntica quadro a quadro.** Hash de pixel cru dos **363 quadros** do arquivo montado contra os 363 das três cenas — cena 1 nos quadros 0–120, cena 2 nos 121–241, cena 3 nos 242–362, **todas idênticas uma a uma**. Nenhum quadro foi decodificado e recomprimido: o filme **é** os clipes, com o relógio deslocado. É a diferença entre uma montagem e uma recodificação, e ela se mede.
+
+**Com 10 cenas — o `TETO_CENAS` de hoje — são 885 ms e 35,0 MB**, contra um `maxDuration` de 60 s e um bucket de 50 MB. *Eu havia extrapolado 0,4 s a partir de 3 clipes e errei por 2×; medi as 10 e ficou o medido.* **A montagem é rota síncrona, e isso está decidido por número, não por gosto.**
+
+#### Os três achados que a Fase 0 manda para a Fase 1
+
+**(1) A ordem das cenas não é a ordem de criação das gerações.** O lote de 643 ms de 02/09 submeteu embaralhado: a cena **2** é a geração criada **por último** (22:30:33.898), e a cena **3** é a segunda (22:30:33.584). Montar por `created_at` — ou por nome de arquivo, que é o atalho preguiçoso — entrega o filme fora de ordem. **E esse erro não aparece em teste nenhum que não assista ao vídeo**: o arquivo é válido, tem a duração certa e o número certo de quadros. A ordem é `storyboard_scenes.ordem`, e só ela.
+
+**(2) O banco não sabe o que os arquivos são.** `assets.width` e `assets.height` são **`NULL`** nos três clipes; o que existe é `generations.params.resolution = "720p"` — que é **o pedido feito à fal**, não a medida. O arquivo tem **716×1284**. Um portão que precise decidir *"estes clipes dá para juntar?"* **não tem como responder pelo banco**; ele lê os arquivos. *Ler três cabeçalhos de MP4 não chama ninguém e não gasta Spark — a recusa custa zero.*
+
+**(3) Nenhuma das duas bibliotecas recusa um clipe incompatível.** Recodificando a cena 3 para 540×960 @30fps e mandando montar: o `ffmpeg -c copy` **não dá erro** e entrega **18,896 s onde deviam ser 15,118 s**; o puro JS **também não dá erro**, acerta a duração e **declara a resolução do primeiro clipe para todos**. As duas falham silenciosamente, de maneiras diferentes. **A trava é nossa**, ela lê os arquivos, e ela **nomeia o clipe que destoa** — porque "não deu para montar" manda a pessoa adivinhar qual dos dez.
+
+**E o teto de tamanho é configuração nossa, não do Supabase.** `storage.buckets.file_size_limit = 52428800` veio de `supabase/migrations/20260807140500_storage_assets_bucket.sql:11`, com o comentário *"50 MB, the Supabase Free plan cap. Raise it when the plan changes."* A **3.688.819 B por cena de 5 s**, o teto teórico é **14 cenas**; o `TETO_CENAS = 10` de hoje passa com **30% de folga**. O gate soma e recusa **com o número**, antes de montar — enquanto o teto está folgado, e não no dia em que apertar.
+
+#### A dependência, por escrito antes do `package.json`
+
+`mediabunny` **1.55.6**, `github.com/Vanilagy/mediabunny`: 7.084 ★, 292 forks, não arquivado, 177 versões desde 16/06/2025, seis lançamentos em 17 dias, último push **no dia da medição**. **Zero dependências de runtime** — as duas do `package.json` dele são pacotes só de tipos, sem `main`. **O risco real é um mantenedor só**, e é o único que sobra.
+
+**A licença é MPL-2.0, e o que ela obriga é por arquivo:** se alterarmos **os arquivos da própria biblioteca**, esses arquivos alterados continuam MPL-2.0 e têm de ficar abertos. **O nosso código não é afetado** — nem por importá-la, nem por distribuí-la junto. É o que torna o plano B viável em vez de teórico.
+
+**Se ela sumir, o plano B está escrito:** (1) **copiar o código para dentro do repo** — permitido pela licença, e com zero dependências isso é **um arquivo, não uma árvore** (alterações nossas nesses arquivos ficam MPL-2.0, que é um preço conhecido e pequeno); (2) a versão fixada continua baixável, porque o npm não deixa despublicar depois de 72 h; (3) **`ffmpeg-static`**, o perdedor desta fase, que não deixou de existir por ter perdido. **A montagem fica atrás de uma função nossa** — trocar o motor é reescrever essa função, não caçar chamadas pelo código.
+
+📌 **Aprovada pelo Jorge em 03/09/2026, cravada em `1.55.6` — sem caret.** Um `^` deixaria o npm trazer sozinho a próxima 1.56 de um projeto que lançou seis versões em dezessete dias, e o que a diligência mediu foi **esta** versão. A atualização passa a ser um gesto, com leitura do changelog, e não um efeito colateral de `npm install`.
+
+📌 **E uma correção de diagnóstico, que vale mais que o resto:** o achado (c) de 02/09 dizia que *"o `produto` da ficha não entra no prompt"* como se fosse esquecimento. **Não é.** O `scene-prompt.ts` **declara a decisão no próprio arquivo**: o produto não vira nada no bloco porque `storyboard_scenes.produto` é texto livre e **produto virou card de canvas em 10/08/2026** — não há linha para uma FK apontar, e o bloco manda conectar um Input de Produto *"em vez de fingir que resolveu"*. O fato observado continua de pé (a cena 3 saiu errada); **a causa atribuída não.** Uma decisão consciente de 10/08 e um defeito de 02/09 não são a mesma coisa, e tratar a primeira como a segunda **reverteria uma escolha sem ninguém discutir a escolha**. Por isso o `fix:` do §9 começa por **escolher entre três caminhos** — o texto livre no prompt, a Máquina exigindo um Input de Produto, ou a tela avisando que o campo não vira imagem — e não por um patch de uma linha.
