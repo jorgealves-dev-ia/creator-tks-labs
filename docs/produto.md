@@ -237,6 +237,36 @@ Um modelo só, na configuração mais barata: Kling 2.1 image-to-video, 5s, 720p
 
 **O que fica para o Ciclo 3 (A Máquina), agora prioridade absoluta:** reger as dez fichas de uma vez. Ela não existe para acrescentar capacidade — existe para **comprimir o fluxo a "uma ideia e alguns cliques"**, que passou a ser o critério de sucesso do produto em 17/08/2026.
 
+### Frente Storyboard — Ciclo 3: A Máquina ✅ concluído (02/09/2026)
+
+**O node maestro.** A Máquina lê as fichas que já estão no banco e conduz os motores existentes **em lote**: gera a imagem de cada cena, deixa o dono aprovar ou repetir cena a cena, e anima só as aprovadas — com a continuação encadeada pelo elo do Ciclo 1.
+
+- **Ela não acrescenta capacidade.** Cada cena continua sendo uma geração normal, pelo mesmo Route Handler, com o preço do mesmo catálogo e a mesma linha de extrato. O que ela acrescenta é **caminho curto**.
+- **A régua: 50 gestos → 9.** O lote de imagens tirou 6, o lote de vídeo tirou 35, e o template «Fluxo de Storyboard» — Roteiro + Máquina conectados e enquadrados num clique — tirou 3 da montagem em todo projeto novo.
+- **Dois portões, e o custo fala a verdade multiplicada antes do clique.** Vídeo só de cena aprovada; saldo insuficiente recusa antes de gastar, dizendo quanto falta.
+- **O incidente que redesenhou o motorista.** Um clique de 210 ⚡ virou **626 submissões** em 29/08. As quatro travas que saíram dali — uma submissão por cena por clique, limite do lote = tamanho do lote, nunca resubmissão automática, e o lote é uma lista fechada — têm cada uma a sua simulação vermelha→verde reexecutável. **Placar de 31/08: 630 ⚡, 3 clipes, 0 submissões acidentais.**
+
+**O fechamento, e ele não fechou tudo.** O dono percorreu a régua do zero — 3 cenas, 870 ⚡ — e deu o veredito:
+
+> **O fluxo ficou curto, mas para antes do fim — três "vídeo pronto" e nenhum vídeo.**
+
+→ [`plano-storyboard-c3.md`](./plano-storyboard-c3.md) · [`nodes-geracao.md`](./nodes-geracao.md) §3.2
+
+---
+
+## 7.1 A ordem daqui em diante — **decidida pelo dono em 02/09/2026**
+
+| # | ciclo | o que ele resolve |
+|---:|---|---|
+| **A** | **O vídeo final** 🔜 | o rabo do Ciclo 3: a Máquina termina em **UM vídeo montado**, no canvas, **sem Spark**. Mini-player, e a Máquina vazia apontando para o «Fluxo». → [`plano-video-final.md`](./plano-video-final.md) |
+| **B** | **Catálogo aberto** | provedores e modelos como **dado**: *"modelo novo = linha no catálogo + adaptador"*. É a invariante 2 e a 6 saindo do papel — e é onde entram as **capacidades** (fala nativa, referência de áudio, lipsync, voice_id). |
+| **C** | **Modo Take** | a repetição barata do que já existe, no lugar de refazer tudo — e o caminho para um modelo que entende **papéis de referência e linha do tempo**. → [`notas-modo-take.md`](./notas-modo-take.md) |
+| **D** | **Voz e áudio** | `storyboard_scenes.fala` deixa de dormir. **Voz é identidade**, não efeito. → [`notas-voz.md`](./notas-voz.md) |
+| **E** | **Passe de UI/UX** | a arte da máquina, o contraste do ⇥, o acabamento. |
+| **F** | **Publicação** | o produto saindo para fora. |
+
+**A visão registrada, sem data:** **Smart Edit** — uma campanha, N produtos: trocar o produto no vídeo sem regenerar —, edição por trecho, e modelo 3D como referência de movimento.
+
 ### Fase 2.5 — Storyboard + Vídeos 📌 conversa dedicada
 
 Registrada a pedido do Jorge, **depois dos nodes de geração**: storyboard cena a cena e geração de vídeo, que chegam junto com a estreia do **padrão assíncrono** (fila → webhook → Realtime). A geração canônica pôde ser síncrona porque uma imagem 2K leva de 20 a 40 segundos e cabe no tempo de função; vídeo não cabe, e é ali que o assíncrono deixa de ser opcional.

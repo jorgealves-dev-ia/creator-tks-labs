@@ -25,7 +25,8 @@
 > faltava** — o ↻ depois de aprovada e depois do vídeo —, que virou a **D7**, **fechada
 > na conferência seguinte do mesmo dia**, com a recomendação.
 >
-> **Status do ciclo: Fases 0 a 4 ✅ fechadas; as sete decisões ✅ tomadas.
+> **Status do ciclo: ✅ ENCERRADO em 02/09/2026. Fases 0 a 4 fechadas, as sete decisões
+> tomadas, e a régua percorrida pelo dono.
 > A Fase 3 fechou em 31/08/2026**, com dois cliques de campo — o primeiro provando o
 > teto e achando a mira, o segundo provando a mira. **A Fase 4 fechou em 02/09/2026** — o template
 > «Fluxo de Storyboard», mais `AGENTS.md`, `README.md`, `.gitattributes` e o hábito do
@@ -118,7 +119,7 @@ provedor não é função determinística do texto. Com uma recusa no lote, hoje
 
 | # | gesto |
 |---:|---|
-| 1 | clicar **"Máquina de Storyboard"** no sidebar → Roteiro + Máquina, já conectados |
+| 1 | clicar **«Fluxo de Storyboard»** no trilho lateral (seção «Fluxos») → Roteiro + Máquina, já conectados e enquadrados |
 | 2–5 | canal · nº de cenas · `@luna` · escrever a ideia |
 | 6 | **Gerar roteiro** |
 | 7 | **Gerar as 4 imagens** — o total já está na tela: `4 × 75 = 300 ⚡ · Saldo: N ⚡` |
@@ -1143,7 +1144,7 @@ nome que diz o que aquele arquivo prova.
 
 ---
 
-### Fechamento · a régua, e o veredito
+### Fechamento · a régua, e o veredito ✅ **feito em 02/09/2026**
 
 1. **O Jorge percorre o caminho do zero**, num projeto novo, com a régua ao lado —
    contando os gestos de verdade contra os 9 previstos.
@@ -1156,6 +1157,50 @@ nome que diz o que aquele arquivo prova.
    que é normativa**).
 4. `npm run lint` + `npm run typecheck`, **commit e push na mesma ação**, com
    `git log origin/master -1` colado no resumo.
+
+#### O que o percurso deu — **02/09/2026**
+
+Projeto novo, 3 cenas, TikTok Shop, `@luna`, produto *"blusa da Mine"*. Roteiro **15 ⚡**
+→ 3 imagens **225 ⚡** → 3 clipes **630 ⚡**. Saldo 4.150 → 3.280.
+
+**A conta e a mira fecharam:** exatamente 3 cobranças de vídeo, cada uma com o seu
+`provider_job_id`, submetidas numa janela de 643 ms e voltando em 69 s, 74 s e 64 s —
+zero reconciliação à mão.
+
+> ## O VEREDITO
+>
+> **O fluxo ficou curto, mas para antes do fim — três "vídeo pronto" e nenhum vídeo.**
+> A Máquina precisa terminar em **UM vídeo**, montado no canvas, **sem Spark**.
+> **Não é reabrir o desenho; é o rabo dele.**
+
+É a resposta que a pergunta de 17/08 pedia, e ela **não** manda o desenho de volta à
+mesa: manda terminá-lo. E o *"sem Spark"* é o que faz disso rabo e não ciclo novo —
+juntar arquivo não chama modelo nenhum.
+
+**A segunda metade do veredito, sobre a porta de entrada:** o trilho **não levou o dono
+ao «Fluxo de Storyboard» na primeira vez**. Ele clicou nos blocos avulsos e montou à mão
+o que um clique fazia. **A Máquina vazia deve apontar para o Fluxo** — o card que diz
+*"Nenhum roteiro ligado"* é onde a pessoa está olhando no instante exato em que o atalho
+seria útil.
+
+📌 **A régua, com honestidade:** os 9 gestos pressupõem começar pelo template, então os
+**−3 da Fase 4 só existem para quem acha o item**. O número não está errado; a porta é
+que está estreita.
+
+**Três achados da auditoria**, todos com o banco na mão e custo 0 ⚡ — o detalhe está em
+[`decisoes.md`](decisoes.md):
+
+1. **O "falhou neste lote" que piscou não existiu:** zero linhas `failed`, as sete
+   gerações `succeeded`. Corrida entre o `jaTentadas` local e a leitura do banco, e um
+   ternário de dois braços que chama *"submetida e sem notícia"* de falha.
+2. **A cena 3 saiu de roupa íntima porque `produto` não entra no prompt** — está escrito
+   em `scene-prompt.ts:45`. As cenas 1 e 2 escaparam porque a `acao` delas nomeia a
+   peça; foi sorte, não desenho.
+3. **Aprovar a ficha carimba `edited_at`**, então a tela acusa de "editada à mão" quem
+   só aprovou.
+
+**O que sai daqui:** [`plano-video-final.md`](plano-video-final.md), o mini-ciclo do
+rabo — tudo 0 ⚡ —, **antes** do Catálogo.
 
 ---
 

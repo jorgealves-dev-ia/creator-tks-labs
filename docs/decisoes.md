@@ -5199,3 +5199,47 @@ Três linhas na regra 8, e as três nasceram de uma falha medida nesta sessão �
 **2. `git grep -n "SAI ANTES DO COMMIT" -- src/ supabase/` tem de voltar vazio.** Cinco blocos com essa frase, em maiúsculas, atravessaram o commit de fechamento de uma fase que teve prova de campo, conferência de painel por identificador e resumo detalhado — e ficaram em `master` por dois dias. **Uma frase em comentário não é uma trava**: ela depende de alguém reler o arquivo inteiro na hora certa, e não releu. Um comando não depende de ninguém. **Escopado a `src/` e `supabase/` de propósito** — sem o escopo ele dispara na própria documentação que o descreve, e uma trava que acusa a si mesma é uma trava que se aprende a ignorar.
 
 **3. O servidor sobrevivente tem um caminho a mais, e é o pior deles.** A regra de 13/08 cobria o caso da porta ocupada: o `next dev` velho ouve a 3000, o novo sobe na 3001 e morre, e o navegador valida código antigo. Medido hoje: a **tarefa de fundo** que segura o dev pode ser dada como **encerrada** com o processo **ainda ouvindo** — a notificação disse *killed*, o `netstat` mostrou o PID de pé, e o log já estava fora de alcance. É a mesma armadilha chegando pelo lado onde ninguém procura, **porque o sinal que deveria avisar já disse que acabou**. A emenda: depois de encerrar um dev, **conferir a porta em vez de acreditar no aviso**, e matar pelo PID — que é o que sobra quando o dono do processo não responde mais.
+
+---
+
+### 02/09/2026 — 🏁 VEREDITO do Jorge, Ciclo 3: **o fluxo ficou curto, mas para antes do fim**
+
+O dono percorreu a régua do zero, num projeto novo: 3 cenas, TikTok Shop, `@luna`, produto *"blusa da Mine"*. Roteiro **15 ⚡** → 3 imagens **225 ⚡** → 3 clipes **630 ⚡**. Saldo 4.150 → 3.280, **870 ⚡** no total.
+
+**O veredito, nas palavras dele:**
+
+> **O fluxo ficou curto, mas para antes do fim — três "vídeo pronto" e nenhum vídeo.**
+> A Máquina precisa terminar em **UM vídeo**, montado no canvas, sem Spark.
+> **Não é reabrir o desenho; é o rabo dele.**
+
+É a resposta que a pergunta de 17/08 pedia — *"se depois da Máquina o fluxo ainda parecer longo, o desenho volta à mesa"* — e ela não manda o desenho de volta. **Manda terminá-lo.** A Máquina rege bem os motores que existem; o que falta não é outro maestro, é a última nota. Três clipes numa pasta são matéria-prima; um filme é entrega.
+
+E a distinção *"sem Spark"* é a metade que faz isso ser rabo e não ciclo novo: **juntar arquivo não chama modelo nenhum.** Nada no que falta toca provedor pago.
+
+**A segunda metade do veredito, e ela é sobre a porta de entrada:** o trilho **não levou o dono ao «Fluxo de Storyboard» na primeira vez.** Ele clicou nos blocos avulsos e montou à mão o que um clique fazia. O item existe, tem seção própria e glifo próprio, e mesmo assim não foi encontrado por quem sabia que ele existia — o que diz que a descoberta não é problema de rótulo. **A Máquina vazia deve apontar para o Fluxo:** o card que diz *"Nenhum roteiro ligado"* é onde a pessoa está olhando no momento exato em que o atalho seria útil, e ele hoje ensina a arrastar um fio em vez de oferecer o caminho pronto.
+
+📌 **A régua, com honestidade:** a conta de 9 gestos pressupõe começar pelo template. Quem começa pelos blocos avulsos volta ao caminho antigo de montagem — o que significa que **os −3 da Fase 4 só existem para quem acha o item.** O número não está errado; a porta é que está estreita.
+
+---
+
+### 02/09/2026 — 🔬 A auditoria do percurso: três achados, e um deles é uma palavra que o banco nunca escreveu
+
+Quatro perguntas do dono sobre o que ele viu na tela. As quatro respondidas com o banco na mão, custo **0 ⚡**.
+
+**(a) A conta fecha, e a mira também.** Exatamente **3 cobranças de vídeo**, cada uma com o seu `provider_job_id`, nenhuma quarta linha, nenhum job repetido. As três submissões couberam numa janela de **643 ms** e voltaram em 69 s, 74 s e 64 s — **zero reconciliação à mão**. *(A metade do painel da fal é do dono, conferida por id e não por total.)*
+
+**(b) O "falhou neste lote" que piscou nas três cenas: NÃO HOUVE FALHA NENHUMA.** Zero linhas `failed` no banco; as sete gerações são `succeeded`. **A tela mostrou uma palavra que o banco nunca escreveu**, e a causa é ordem de eventos: `jaTentadas` é estado local do motorista e entra no instante da submissão; `cena.video` vem do banco e só vira `"gerando"` quando o Realtime traz a linha. Entre os dois há uma janela de milissegundos em que a cena já está numa lista e ainda não está na outra — e o ternário da linha 415 de `machine-video.ts` só tem dois braços, então trata *"submetida e sem notícia"* como *"tentada e não produziu clipe"*, que é a definição de falha.
+
+**O conserto é um terceiro estado, e ele já tem nome na casa: *enviando*.** Custo do defeito: zero em dinheiro, e caro em confiança — é o tipo de coisa que ensina alguém a clicar de novo.
+
+**(c) A cena 3 saiu de roupa íntima, e a causa é o compilador — que diz isso por escrito.** O `prompt_compiled` não tem a palavra "blusa", nem "blouse", nem roupa nenhuma; tem o corpo descrito em detalhe, o quarto, o espelho e *"full-body shot"*. Em `scene-prompt.ts:45` está escrito: *"O produto da cena, que **não** vira nada no bloco. Viaja porque a tela precisa dizer que ele existe."* O prompt é `acao + cenario + movimento` e mais nada; `storyboard_scenes.produto` = *"blusa da Mine"* fica no banco, aparece na tela e **não chega ao modelo**.
+
+**As cenas 1 e 2 escaparam por sorte, não por desenho:** a `acao` delas nomeia a peça (*"retira a blusa da Mine"*, *"já com a blusa vestida"*); a da 3 não. Depender de o modelo de roteiro lembrar de vestir a personagem em toda ação é depender de sorte uma vez por cena.
+
+**E o `traje_canonico: null` estava certo** — a invariante 13 impede o sistema de injetar o traje de banho numa cena dirigida, e ela funcionou. **O buraco não é ela: é não haver nada ocupando o lugar do que foi corretamente retirado.** Ranqueando as três causas que o dono ofereceu: o compilador é a raiz, a ausência de referência do produto é o agravante (`referencias: []`, e a chave nasce desligada), e o texto da ficha é sintoma.
+
+**(d) Aprovar a ficha conta como editar, e por isso a frase mente.** São **duas** aprovações diferentes: a da **ficha** (`storyboard_scenes.status`, pelo seletor dentro do diálogo) e a da **imagem** (`imagem_aprovada_asset_id`, pelo ✓ da Máquina). O `aprovarCenas` escreve só a segunda e **não toca em `edited_at`** — está inocente. Quem carimba é o `saveScene`, e ele carimba **sem perguntar o que mudou**; o único caminho até ele é o botão do diálogo, que envia o formulário inteiro, `status` incluído. **Mudar o seletor para "aprovada" e salvar é, para o banco, indistinguível de reescrever a ação da cena.**
+
+Os três carimbos são de 22:27:43, 22:27:54 e 22:28:09 — **antes das imagens**, com 11 s e 15 s entre eles: o ritmo de alguém abrindo três fichas em sequência. O dono aprovou três e a tela o acusou de ter editado três.
+
+📌 **E não é cosmético.** O aviso existe para segurar o dedo de quem vai gerar por cima e perder trabalho manual. Disparando por aprovação, ele avisa quando não há nada a perder — e **um aviso que aparece à toa é um aviso que se aprende a fechar sem ler**, que é a mesma lição do rodapé da prateleira, por outra porta.

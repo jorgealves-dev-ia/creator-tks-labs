@@ -5,52 +5,54 @@
 > O *porquê* está em [`decisoes.md`](decisoes.md); o *o quê e em que ponto* de cada
 > frente está no `plano-*.md` dela; o *como está hoje* está no código.
 
-**Última reescrita:** 02/09/2026, com a Fase 4 do Ciclo 3 fechada e em produção.
+**Última reescrita:** 02/09/2026, com o **Ciclo 3 encerrado** e o veredito do dono dado.
 
 ---
 
 ## O que está PROVADO
 
-**A fundação.** Canvas de nodes, projetos, character sheet com versões congeladas,
-motor de extração, compilador determinístico, geração de imagem canônica, ledger
-append-only com as travas no banco. As 15 tabelas com RLS default-deny.
+**A fundação.** Canvas de nodes, projetos, character sheet com versões congeladas, motor
+de extração, compilador determinístico, geração de imagem canônica, ledger append-only
+com as travas no banco. As 15 tabelas com RLS default-deny.
 
-**Frente Storyboard · Ciclo 1 — o elo.** Dois capítulos de vídeo emendam: o último
-quadro de um clipe vira o primeiro do seguinte, por asset derivado
-(`derived_from_asset_id`). ⚠️ *O **veredito humano** do elo — "os clipes emendam a
-ponto de parecer um filme só?" — está **NÃO MEDIDO com gatilho**, não aprovado.*
+**Frente Storyboard · Ciclo 1 — o elo.** O último quadro de um clipe vira o primeiro do
+seguinte, por asset derivado. ⚠️ *O **veredito humano** do elo continua **NÃO MEDIDO com
+gatilho**.*
 
-**Frente Storyboard · Ciclo 2 — o Roteiro.** O node de Roteiro escreve o storyboard
-por IA, com cenas estruturadas no banco. Fechado.
+**Frente Storyboard · Ciclo 2 — o Roteiro.** Uma ideia vira fichas de cena estruturadas
+no banco. Fechado.
 
-**Frente Storyboard · Ciclo 3 — a Máquina. Fases 0 a 4 fechadas.** A cena entra na
-linha da geração (`generations.scene_id`), a Máquina nasce, o trilho espelha, o lote
-de imagens aprova/repete por cena, **o lote de vídeo com portão está provado em campo**
-(31/08) — e o **template «Fluxo de Storyboard»** põe Roteiro + Máquina conectados e
-enquadrados num clique (02/09), com as sete provas em número. As sete decisões (D1–D7)
-tomadas.
+**Frente Storyboard · Ciclo 3 — a Máquina. ✅ ENCERRADO.** Fases 0 a 4 fechadas, as sete
+decisões tomadas, e **a régua percorrida pelo dono**: 3 cenas, 870 ⚡, do zero ao clipe.
+A cena entra na linha da geração, a Máquina rege o lote, o trilho espelha o banco, os
+dois portões falam a verdade multiplicada antes do clique, e o template «Fluxo de
+Storyboard» põe Roteiro + Máquina conectados num clique.
 
-**Documentação para qualquer agente** (02/09). `AGENTS.md` como **ponteiro** para o
-`CLAUDE.md`, com frase de precedência e quatro regras duplicadas de propósito;
-`README.md` como mapa do projeto; `.gitattributes` fixando o EOL do `AGENTS.md`. Provado
-que o `next dev` só reescreve o bloco dele: **o nosso conteúdo sobreviveu 8/8** ao teste
-de apagar o bloco e subir o servidor.
+**O percurso de 02/09, por id:** exatamente **3 cobranças de vídeo**, cada uma com o seu
+`provider_job_id`, submetidas numa janela de **643 ms** e voltando em 69 s, 74 s e 64 s —
+**zero reconciliação à mão**. A conta fecha: 15 + 225 + 630 = **870 ⚡**, saldo 4.150 →
+3.280.
 
-**Mini-ciclo Egress.** Miniaturas, URL assinada estável e cache imutável — Fases 0 a 5
-fechadas, em produção.
+**Documentação para qualquer agente.** `AGENTS.md` como ponteiro para o `CLAUDE.md`,
+`README.md` como mapa, `.gitattributes` fixando o EOL. Provado que o `next dev` só
+reescreve o bloco dele.
 
-**Dinheiro, depois do incidente de 29/08.** As quatro travas do motorista — R2.1 a
-R2.4 —, cada uma com simulação vermelha→verde reexecutável. Mais a **fechadura** do
-webhook (ED25519 sobre o corpo bruto) e a **trava de vida** do endereço de retorno, uma
-ida à rede por clique.
+**Mini-ciclo Egress.** Fases 0 a 5 fechadas, em produção.
 
-**Os números do dia 31/08:** dois cliques pagos, **630 ⚡**, **3 clipes**, **0
-submissões acidentais** — contra 4.200 ⚡ e 626 submissões dois dias antes. **E o painel
-da fal fechou a conta por id: 3 requisições, nenhuma além das nossas.**
+**Dinheiro, depois do incidente de 29/08.** As quatro travas do motorista, cada uma com
+simulação vermelha→verde reexecutável; a fechadura ED25519 do webhook; a trava de vida do
+endereço de retorno.
 
-**O dia 02/09 custou 0 ⚡ e 0 submissões**, do primeiro ao último gesto: `generations`
-709, `ledger_transactions` 101, `assets` 94 e saldo **4.150 ⚡** idênticos no começo e no
-fim, com os dois carimbos de tempo iguais ao microssegundo.
+---
+
+## O VEREDITO do dono — 02/09/2026
+
+> **O fluxo ficou curto, mas para antes do fim — três "vídeo pronto" e nenhum vídeo.**
+> A Máquina precisa terminar em **UM vídeo**, montado no canvas, **sem Spark**.
+> **Não é reabrir o desenho; é o rabo dele.**
+
+E a segunda metade: **o trilho não levou o dono ao «Fluxo de Storyboard» na primeira
+vez** — ele clicou nos blocos avulsos. **A Máquina vazia deve apontar para o Fluxo.**
 
 ---
 
@@ -58,33 +60,38 @@ fim, com os dois carimbos de tempo iguais ao microssegundo.
 
 | # | o que falta | quem fecha |
 |---|---|---|
-| 1 | **Ciclo 3 · Fechamento** — a régua percorrida do zero pelo dono (9 gestos previstos) e o veredito *"o fluxo ficou curto?"*. Mais a anatomia da Máquina entrando na §3 normativa de [`nodes-geracao.md`](nodes-geracao.md) e o roadmap em [`produto.md`](produto.md). | Jorge |
-| 2 | **`docs/plano-catalogo-c4.md`** — rascunho do Ciclo 4, **só o plano, nada executa**, depois que o Ciclo 3 fechar. | Claude |
-| 3 | **Egress §4.5** — o egress na fatura, esperando o gráfico de Usage ter dias suficientes. | o relógio |
-| 4 | **Perguntas com gatilho:** a **0.3** (a aba escondida trava o elo? — os cliques de 31/08 foram com a aba à frente, de propósito) e **recusa × concorrência** (decide em n ≥ 30). | medição |
-| 5 | **Backlog nomeado:** 🆕 **o canvas às vezes não desenha as arestas** (dado intacto, reprodução escrita); arquivar/ocultar na galeria; filtros e busca; o glifo ⇥ com contraste fraco; três arestas órfãs no grafo salvo; o «Reanimar» é tudo-ou-nada. | — |
+| 1 | **Aprovar [`plano-video-final.md`](plano-video-final.md)** — o rascunho está em disco, com 6 fases (0 a 5), 8 provas pré-registradas, riscos e **4 perguntas** que esperam resposta. **Nada executa até ele aprovar.** | Jorge |
+| 2 | **Três achados da auditoria**, todos com causa nomeada e nenhum consertado: **(b)** o *"falhou neste lote"* que pisca sem falha existir — ternário de dois braços em `machine-video.ts:415`; **(c)** o `produto` da ficha **não entra no prompt** (`scene-prompt.ts:45`) — foi o que deixou a cena 3 sem a blusa; **(d)** aprovar a ficha carimba `edited_at`, e a tela acusa de "editada à mão" quem só aprovou. | plano |
+| 3 | **Egress §4.5** — o egress na fatura, esperando o gráfico de Usage. | o relógio |
+| 4 | **Perguntas com gatilho:** a **0.3** (a aba escondida trava o elo?) e **recusa × concorrência** (n ≥ 30). | medição |
+| 5 | **Backlog nomeado:** o canvas às vezes não desenha as arestas (dado intacto); arquivar/ocultar na galeria; filtros e busca; o glifo ⇥ com contraste fraco; três arestas órfãs; o «Reanimar» é tudo-ou-nada. | — |
 
-**A ordem dos próximos ciclos, decidida em 31/08/2026:**
-**4 Catálogo aberto** → **5 Modo Take** → **6 Voz e áudio** → **Passe de UI/UX** →
-**Publicação**.
+**A ordem daqui em diante, decidida em 02/09/2026:**
+**A · O vídeo final** → **B · Catálogo aberto** → **C · Modo Take** → **D · Voz e áudio**
+→ **E · Passe de UI/UX** → **F · Publicação**.
+
+As notas de C e D já estão em disco: [`notas-modo-take.md`](notas-modo-take.md) e
+[`notas-voz.md`](notas-voz.md). **As duas impõem o mesmo requisito ao Catálogo:
+capacidades como dado** — fala nativa e seus idiomas, referência de áudio, lipsync,
+`voice_id`.
 
 ---
 
 ## O PRÓXIMO GESTO
 
-**O Fechamento do Ciclo 3, e ele é do Jorge:** percorrer o caminho do zero num projeto
-novo, com a régua ao lado, contando os gestos de verdade contra os **9** previstos — e
-dar o veredito que nenhuma consulta dá: *o fluxo ficou curto?* Se ainda parecer longo, o
-desenho volta à mesa; está registrado desde 17/08 e vale como está escrito.
+**O Jorge lê [`plano-video-final.md`](plano-video-final.md) e responde as quatro
+perguntas** — a ordem das fases (a Fase 5 sobe?), se o vídeo montado nasce como node no
+canvas, se o botão monta parcial ou fica desabilitado, e se o defeito do `produto`
+entra ali ou vai para o Catálogo.
 
-O caminho agora começa em **um clique**: «Fluxo de Storyboard», no trilho lateral.
+Aprovado o plano, a execução é toda **0 ⚡** — então, pela regra 8 recalibrada, ela sela
+com prova estrutural + validação de tela e vai para produção no mesmo dia. **A metade do
+dono só volta a ser obrigatória se alguma fase encostar em provedor pago** — e, se
+encostar, é sinal de que ela saiu do escopo.
 
-Depois disso, e só depois, o rascunho do `docs/plano-catalogo-c4.md` — **só o plano,
-nada executa**.
-
-> **O projeto «Prova · C3 Fase 4»** ficou no estúdio com o par do template dentro: é o
-> artefato vivo da prova, e o Jorge o apaga depois do Fechamento.
+> **Dois projetos de prova ficaram no estúdio:** «Prova · C3 Fase 4» (o par do template)
+> e «Projeto novo teste maquina storyboard» (o percurso do dono, com os 3 clipes). O
+> segundo é a matéria-prima da Fase 0 do vídeo final — **não apagar antes dela**.
 
 > **Para subir o ambiente de vídeo:** o túnel vive **no comando**, nunca no arquivo —
 > `FAL_WEBHOOK_URL="https://<tunel-de-hoje>.trycloudflare.com/api/webhooks/fal" npm run dev`.
-> O porquê, com as **quatro** vezes que custaram, está no [`CLAUDE.md`](../CLAUDE.md).

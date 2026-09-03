@@ -90,6 +90,70 @@ Três regras que valem para todo tipo de input:
 
 **O "+" da faixa cria um Input de Imagem conectado**, à esquerda do bloco e com o seletor aberto — não anexa imagem direto. **Toda referência tem node, sem exceção**, e por isso a **faixa é espelho e nunca porta de entrada**: o que ela mostra existe no canvas, sempre.
 
+## 3.2 A Máquina de Storyboard (anatomia) *(02/09/2026, Frente Storyboard Ciclo 3)*
+
+**Normativa, como a §3.** A Máquina é **maestro, não motor**: ela não tem rota própria,
+não fala com provedor e não conhece preço. Cada cena continua sendo uma geração normal,
+pelo mesmo Route Handler, com o preço do mesmo catálogo e a mesma linha de extrato.
+
+```
+      ▽ roteiro        ▽ referências
+┌──────────────────────────────────────────────────────────────────┐
+│  ⚙ MÁQUINA DE STORYBOARD                              ⧉    🗑     │  cabeçalho
+├──────────────────────────────────────────────────────────────────┤
+│  «Manhã de treino» · 6 cenas · TikTok · @luna                    │  o roteiro regido
+│  modelo ▾   qualidade ▾ 2K     ⌥ Input Referências ○ desligada    │  configuração
+├──────────────────────────────────────────────────────────────────┤
+│  ┌───────┬───────┬───────┬───────┬───────┬───────┐               │
+│  │ 1  ✂  │ 2  ⇥  │ 3  ✂  │ 4  ✂  │ 5  ⇥  │ 6  ✂  │   o trilho    │
+│  │ [img] │ ↳ da 1│   ⟳   │ [img] │ ↳ da 4│   ⚠   │               │
+│  │ ↻  ▶  │  ▶    │       │ ↻  ▶  │  ▶    │  ↻    │               │
+│  └───┬───┴───┬───┴───┬───┴───┬───┴───┬───┴───┬───┘               │
+├──────────────────────────────────────────────────────────────────┤
+│  [ Gerar as 4 imagens ]    [ Animar as 4 aprovadas + 2 emendas ] │  os dois portões
+│  4 × 75 = 300 ⚡ · Saldo    6 × 210 = 1.260 ⚡ · Saldo             │  custo colado
+└────△───────△───────△───────△───────△───────△────────────────────┘
+     1       2       3       4       5       6      uma saída por cena
+```
+
+**A ordem da §3 adaptada — e o que a adaptação preserva.** A anatomia da casa é
+*cabeçalho → configuração → chave de inputs → **prompt** → botão → custo e saldo →
+resultado*. **A Máquina não tem prompt: as fichas são o prompt.** Então a banda do
+prompt some, o trilho ocupa o corpo, e o par **botão + custo logo abaixo dele** fica onde
+sempre esteve. O que não muda, e é a razão de a ordem ser normativa: **o custo fala a
+verdade multiplicada antes do clique.**
+
+**Horizontal, e a forma é decisão** (requisito 6 do brief): entradas em cima, trilho no
+corpo, **uma saída por cena embaixo**, plugável em qualquer node existente.
+
+| parte | o que é |
+|---|---|
+| **entrada `roteiro`** (topo, 18%) | o fio que vem do node de Roteiro. É por ele que a Máquina sabe qual storyboard rege — e **é o `targetHandle` que decide**, não o `sourceHandle` |
+| **entrada `referencias`** (topo, 50%) | os mesmos cards de Input de sempre. Entram em **todas** as cenas — o mesmo produto em dez imagens |
+| **chave "Input Referências"** | **nasce desligada**, invariante 12, sem exceção para a Máquina. Desligada, os inputs ficam conectados e visíveis, e `referencias_mudas` é gravado em cada cena |
+| **modelo · qualidade** | do catálogo, uma escolha para o lote inteiro. Preço por resolução de `ai_model_image_prices`, nunca de quem chama |
+| **formato** | **não é escolha**: vem do `canal` do storyboard, pelos presets. Um passo a menos, e a informação já existia |
+| **o trilho** | uma coluna por cena: número, glifo de transição (✂ corte · ⇥ continuação), miniatura **ou** a frase da emenda, o selo de estado e as ações da cena |
+| **coluna de continuação** | **sem imagem própria** (D4). Antes do vídeo diz *"continua da cena N"*; depois, mostra o quadro derivado do elo |
+| **os dois portões** | separados por requisito. O de vídeo conta **aprovadas + as continuações delas**, e só anima essas |
+
+**Um roteiro, uma Máquina.** O `onConnect` recusa o segundo fio com frase na tela — *duas
+disputariam o estado das mesmas fichas*. E **o ⧉ Duplicar não copia esse fio**: ele é
+vínculo exclusivo, não referência anexada (02/09/2026).
+
+**O trilho é espelho do banco, nunca de node state.** O estado por cena persiste em
+`generations.scene_id` e em `storyboard_scenes`; a Máquina não guarda id nenhum — cortar
+o fio não apaga nada, e religar devolve o trilho inteiro.
+
+**Recusa é cena para repetir, nunca lote perdido.** O lote é uma **sequência de gerações
+individuais**, jamais uma transação: falha de uma cena custa zero e não trava as outras.
+
+> **Onde ela ainda não termina** *(veredito do dono, 02/09/2026)*: a Máquina entrega N
+> clipes e para. **Ela precisa terminar em UM vídeo, montado, sem Spark** — e a Máquina
+> vazia precisa apontar para o «Fluxo de Storyboard» em vez de ensinar a arrastar um fio.
+> É o mini-ciclo [`plano-video-final.md`](./plano-video-final.md), e ele é o rabo deste
+> desenho, não um desenho novo.
+
 ## 4. O seletor de referências (a Galeria)
 
 Modal com duas fontes:
