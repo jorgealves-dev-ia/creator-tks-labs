@@ -1072,7 +1072,16 @@ export const t = {
 
     // ── Sem roteiro ligado ─────────────────────────────────────────────────
     semRoteiro: "Nenhum roteiro ligado",
-    semRoteiroHint: "Arraste um fio do bloco de Roteiro até a entrada «Roteiro», aqui em cima.",
+    /**
+     * O caminho pronto, ao lado da instrução de arrastar — e nesta ordem.
+     *
+     * O dono não achou o «Fluxo de Storyboard» na primeira vez e montou à mão o
+     * que um clique fazia. O botão fica aqui porque **aqui é onde a pessoa está
+     * olhando** no instante em que ele serve; a instrução de arrastar continua
+     * embaixo porque quem já tem um Roteiro no canvas não quer um segundo.
+     */
+    semRoteiroAcao: "Criar o Roteiro ligado a esta Máquina",
+    semRoteiroHint: "Ou arraste um fio de um bloco de Roteiro que já exista até a entrada «Roteiro», aqui em cima.",
     semFichas: "Este roteiro ainda não tem fichas.",
     semFichasHint: "Gere o roteiro no bloco de Roteiro e as cenas aparecem aqui.",
     carregando: "Lendo o roteiro…",

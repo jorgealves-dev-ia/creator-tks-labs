@@ -5287,3 +5287,33 @@ Os três carimbos são de 22:27:43, 22:27:54 e 22:28:09 — **antes das imagens*
 📌 **Aprovada pelo Jorge em 03/09/2026, cravada em `1.55.6` — sem caret.** Um `^` deixaria o npm trazer sozinho a próxima 1.56 de um projeto que lançou seis versões em dezessete dias, e o que a diligência mediu foi **esta** versão. A atualização passa a ser um gesto, com leitura do changelog, e não um efeito colateral de `npm install`.
 
 📌 **E uma correção de diagnóstico, que vale mais que o resto:** o achado (c) de 02/09 dizia que *"o `produto` da ficha não entra no prompt"* como se fosse esquecimento. **Não é.** O `scene-prompt.ts` **declara a decisão no próprio arquivo**: o produto não vira nada no bloco porque `storyboard_scenes.produto` é texto livre e **produto virou card de canvas em 10/08/2026** — não há linha para uma FK apontar, e o bloco manda conectar um Input de Produto *"em vez de fingir que resolveu"*. O fato observado continua de pé (a cena 3 saiu errada); **a causa atribuída não.** Uma decisão consciente de 10/08 e um defeito de 02/09 não são a mesma coisa, e tratar a primeira como a segunda **reverteria uma escolha sem ninguém discutir a escolha**. Por isso o `fix:` do §9 começa por **escolher entre três caminhos** — o texto livre no prompt, a Máquina exigindo um Input de Produto, ou a tela avisando que o campo não vira imagem — e não por um patch de uma linha.
+
+---
+
+### 03/09/2026 — ✅ O `fix:` do produto tem caminho escolhido: **nome não é foto**
+
+Das três saídas que o §9 do [`plano-video-final.md`](plano-video-final.md) pôs na mesa, o dono escolheu a **(ii) com a (iii) dentro**, e **descartou a (i)**. A razão cabe em quatro palavras: **nome não é foto.** Pôr *"blusa da Mine"* no prompt faria o modelo **inventar uma blusa**, não vestir a **dela** — uma resposta plausível na tela e errada no produto, que é a mesma classe de engano do `-c copy` entregando um arquivo válido com a duração errada.
+
+**O `fix:` tem três partes:** (1) a Máquina ganha o **Input de Produto**, com foto **e** descrição extraída entrando na geração — o desenho de 10/08 cumprido em vez de contornado, porque imagem é o que resolve consistência de produto, do mesmo jeito que a folha resolve consistência de personagem; (2) **enquanto ele não está conectado, a tela avisa** que o `produto` da ficha é só nome, e o aviso **morre no instante em que o Input aparece**; (3) **o Roteiro passa a exigir onde o produto está na cena** — *na mão*, *vestido*, *na mesa*.
+
+📌 **A parte 3 tem uma prova no percurso de 02/09, e ela é desconfortável:** as cenas 1 e 2 nomeiam a peça na própria `acao` (*"retira a blusa da Mine"*, *"já com a blusa vestida"*) e **escaparam por sorte**; a cena 3 não nomeia, e saiu sem. Depender de o modelo de roteiro lembrar de vestir a personagem em toda ação é **depender de sorte uma vez por cena** — e com dez cenas a sorte acaba.
+
+**O ritual é o outro, porque este tem dinheiro dentro.** Ele só se prova gerando, e agora são **dois** gestos pagos: o roteiro para provar a parte 3, a imagem para provar as partes 1 e 2. **Pior caso (R1): 1 roteiro (15 ⚡) + 1 imagem (75 ⚡) = 90 ⚡** — duas requisições, dois débitos, **sem lote e sem motorista no caminho**. Metade do dono obrigatória, etapa aberta e não commitada até ela chegar.
+
+---
+
+### 04/09/2026 — ✅ Fase 5 fechada: a Máquina vazia **cria** o Roteiro — e a tela achou o que 23 provas não pegariam
+
+**A fase mudou de forma na execução, e a mudança tem nome.** O plano dizia *"a Máquina vazia **aponta** para o «Fluxo de Storyboard»"*. O que foi construído **não aponta: faz** — o botão «Criar o Roteiro ligado a esta Máquina» cria o Roteiro, o fio e o enquadramento, ali mesmo. **Apontar não servia:** o template cria **o par**, e quem está lendo aquela mensagem **já tem a Máquina** — mandá-lo ao menu lhe daria uma segunda, e o problema de quem tem duas Máquinas é pior que o de quem não achou o menu. O gesto certo é **a metade de trás do template**, e é isso que o `attachStoryboardToMachine` é.
+
+**23 asserções estruturais, todas verdes** — o par criado, os dois handles, a geometria invertida (ΔX 212, ΔY 626), o `revision`/`saveStatus` que o autosave lê, **as três recusas** (Máquina já regida, id inexistente, id que não é Máquina) e o desvio de colisão. *(O relatório da véspera dizia 21; são 23, contadas na saída.)*
+
+#### E então a tela achou um defeito que nenhuma prova estrutural pegaria
+
+**Depois do gesto, os DOIS cards ficavam selecionados** — contra o que o store faz de propósito e contra o comentário que diz por quê. Não é estética: com dois selecionados, **a próxima tecla Delete apaga o par inteiro** em vez do card que a pessoa vê marcado.
+
+**A causa foi medida, e o suspeito óbvio estava errado.** Não é a seleção por ponteiro do React Flow: um `button.click()` **sintético** — sem `mousedown`, sem `pointerdown`, sem ponteiro nenhum — selecionava a Máquina do mesmo jeito. Quem seleciona é o **evento `click` subindo até o wrapper do node**, e ele roda **depois** do nosso `set`. Conserto: `evento.stopPropagation()` no `onClick`, com o vermelho→verde medido no mesmo instrumento — o mesmo `.click()` passou a deixar **só o Roteiro** marcado.
+
+📌 **O store estava certo o tempo todo, e é isso que faz o achado valer.** O harness monta o store **fora do React**: não existe wrapper de node para o evento subir, então a propagação **não é observável ali** — nenhuma prova estrutural pegaria isto, por mais que se escrevessem. **É o argumento concreto de por que a validação de tela da regra 8 não é carimbo:** ela não repete o que o harness já disse, ela cobre **a camada que o harness não alcança**. Sem ela, o defeito ia para produção com 23 provas verdes por cima.
+
+**E dois cuidados que evitaram falso positivo:** as **2 exceções** que o overlay do Next acusou eram **do meu instrumento, não do app** — `d3-drag` recebendo um `MouseEvent` sintético sem `view` —, e o primeiro clique real **errou o alvo** (21 px de altura naquele zoom) em vez de o botão estar quebrado. Contar qualquer um dos dois como defeito teria mandado consertar o que não estava errado.

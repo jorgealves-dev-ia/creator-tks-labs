@@ -1,7 +1,15 @@
 "use client";
 
-import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
-import { useEffect, useRef, useState } from "react";
+import {
+  getViewportForBounds,
+  Handle,
+  Position,
+  useReactFlow,
+  useStoreApi,
+  type Node,
+  type NodeProps,
+} from "@xyflow/react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 
 import { useLightbox } from "@/components/nodes/lightbox";
 import { NodeHeader } from "@/components/nodes/node-header";
@@ -95,6 +103,67 @@ export function MachineNode({ id, data, selected }: NodeProps<MachineNodeType>) 
   const abrirLightbox = useLightbox((state) => state.open);
   const balance = useBalance((state) => state.sparks);
   const slots = useQueue((state) => state.byNode[id]);
+
+  /**
+   * O enquadramento do Roteiro recém-criado — só isto, e por isso lido e não
+   * assinado.
+   *
+   * `useStoreApi` em vez de `useStore`: as dimensões do painel são consultadas
+   * **dentro do clique**, e assinar as quatro faria este node re-renderizar a
+   * cada redimensionamento da janela. Um card que aparece dez vezes no canvas
+   * não pode pagar por uma informação que ele usa uma vez.
+   */
+  const { setCenter, getZoom } = useReactFlow();
+  const flowStore = useStoreApi();
+
+  /**
+   * O caminho pronto: cria o Roteiro já ligado a esta Máquina e leva a tela até
+   * o par.
+   *
+   * **`setCenter` com a caixa que o store devolve, e não `fitView`** — a mesma
+   * razão do template no menu lateral: o `fitView` descobre limites a partir de
+   * `measured`, que o Roteiro criado neste instante ainda não tem, e cairia num
+   * retângulo de área zero. Aqui os limites vêm prontos, e a caixa cobre **os
+   * dois** cards: quem clicou estava olhando para a Máquina, e um salto que a
+   * deixasse fora da tela esconderia a peça que fez a pergunta.
+   *
+   * O `Math.min` com o zoom atual é o de sempre — aproximar quem estava longe
+   * seria mexer no enquadramento de quem não pediu.
+   *
+   * **E o `stopPropagation` não é zelo, é conserto de um defeito medido na tela.**
+   * O React Flow seleciona um node no `click` que sobe até o wrapper dele — no
+   * `click`, não no `pointerdown`: um `button.click()` sintético, sem ponteiro
+   * nenhum, selecionava a Máquina do mesmo jeito. Sem isto, o gesto termina com
+   * **os dois** cards selecionados, contra o que o store faz de propósito, e a
+   * próxima tecla Delete apaga o par inteiro em vez do card que a pessoa vê
+   * marcado.
+   *
+   * *As 23 provas estruturais passavam com o defeito de pé* — o store está
+   * certo, quem mentia era a propagação, e isso só a tela mostra.
+   */
+  function criarRoteiroLigado(evento: MouseEvent<HTMLButtonElement>) {
+    evento.stopPropagation();
+
+    const feito = useCanvasStore.getState().attachStoryboardToMachine({ machineId: id });
+
+    if (!feito) return;
+
+    const pane = flowStore.getState();
+    const { zoom: cabe } = getViewportForBounds(
+      feito.bounds,
+      pane.width,
+      pane.height,
+      pane.minZoom,
+      pane.maxZoom,
+      "80px",
+    );
+
+    void setCenter(
+      feito.bounds.x + feito.bounds.width / 2,
+      feito.bounds.y + feito.bounds.height / 2,
+      { zoom: Math.min(getZoom(), cabe), duration: 400 },
+    );
+  }
 
   /**
    * O que foi lido, **e de qual roteiro** — os dois num estado só.
@@ -593,7 +662,11 @@ export function MachineNode({ id, data, selected }: NodeProps<MachineNodeType>) 
 
       <div className="space-y-3 p-3">
         {roteiroNodeId === null ? (
-          <EmptyState titulo={copy.semRoteiro} hint={copy.semRoteiroHint} />
+          <EmptyState
+            titulo={copy.semRoteiro}
+            hint={copy.semRoteiroHint}
+            acao={{ rotulo: copy.semRoteiroAcao, onClick: criarRoteiroLigado }}
+          />
         ) : loading ? (
           <p className="py-6 text-center text-[11px] text-ink-faint">{copy.carregando}</p>
         ) : board === null || cenas.length === 0 ? (
@@ -929,11 +1002,36 @@ function promptDaCena(cena: MachineScene): string {
   return corpo === "" ? sujeito : `${sujeito} ${corpo}`;
 }
 
-function EmptyState({ titulo, hint }: { titulo: string; hint: string }) {
+/**
+ * O vazio, com ou sem saída.
+ *
+ * A `acao` é opcional porque nem todo vazio tem uma: "este roteiro ainda não tem
+ * fichas" se resolve no outro card, e um botão ali mandaria a pessoa para o
+ * lugar errado. **Quando existe, ela vem ANTES da instrução** — o gesto que
+ * resolve na frente do gesto que ensina.
+ */
+function EmptyState({
+  titulo,
+  hint,
+  acao,
+}: {
+  titulo: string;
+  hint: string;
+  acao?: { rotulo: string; onClick: (evento: MouseEvent<HTMLButtonElement>) => void };
+}) {
   return (
     <div className="rounded-lg border border-dashed border-line-strong px-3 py-5 text-center">
       <p className="text-xs font-medium text-ink-muted">{titulo}</p>
-      <p className="mt-1 text-[11px] leading-relaxed text-ink-faint">{hint}</p>
+      {acao ? (
+        <button
+          type="button"
+          onClick={acao.onClick}
+          className="nodrag mt-3 rounded-md border border-line-strong bg-surface px-3 py-1.5 text-[11px] font-medium text-ink transition hover:border-accent hover:text-accent"
+        >
+          {acao.rotulo}
+        </button>
+      ) : null}
+      <p className={(acao ? "mt-2" : "mt-1") + " text-[11px] leading-relaxed text-ink-faint"}>{hint}</p>
     </div>
   );
 }

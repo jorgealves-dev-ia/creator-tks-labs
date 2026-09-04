@@ -5,7 +5,9 @@
 >
 > **Status: 🔵 EM EXECUÇÃO.** As quatro perguntas foram **respondidas pelo Jorge em
 > 03/09/2026** e estão no §7. A **Fase 0 fechou** no mesmo dia, com vencedor e números.
-> A próxima é a **Fase 5**, que subiu para a frente pela decisão 1.
+> A **Fase 5** subiu para a frente pela decisão 1 e **mudou de forma na execução**:
+> a Máquina vazia **cria** o Roteiro ligado em vez de apontar para o
+> template.
 >
 > **Custo de todo o mini-ciclo: 0 ⚡, 0 submissões.** Nenhuma fase aqui chama provedor
 > pago. Juntar arquivo, desenhar player e mudar um estado vazio não gastam Spark — e é
@@ -63,7 +65,7 @@ Dito antes das fases, porque o escopo é a metade do plano.
 | ordem | fase | o que entrega | status |
 |---|---|---|---|
 | — | **0** | a medição que decide o desenho da Fase 1 | ✅ **FECHADA** 03/09/2026 — vencedor e números no §4.0 |
-| 1ª | **5** | a Máquina vazia apontando para o «Fluxo de Storyboard» | 🔵 **PRÓXIMA** — subiu pela decisão 1 |
+| 1ª | **5** | **a Máquina vazia CRIA o Roteiro ligado** — mudou de forma na execução — ver a seção da **Fase 5** | ✅ **FECHADA** 04/09/2026 — 23/23 provas + validação de tela, que achou e consertou um defeito |
 | 2ª | **1** | «Montar o vídeo»: o portão que devolve UM arquivo | ⬜ não começou |
 | 3ª | **2** | o mini-player no cartão de cena e no vídeo final | ⬜ não começou |
 | 4ª | **3** | o modal da galeria por cima do vídeo | ⬜ não começou |
@@ -78,9 +80,12 @@ A Fase 0 já correu, então o que resta começa na **5**. As fases **6 e 7** nas
 mesma conversa e ficam no fim, encostadas na 3 e na 4: as quatro são a mesma família —
 **a tela mente sobre o que o banco diz**.
 
-> **A fase aberta, em detalhe.** A **Fase 5** é a mais barata do plano e mexe na porta de
-> entrada: o card de Máquina vazia passa a oferecer o caminho pronto, em vez de só
-> descrevê-lo. Ela vem primeiro porque o próximo percurso do dono já começa certo.
+> **A fase que fechou, em detalhe — e ela mudou de forma.** A **Fase 5** é a mais barata do
+> plano e mexe na porta de entrada. O plano dizia *“aponta para o «Fluxo de
+> Storyboard»”*; **o que foi construído não aponta, faz** — o botão cria o Roteiro já
+> ligado a esta Máquina, sem passar pelo menu. **Apontar teria dado uma segunda
+> Máquina** a quem já tem uma, porque o template cria o par. O porquê inteiro, as três
+> recusas e a prova estão na **seção da Fase 5**, adiante.
 
 ---
 
@@ -297,19 +302,86 @@ no projeto grande, que é onde falha.
 
 ---
 
-### Fase 5 · A Máquina vazia aponta para o Fluxo
+### Fase 5 · A Máquina vazia CRIA o Roteiro ligado
 
-**Entrega.** O card que hoje diz *"Nenhum roteiro ligado · Arraste um fio do bloco de
-Roteiro até a entrada «Roteiro»"* passa a **oferecer o caminho pronto**: um gesto que
-cria o Roteiro já ligado a esta Máquina, ao lado da instrução de arrastar.
+> **A fase mudou de forma na execução, e a mudança tem nome.** O plano dizia *"a Máquina
+> vazia **aponta** para o «Fluxo de Storyboard»"* — um atalho que levasse a pessoa até o
+> template do menu lateral. **O que foi construído não aponta: faz.** O botão cria o
+> Roteiro já ligado a esta Máquina, ali mesmo, sem passar pelo menu.
+>
+> **Por que apontar não servia.** O «Fluxo de Storyboard» cria **o par** — um Roteiro
+> *e* uma Máquina. Quem está lendo esta mensagem **já tem a Máquina**: mandá-lo ao
+> template lhe daria uma segunda, e o problema de quem tem duas Máquinas é pior que o de
+> quem não achou o menu. **O gesto certo aqui é a metade de trás do template**, e é
+> exatamente isso que o `attachStoryboardToMachine` é.
+
+**Entrega.** O card que dizia *"Nenhum roteiro ligado · Arraste um fio do bloco de
+Roteiro até a entrada «Roteiro»"* ganha, **acima da instrução**, o botão **«Criar o
+Roteiro ligado a esta Máquina»**. Um clique cria o Roteiro, o fio e o enquadramento; a
+instrução de arrastar continua embaixo, reescrita para quem **já tem** um Roteiro no
+canvas e não quer um segundo.
 
 **Por que ela existe:** o dono **não achou o «Fluxo de Storyboard» na primeira vez** e
 montou à mão o que um clique fazia. O item tem seção própria e glifo próprio, e mesmo
-assim não foi encontrado por quem sabia que existia. **A Máquina vazia é onde a pessoa
-está olhando no instante exato em que o atalho seria útil.**
+assim não foi encontrado por quem sabia que existia. **O menu lateral é onde o atalho
+está; a Máquina vazia é onde a pessoa está olhando** no instante em que ele serve — e o
+instante vence o lugar.
 
-**Prova:** contagem — o gesto cria 1 node e 1 aresta, com `targetHandle = BOARD_HANDLE`,
-e o estado vazio deixa de aparecer.
+**A geometria é a do template, ao contrário.** Lá a Máquina nasce **abaixo e à direita**
+do Roteiro; aqui o Roteiro nasce **acima e à esquerda** da Máquina, nas mesmas duas
+constantes (`MACHINE_HANDLE_OFFSET`, `STORYBOARD_NODE_HEIGHT + PAIR_GAP`), para o fio
+sair vertical dos dois lados. O enquadramento usa `setCenter` com a caixa que o store
+devolve — **nunca `fitView`**, que descobre limites a partir de `measured` e cairia num
+retângulo de área zero num card criado neste instante. **E a caixa cobre os DOIS cards:**
+quem clicou estava olhando para a Máquina, e um salto que a deixasse fora da tela
+esconderia a peça que fez a pergunta.
+
+#### As três recusas, e por que existem sem frase
+
+`attachStoryboardToMachine` devolve `null` — **sem criar nada** — em três casos:
+
+| recusa | quando | por que a guarda existe se o botão não aparece ali |
+|---|---|---|
+| **Máquina já regida** | `findGoverningBoard` acha um Roteiro | é a trava do 1:1, de novo. O botão só existe na Máquina vazia, então este caminho *não deveria* acontecer — e **"não deveria" é o que separa uma guarda de uma suposição** |
+| **id inexistente** | nenhum node com aquele `id` | o `id` vem do React Flow, mas um store que confia no chamador é um store que cria fio órfão quando o chamador erra |
+| **id que não é Máquina** | o node existe, mas o `type` é outro | sem esta, um `id` de Roteiro criaria um Roteiro ligado a um Roteiro — um fio que a tela desenha e ninguém lê |
+
+**Nenhuma delas fala com a pessoa, e isso é decisão.** O botão não existe nesses estados,
+então uma mensagem de erro seria a resposta a uma pergunta que ninguém fez. **O `null` é
+a rede embaixo, não o aviso** — ele impede o estrago, não o explica.
+
+**E há uma quarta condição, que não é recusa:** o card novo **desvia** de quem já ocupa o
+lugar (`freePosition`). Sem isso, o clique nasceria embaixo de um card existente e
+pareceria não ter feito nada — **e um botão que parece não fazer nada é clicado de novo**.
+
+**Prova pré-registrada:** a **tabela das 23 asserções estruturais** (harness sem banco e
+sem rede, 0 ⚡) **mais um print** do gesto na tela. O print entra porque a afirmação
+*"o botão está dentro do estado vazio, acima da instrução"* é inerentemente visual e
+nenhum número a carrega; **um, não uma série**.
+
+#### O que a tela achou e as 23 provas não pegaram — 04/09/2026
+
+**Depois do gesto, os DOIS cards ficavam selecionados**, contra o que o store faz de
+propósito e contra o comentário que diz por quê. Não é estética: com dois selecionados, a
+próxima tecla **Delete apaga o par inteiro** em vez do card que a pessoa vê marcado.
+
+**A causa foi medida, não chutada** — e o suspeito óbvio estava errado. Não é a seleção
+por ponteiro do React Flow: um `button.click()` **sintético**, sem `mousedown` e sem
+ponteiro nenhum, selecionava a Máquina igual. Quem seleciona é o **evento `click`
+subindo até o wrapper do node**, e ele roda **depois** do nosso `set`. O conserto é um
+`evento.stopPropagation()` no `onClick` do botão.
+
+> **O store estava certo o tempo todo — as 23 asserções passavam com o defeito de pé.**
+> O harness monta o store **fora do React**: não existe wrapper de node para o evento
+> subir, então a propagação **não é observável ali** — e nenhuma prova estrutural
+> pegaria isto, por mais que se escrevessem. **A tela pegou de primeira.**
+>
+> É o argumento concreto de por que a validação de tela não é carimbo: ela não repete o
+> que o harness já disse, ela cobre **a camada que o harness não alcança**.
+
+**Evidência:** `scratchpad\evidencias\video-final-fase5\` —
+`23-provas-estruturais-do-gesto.md`, `validacao-de-tela-os-quatro-passos.md` e
+`botao-dentro-do-estado-vazio-acima-da-instrucao.jpg`.
 
 ---
 
@@ -372,7 +444,7 @@ de número, e o selo da tela conferindo com as duas.
 | **5d** | **o asset do filme nasce com `width`, `height`, fps e duração MEDIDOS** — não herda o `NULL` dos clipes | banco | 1 |
 | 6 | o modal da galeria fica **por cima** do vídeo, medido no `z-index` | número | 3 |
 | 7 | as arestas desenham na carga fria do projeto grande — DOM = grafo salvo | número | 4 |
-| 8 | a Máquina vazia cria o Roteiro ligado: +1 node, +1 aresta com o handle certo | número | 5 |
+| **8** | **a Máquina vazia cria o Roteiro ligado** — as **23 asserções** do harness (o par criado, o handle, a geometria, o autosave, **as três recusas** e o desvio de colisão) **mais um print** do gesto na tela | tabela de 23 + 1 print | 5 |
 | 9 | cena em voo mostra *"enviando"*; *"falhou"* só com `generations.status = 'failed'` | número | 6 |
 | 10 | aprovar **não** move `edited_at`; editar **move** | número | 7 |
 
@@ -460,24 +532,54 @@ Mine"*), e o dono viu a cena 3 sair errada. **O que não é fato:** que a causa 
 linha. Uma decisão consciente de 10/08 e um defeito de 02/09 não são a mesma coisa, e
 tratar a primeira como a segunda é reverter uma escolha sem discutir a escolha.
 
-**Por isso o `fix:` começa por uma decisão, não por um patch.** As saídas conhecidas:
+### A decisão do dono — 03/09/2026
 
-| caminho | o que faz | o que custa |
-|---|---|---|
-| **(i)** o texto livre entra no prompt | uma linha; a cena diz *"blusa da Mine"* | reverte o 10/08 pela porta dos fundos: texto livre não tem foto, e o produto do card tem |
-| **(ii)** a Máquina exige/oferece um Input de Produto | honra o desenho de 10/08 e resolve de verdade | mais caro, e mexe na Máquina |
-| **(iii)** a tela avisa que o produto da ficha não vira imagem | barato e honesto | não conserta, só para de enganar |
+Das três saídas que estavam na mesa, **vence a (ii), com a (iii) dentro dela**. A **(i)
+está descartada**, e a razão cabe em quatro palavras:
+
+> ## **nome não é foto**
+
+Pôr *"blusa da Mine"* no prompt faria o modelo **inventar uma blusa**, não vestir a
+**dela**. Seria uma resposta plausível na tela e errada no produto — a mesma classe de
+engano que o `-c copy` comete ao entregar um arquivo válido com a duração errada.
+
+**O `fix:` tem três partes:**
+
+**1 · A Máquina ganha o Input de Produto.** Foto **e** descrição extraída entram na
+geração. É o desenho de 10/08 sendo cumprido em vez de contornado: o produto do card tem
+imagem, e imagem é o que resolve consistência de produto — do mesmo jeito que a folha da
+personagem resolve consistência de personagem.
+
+**2 · Enquanto ele não está conectado, a tela avisa** que o `produto` da ficha é **só
+nome**. É a (iii), e ela não é consolo: é o que impede alguém de gerar dez cenas achando
+que o campo preenchido está fazendo alguma coisa. *O aviso morre no instante em que o
+Input aparece — aviso que fica depois de resolvido é aviso que se aprende a ignorar.*
+
+**3 · O Roteiro passa a exigir onde o produto está na cena.** Em história de produto,
+**toda ficha diz a posição** — *na mão*, *vestido*, *na mesa*. **Foi exatamente isto que
+faltou na cena 3:** as cenas 1 e 2 nomeiam a peça na própria `acao` (*"retira a blusa da
+Mine"*, *"já com a blusa vestida"*) e escaparam **por sorte**; a 3 não nomeia, e saiu
+sem. Depender de o modelo de roteiro lembrar de vestir a personagem em toda ação é
+depender de sorte uma vez por cena — e com dez cenas a sorte acaba.
 
 **Quando:** depois deste mini-ciclo, **antes do Catálogo aberto**.
 
 **Por que fora daqui:** não é vídeo final, e enfiá-lo neste plano alargaria o escopo que
 o §3 acabou de fechar.
 
-**A diferença que muda o ritual:** este conserto **só se prova gerando uma imagem**, e
-imagem custa. **É a única coisa nesta página com dinheiro dentro** — cerca de **75 ⚡**,
-uma imagem. Então ele volta para a régua da regra 8: **a metade do dono é obrigatória**,
-o pior caso (R1) é escrito antes do clique, e a etapa fica aberta e não commitada até a
-validação dele chegar.
+### O ritual deste `fix:`, e ele é o outro
 
-**O pior caso, já escrito:** *uma imagem, 75 ⚡. Se tudo der errado, custa 75 ⚡* — uma
-requisição, um débito, sem lote e sem motorista no caminho.
+**É a única coisa em pauta com dinheiro dentro.** Ele só se prova **gerando** — e agora
+são dois gestos pagos, não um: o roteiro precisa ser refeito para provar a parte 3, e a
+imagem precisa ser gerada para provar as partes 1 e 2.
+
+> ## **Pior caso (R1): 1 roteiro (15 ⚡) + 1 imagem (75 ⚡) = 90 ⚡**
+>
+> *Se tudo der errado, custa 90 ⚡.* Duas requisições, dois débitos, **sem lote e sem
+> motorista no caminho** — nenhum dos dois gestos passa pelo despachante de lote, que é
+> a peça que multiplicou em 29/08.
+
+**A metade do dono é obrigatória**, o pior caso está escrito **antes** do clique, e a
+etapa fica **aberta e não commitada** até a validação dele chegar. *Se o número que o
+portão mostrar não for 15 e 75, o clique não acontece* — a diferença entre os dois é o
+buraco por onde o dinheiro sai.

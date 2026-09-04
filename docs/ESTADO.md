@@ -5,8 +5,8 @@
 > O *porquê* está em [`decisoes.md`](decisoes.md); o *o quê e em que ponto* de cada
 > frente está no `plano-*.md` dela; o *como está hoje* está no código.
 
-**Última reescrita:** 03/09/2026, com a **Fase 0 do «vídeo final» fechada** e as quatro
-decisões do dono gravadas no plano.
+**Última reescrita:** 04/09/2026, com a **Fase 5 do «vídeo final» fechada** — e com um
+defeito que **só a validação de tela pegaria** achado, medido e consertado.
 
 ---
 
@@ -40,6 +40,16 @@ com número: **JavaScript puro (`mediabunny`), sem `ffmpeg`** — 122 ms contra 
 quadro a quadro** (363 de 363) à soma das cenas na ordem certa. Com 10 cenas, **885 ms e
 35,0 MB**, dentro dos 50 MB do bucket com 30% de folga.
 
+**Mini-ciclo «O vídeo final» · Fase 5 — ✅ FECHADA em 04/09.** A Máquina vazia **cria** o
+Roteiro ligado (não aponta para o template: apontar daria uma **segunda** Máquina a quem
+já tem uma). **23 asserções estruturais verdes** — par criado, dois handles, geometria
+invertida (ΔX 212 / ΔY 626), autosave, **as três recusas** e o desvio de colisão — mais a
+validação de tela na 5599, que achou o que elas não pegariam: **os dois cards ficavam
+selecionados**, porque o `click` sobe até o wrapper do node do React Flow e roda **depois**
+do nosso `set`. *(Não é ponteiro: um `.click()` sintético fazia igual.)* Consertado com
+`stopPropagation`, vermelho→verde medido. **O harness monta o store fora do React — nenhuma
+prova estrutural pegaria isto.**
+
 **Documentação para qualquer agente.** `AGENTS.md` como ponteiro para o `CLAUDE.md`,
 `README.md` como mapa, `.gitattributes` fixando o EOL.
 
@@ -72,8 +82,8 @@ Três achados medidos que **mudam o desenho da Fase 1** — o detalhe está no �
 
 | # | o que falta | quem fecha |
 |---|---|---|
-| 1 | **[`plano-video-final.md`](plano-video-final.md), da Fase 5 em diante.** Ordem decidida em 03/09: **5 → 1 → 2 → 3 → ⏸️ PARADA → 4 → 6 → 7 → fechamento** (a 0 já fechou). Tudo **0 ⚡**, então sela com prova estrutural + validação de tela e vai para produção no mesmo dia. | Claude |
-| 2 | **O `produto` fora do prompt** — e o diagnóstico mudou em 03/09: **não é esquecimento, é decisão declarada** de 10/08 no próprio arquivo. Vira `fix:` depois deste mini-ciclo, **e começa por escolher entre três caminhos** (§9 do plano), não por um patch. Custa ~75 ⚡ para provar, então é a **única coisa em pauta com dinheiro dentro** — metade do dono obrigatória. | Jorge |
+| 1 | **[`plano-video-final.md`](plano-video-final.md), da Fase 1 em diante.** Ordem decidida em 03/09: **5 → 1 → 2 → 3 → ⏸️ PARADA → 4 → 6 → 7 → fechamento** — **a 0 e a 5 já fecharam.** Tudo **0 ⚡**, então sela com prova estrutural + validação de tela e vai para produção no mesmo dia. | Claude |
+| 2 | **O `fix:` do produto — decidido em 03/09, ainda não executado.** A Máquina ganha o **Input de Produto** (foto + descrição na geração); enquanto não conectado, a tela avisa que o `produto` da ficha é **só nome**; e o **Roteiro passa a exigir onde o produto está na cena**. *Pôr o nome no prompt foi descartado: **nome não é foto**.* Depois deste mini-ciclo, antes do Catálogo. **Pior caso R1: 1 roteiro (15 ⚡) + 1 imagem (75 ⚡) = 90 ⚡** — a **única coisa em pauta com dinheiro dentro**, metade do dono obrigatória. | Jorge |
 | 3 | **Egress §4.5** — o egress na fatura, esperando o gráfico de Usage. | o relógio |
 | 4 | **Perguntas com gatilho:** a **0.3** (a aba escondida trava o elo?) e **recusa × concorrência** (n ≥ 30). | medição |
 | 5 | **Backlog nomeado:** **os `assets.width`/`height` em `NULL` nos clipes de vídeo em geral** *(achado da Fase 0; o filme montado não herda isso — é a prova 5d da Fase 1)*; arquivar/ocultar na galeria; filtros e busca; o glifo ⇥ com contraste fraco; três arestas órfãs; o «Reanimar» é tudo-ou-nada. *(As arestas que não desenham viraram a Fase 4; o "falhou neste lote" virou a Fase 6; o `edited_at` virou a Fase 7.)* | plano |
@@ -91,14 +101,26 @@ capacidades como dado** — fala nativa e seus idiomas, referência de áudio, l
 
 ## O PRÓXIMO GESTO
 
-**A Fase 5: a Máquina vazia aponta para o «Fluxo de Storyboard».** É a mais barata do
-plano e mexe na porta de entrada — o card de Máquina sem roteiro passa a **oferecer o
-caminho pronto** (um gesto que cria o Roteiro já ligado), em vez de só mandar arrastar um
-fio. Ela subiu para a frente pela decisão 1 do dono, para que o próximo percurso já
-comece certo.
+**A Fase 1: «Montar o vídeo» — o portão que devolve UM arquivo.** É a fase que responde ao
+veredito de 02/09. Um terceiro portão na banda da Máquina, depois de *Animar*, que aparece
+**desabilitado com a contagem do que falta** enquanto houver cena sem clipe, junta os
+clipes **na ordem de `storyboard_scenes.ordem`** — nunca por `created_at` — e grava o
+resultado como **asset na galeria** e **cartão de Resultado no canvas**.
 
-**Prova:** contagem — o gesto cria 1 node e 1 aresta com `targetHandle = BOARD_HANDLE`, e
-o estado vazio deixa de aparecer. **0 ⚡.**
+**O que a Fase 0 já entregou para ela:** o motor (`mediabunny` **1.55.6**, cravada, sem
+caret), o comparador de quadros por posição, e o clipe destoante de **540×960@30fps** que
+existe para exercitar a recusa. **A trava é nossa e lê os ARQUIVOS, não o banco** —
+`assets.width`/`height` são `NULL` e o `params.resolution` mente (*"720p"* para um arquivo
+716×1284).
+
+**Provas para fechar:** 1, 2, 3, **4** (hash de quadro por posição), **5**, **5b** (a recusa
+nomeando o clipe que destoa), **5c** (a soma dos bytes contra o `file_size_limit`) e **5d**
+(o asset do filme nasce com `width`/`height`/fps/duração **medidos**). **0 ⚡** — montagem
+não é geração: nada em `generations`, nada no ledger.
+
+> **A lição da Fase 5, que vale para a 1:** as 23 provas estruturais passavam com um
+> defeito de pé, porque o harness monta o store **fora do React**. **Prova estrutural e
+> validação de tela cobrem camadas diferentes** — nenhuma das duas substitui a outra.
 
 > **⏸️ Depois da Fase 3, o trabalho para e o dono olha.** Ele tem de ver **o filme
 > montado a partir dos 3 clipes reais** do «Projeto novo teste maquina storyboard» —
@@ -110,6 +132,13 @@ o estado vazio deixa de aparecer. **0 ⚡.**
 > em **`1.55.6`, sem caret** — o projeto lançou seis versões em dezessete dias, e o que
 > a diligência mediu foi esta. Atualizar vira gesto, não efeito colateral de um
 > `npm install`.
+
+> **🧹 Um projeto de rascunho ficou no estúdio e pode ser apagado:** «Projeto sem
+> título 1», criado em 04/09 só para a validação de tela da Fase 5. Tem 4 pares
+> Máquina+Roteiro vazios e nada mais — **nenhuma geração, nenhum Spark, nada no
+> ledger**. As medições dele já estão em
+> `scratchpad\evidencias\video-final-fase5\`, então apagar não perde nada. **Quem
+> apaga é o Jorge** — apagar recurso remoto é dele.
 
 > **Dois projetos de prova ficaram no estúdio:** «Prova · C3 Fase 4» (o par do template)
 > e «Projeto novo teste maquina storyboard» (o percurso do dono, com os 3 clipes). O

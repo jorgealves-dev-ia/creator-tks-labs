@@ -941,6 +941,29 @@ type CanvasState = {
     bounds: { x: number; y: number; width: number; height: number };
   };
   /**
+   * O Roteiro que falta, criado já ligado a uma Máquina que já existe.
+   *
+   * **É a metade de trás do template.** O `addStoryboardMachine` cria o par
+   * quando não há nada; este cria a peça que falta quando a Máquina já está no
+   * canvas e vazia — e é o mesmo Roteiro, o mesmo fio e a mesma geometria, só
+   * que resolvida ao contrário: em vez de a Máquina nascer abaixo e à direita do
+   * Roteiro, o Roteiro nasce **acima e à esquerda** da Máquina, nas mesmas
+   * distâncias. O fio sai vertical dos dois jeitos.
+   *
+   * **Por que ela existe:** o dono não achou o «Fluxo de Storyboard» na primeira
+   * vez e montou à mão o que um clique fazia. O menu lateral é onde o atalho
+   * *está*; a Máquina vazia é onde a pessoa *está olhando* no instante em que ele
+   * seria útil — e o instante vence o lugar.
+   *
+   * Devolve `null` quando não há o que fazer: Máquina inexistente, ou já regida
+   * por um Roteiro. **Não recusa com frase porque o botão não existe nesses
+   * estados** — o `null` é a rede embaixo, não a mensagem.
+   */
+  attachStoryboardToMachine: (input: { machineId: string }) => {
+    roteiroId: string;
+    bounds: { x: number; y: number; width: number; height: number };
+  } | null;
+  /**
    * "Assumir o prompt": o corte, pelo botão.
    *
    * Tira só a aresta. O texto fica onde está — e é isso que o gesto significa:
@@ -1711,6 +1734,87 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       roteiroId,
       machineId,
       bounds: { x: roteiro.x, y: roteiro.y, width: largura, height: altura },
+    };
+  },
+
+  attachStoryboardToMachine: ({ machineId }) => {
+    const state = get();
+
+    const maquina = state.nodes.find(
+      (node) => node.id === machineId && node.type === MACHINE_TARGET,
+    );
+
+    if (!maquina) return null;
+
+    // A trava do 1:1, de novo aqui. O botão só aparece na Máquina vazia, então
+    // este caminho não deveria existir — mas "não deveria" é o que separa uma
+    // guarda de uma suposição, e o custo dela é uma varredura de array.
+    if (findGoverningBoard(state.edges, machineId) !== null) return null;
+
+    // A geometria do template, ao contrário. O Roteiro sobe o que a Máquina
+    // desceria e anda para a esquerda o que ela andaria para a direita — as
+    // mesmas duas constantes, para o fio sair vertical dos dois lados.
+    const roteiro = freePosition(state.nodes, {
+      x: Math.round(maquina.position.x - MACHINE_HANDLE_OFFSET),
+      y: Math.round(maquina.position.y - STORYBOARD_NODE_HEIGHT - PAIR_GAP),
+    });
+
+    const roteiroId = crypto.randomUUID();
+
+    set({
+      nodes: [
+        // A Máquina perde a seleção junto com o resto: o card que a pessoa
+        // acabou de pedir é o Roteiro, e é ele que precisa se identificar num
+        // canvas cheio.
+        ...state.nodes.map((node) => (node.selected ? { ...node, selected: false } : node)),
+        {
+          id: roteiroId,
+          type: SCENE_SOURCE,
+          position: roteiro,
+          selected: true,
+          // Vazio, como quando nasce pela prateleira ou pelo template: os
+          // defaults do Roteiro são resolvidos dentro do card.
+          data: {},
+        },
+      ],
+      edges: [
+        ...state.edges,
+        {
+          // O mesmo id, os mesmos dois handles e a mesma forma da aresta do
+          // template — construir aresta pelo store não passa pelo `onConnect`,
+          // então o `sourceHandle` que ele preencheria sozinho vai escrito aqui.
+          id: `${roteiroId}-${BOARD_HANDLE}->${machineId}`,
+          source: roteiroId,
+          sourceHandle: BOARD_HANDLE,
+          target: machineId,
+          targetHandle: BOARD_HANDLE,
+        },
+      ],
+      revision: state.revision + 1,
+      saveStatus: "dirty",
+      notice: null,
+    });
+
+    // A caixa cobre **os dois**, e não só o card novo: quem clicou estava
+    // olhando para a Máquina, e uma tela que salta para um Roteiro sozinho
+    // esconde justamente a peça que fez a pergunta. A altura da Máquina vem do
+    // `measured` quando existe — ela cresce com o trilho, e a constante só vale
+    // para a Máquina vazia, que é este caso mas não precisa ser a suposição.
+    const alturaMaquina = maquina.measured?.height ?? MACHINE_NODE_HEIGHT;
+    const topo = Math.min(roteiro.y, maquina.position.y);
+    const esquerda = Math.min(roteiro.x, maquina.position.x);
+
+    return {
+      roteiroId,
+      bounds: {
+        x: esquerda,
+        y: topo,
+        width: Math.max(
+          roteiro.x + STORYBOARD_NODE_WIDTH,
+          maquina.position.x + (maquina.measured?.width ?? MACHINE_NODE_WIDTH),
+        ) - esquerda,
+        height: maquina.position.y + alturaMaquina - topo,
+      },
     };
   },
 
