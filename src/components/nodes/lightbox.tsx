@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { create } from "zustand";
 
 import { signAssetUrls } from "@/lib/assets/actions";
@@ -34,18 +34,67 @@ const copy = t.generation.lightbox;
  * imagem continuam como estavam. O dia em que um cartão Resultado mostrar vídeo,
  * é aqui que ele precisa passar `isVideo` — e este parágrafo é o aviso.
  */
+/**
+ * Um item da FILA — o asset e como ele se chama para quem assiste.
+ *
+ * O rótulo existe porque uma fila que avança sozinha **precisa dizer onde
+ * chegou**: sem ele, o vídeo troca de conteúdo no meio e quem está olhando não
+ * sabe se aquilo é a cena 2 ou um defeito da cena 1.
+ */
+export type ItemDaFila = { assetId: string; rotulo: string };
+
 type LightboxState = {
   assetId: string | null;
   isVideo: boolean;
+  /**
+   * A fila, quando quem abriu tinha uma. Vazia = um asset solto, como sempre.
+   *
+   * **É a Fase 2 do «vídeo final», e ela existe por uma régua do dono:** *"o
+   * player é o instrumento do veredito do elo; ele precisa deixar ver os três
+   * clipes em sequência sem esforço — se para ver o clipe 2 depois do 1 eu tiver
+   * que caçar o botão, o instrumento não serve para o que existe."*
+   *
+   * Um player por cartão teria entregue três vídeos **clicados um por um**, que
+   * é o gesto de hoje numa tela menor. A fila entrega a pergunta respondida: os
+   * clipes emendam?
+   */
+  fila: readonly ItemDaFila[];
+  indice: number;
   open: (assetId: string, options?: { isVideo?: boolean }) => void;
+  /** Abre a fila na posição pedida. Fora do intervalo, não abre nada. */
+  openFila: (fila: readonly ItemDaFila[], indice: number) => void;
+  irPara: (indice: number) => void;
   close: () => void;
 };
 
-export const useLightbox = create<LightboxState>((set) => ({
+export const useLightbox = create<LightboxState>((set, get) => ({
   assetId: null,
   isVideo: false,
-  open: (assetId, options) => set({ assetId, isVideo: options?.isVideo ?? false }),
-  close: () => set({ assetId: null, isVideo: false }),
+  fila: [],
+  indice: 0,
+  open: (assetId, options) =>
+    set({ assetId, isVideo: options?.isVideo ?? false, fila: [], indice: 0 }),
+  openFila: (fila, indice) => {
+    const alvo = fila[indice];
+
+    if (!alvo) return;
+
+    set({ assetId: alvo.assetId, isVideo: true, fila, indice });
+  },
+  /**
+   * Avançar/voltar **não fecha a fila no fim**: chegar ao último e o vídeo
+   * acabar deixa o último quadro parado, que é o que se quer depois de assistir
+   * — fechar sozinho tiraria da tela justamente a emenda que a pessoa foi ver.
+   */
+  irPara: (indice) => {
+    const { fila } = get();
+    const alvo = fila[indice];
+
+    if (!alvo) return;
+
+    set({ assetId: alvo.assetId, indice });
+  },
+  close: () => set({ assetId: null, isVideo: false, fila: [], indice: 0 }),
 }));
 
 export function Lightbox() {
@@ -57,10 +106,23 @@ export function Lightbox() {
   return <LightboxView key={assetId} assetId={assetId} isVideo={isVideo} />;
 }
 
+/** Quantos itens a fila tem — 0 quando o overlay abriu um asset solto. */
+export function useTamanhoDaFila() {
+  return useLightbox((state) => state.fila.length);
+}
+
 function LightboxView({ assetId, isVideo }: { assetId: string; isVideo: boolean }) {
   const close = useLightbox((state) => state.close);
+  const fila = useLightbox((state) => state.fila);
+  const indice = useLightbox((state) => state.indice);
+  const irPara = useLightbox((state) => state.irPara);
   const [url, setUrl] = useState<string | null>(null);
   const [zoomed, setZoomed] = useState(false);
+  const dialogo = useRef<HTMLDialogElement>(null);
+
+  const emFila = fila.length > 1;
+  const temAnterior = emFila && indice > 0;
+  const temProximo = emFila && indice < fila.length - 1;
 
   useEffect(() => {
     let cancelled = false;
@@ -84,27 +146,78 @@ function LightboxView({ assetId, isVideo }: { assetId: string; isVideo: boolean 
     };
   }, [assetId]);
 
+  /**
+   * O overlay entra no TOP LAYER, e isto é conserto de um defeito medido.
+   *
+   * ---------------------------------------------------------------------------
+   * A causa não era o `z-index` — e essa é a lição
+   * ---------------------------------------------------------------------------
+   *
+   * O dono relatou *"o vídeo abre por baixo do modal da galeria"*. Com um `div
+   * fixed z-50`, medido em 04/09/2026: a galeria é um `<dialog>` aberto com
+   * `showModal()`, então ela é `:modal` e vive no **top layer** — uma camada do
+   * navegador **acima de todo o documento**, onde `z-index` não chega. O
+   * `elementFromPoint` no meio da tela devolvia o `div` de rolagem da galeria com
+   * o lightbox aberto por baixo dele.
+   *
+   * **Subir `z-50` para `z-[9999]` não mudaria nada.** Nenhum número resolve,
+   * porque a disputa não é de número: é de camada. O único jeito de ficar por
+   * cima de um elemento do top layer é **estar no top layer também** — e aí quem
+   * ganha é quem entrou por último, que é sempre o overlay recém-aberto.
+   *
+   * *O plano avisou antes de a fase começar: "consertar o z-index sem medir — a
+   * causa provável raramente é a causa". Era o caso.*
+   *
+   * `onClose` existe porque o Escape nativo do `<dialog>` fecha o elemento sem
+   * avisar o store: sem ele, o overlay some da tela e o estado continua dizendo
+   * que há um asset aberto.
+   */
+  useEffect(() => {
+    const alvo = dialogo.current;
+
+    if (alvo && !alvo.open) alvo.showModal();
+  }, []);
+
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") close();
+      // As setas só existem quando há fila. Num asset solto elas não fazem nada,
+      // e não fazer nada é melhor que fazer algo inesperado.
+      if (event.key === "ArrowRight") irPara(indice + 1);
+      if (event.key === "ArrowLeft") irPara(indice - 1);
     }
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [close]);
+  }, [close, irPara, indice]);
 
   return (
-    <div
-      role="dialog"
-      aria-modal
+    <dialog
+      ref={dialogo}
       aria-label={isVideo ? copy.videoTitle : copy.title}
-      className="fixed inset-0 z-50 flex flex-col bg-canvas/95 backdrop-blur-sm"
+      onClose={close}
       onClick={close}
+      className="fixed inset-0 z-50 m-0 flex size-full max-h-none max-w-none flex-col
+                 border-0 bg-canvas/95 p-0 text-ink backdrop-blur-sm backdrop:bg-transparent"
     >
       <div className="flex shrink-0 items-center justify-between px-5 py-3">
-        <p className="text-xs text-ink-faint">
-          {isVideo ? copy.videoHint : zoomed ? copy.zoomedHint : copy.hint}
-        </p>
+        <div className="flex items-center gap-3">
+          {/*
+            Onde se está, e só quando há fila.
+            Uma fila que avança sozinha PRECISA dizer onde chegou: sem isto, o
+            vídeo troca de conteúdo no meio e quem assiste não sabe se aquilo é a
+            cena 2 ou um defeito da cena 1.
+          */}
+          {emFila ? (
+            <span className="rounded-md border border-line bg-surface px-2 py-1 text-xs font-medium text-ink">
+              {fila[indice]?.rotulo} {copy.filaPosicao(indice + 1, fila.length)}
+            </span>
+          ) : null}
+
+          <p className="text-xs text-ink-faint">
+            {emFila ? copy.filaHint : isVideo ? copy.videoHint : zoomed ? copy.zoomedHint : copy.hint}
+          </p>
+        </div>
 
         <button
           type="button"
@@ -136,14 +249,59 @@ function LightboxView({ assetId, isVideo }: { assetId: string; isVideo: boolean 
             `stopPropagation` porque o clique no fundo fecha o overlay, e sem
             ele arrastar a barra de progresso fecharia o vídeo no meio.
           */
-          <video
-            src={url}
-            controls
-            preload="metadata"
-            aria-label={copy.videoTitle}
+          <div
+            className="relative flex max-h-full max-w-full items-center"
             onClick={(event) => event.stopPropagation()}
-            className="max-h-full max-w-full object-contain"
-          />
+          >
+            <video
+              key={assetId}
+              src={url}
+              controls
+              // `autoPlay` só na fila: num clipe aberto sozinho, começar a tocar
+              // sem ninguém pedir é um vídeo falando por conta própria. Na fila é
+              // o contrário — ela existe PARA tocar sozinha, e parar entre uma
+              // cena e outra seria a mesma caçada ao botão que ela veio resolver.
+              autoPlay={emFila}
+              preload="metadata"
+              aria-label={copy.videoTitle}
+              onEnded={() => {
+                // O coração da Fase 2: acabou a cena, começa a seguinte. Sem
+                // clique. No fim da fila o último quadro fica parado — fechar
+                // sozinho tiraria da tela justamente a emenda que se foi ver.
+                if (temProximo) irPara(indice + 1);
+              }}
+              className="max-h-full max-w-full object-contain"
+            />
+
+            {emFila ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => irPara(indice - 1)}
+                  disabled={!temAnterior}
+                  aria-label={copy.filaAnterior}
+                  title={copy.filaAnterior}
+                  className="absolute left-2 flex size-9 items-center justify-center rounded-full
+                             border border-line bg-canvas/80 text-ink-muted backdrop-blur-sm
+                             transition-colors hover:text-ink disabled:opacity-25"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={() => irPara(indice + 1)}
+                  disabled={!temProximo}
+                  aria-label={copy.filaProximo}
+                  title={copy.filaProximo}
+                  className="absolute right-2 flex size-9 items-center justify-center rounded-full
+                             border border-line bg-canvas/80 text-ink-muted backdrop-blur-sm
+                             transition-colors hover:text-ink disabled:opacity-25"
+                >
+                  ›
+                </button>
+              </>
+            ) : null}
+          </div>
         ) : url ? (
           /* Short-lived signed URL for a private bucket. */
           // eslint-disable-next-line @next/next/no-img-element
@@ -164,6 +322,6 @@ function LightboxView({ assetId, isVideo }: { assetId: string; isVideo: boolean 
           <p className="text-xs text-ink-faint">{copy.loading}</p>
         )}
       </div>
-    </div>
+    </dialog>
   );
 }

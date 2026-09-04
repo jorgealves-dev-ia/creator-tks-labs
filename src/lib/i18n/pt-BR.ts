@@ -2075,7 +2075,18 @@ export const t = {
       zoomedHint: "Clique na imagem para reduzir · arraste para percorrer · Esc para fechar",
       // Vídeo não amplia — então a dica não pode prometer ampliar. Ela fala do
       // que existe ali: os controles do player e a saída.
-      videoHint: "Use os controles para assistir · Esc para fechar",
+      /**
+     * A fila de clipes — Fase 2 do «vídeo final».
+     *
+     * O rótulo e a posição existem porque uma fila que avança sozinha precisa
+     * dizer onde chegou; sem isso, o vídeo troca de conteúdo no meio e quem
+     * assiste não sabe se aquilo é a cena seguinte ou um defeito desta.
+     */
+    filaPosicao: (n: number, total: number) => `· ${n} de ${total}`,
+    filaHint: "As cenas tocam em sequência. ← → para voltar e pular, Esc para fechar.",
+    filaAnterior: "Cena anterior",
+    filaProximo: "Próxima cena",
+    videoHint: "Use os controles para assistir · Esc para fechar",
       openHint: "Ver ampliada",
     },
 

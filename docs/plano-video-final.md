@@ -67,8 +67,8 @@ Dito antes das fases, porque o escopo é a metade do plano.
 | — | **0** | a medição que decide o desenho da Fase 1 | ✅ **FECHADA** 03/09/2026 — vencedor e números no §4.0 |
 | 1ª | **5** | **a Máquina vazia CRIA o Roteiro ligado** — mudou de forma na execução — ver a seção da **Fase 5** | ✅ **FECHADA** 04/09/2026 — 23/23 provas + validação de tela, que achou e consertou um defeito |
 | 2ª | **1** | «Montar o vídeo»: o portão que devolve UM arquivo | ✅ **FECHADA** 04/09/2026 — o filme real montado, tocando no canvas |
-| 3ª | **2** | o mini-player no cartão de cena e no vídeo final | ⬜ não começou |
-| 4ª | **3** | o modal da galeria por cima do vídeo | ⬜ não começou |
+| 3ª | **2** | **a FILA de clipes** — mudou de forma antes do código | ✅ **FECHADA** 04/09/2026 — 3 cenas com **um** clique |
+| 4ª | **3** | o vídeo por cima do modal — **e a causa não era o `z-index`** | ✅ **FECHADA** 04/09/2026 |
 | ⏸️ | — | **PARADA — o dono vê o filme** | ⬜ ver §4.2 |
 | 5ª | **4** | as arestas que não desenham **e** o cartão que não diz «peça removida» | ⬜ não começou |
 | 6ª | **6** | o estado *"enviando"* — o terceiro braço do ternário | ⬜ não começou |
@@ -370,20 +370,47 @@ desenhado por nós continua sendo a Fase 2; isto é o mínimo para o cartão nã
 
 ---
 
-### Fase 2 · O mini-player — ver sem sair do canvas
+### Fase 2 · O player — e ele é uma FILA, não um player por cartão
 
-**Entrega.** Um player no **cartão de cena** do trilho e no **cartão do vídeo final**.
-Play/pause, barra de progresso, mudo. **Não é editor** — é a resposta à pergunta *"ficou
-bom?"* sem abrir outra aba.
+> **A fase mudou de forma antes do código, por exigência do dono em 04/09/2026.**
+> O plano dizia *"um player no cartão de cena do trilho e no cartão do vídeo final"*.
+> O cartão do vídeo final **já toca** desde a Fase 1 (ele não podia nascer quebrado). E
+> para o cartão de cena o dono pôs a régua que estava faltando:
+>
+> > *"o player no cartão de cena é o instrumento do veredito do elo. Ele precisa deixar
+> > ver os três clipes em sequência sem esforço — se para ver o clipe 2 depois do 1 eu
+> > tiver que caçar o botão, o instrumento não serve para o que existe."*
+>
+> **Isso reprova o desenho original.** Um player de 120 px em cada cartão do trilho
+> entrega três vídeos que **continuam sendo clicados um por um** — é o gesto de hoje com
+> uma tela menor. O que responde *"os clipes emendam a ponto de parecer um filme só?"* é
+> **assistir aos três em fila**, e é isso que a fase entrega.
 
-**Por que junto da montagem:** montar sem poder assistir é entregar um arquivo às cegas.
-E o veredito do elo — *"os clipes emendam a ponto de parecer um filme só?"* — está **NÃO
-MEDIDO desde 28/08** justamente porque ver os clipes em sequência dava trabalho. **Este
-player é o instrumento que falta para aquela pergunta.**
+**Entrega.** O overlay que já existe (`lightbox.tsx`, que já sabe distinguir vídeo de
+imagem desde a Fase 3 do Ciclo 3) passa a receber **uma fila ordenada** em vez de um asset
+solto:
 
-**Prova:** o player toca o clipe da cena e o vídeo final; a duração exibida bate com a do
-arquivo; a aba escondida não quebra (a limitação de decodificação já é conhecida —
-15/08).
+- abre na cena que foi clicada, e **avança sozinha no `ended`** — cena 1 acaba, cena 2
+  começa, sem nenhum clique;
+- diz **onde se está** (*"cena 2 de 3"*), porque uma fila que avança sozinha sem dizer
+  onde chegou troca uma dúvida por outra;
+- **← →** e as setas do teclado para voltar e pular, para quem quer rever a emenda;
+- o cartão de cena **não ganha player nenhum**: o ▶ que já existe passa a abrir a fila
+  naquela cena. Zero UI nova num cartão de 7,5 rem.
+
+**Por que a fila mora no overlay, e não no trilho.** O trilho é onde se **decide** (aprovar,
+refazer, marcar); o overlay é onde se **olha**. Pôr três vídeos tocando dentro do card da
+Máquina disputaria atenção com os portões que gastam dinheiro — e faria um canvas com duas
+Máquinas ter seis vídeos vivos.
+
+**Prova:** a fila percorrida do começo ao fim **com um clique só** — abrir na cena 1 e
+contar quantos gestos até o fim da cena 3 (**meta: 1**), com o `src` do `<video>` mudando
+de clipe a clipe e o rótulo acompanhando. Mais a duração exibida conferindo com a do
+arquivo. **0 ⚡.**
+
+*E ela fecha uma dívida velha: o veredito humano do elo está **NÃO MEDIDO desde
+28/08/2026** justamente porque ver os clipes em sequência dava trabalho. Depois desta fase,
+dá um clique.*
 
 ---
 
@@ -394,8 +421,20 @@ e o navegador antes do diagnóstico: reproduzir, ler o DOM e o `z-index` real, e
 então** dizer qual camada está errada. *Escrever o conserto antes de ver a medida é como
 o `fitView` da Fase 4 — a causa provável não é a causa.*
 
-**Prova:** a medida do `z-index` antes e depois, e o modal por cima em três estados
-(galeria do projeto, seletor de referência, e o player da Fase 2).
+**Prova — FEITA em 04/09/2026, e ela reprovou o próprio instrumento que esta linha
+previa.** Reproduzido antes de qualquer conserto: a galeria é um `<dialog>` aberto com
+`showModal()`, logo `:modal`, logo no **top layer** — uma camada do navegador **acima de
+todo o documento**, onde `z-index` não chega. Com o lightbox em `z-50`, o
+`elementFromPoint` no meio da tela devolvia o `div` de rolagem da galeria.
+
+> **Subir `z-50` para `z-[9999]` não mudaria nada.** A disputa não é de número: é de
+> camada. *O risco estava escrito na tabela do §6 antes de a fase começar — "consertar o
+> `z-index` sem medir; a causa provável raramente é a causa". Era o caso.*
+
+**O conserto:** o overlay virou `<dialog>` + `showModal()`. Os dois passam a estar no top
+layer, e ali ganha **quem entrou por último**. Depois: 2 diálogos, os dois `:modal`, o
+elemento no meio da tela é o `<video>` e **pertence ao lightbox** — com o **`z-index`
+ainda em 50, intocado**, que é a prova de que o número nunca foi o problema.
 
 ---
 
@@ -574,6 +613,7 @@ de número, e o selo da tela conferindo com as duas.
 | 2 | ele está em **`assets`** com linhagem para os clipes de origem, e como cartão de Resultado no canvas | banco + contagem de nodes | 1 |
 | **2b** | **o trigger de INSERT é do BANCO, não do código:** recusa linha cujo `user_id` não é o dono do filme, e recusa peça que não é da mesma pessoa | vermelho→verde no banco | 1 |
 | **2c** | **a armadilha do `on delete set null`:** o trigger de UPDATE deixa passar a transição peça→nula — que é o UPDATE que a cascata emite — e recusa **toda** outra alteração da linha; **e apagar um clipe já usado num filme FUNCIONA**, com o filme de pé e a contagem de posições intacta | vermelho→verde no banco | 1 |
+| **11** | **a fila percorre as 3 cenas com UM clique** — gestos contados do começo ao fim, `src` do `<video>` mudando e o rótulo acompanhando | número (gestos) | 2 |
 | 3 | **zero dinheiro**: `generations`, `ledger_transactions`, `assets` de geração e saldo idênticos, com o timestamp da última linha inalterado | número | 1 |
 | **4** | **a ordem vem de `storyboard_scenes.ordem`, e a prova ASSISTE:** hash de quadro **por posição** — cada cena ocupa a faixa de quadros que lhe cabe no montado, idêntica uma a uma | quadro (hash de pixel cru) | 1 |
 | 5 | o portão **não aparece habilitado** com um clipe faltando, e diz quantos faltam | texto | 1 |

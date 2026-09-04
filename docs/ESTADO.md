@@ -5,7 +5,7 @@
 > O *porquê* está em [`decisoes.md`](decisoes.md); o *o quê e em que ponto* de cada
 > frente está no `plano-*.md` dela; o *como está hoje* está no código.
 
-**Última reescrita:** 04/09/2026, com as **Fases 5 e 1 do «vídeo final» fechadas** — **o
+**Última reescrita:** 04/09/2026, com as **Fases 5, 1, 2 e 3 do «vídeo final» fechadas** — **o
 filme existe e toca no canvas** — e com **três** defeitos que só a validação de tela
 pegaria, achados, medidos e consertados.
 
@@ -104,7 +104,7 @@ Três achados medidos que **mudam o desenho da Fase 1** — o detalhe está no �
 
 | # | o que falta | quem fecha |
 |---|---|---|
-| 1 | **[`plano-video-final.md`](plano-video-final.md), da Fase 2 em diante.** Ordem decidida em 03/09: **5 → 1 → 2 → 3 → ⏸️ PARADA → 4 → 6 → 7 → fechamento** — **a 0, a 5 e a 1 já fecharam.** Tudo **0 ⚡**, então sela com prova estrutural + validação de tela e vai para produção no mesmo dia. | Claude |
+| 1 | **[`plano-video-final.md`](plano-video-final.md), na ⏸️ PARADA.** Ordem decidida em 03/09: **5 → 1 → 2 → 3 → ⏸️ PARADA → 4 → 6 → 7 → fechamento** — **a 0, a 5, a 1, a 2 e a 3 já fecharam; falta a PARADA.** Tudo **0 ⚡**, então sela com prova estrutural + validação de tela e vai para produção no mesmo dia. | Claude |
 | 2 | **O `fix:` do produto — decidido em 03/09, ainda não executado.** A Máquina ganha o **Input de Produto** (foto + descrição na geração); enquanto não conectado, a tela avisa que o `produto` da ficha é **só nome**; e o **Roteiro passa a exigir onde o produto está na cena**. *Pôr o nome no prompt foi descartado: **nome não é foto**.* Depois deste mini-ciclo, antes do Catálogo. **Pior caso R1: 1 roteiro (15 ⚡) + 1 imagem (75 ⚡) = 90 ⚡** — a **única coisa em pauta com dinheiro dentro**, metade do dono obrigatória. | Jorge |
 | 3 | **Egress §4.5** — o egress na fatura, esperando o gráfico de Usage. | o relógio |
 | 4 | **Perguntas com gatilho:** a **0.3** (a aba escondida trava o elo?); **recusa × concorrência** (n ≥ 30); e **a trava de dono da linhagem, provada de um lado só** — o trigger de `asset_montage_parts` recusa peça cujo dono é **nulo**, mas o ramo *«peça de OUTRA pessoa existente»* **nunca foi exercitado**, porque a base tem **1 conta** *(medido em 04/09/2026)*. **O gatilho é a segunda conta:** no dia em que o painel super admin ou o primeiro convidado existir, esta prova roda — e até lá ela é uma trava que ninguém viu funcionar do lado que importa. | medição |
@@ -123,21 +123,22 @@ capacidades como dado** — fala nativa e seus idiomas, referência de áudio, l
 
 ## O PRÓXIMO GESTO
 
-**A Fase 2: o mini-player — e ela começa com meio caminho andado.** O cartão do Filme já
-toca: a Fase 1 não podia deixar o canvas com imagem quebrada nem por uma hora, então o
-cartão ganhou `kind` e vídeo virou `<video controls muted playsInline preload="metadata">`
-— o próprio navegador dá o pôster do primeiro quadro.
+**⏸️ A PARADA — e falta uma coisa para ela.** O dono quer ver três coisas: o filme
+tocando no cartão do canvas (✅ feito), os três clipes de cena tocando um atrás do outro
+(✅ feito — um clique, 15 s), e **o asset na galeria**.
 
-**O que falta é o resto:** o player no **cartão de CENA** do trilho, que continua sem
-nenhum, e o acabamento do que já existe — barra de progresso nossa, mudo com botão,
-duração exibida conferindo com a do arquivo.
-
-**E ela é o instrumento que falta para uma pergunta velha:** o veredito do elo — *"os
-clipes emendam a ponto de parecer um filme só?"* — está **NÃO MEDIDO desde 28/08**
-justamente porque ver os clipes em sequência dava trabalho. Agora dá para assistir ao
-filme inteiro num cartão.
-
-**0 ⚡.** Depois: Fase 3 (o modal por cima do vídeo), e aí a **⏸️ PARADA**.
+> ### ⚠️ O filme NÃO aparece na galeria, e a causa é estrutural
+>
+> A galeria — `listProjectGallery` e `listGeneralGallery` — lista **`generations`**, e o
+> filme **não tem geração**, por desenho: *montagem não é geração*. Medido em 04/09: a
+> galeria do projeto diz **«6 imagens»** e mostra 3 clipes + 3 imagens; os dois filmes
+> não estão lá.
+>
+> **E não é só do filme:** os **quadros derivados do elo** são assets sem geração pela
+> mesma razão, e estão invisíveis na galeria desde 15/08/2026. O filme só tornou o buraco
+> visível, porque ele é **a entrega**.
+>
+> **A decisão é do Jorge**, e está no fim do resumo de 04/09.
 
 > **⏸️ Depois da Fase 3, o trabalho para e o dono olha.** Ele tem de ver **o filme
 > montado a partir dos 3 clipes reais** do «Projeto novo teste maquina storyboard» —

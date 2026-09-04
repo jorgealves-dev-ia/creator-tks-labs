@@ -103,6 +103,7 @@ export function MachineNode({ id, data, selected }: NodeProps<MachineNodeType>) 
   const providers = useImageCatalog();
   const videoProviders = useVideoCatalog();
   const abrirLightbox = useLightbox((state) => state.open);
+  const abrirFila = useLightbox((state) => state.openFila);
   const balance = useBalance((state) => state.sparks);
   const slots = useQueue((state) => state.byNode[id]);
 
@@ -172,6 +173,36 @@ export function MachineNode({ id, data, selected }: NodeProps<MachineNodeType>) 
   const [montando, setMontando] = useState(false);
   const [avisoMontagem, setAvisoMontagem] = useState<string | null>(null);
   const attachResultCard = useCanvasStore((state) => state.attachResultCard);
+
+  /**
+   * O ▶ de uma cena abre A FILA, começando nela — Fase 2.
+   *
+   * **Não abre o clipe daquela cena sozinho, e a diferença é o ponto da fase.**
+   * O veredito do elo — *"os clipes emendam a ponto de parecer um filme só?"* —
+   * está NÃO MEDIDO desde 28/08/2026 porque ver os clipes em sequência dava
+   * trabalho: assistir ao 1, fechar, achar o cartão da 2, clicar de novo. Aberta
+   * como fila, a cena 2 começa sozinha quando a 1 acaba.
+   *
+   * A fila é **só das cenas que têm clipe**, na ordem do roteiro. Uma cena sem
+   * clipe não vira um buraco no meio da sequência — ela simplesmente não entra,
+   * porque a pergunta é sobre as emendas que existem.
+   */
+  function abrirFilaDeClipes(assetIdClicado: string) {
+    const comClipe = cenas
+      .filter((c) => c.videoAssetId !== null)
+      .map((c) => ({ assetId: c.videoAssetId as string, rotulo: copy.cenaLabel(c.ordem) }));
+
+    const onde = comClipe.findIndex((item) => item.assetId === assetIdClicado);
+
+    if (onde < 0) {
+      // Não deveria acontecer — o botão só existe com clipe. A rede embaixo é
+      // abrir o clipe sozinho, que é o comportamento de antes desta fase.
+      abrirLightbox(assetIdClicado, { isVideo: true });
+      return;
+    }
+
+    abrirFila(comClipe, onde);
+  }
 
   /**
    * O gesto que faz a Máquina terminar em UM arquivo.
@@ -876,7 +907,7 @@ export function MachineNode({ id, data, selected }: NodeProps<MachineNodeType>) 
                     onAprovar={() => aprovar([linha.cena.ordem])}
                     verificando={verificando}
                     onVerificar={verificarVideo}
-                    onAbrirClipe={(assetId) => abrirLightbox(assetId, { isVideo: true })}
+                    onAbrirClipe={(assetId) => abrirFilaDeClipes(assetId)}
                     marcada={marcadas.has(linha.cena.id)}
                     onMarcarRefazer={() =>
                       setMarcadas((antes) => {
