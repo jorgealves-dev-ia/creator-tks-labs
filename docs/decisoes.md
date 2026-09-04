@@ -5317,3 +5317,37 @@ Das três saídas que o §9 do [`plano-video-final.md`](plano-video-final.md) p�
 📌 **O store estava certo o tempo todo, e é isso que faz o achado valer.** O harness monta o store **fora do React**: não existe wrapper de node para o evento subir, então a propagação **não é observável ali** — nenhuma prova estrutural pegaria isto, por mais que se escrevessem. **É o argumento concreto de por que a validação de tela da regra 8 não é carimbo:** ela não repete o que o harness já disse, ela cobre **a camada que o harness não alcança**. Sem ela, o defeito ia para produção com 23 provas verdes por cima.
 
 **E dois cuidados que evitaram falso positivo:** as **2 exceções** que o overlay do Next acusou eram **do meu instrumento, não do app** — `d3-drag` recebendo um `MouseEvent` sintético sem `view` —, e o primeiro clique real **errou o alvo** (21 px de altura naquele zoom) em vez de o botão estar quebrado. Contar qualquer um dos dois como defeito teria mandado consertar o que não estava errado.
+
+---
+
+### 04/09/2026 — ✅ A fronteira da montagem é **bytes**, e o produto não sabe que a `mediabunny` existe
+
+`montarVideo` recebe `{ rotulo, arquivo: Uint8Array }` — **nunca** um `Source` da biblioteca. A única linha do produto que nomeia uma classe da `mediabunny` está dentro do próprio módulo, e é o `BlobSource` que embrulha esses bytes.
+
+**Por que isso é desenho, e não conveniência.** O plano B da Fase 0 está escrito: se a biblioteca sumir, (1) copia-se o código para dentro do repo — a MPL-2.0 permite, e com zero dependências é *um arquivo*; (2) a versão cravada continua baixável; (3) sobra o `ffmpeg-static`, o perdedor da Fase 0. **Esse plano B só é barato enquanto trocar o motor for reescrever UMA função.** Com `Source` na assinatura, cada chamador — a rota, o portão, o harness, e o que vier — passa a importar a biblioteca; trocá-la deixaria de ser reescrever uma função e viraria caçar chamadas pelo código. **O plano B teria virado teórico sem ninguém notar o dia em que isso aconteceu.**
+
+📌 **Um harness descobriu o sintoma; a decisão é de outra natureza.** Com `Source` na fronteira, o script de prova instanciava a cópia **dele** da `mediabunny` (o scratchpad tem a sua) e o módulo usava a **do repositório**: duas cópias, `instanceof` falhando, e um clipe perfeitamente legível voltando como `clipe_ilegivel`. Dava para consertar em dez segundos alinhando as duas cópias — e teria sido consertar o teste em vez de ouvir o que ele disse. **O que ele disse é que a fronteira vazava**, e o mesmo vazamento chegaria à rota e ao portão pela porta da frente, onde não haveria dois `node_modules` para denunciá-lo.
+
+**E há uma segunda coisa que a fronteira em bytes resolve:** o gate de tamanho passou a ser **duas portas**. `cabeNoBucket(bytesDeclarados)` responde *"cabe?"* lendo só `assets.byte_size`, **sem baixar um byte** — é o que a rota chama antes de pedir qualquer coisa ao Storage; e `montarVideo` refaz a conta com os bytes de verdade, que é de graça e cobre o dia em que o banco e o arquivo discordarem. Com `Source` na fronteira essa separação não existiria: para saber o tamanho já seria preciso ter a fonte na mão.
+
+---
+
+### 04/09/2026 — ⚠️ O `aspectRatio` numérico derrubou o canvas inteiro: valor vindo do `jsonb` não é confiável **nem quando fomos nós que escrevemos**
+
+A montagem gravou `716/1284` — um **número** — num campo que o cartão de Resultado lê como **texto** (`"9:16"`, que vira CSS por `.replace(":", " / ")`). O `.replace` estourou, o `<ResultNode>` caiu, e o `ErrorBoundary` levou **o canvas inteiro**: a pessoa via *"Algo deu errado. Não conseguimos carregar esta tela."*
+
+**E o servidor tinha feito tudo certo.** O filme estava no Storage, a linhagem no banco com as três peças na ordem, o extrato parado. A única coisa quebrada era um campo de proporção.
+
+📌 **A lição não é "valide entrada de usuário" — é mais estreita e mais desconfortável.** `workflows.graph` é `jsonb`, e o que está lá dentro foi escrito por **alguma versão do nosso próprio código**. O grafo salvo sobrevive ao deploy que consertou quem o escreveu: depois do conserto, o valor ruim continuava no banco, e recarregar a página continuava derrubando a tela. **Um campo lido do `jsonb` é entrada externa mesmo quando a fonte é a gente** — a invariante da casa já mandava Zod em toda leitura de `jsonb`, e este cartão lia direto.
+
+Consertados os dois lados: quem escreve manda `"716:1284"` (**a medida, não um preset** — 716×1284 não é 9:16 exato), e quem lê passou a coagir. **Um cartão pode aparecer quadrado; jamais derrubar a tela.**
+
+📌 **Terceira vez nesta sessão que a tela achou o que prova estrutural não pegaria.** As três, em ordem:
+
+| # | o defeito | por que o harness não pegaria |
+|---|---|---|
+| 1 | o gesto da Fase 5 deixava **os dois cards selecionados** | o harness monta o store **fora do React** — não há wrapper de node para o `click` subir |
+| 2 | o cartão do filme desenhava **`<img>` apontando para MP4** | nenhuma asserção de store olha para o que o DOM renderiza |
+| 3 | **este** — número no `aspectRatio` derrubando o `ErrorBoundary` | idem, e o valor só existe **depois** de a rota responder |
+
+**As três moram na mesma camada:** entre o dado correto e o pixel. Prova estrutural cobre o dado; a tela cobre o pixel. *A régua da regra 8 manda validação de tela onde não há dinheiro — e nas três vezes ela pagou o próprio custo.*

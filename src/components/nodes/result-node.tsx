@@ -33,6 +33,20 @@ export type ResultNodeData = {
   handle?: string | null;
   versionNumber?: number | null;
   aspectRatio?: string | null;
+  /**
+   * Imagem ou vídeo — e o padrão é imagem, porque todo cartão que existia antes
+   * de 04/09/2026 é uma.
+   *
+   * **Nasceu de um cartão quebrado na tela.** O filme montado entrou aqui como
+   * qualquer resultado, e o cartão fez o que sempre fez: pediu a MINIATURA e
+   * desenhou um `<img>`. Vídeo não tem miniatura e não é imagem — o resultado
+   * foi um ícone de imagem partida no canvas, apontando para um MP4 de 11 MB que
+   * estava perfeitamente inteiro no Storage.
+   *
+   * *Um cartão que não sabe o que mostra desenha errado com toda a confiança do
+   * mundo.*
+   */
+  kind?: "image" | "video" | null;
   /** The block that made it — how a second attempt knows to sit below the first. */
   sourceNodeId?: string;
 };
@@ -49,6 +63,7 @@ export function ResultNode({ id, data, selected }: NodeProps<ResultNodeType>) {
   const openLightbox = useLightbox((state) => state.open);
 
   const assetId = data.assetId;
+  const ehVideo = data.kind === "video";
 
   useEffect(() => {
     let cancelled = false;
@@ -56,14 +71,17 @@ export function ResultNode({ id, data, selected }: NodeProps<ResultNodeType>) {
     void signAssets([assetId]).then((urls) => {
       if (cancelled) return;
 
-      setUrl(urls[assetId]?.thumb ?? null);
+      // Vídeo pede o ARQUIVO; imagem pede a miniatura. Não é otimização ao
+      // contrário: um vídeo não tem miniatura para pedir, e insistir nela é
+      // exatamente o que fazia o cartão nascer partido.
+      setUrl((ehVideo ? urls[assetId]?.full : urls[assetId]?.thumb) ?? null);
       setLoading(false);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [assetId]);
+  }, [assetId, ehVideo]);
 
   return (
     <div
@@ -90,19 +108,47 @@ export function ResultNode({ id, data, selected }: NodeProps<ResultNodeType>) {
       <div
         className="group/image relative flex items-center justify-center overflow-hidden
                    bg-canvas text-[11px] text-ink-faint"
-        style={{ aspectRatio: (data.aspectRatio ?? "1:1").replace(":", " / ") }}
+        style={{ aspectRatio: proporcaoCss(data.aspectRatio) }}
         onDoubleClick={() => {
-          if (url) openLightbox(assetId);
+          // A lightbox é de imagem. Um vídeo se assiste no próprio cartão, pelos
+          // controles — abrir um MP4 num visualizador de imagem seria trocar um
+          // cartão partido por um modal partido.
+          if (url && !ehVideo) openLightbox(assetId);
         }}
       >
         {url ? (
           <>
-            {/* A plain img: short-lived signed URLs for a private bucket. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={url} alt={copy.alt} className="size-full object-contain" />
+            {ehVideo ? (
+              /*
+               * `controls` porque um vídeo que não se pode tocar é um retângulo
+               * preto, e `preload="metadata"` porque é o que faz o navegador
+               * mostrar o primeiro quadro sem baixar os 11 MB inteiros — o
+               * pôster de graça. `muted` para o dia em que houver áudio: um
+               * canvas com dez cartões não pode começar a falar sozinho.
+               *
+               * O player de verdade — barra de progresso desenhada por nós, o
+               * mudo com botão — é a Fase 2. Isto é o mínimo para o cartão não
+               * nascer quebrado.
+               */
+              <video
+                src={url}
+                controls
+                muted
+                playsInline
+                preload="metadata"
+                className="nodrag size-full object-contain"
+              />
+            ) : (
+              <>
+                {/* A plain img: short-lived signed URLs for a private bucket. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt={copy.alt} className="size-full object-contain" />
+              </>
+            )}
 
             {/* Two ways in: a double-click, which nobody discovers on their own,
                 and a button, which everybody does. */}
+            {ehVideo ? null : (
             <button
               type="button"
               onClick={() => openLightbox(assetId)}
@@ -124,6 +170,7 @@ export function ResultNode({ id, data, selected }: NodeProps<ResultNodeType>) {
                 />
               </svg>
             </button>
+            )}
           </>
         ) : (
           <span className="px-4 text-center leading-relaxed">
@@ -206,4 +253,25 @@ export function ResultNode({ id, data, selected }: NodeProps<ResultNodeType>) {
       />
     </div>
   );
+}
+
+/**
+ * "9:16" → "9 / 16", e qualquer outra coisa → o quadrado.
+ *
+ * **Não confia no que vem do grafo, e isso não é zelo — é conserto de uma tela
+ * derrubada.** `workflows.graph` é `jsonb`: o que está lá dentro foi escrito por
+ * alguma versão do código, e nem toda versão escreveu a mesma coisa. Em
+ * 04/09/2026 a montagem gravou um **número** neste campo, o `.replace` estourou,
+ * e o canvas inteiro caiu no ErrorBoundary — o servidor tinha feito tudo certo,
+ * o filme estava no Storage e a linhagem no banco, e a pessoa via *"Algo deu
+ * errado"*.
+ *
+ * Quem escreveu errado já foi consertado. Isto existe para o grafo que **já
+ * está salvo**, e para o próximo campo que alguém gravar torto: um cartão pode
+ * aparecer quadrado, jamais derrubar a tela.
+ */
+function proporcaoCss(valor: unknown): string {
+  return typeof valor === "string" && valor.includes(":")
+    ? valor.replace(":", " / ")
+    : "1 / 1";
 }

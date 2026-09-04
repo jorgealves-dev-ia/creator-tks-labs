@@ -1310,6 +1310,52 @@ export const t = {
       "Vídeo só de cena aprovada. As emendas herdam a aprovação da cena que emendam.",
     animarLoteCheio: "Ainda há vídeos em andamento neste bloco. Espere a leva atual terminar.",
 
+    // ── «Montar o vídeo» — o terceiro portão, e o único sem preço ──────────
+    /**
+     * O portão que faz a Máquina terminar em UM arquivo.
+     *
+     * **Ele não mostra custo porque não tem.** Montar não chama modelo, não cria
+     * linha em `generations` e não toca o ledger — juntar arquivos que já foram
+     * pagos é engenharia, não geração. A ausência do número é a mensagem: os
+     * outros dois portões dizem quanto vai custar, e este não diz nada, que é
+     * como se lê "de graça" numa banda onde todo o resto tem preço.
+     */
+    montarTitulo: "Filme",
+    montarBotao: "Montar o vídeo",
+    montarMontando: "Montando…",
+    /**
+     * Desabilitado com a CONTA do que falta — nunca escondido.
+     *
+     * Um botão que some ensina que ele não existe; um botão apagado que diz
+     * *"faltam 2 clipes"* ensina o que fazer para acendê-lo. É a decisão 3 do
+     * dono, de 03/09/2026, e é a mesma forma do portão de imagem.
+     */
+    montarFaltam: (faltam: number, total: number) =>
+      faltam === 1
+        ? `Falta o clipe de 1 cena, de ${total}.`
+        : `Faltam os clipes de ${faltam} cenas, de ${total}.`,
+    montarPronto: (cenas: number) =>
+      cenas === 1
+        ? "1 cena, na ordem do roteiro. Sem custo."
+        : `${cenas} cenas, na ordem do roteiro. Sem custo.`,
+    montarFeito: (segundos: number, mb: string) =>
+      `Filme montado: ${segundos.toFixed(1)}s, ${mb} MB. Está na galeria e no canvas.`,
+    /**
+     * As recusas da montagem, cada uma dizendo o que consertar.
+     *
+     * `destoante` nomeia o clipe **e** o que difere, porque *"não deu para
+     * montar"* mandaria a pessoa adivinhar qual dos dez — e a Fase 0 mediu que
+     * nenhuma biblioteca recusa isso sozinha: o `ffmpeg -c copy` entrega arquivo
+     * silenciosamente errado, e o puro JS erra a resolução declarada.
+     */
+    montarDestoante: (rotulo: string, diferencas: string) =>
+      `A ${rotulo} não combina com as outras: ${diferencas}. Refaça o clipe dela com a mesma configuração.`,
+    montarPesado: (mb: string, teto: string) =>
+      `O filme daria ${mb} MB e o limite é ${teto} MB. Tire cenas ou encurte as que já existem.`,
+    montarIlegivel: (rotulo: string) =>
+      `Não consegui ler o clipe da ${rotulo}. Refaça esse clipe e tente de novo.`,
+    montarFalhou: "Não deu para montar agora. Tente de novo em um instante.",
+
     // ── D7 · reanimar ──────────────────────────────────────────────────────
     reanimarBotao: (n: number) => (n === 1 ? "Reanimar 1 cena" : `Reanimar ${n} cenas`),
     reanimarCusto: (total: number) => `por ${sparks(total)} ⚡`,

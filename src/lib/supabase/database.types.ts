@@ -205,6 +205,45 @@ export type Database = {
         }
         Relationships: []
       }
+      asset_montage_parts: {
+        Row: {
+          created_at: string
+          montage_asset_id: string
+          ordem: number
+          part_asset_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          montage_asset_id: string
+          ordem: number
+          part_asset_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          montage_asset_id?: string
+          ordem?: number
+          part_asset_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_montage_parts_montage_asset_id_fkey"
+            columns: ["montage_asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_montage_parts_part_asset_id_fkey"
+            columns: ["part_asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assets: {
         Row: {
           byte_size: number | null
@@ -1223,6 +1262,40 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "generations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      record_montage: {
+        Args: {
+          p_byte_size: number
+          p_duration_ms: number
+          p_height: number
+          p_label?: string
+          p_part_asset_ids: string[]
+          p_storage_path: string
+          p_width: number
+        }
+        Returns: {
+          byte_size: number | null
+          created_at: string
+          derived_from_asset_id: string | null
+          derived_from_ms: number | null
+          duration_ms: number | null
+          height: number | null
+          id: string
+          kind: Database["public"]["Enums"]["asset_kind"]
+          label: string | null
+          mime_type: string
+          source: Database["public"]["Enums"]["asset_source"]
+          storage_bucket: string
+          storage_path: string
+          user_id: string
+          width: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "assets"
           isOneToOne: true
           isSetofReturn: false
         }

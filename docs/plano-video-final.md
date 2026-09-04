@@ -66,11 +66,11 @@ Dito antes das fases, porque o escopo é a metade do plano.
 |---|---|---|---|
 | — | **0** | a medição que decide o desenho da Fase 1 | ✅ **FECHADA** 03/09/2026 — vencedor e números no §4.0 |
 | 1ª | **5** | **a Máquina vazia CRIA o Roteiro ligado** — mudou de forma na execução — ver a seção da **Fase 5** | ✅ **FECHADA** 04/09/2026 — 23/23 provas + validação de tela, que achou e consertou um defeito |
-| 2ª | **1** | «Montar o vídeo»: o portão que devolve UM arquivo | ⬜ não começou |
+| 2ª | **1** | «Montar o vídeo»: o portão que devolve UM arquivo | ✅ **FECHADA** 04/09/2026 — o filme real montado, tocando no canvas |
 | 3ª | **2** | o mini-player no cartão de cena e no vídeo final | ⬜ não começou |
 | 4ª | **3** | o modal da galeria por cima do vídeo | ⬜ não começou |
 | ⏸️ | — | **PARADA — o dono vê o filme** | ⬜ ver §4.2 |
-| 5ª | **4** | as arestas que não desenham na carga fria | ⬜ não começou |
+| 5ª | **4** | as arestas que não desenham **e** o cartão que não diz «peça removida» | ⬜ não começou |
 | 6ª | **6** | o estado *"enviando"* — o terceiro braço do ternário | ⬜ não começou |
 | 7ª | **7** | aprovar a ficha não carimba `edited_at` | ⬜ não começou |
 | — | — | fechamento do mini-ciclo, ritual do §8 | ⬜ |
@@ -238,6 +238,106 @@ função, não caçar chamadas pelo código.
 **(e) Não há áudio.** Nenhum dos três clipes tem faixa de som. A montagem não sincroniza
 nada hoje — e o dia em que o Ciclo D trouxer voz, isto vira requisito novo, não ajuste.
 
+#### 4.1b · A rota, declarada antes do código — exigência do dono, 04/09/2026
+
+Três coisas ficam escritas **antes** de existir uma linha da rota, porque as três são
+do tipo que, se ficarem para depois, ficam para nunca.
+
+**(a) A rota é autenticada, e o dono do filme sai da SESSÃO — nunca do corpo do pedido.**
+
+E não *"a rota lê a sessão e preenche o `user_id`"*, que seria uma promessa de código. O
+dono é resolvido **dentro do banco**, pela função `record_montage`, que faz
+`v_user_id := (select auth.uid())` — o mesmo desenho de `record_generation` e
+`record_extraction`. Um `user_id` que chegasse pelo corpo do pedido seria um campo que o
+cliente escolhe: quem manda o pedido escolheria de quem é o filme.
+
+*E o trigger de `asset_montage_parts` de 04/09 fecha a mesma porta por baixo* — mesmo que
+alguém escrevesse à mão, a linha só entra se o dono for o dono do filme.
+
+**(b) `cabeNoBucket` é chamada ANTES de baixar um único byte, e a recusa carrega o número.**
+
+A ordem da rota é esta, e a primeira posição não é estilo:
+
+```
+1. sessão            quem é, e o roteiro é dele?
+2. cenas na ORDEM    storyboard_scenes.ordem — nunca created_at
+3. falta clipe?      recusa dizendo QUANTOS faltam, sem tocar no Storage
+4. cabeNoBucket      soma assets.byte_size — recusa com o número, sem baixar nada
+5. baixa             só agora os bytes saem do Storage
+6. montarVideo       a trava lê os ARQUIVOS e recusa nomeando o clipe que destoa
+7. sobe + grava      o filme no Storage, e record_montage numa transação só
+```
+
+Os passos 3 e 4 são as duas recusas que **custam zero**: nenhuma abre arquivo, nenhuma
+gasta egress. Baixar 35 MB para depois concluir que não cabia em 50 MB é pagar para
+descobrir o que o banco já sabia.
+
+**(c) O asset do filme nasce com os quatro números MEDIDOS, e as peças entram na MESMA
+transação.**
+
+`width`, `height`, fps e duração vêm do arquivo montado (prova **5d**) — a montagem já leu
+os quatro para decidir se podia montar, então gravá-los custa **zero a mais**. Os clipes de
+vídeo têm `assets.width`/`height` em `NULL`; o filme **não pode** nascer com o mesmo
+defeito, porque ele é a coisa que a pessoa vai baixar e postar.
+
+**E as peças não podem ser um segundo pedido.** *Filme sem lista de peças é linhagem
+perdida* — e perdida do jeito pior, calada: o arquivo existe, abre, toca, e ninguém
+descobre que a linhagem sumiu até o dia em que alguém perguntar de onde ele veio.
+
+> **Isto obriga uma segunda migration, e é honesto dizer por quê:** o PostgREST **não faz
+> transação multi-tabela**. Dois pedidos — um para `assets`, outro para
+> `asset_montage_parts` — têm uma janela entre eles, e uma função serverless que morra ali
+> deixa um filme órfão de linhagem. A saída é a que a casa já usa para exatamente esta
+> classe de problema: **uma função no banco**, `record_montage`, que insere o asset e as N
+> peças **numa transação só** — a mesma forma de `record_generation` e `record_extraction`,
+> que gravam e cobram juntos ou não gravam nada.
+
+**Prova da (c):** matar a rota entre os dois passos não é reproduzível à mão, mas a
+garantia é: **ou o filme e as peças existem, ou nenhum dos dois.** O que se mede é o
+resultado — asset criado **com** as N peças na ordem, e `width`/`height`/fps/duração
+preenchidos.
+
+#### 4.1c · A invariante nova — `record_montage` é a ÚNICA porta
+
+Decidida pelo dono em 04/09/2026, ao revisar a função: *"ela é a única porta para
+`asset_montage_parts`, como `record_generation` é para o ledger?"* Não era. **Passou a
+ser.**
+
+> ## `asset_montage_parts` é somente-leitura para o usuário. A única escrita é `record_montage`.
+
+A policy de INSERT para `authenticated` saiu. Sem ela, o PostgREST não insere linha
+nenhuma naquela tabela; `record_montage` é `security definer` e passa por cima do RLS, que
+é exatamente o mesmo arranjo de `ledger_transactions` — somente-leitura para o usuário, e
+escrita só por `record_generation` / `record_extraction`.
+
+**O ganho não é a trava a mais — é o número de lugares onde a regra mora.** Com duas
+portas, toda regra nova precisa ser escrita duas vezes, e a segunda é a que alguém
+esquece. A policy de SELECT fica: ler a própria linhagem é o ponto de ela existir.
+
+**E a função ficou com a superfície que uma `security definer` precisa ter.** As quatro
+perguntas do dono acharam três coisas, e as três estão fechadas:
+
+| pergunta | como estava | como está |
+|---|---|---|
+| `search_path` fixo? | ✅ já estava — `set search_path = ''`, tudo qualificado | — |
+| valida as peças? | dono **sim** (`N part(s) do not belong to the caller`); **tipo não** | + `N part(s) are not video assets` |
+| única porta? | **não** — havia policy de INSERT | ✅ policy removida |
+| dá para chamar duas vezes? | **dá** | segue dando — ver abaixo |
+
+**E uma quarta coisa, que a pergunta 2 destravou sem ser sobre ela:** `p_storage_path` era
+**texto livre numa função `security definer`** — dava para criar linha em `assets`
+apontando para qualquer caminho do bucket, inclusive o de outra pessoa. *Medido antes de
+chamar de buraco:* o RLS do Storage recorta por `(storage.foldername(name))[1] =
+auth.uid()` e `signAssetUrls` assina com o cliente de **sessão**, então o arquivo alheio
+não sai assinado — o estrago de hoje é menor, linhas apontando para lugar nenhum. **Mas a
+casa já decidiu que essa checagem é do caminho de escrita:** `registerDerivedFrame` faz
+`startsWith(userId + "/")` desde 15/08. Agora `record_montage` faz a mesma coisa, no banco.
+
+**O que ela deliberadamente NÃO confere:** que as peças são os clipes **deste** storyboard.
+Ela não o recebe, e fechar isso a acoplaria ao roteiro. O que sobra em aberto é pequeno e é
+**do próprio dono** — montar um filme com clipes dele em qualquer ordem é uma coisa que o
+produto provavelmente vai querer oferecer. *Não é vazamento; é liberdade.*
+
 #### Invariantes que valem aqui, sem exceção
 
 - **Ingestão de assets (3):** o vídeo montado é copiado para o Storage e registrado em
@@ -250,11 +350,23 @@ nada hoje — e o dia em que o Ciclo D trouxer voz, isto vira requisito novo, n�
 - **O asset do filme nasce com os metadados MEDIDOS** — `width`, `height`, fps e duração
   lidos do arquivo montado, nunca `NULL` e nunca herdados. A montagem já leu esses quatro
   números para decidir se podia montar; gravá-los custa zero a mais. *É a prova 5d.*
+- **`asset_montage_parts` é somente-leitura para o usuário** *(04/09/2026)*: a única
+  escrita é `record_montage`, como o ledger só recebe escrita por `record_generation`.
+  → §4.1c
 - **A dependência já tem o ok** (03/09/2026), cravada em `1.55.6` sem caret — §4.1(d).
 
-**Prova:** o arquivo existe, abre, tem a duração somada das cenas, está em `assets` com
-linhagem, aparece como cartão de Resultado no canvas, e **o extrato não se moveu** —
-`generations`, `ledger_transactions` e saldo idênticos antes e depois.
+**Prova — FEITA em 04/09/2026, com os 3 clipes reais:** asset `959dc554…` · **716×1284,
+15.125 ms, 11.066.457 B** (o mesmo tamanho que a Fase 0 mediu) · linhagem **peça 1 → cena 1,
+peça 2 → cena 2, peça 3 → cena 3** · e **o extrato não se moveu**: `generations` 716 → 716,
+ledger 108 → 108, saldo 3.280 → 3.280, último lançamento ainda de 02/09 22:31:47.
+
+**E o cartão do Filme não sai desta fase quebrado — decisão do dono, 04/09.** Na primeira
+prova de campo ele desenhou `<img>` apontando para um MP4: ícone de imagem partida no canvas.
+A escolha foi entre *"dívida nomeada até a Fase 2"* e *"o cartão nasce sabendo o que é"*, e
+venceu a segunda: **a Fase 1 não deve deixar o canvas mostrando imagem quebrada nem por uma
+hora.** O cartão ganhou `kind`, e vídeo vira `<video controls muted playsInline
+preload="metadata">` — o próprio navegador dá o pôster do primeiro quadro. *O player
+desenhado por nós continua sendo a Fase 2; isto é o mínimo para o cartão não nascer torto.*
 
 ---
 
@@ -287,7 +399,9 @@ o `fitView` da Fase 4 — a causa provável não é a causa.*
 
 ---
 
-### Fase 4 · As arestas que não desenham na carga fria
+### Fase 4 · Duas coisas que o banco sabe e a tela não mostra
+
+#### Item 1 · as arestas que não desenham na carga fria
 
 **Entrega.** O item que entrou no backlog em 02/09 com reprodução escrita: numa carga
 fria do «Primeiros Testes», **19 arestas válidas desenham zero**; o `workflows.graph` tem
@@ -299,6 +413,28 @@ começa medindo isso e não presumindo.**
 
 **Prova:** contagem de arestas no DOM × no grafo salvo, em carga fria, antes e depois —
 no projeto grande, que é onde falha.
+
+#### Item 2 · o cartão do filme diz «peça removida» — decisão do dono, 04/09/2026
+
+**Entrega.** Quando um clipe que formou o filme é apagado, o banco anula a peça
+(`asset_montage_parts.part_asset_id` → `null`, pelo `on delete set null`) **e o filme
+continua inteiro** — os bytes dele são dele. Hoje isso é verdade **só no banco**: o cartão
+do filme não tem como dizer que a posição 2 veio de um clipe que não existe mais.
+
+**Por que ela caiu nesta fase, e não na 1.** É a família desta fase, dita no §4: **a tela
+mente sobre o que o banco diz.** O dono perguntou, ao revisar a migration, se o `set null`
+ficava legível na tela ou só no banco; a resposta honesta era *só no banco*, e um `set
+null` invisível é a mesma classe de defeito das arestas que não desenham — o dado está
+certo e a tela não conta.
+
+**A regra:** a peça anulada aparece como **«peça removida»** na posição dela, e a posição
+**não some** — um buraco na numeração obrigaria quem lê a adivinhar se faltou uma peça ou
+se o filme só tinha duas. É o mesmo argumento que fez a coluna ser anulável em vez de a
+linha ser apagada.
+
+**Prova:** apagar um clipe de um filme montado, e ler os dois lados no mesmo instante —
+`part_asset_id` nulo no banco, «peça removida» na posição certa do cartão, e a contagem de
+posições **inalterada** antes e depois.
 
 ---
 
@@ -436,6 +572,8 @@ de número, e o selo da tela conferindo com as duas.
 |---|---|---|---|
 | 1 | o arquivo montado **existe e abre**, com a duração somada das cenas | número (duração, bytes) | 1 |
 | 2 | ele está em **`assets`** com linhagem para os clipes de origem, e como cartão de Resultado no canvas | banco + contagem de nodes | 1 |
+| **2b** | **o trigger de INSERT é do BANCO, não do código:** recusa linha cujo `user_id` não é o dono do filme, e recusa peça que não é da mesma pessoa | vermelho→verde no banco | 1 |
+| **2c** | **a armadilha do `on delete set null`:** o trigger de UPDATE deixa passar a transição peça→nula — que é o UPDATE que a cascata emite — e recusa **toda** outra alteração da linha; **e apagar um clipe já usado num filme FUNCIONA**, com o filme de pé e a contagem de posições intacta | vermelho→verde no banco | 1 |
 | 3 | **zero dinheiro**: `generations`, `ledger_transactions`, `assets` de geração e saldo idênticos, com o timestamp da última linha inalterado | número | 1 |
 | **4** | **a ordem vem de `storyboard_scenes.ordem`, e a prova ASSISTE:** hash de quadro **por posição** — cada cena ocupa a faixa de quadros que lhe cabe no montado, idêntica uma a uma | quadro (hash de pixel cru) | 1 |
 | 5 | o portão **não aparece habilitado** com um clipe faltando, e diz quantos faltam | texto | 1 |
@@ -444,9 +582,20 @@ de número, e o selo da tela conferindo com as duas.
 | **5d** | **o asset do filme nasce com `width`, `height`, fps e duração MEDIDOS** — não herda o `NULL` dos clipes | banco | 1 |
 | 6 | o modal da galeria fica **por cima** do vídeo, medido no `z-index` | número | 3 |
 | 7 | as arestas desenham na carga fria do projeto grande — DOM = grafo salvo | número | 4 |
+| **7b** | **apagar um clipe do filme:** `part_asset_id` nulo no banco, «peça removida» na posição certa do cartão, e a contagem de posições **inalterada** | banco + texto | 4 |
 | **8** | **a Máquina vazia cria o Roteiro ligado** — as **23 asserções** do harness (o par criado, o handle, a geometria, o autosave, **as três recusas** e o desvio de colisão) **mais um print** do gesto na tela | tabela de 23 + 1 print | 5 |
 | 9 | cena em voo mostra *"enviando"*; *"falhou"* só com `generations.status = 'failed'` | número | 6 |
 | 10 | aprovar **não** move `edited_at`; editar **move** | número | 7 |
+
+**As provas 2b e 2c entraram por decisão do dono em 04/09**, ao revisar a migration — e as
+duas nasceram de respostas minhas que **não eram o que ele perguntou**. Ele perguntou se
+"sem UPDATE" era trigger *como no ledger*; era só ausência de policy, que trava o usuário e
+**não trava a service role** — que é justamente quem escreve ali. Virou trigger. **E escrever
+esse trigger revelou a armadilha da 2c:** `on delete set null` **é um UPDATE**, então um
+trigger que recusasse todo UPDATE tornaria **indeletável** qualquer clipe que já tivesse
+entrado num filme — uma trava de auditoria virando trava de produto, descoberta só no dia em
+que alguém tentasse apagar um clipe. *Uma trava que ninguém exercitou é uma trava que ninguém
+sabe se existe — e uma que ninguém exercitou pode estar travando a coisa errada.*
 
 **As provas 4, 5b e 5c são pré-registradas por decisão de 03/09** — elas não são desenho
 da Fase 1, são **o que a Fase 1 tem de provar para fechar**. A Fase 0 já entregou os dois

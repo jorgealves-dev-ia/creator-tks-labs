@@ -12,6 +12,7 @@ import {
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 
 import { useLightbox } from "@/components/nodes/lightbox";
+import type { RecusaDeMontagem } from "@/lib/video/montagem";
 import { NodeHeader } from "@/components/nodes/node-header";
 import { useImageCatalog } from "@/components/nodes/use-image-catalog";
 import { useVideoCatalog } from "@/components/nodes/use-video-catalog";
@@ -41,6 +42,7 @@ import {
 import {
   planoDeVideo,
   proximasAAnimar,
+  vereditoDoFilme,
   vereditoDoPortaoVideo,
   type LinhaDoPlano,
   type Partida,
@@ -163,6 +165,90 @@ export function MachineNode({ id, data, selected }: NodeProps<MachineNodeType>) 
       feito.bounds.y + feito.bounds.height / 2,
       { zoom: Math.min(getZoom(), cabe), duration: 400 },
     );
+  }
+
+
+  // ── «Montar o vídeo» — o terceiro portão, e o único sem preço ─────────────
+  const [montando, setMontando] = useState(false);
+  const [avisoMontagem, setAvisoMontagem] = useState<string | null>(null);
+  const attachResultCard = useCanvasStore((state) => state.attachResultCard);
+
+  /**
+   * O gesto que faz a Máquina terminar em UM arquivo.
+   *
+   * **Zero ⚡, e é por isso que ele não tem portão de custo:** não chama modelo,
+   * não cria linha em `generations`, não toca o ledger. Juntar clipes que já
+   * foram pagos é engenharia, não geração.
+   *
+   * A ordem é a das cenas, e ela é decidida **no servidor** — a tela manda o par
+   * `(projectId, roteiroNodeId)` e nada mais. Mandar a lista de clipes daqui
+   * seria o navegador escolhendo a ordem do filme, e a Fase 0 mediu o preço
+   * disso: o lote de 02/09 criou as gerações em 1, 3, 2, e montar por hora de
+   * criação entrega um arquivo válido, com a duração certa, **e o filme
+   * embaralhado**.
+   */
+  async function montarOFilme() {
+    if (!projectId || !roteiroNodeId || !podeMontar) return;
+
+    setMontando(true);
+    setAvisoMontagem(null);
+
+    try {
+      const resposta = await fetch("/api/storyboards/montar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId, roteiroNodeId }),
+      });
+
+      const feito: unknown = await resposta.json();
+
+      if (!feito || typeof feito !== "object" || !("ok" in feito)) {
+        setAvisoMontagem(copy.montarFalhou);
+        return;
+      }
+
+      if (feito.ok !== true) {
+        setAvisoMontagem(fraseDaRecusa(feito));
+        return;
+      }
+
+      const dados = feito as MontagemOk;
+
+      // O cartão no canvas, pendurado nesta Máquina. O asset é a verdade e o
+      // cartão é a vista — decisão 2 do dono: se os dois divergirem, quem manda
+      // é a linha em `assets`.
+      attachResultCard({
+        sourceNodeId: id,
+        data: {
+          assetId: dados.assetId,
+          // O cartão precisa saber que isto é vídeo: sem esta linha ele pede a
+          // miniatura e desenha um `<img>` — que foi como o filme apareceu
+          // partido no canvas na primeira prova de campo.
+          kind: "video",
+          // Montagem não é geração, então não há `generationId` — e o cartão
+          // já sabe nascer com o "Ver prompt" desabilitado quando ele é nulo.
+          generationId: null,
+          handle: null,
+          versionNumber: null,
+          // "L:A", e NÃO a divisão: o cartão faz `.replace(":", " / ")` para
+          // virar CSS. Passar número quebrou a tela inteira na primeira prova de
+          // campo — o servidor tinha feito tudo certo, e o canvas caiu no
+          // ErrorBoundary por causa de um `.replace` num `number`.
+          //
+          // E é a MEDIDA, não um preset: o arquivo tem 716×1284, que não é 9:16
+          // exato. O cartão mostra o filme na proporção que ele tem.
+          aspectRatio: dados.altura > 0 ? `${dados.largura}:${dados.altura}` : null,
+        },
+      });
+
+      setAvisoMontagem(
+        copy.montarFeito(dados.duracaoSegundos, (dados.bytes / 1048576).toFixed(1)),
+      );
+    } catch {
+      setAvisoMontagem(copy.montarFalhou);
+    } finally {
+      setMontando(false);
+    }
   }
 
   /**
@@ -290,6 +376,11 @@ export function MachineNode({ id, data, selected }: NodeProps<MachineNodeType>) 
       : null;
 
   const cenas = board?.cenas ?? [];
+
+  // A regra mora em `machine-video.ts`, ao lado dos outros vereditos — aqui só
+  // se soma o "está montando agora", que é estado de tela e não de produto.
+  const vereditoFilme = vereditoDoFilme(cenas);
+  const podeMontar = vereditoFilme.pode && !montando;
   const lote = loteDeImagens(cenas);
   const veredito = vereditoDoPortao({ cenas, precoPorImagem, saldo: balance });
   const vivos = liveCount(slots);
@@ -955,6 +1046,44 @@ export function MachineNode({ id, data, selected }: NodeProps<MachineNodeType>) 
                 </p>
               ) : null}
             </div>
+
+            {/* ── «MONTAR O VÍDEO» — o terceiro portão, e o único SEM PREÇO ── */}
+            <div className="border-t border-line pt-3">
+              <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-ink-faint">
+                {copy.montarTitulo}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => void montarOFilme()}
+                disabled={!podeMontar}
+                className="nodrag h-9 w-full rounded-lg border border-line-strong text-xs
+                           font-medium text-ink transition-colors hover:border-accent
+                           hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {montando ? copy.montarMontando : copy.montarBotao}
+              </button>
+
+              {/*
+                Desabilitado com a CONTA do que falta, nunca escondido — decisão 3
+                do dono. E quando pode montar, a linha diz "sem custo": os outros
+                dois portões desta banda anunciam preço, e o silêncio aqui seria
+                lido como esquecimento em vez de como gratuidade.
+              */}
+              <p className="mt-1 text-[11px] text-ink-faint">
+                {vereditoFilme.pode
+                  ? copy.montarPronto(vereditoFilme.cenas)
+                  : vereditoFilme.motivo === "faltam_clipes"
+                    ? copy.montarFaltam(vereditoFilme.faltam, vereditoFilme.total)
+                    : ""}
+              </p>
+
+              {avisoMontagem ? (
+                <p className="mt-2 rounded-lg border border-line bg-surface px-2 py-1.5 text-[11px] leading-relaxed text-ink-muted">
+                  {avisoMontagem}
+                </p>
+              ) : null}
+            </div>
           </>
         )}
 
@@ -1386,4 +1515,60 @@ function Falha({ erro, recusasSeguidas }: { erro: string; recusasSeguidas: numbe
       </span>
     </p>
   );
+}
+
+/** O que a rota devolve quando deu certo — só o que a tela usa. */
+type MontagemOk = {
+  ok: true;
+  assetId: string;
+  bytes: number;
+  largura: number;
+  altura: number;
+  duracaoSegundos: number;
+};
+
+/**
+ * A recusa da montagem virando frase — e cada uma diz **o que consertar**.
+ *
+ * O caso que justifica o resto: `assinatura_destoante` nomeia o clipe **e** o
+ * que difere. *"Não deu para montar"* mandaria a pessoa adivinhar qual dos dez
+ * — e a Fase 0 mediu que nenhuma biblioteca recusa isso sozinha, então a
+ * alternativa a esta frase não é uma frase pior: é um arquivo silenciosamente
+ * errado.
+ *
+ * Lê `unknown` de propósito. O corpo vem da rede, e a tela é fronteira: um
+ * `as` aqui seria a tela jurando o formato de uma coisa que ela não controla.
+ */
+function fraseDaRecusa(recusado: unknown): string {
+  if (!recusado || typeof recusado !== "object" || !("motivo" in recusado)) {
+    return copy.montarFalhou;
+  }
+
+  const motivo = (recusado as { motivo: unknown }).motivo;
+
+  if (motivo === "faltam_clipes") {
+    const { faltam, total } = recusado as unknown as { faltam: number; total: number };
+    return copy.montarFaltam(faltam, total);
+  }
+
+  if (motivo !== "recusa_da_montagem" || !("recusa" in recusado)) return copy.montarFalhou;
+
+  const recusa = (recusado as unknown as { recusa: RecusaDeMontagem }).recusa;
+
+  if (recusa.motivo === "assinatura_destoante") {
+    return copy.montarDestoante(recusa.rotulo, recusa.diferencas.join(", "));
+  }
+
+  if (recusa.motivo === "excede_o_bucket") {
+    return copy.montarPesado(
+      (recusa.bytes / 1048576).toFixed(1),
+      (recusa.limite / 1048576).toFixed(0),
+    );
+  }
+
+  if (recusa.motivo === "clipe_ilegivel" || recusa.motivo === "sem_trilha_de_video") {
+    return copy.montarIlegivel(recusa.rotulo);
+  }
+
+  return copy.montarFalhou;
 }

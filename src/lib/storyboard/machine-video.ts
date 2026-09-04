@@ -670,3 +670,38 @@ export function eloPodeLerQuadro(input: {
 
   return input.abaVisivel ? { pode: true } : { pode: false, motivo: "aba_escondida" };
 }
+
+/**
+ * O veredito do portão «Montar o vídeo» — o terceiro, e o único sem preço.
+ *
+ * Mora aqui, ao lado de `vereditoDoPortaoVideo`, e não solto no componente: a
+ * regra *"desabilitado com a contagem do que falta"* é decisão de produto (a 3
+ * do dono, 03/09/2026) e precisa de casa testável. Deixá-la como duas
+ * expressões dentro do JSX faria a única maneira de exercitá-la ser **ter um
+ * projeto no estado certo** — e no dia em que a prova foi pedida, o acervo não
+ * tinha nenhum: os dois roteiros com clipe faltando não estavam ligados a
+ * Máquina nenhuma.
+ *
+ * **Desabilitado, nunca escondido.** Um botão que some ensina que ele não
+ * existe; um apagado que diz *"faltam 2 clipes"* ensina o que fazer para
+ * acendê-lo.
+ *
+ * Zero cenas não aparece como recusa porque a banda inteira não é desenhada
+ * nesse caso — a tela mostra "este roteiro ainda não tem fichas". O veredito
+ * responde mesmo assim, para quem chamar de outro lugar não precisar saber
+ * disso.
+ */
+export type VereditoDoFilme =
+  | { pode: true; cenas: number }
+  | { pode: false; motivo: "sem_cenas" }
+  | { pode: false; motivo: "faltam_clipes"; faltam: number; total: number };
+
+export function vereditoDoFilme(cenas: readonly MachineScene[]): VereditoDoFilme {
+  if (cenas.length === 0) return { pode: false, motivo: "sem_cenas" };
+
+  const faltam = cenas.filter((cena) => cena.videoAssetId === null).length;
+
+  return faltam === 0
+    ? { pode: true, cenas: cenas.length }
+    : { pode: false, motivo: "faltam_clipes", faltam, total: cenas.length };
+}

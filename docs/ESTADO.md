@@ -5,8 +5,9 @@
 > O *porquê* está em [`decisoes.md`](decisoes.md); o *o quê e em que ponto* de cada
 > frente está no `plano-*.md` dela; o *como está hoje* está no código.
 
-**Última reescrita:** 04/09/2026, com a **Fase 5 do «vídeo final» fechada** — e com um
-defeito que **só a validação de tela pegaria** achado, medido e consertado.
+**Última reescrita:** 04/09/2026, com as **Fases 5 e 1 do «vídeo final» fechadas** — **o
+filme existe e toca no canvas** — e com **três** defeitos que só a validação de tela
+pegaria, achados, medidos e consertados.
 
 ---
 
@@ -50,6 +51,27 @@ do nosso `set`. *(Não é ponteiro: um `.click()` sintético fazia igual.)* Cons
 `stopPropagation`, vermelho→verde medido. **O harness monta o store fora do React — nenhuma
 prova estrutural pegaria isto.**
 
+**Mini-ciclo «O vídeo final» · Fase 1 — ✅ FECHADA em 04/09. O FILME EXISTE.** De 3 clipes
+pagos, **um arquivo**: asset `959dc554…`, **716×1284, 15.125 ms, 11.066.457 B** — o mesmo
+tamanho que a Fase 0 mediu —, com linhagem **peça 1 → cena 1, peça 2 → cena 2, peça 3 →
+cena 3** e o cartão **tocando** no canvas (`readyState = 4`, o decodificador confirmando
+716×1284 e 15,125 s). **E o extrato não se moveu:** `generations` 716 → 716, ledger 108 →
+108, saldo **3.280 → 3.280**.
+
+**As travas da montagem, exercitadas contra os clipes reais:** a assinatura lida **dos
+ARQUIVOS** recusa nomeando *"cena 3"* e dizendo em quê (codec, 540×960 ≠ 716×1284, 30 ≠ 24
+fps) enquanto o banco diz `"720p"` para os dois; o teto de 50 MB recusa em duas portas, uma
+delas **sem abrir arquivo**; e **363 de 363 quadros** do montado são idênticos, por hash de
+pixel cru, aos das cenas na ordem certa. *Montado pela ordem de criação, o arquivo é
+válido, tem a mesma duração e o mesmo número de quadros — e **242 dos 363 ficam fora do
+lugar**. Nenhum número denuncia; só o vídeo.*
+
+**No banco:** `asset_montage_parts` com RLS default-deny, **somente-leitura para o
+usuário** — a única escrita é `record_montage`, como o ledger só recebe escrita por
+`record_generation`. Dois triggers, os dois com vermelho→verde medido; e a armadilha
+achada a tempo: **`on delete set null` é um UPDATE**, então um append-only ingênuo teria
+tornado **indeletável** qualquer clipe que já tivesse entrado num filme.
+
 **Documentação para qualquer agente.** `AGENTS.md` como ponteiro para o `CLAUDE.md`,
 `README.md` como mapa, `.gitattributes` fixando o EOL.
 
@@ -82,11 +104,11 @@ Três achados medidos que **mudam o desenho da Fase 1** — o detalhe está no �
 
 | # | o que falta | quem fecha |
 |---|---|---|
-| 1 | **[`plano-video-final.md`](plano-video-final.md), da Fase 1 em diante.** Ordem decidida em 03/09: **5 → 1 → 2 → 3 → ⏸️ PARADA → 4 → 6 → 7 → fechamento** — **a 0 e a 5 já fecharam.** Tudo **0 ⚡**, então sela com prova estrutural + validação de tela e vai para produção no mesmo dia. | Claude |
+| 1 | **[`plano-video-final.md`](plano-video-final.md), da Fase 2 em diante.** Ordem decidida em 03/09: **5 → 1 → 2 → 3 → ⏸️ PARADA → 4 → 6 → 7 → fechamento** — **a 0, a 5 e a 1 já fecharam.** Tudo **0 ⚡**, então sela com prova estrutural + validação de tela e vai para produção no mesmo dia. | Claude |
 | 2 | **O `fix:` do produto — decidido em 03/09, ainda não executado.** A Máquina ganha o **Input de Produto** (foto + descrição na geração); enquanto não conectado, a tela avisa que o `produto` da ficha é **só nome**; e o **Roteiro passa a exigir onde o produto está na cena**. *Pôr o nome no prompt foi descartado: **nome não é foto**.* Depois deste mini-ciclo, antes do Catálogo. **Pior caso R1: 1 roteiro (15 ⚡) + 1 imagem (75 ⚡) = 90 ⚡** — a **única coisa em pauta com dinheiro dentro**, metade do dono obrigatória. | Jorge |
 | 3 | **Egress §4.5** — o egress na fatura, esperando o gráfico de Usage. | o relógio |
-| 4 | **Perguntas com gatilho:** a **0.3** (a aba escondida trava o elo?) e **recusa × concorrência** (n ≥ 30). | medição |
-| 5 | **Backlog nomeado:** **os `assets.width`/`height` em `NULL` nos clipes de vídeo em geral** *(achado da Fase 0; o filme montado não herda isso — é a prova 5d da Fase 1)*; arquivar/ocultar na galeria; filtros e busca; o glifo ⇥ com contraste fraco; três arestas órfãs; o «Reanimar» é tudo-ou-nada. *(As arestas que não desenham viraram a Fase 4; o "falhou neste lote" virou a Fase 6; o `edited_at` virou a Fase 7.)* | plano |
+| 4 | **Perguntas com gatilho:** a **0.3** (a aba escondida trava o elo?); **recusa × concorrência** (n ≥ 30); e **a trava de dono da linhagem, provada de um lado só** — o trigger de `asset_montage_parts` recusa peça cujo dono é **nulo**, mas o ramo *«peça de OUTRA pessoa existente»* **nunca foi exercitado**, porque a base tem **1 conta** *(medido em 04/09/2026)*. **O gatilho é a segunda conta:** no dia em que o painel super admin ou o primeiro convidado existir, esta prova roda — e até lá ela é uma trava que ninguém viu funcionar do lado que importa. | medição |
+| 5 | **Backlog nomeado:** **os `assets.width`/`height` em `NULL` nos clipes de vídeo em geral** *(achado da Fase 0; o filme montado não herda isso — é a prova 5d da Fase 1)*; arquivar/ocultar na galeria; filtros e busca; o glifo ⇥ com contraste fraco; três arestas órfãs; o «Reanimar» é tudo-ou-nada; **montar duas vezes o mesmo roteiro faz DOIS filmes idênticos** *(04/09/2026 — **e já aconteceu**: `959dc554…` e `8fa08846…`, os dois com 11.066.457 B, 716×1284, 15.125 ms e 3 peças, no acervo agora. Nada impede, e o segundo custa **0 ⚡**; o que ele custa é confusão na galeria, duas linhas iguais sem nada que diga qual é a boa)*. **Conserto é de produto, não de banco:** perguntar antes, ou substituir o anterior. Adiado por decisão do dono; **`nanoid` < 3.3.18 — 1 alta do `npm audit`, achada em 04/09/2026** ao instalar a `mediabunny` *(que não é a culpada: ela tem **zero** dependências de runtime)*. Chega por `postcss`, transitiva do **Next 16.3.0 e do `@tailwindcss/postcss` 4.3.3**; hoje resolvida em **3.3.17**, e **3.3.18 corrige** (GHSA-2v37-7h3g-55p8, laço infinito com gerador custom e `size` zero). **Decisão à parte** — `audit fix` em transitiva do Next não entra de carona numa fase de vídeo. *(As arestas que não desenham viraram a Fase 4; o "falhou neste lote" virou a Fase 6; o `edited_at` virou a Fase 7.)* | plano |
 
 **A ordem das frentes, decidida em 02/09/2026:**
 **A · O vídeo final** → **B · Catálogo aberto** → **C · Modo Take** → **D · Voz e áudio**
@@ -101,26 +123,21 @@ capacidades como dado** — fala nativa e seus idiomas, referência de áudio, l
 
 ## O PRÓXIMO GESTO
 
-**A Fase 1: «Montar o vídeo» — o portão que devolve UM arquivo.** É a fase que responde ao
-veredito de 02/09. Um terceiro portão na banda da Máquina, depois de *Animar*, que aparece
-**desabilitado com a contagem do que falta** enquanto houver cena sem clipe, junta os
-clipes **na ordem de `storyboard_scenes.ordem`** — nunca por `created_at` — e grava o
-resultado como **asset na galeria** e **cartão de Resultado no canvas**.
+**A Fase 2: o mini-player — e ela começa com meio caminho andado.** O cartão do Filme já
+toca: a Fase 1 não podia deixar o canvas com imagem quebrada nem por uma hora, então o
+cartão ganhou `kind` e vídeo virou `<video controls muted playsInline preload="metadata">`
+— o próprio navegador dá o pôster do primeiro quadro.
 
-**O que a Fase 0 já entregou para ela:** o motor (`mediabunny` **1.55.6**, cravada, sem
-caret), o comparador de quadros por posição, e o clipe destoante de **540×960@30fps** que
-existe para exercitar a recusa. **A trava é nossa e lê os ARQUIVOS, não o banco** —
-`assets.width`/`height` são `NULL` e o `params.resolution` mente (*"720p"* para um arquivo
-716×1284).
+**O que falta é o resto:** o player no **cartão de CENA** do trilho, que continua sem
+nenhum, e o acabamento do que já existe — barra de progresso nossa, mudo com botão,
+duração exibida conferindo com a do arquivo.
 
-**Provas para fechar:** 1, 2, 3, **4** (hash de quadro por posição), **5**, **5b** (a recusa
-nomeando o clipe que destoa), **5c** (a soma dos bytes contra o `file_size_limit`) e **5d**
-(o asset do filme nasce com `width`/`height`/fps/duração **medidos**). **0 ⚡** — montagem
-não é geração: nada em `generations`, nada no ledger.
+**E ela é o instrumento que falta para uma pergunta velha:** o veredito do elo — *"os
+clipes emendam a ponto de parecer um filme só?"* — está **NÃO MEDIDO desde 28/08**
+justamente porque ver os clipes em sequência dava trabalho. Agora dá para assistir ao
+filme inteiro num cartão.
 
-> **A lição da Fase 5, que vale para a 1:** as 23 provas estruturais passavam com um
-> defeito de pé, porque o harness monta o store **fora do React**. **Prova estrutural e
-> validação de tela cobrem camadas diferentes** — nenhuma das duas substitui a outra.
+**0 ⚡.** Depois: Fase 3 (o modal por cima do vídeo), e aí a **⏸️ PARADA**.
 
 > **⏸️ Depois da Fase 3, o trabalho para e o dono olha.** Ele tem de ver **o filme
 > montado a partir dos 3 clipes reais** do «Projeto novo teste maquina storyboard» —
