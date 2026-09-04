@@ -5351,3 +5351,18 @@ Consertados os dois lados: quem escreve manda `"716:1284"` (**a medida, não um 
 | 3 | **este** — número no `aspectRatio` derrubando o `ErrorBoundary` | idem, e o valor só existe **depois** de a rota responder |
 
 **As três moram na mesma camada:** entre o dado correto e o pixel. Prova estrutural cobre o dado; a tela cobre o pixel. *A régua da regra 8 manda validação de tela onde não há dinheiro — e nas três vezes ela pagou o próprio custo.*
+
+---
+
+### 04/09/2026 — ⚠️ A armadilha do `dev` sobrevivente aconteceu de novo — e eu quase gravei a lição errada
+
+**A parte que se confirmou:** a notificação disse `killed` e o processo estava de pé. `netstat` mostrou o **PID 23940** ouvindo na 5599, com 364 MB e duas conexões `ESTABLISHED` do Chrome; `curl` respondeu **307 em 0,08 s**. Segunda ocorrência medida da armadilha escrita em 02/09, e ela continua valendo: **conferir a porta em vez de acreditar no aviso.**
+
+📌 **A parte que eu concluí errado, e quase escrevi no `CLAUDE.md`:** que o sobrevivente ficava **"cego"** — que o shell morto levava o `> arquivo 2>&1` junto e o `next dev` seguia servindo sem escrever nada. Eu tinha "medido": o log estava congelado e o meu `curl` não aparecia nele. Cheguei a redigir o parágrafo, com procedimento novo e tudo.
+
+**O que me salvou foi subir um servidor limpo e ver o MESMO sintoma.** Um processo recém-nascido, com a tarefa viva segurando o redirecionamento, também não escrevia. Duas causas não explicam um sintoma que aparece nos dois; a explicação tinha de ser outra.
+
+**E era a sonda.** O `curl` ia para `/studio`, que responde **307 do proxy** — e um 307 do proxy **não escreve linha nenhuma**. Medido: **40 requisições** a `/studio` renderam **26 bytes** de log; **uma** a `/login` rendeu **2.701**, com as linhas de requisição e o rastro das Server Actions. O log nunca esteve cego; a minha maneira de perguntar é que não produzia resposta.
+
+📌 **A lição que fica é sobre instrumento, não sobre processo:** *"o log não cresceu" só significa alguma coisa se o pedido que você fez deveria tê-lo feito crescer.* Uma sonda que não gera o sinal que ela procura confirma qualquer hipótese que se queira — e esta ia entrar no arquivo lido em toda sessão, mandando matar servidores sadios. **É a segunda vez que uma conclusão apressada quase vira regra permanente ali** (a primeira foi a permissão do Chrome, corrigida em 28/08).
+

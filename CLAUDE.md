@@ -258,6 +258,10 @@ E a **trava de vida** (29/08) cobre o resto: o portão de vídeo faz **uma ida �
 
    **E o sobrevivente tem um caminho a mais, que não é o da porta ocupada** *(02/09/2026)*. A tarefa de fundo que segura o `npm run dev` pode ser dada como **encerrada** com o `next dev` **ainda ouvindo** — foi medido: a notificação disse *killed*, e o `netstat` mostrou o processo de pé, com o log agora fora de alcance. É a mesma armadilha chegando pelo lado onde ninguém a procura, porque o sinal que deveria avisar já disse que acabou. **Depois de encerrar um dev, conferir a porta em vez de acreditar no aviso** — e matar pelo PID, que é o que sobra quando o dono do processo já não responde.
 
+   **E a sonda tem de gerar log, senão ela mente** *(04/09/2026)*. Na segunda ocorrência da armadilha acima eu confirmei o sobrevivente pelo `netstat` — certo — e então **concluí que ele estava "cego"** porque o log não crescia com um `curl` de teste. **Estava errado.** O `curl` ia para `/studio`, que responde **307 do proxy**, e um 307 do proxy **não escreve linha nenhuma**: a sonda não produzia o que eu estava procurando. Medido no servidor novo: 40 requisições a `/studio` renderam **26 bytes** de log; **uma** a `/login` rendeu **2.701**.
+
+   **Então: para saber se um `dev` escreve, peça uma rota que responda 200** — `/login` serve — e compare o tamanho do arquivo antes e depois. *"O log não cresceu" só significa alguma coisa se o pedido que você fez deveria tê-lo feito crescer.*
+
    **O commit de fechamento e o `git push` são a mesma ação, nunca duas.** Commitar sem empurrar deixa a etapa pronta num lugar onde ninguém a vê — o deploy da Vercel sai do `origin/master`, então o que fica só no local não existe para o produto. Não há etapa "commitada mas ainda não empurrada": ou as duas rodaram, ou o fechamento não aconteceu.
 
    **E o resumo da etapa termina provando que o remoto recebeu**, colando a saída de:
