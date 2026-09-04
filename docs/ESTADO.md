@@ -5,7 +5,7 @@
 > O *porquê* está em [`decisoes.md`](decisoes.md); o *o quê e em que ponto* de cada
 > frente está no `plano-*.md` dela; o *como está hoje* está no código.
 
-**Última reescrita:** 04/09/2026, com as **Fases 5, 1, 2 e 3 fechadas e a PARADA pronta para o dono** — **o
+**Última reescrita:** 04/09/2026, com as **Fases 5, 1, 2 e 3 fechadas e a PARADA aprovada pelo dono** («testei, está ok»), mais o achado dele consertado — **o
 filme existe e toca no canvas** — e com **três** defeitos que só a validação de tela
 pegaria, achados, medidos e consertados.
 
@@ -104,7 +104,7 @@ Três achados medidos que **mudam o desenho da Fase 1** — o detalhe está no �
 
 | # | o que falta | quem fecha |
 |---|---|---|
-| 1 | **[`plano-video-final.md`](plano-video-final.md): o dono olha a PARADA; depois as Fases 4, 6 e 7.** Ordem decidida em 03/09: **5 → 1 → 2 → 3 → ⏸️ PARADA → 4 → 6 → 7 → fechamento** — **a 0, a 5, a 1, a 2 e a 3 já fecharam; falta a PARADA.** Tudo **0 ⚡**, então sela com prova estrutural + validação de tela e vai para produção no mesmo dia. | Claude |
+| 1 | **[`plano-video-final.md`](plano-video-final.md): as Fases 4, 6 e 7, e o fechamento.** A PARADA passou em 04/09. Ordem decidida em 03/09: **5 → 1 → 2 → 3 → ⏸️ PARADA → 4 → 6 → 7 → fechamento** — **a 0, a 5, a 1, a 2 e a 3 já fecharam; falta a PARADA.** Tudo **0 ⚡**, então sela com prova estrutural + validação de tela e vai para produção no mesmo dia. | Claude |
 | 2 | **O `fix:` do produto — decidido em 03/09, ainda não executado.** A Máquina ganha o **Input de Produto** (foto + descrição na geração); enquanto não conectado, a tela avisa que o `produto` da ficha é **só nome**; e o **Roteiro passa a exigir onde o produto está na cena**. *Pôr o nome no prompt foi descartado: **nome não é foto**.* Depois deste mini-ciclo, antes do Catálogo. **Pior caso R1: 1 roteiro (15 ⚡) + 1 imagem (75 ⚡) = 90 ⚡** — a **única coisa em pauta com dinheiro dentro**, metade do dono obrigatória. | Jorge |
 | 3 | **Egress §4.5** — o egress na fatura, esperando o gráfico de Usage. | o relógio |
 | 4 | **Perguntas com gatilho:** a **0.3** (a aba escondida trava o elo?); **recusa × concorrência** (n ≥ 30); e **a trava de dono da linhagem, provada de um lado só** — o trigger de `asset_montage_parts` recusa peça cujo dono é **nulo**, mas o ramo *«peça de OUTRA pessoa existente»* **nunca foi exercitado**, porque a base tem **1 conta** *(medido em 04/09/2026)*. **O gatilho é a segunda conta:** no dia em que o painel super admin ou o primeiro convidado existir, esta prova roda — e até lá ela é uma trava que ninguém viu funcionar do lado que importa. | medição |
@@ -123,29 +123,27 @@ capacidades como dado** — fala nativa e seus idiomas, referência de áudio, l
 
 ## O PRÓXIMO GESTO
 
-**⏸️ O DONO OLHA.** Os três estão prontos e medidos — e a documentação **não selou** o
-mini-ciclo de propósito: *"aí eu vejo antes de a documentação selar"*.
+**As Fases 4, 6 e 7 — e depois o fechamento pelo ritual do §8.** A PARADA passou: o dono
+percorreu os três e disse **«testei, está ok»** sobre o filme e sobre o cartão no canvas.
 
-| o que ele pediu | como está |
+**O achado dele valeu a parada existir:** o vídeo em pé saía **maior que a janela** nos dois
+overlays, com os controles abaixo da dobra. Duas causas — a raiz era uma cadeia de
+`max-height` percentual quebrada pelo `<div>` que a **Fase 2** introduziu (regressão minha),
+e o visível era o `overflow: auto` que a folha do navegador dá a todo `<dialog>`.
+Consertado limitando o vídeo pela **janela**, e provado nos dois overlays com clipe em pé
+**e** deitado. §4.2b do plano.
+
+**O que falta, em ordem:**
+
+| fase | o que é |
 |---|---|
-| o filme tocando no cartão do canvas | `readyState 4`, **716×1284**, **15,125 s**, print em 2,21 s |
-| os três clipes em sequência | **um clique**; print em «Cena 2 · 2 de 3» tocando |
-| o asset na galeria, com o rodapé conferindo | **8 tiles, «8 arquivos», `bate: true`**, 2 deles filmes |
+| **4** | as arestas que não desenham na carga fria **e** o cartão dizendo «peça removida» |
+| **6** | o estado *«enviando»* — o terceiro braço do ternário |
+| **7** | aprovar a ficha não carimba `edited_at` |
+| — | fechamento do mini-ciclo, ritual do §8 |
 
-**0 ⚡:** `generations` 716 → 716, ledger 108 → 108, saldo **3.280 → 3.280**.
-
-**✅ E a galeria passou a listar `assets`, não `generations`.** `assets.project_id`
-(migration de 04/09), com **dois triggers** que carimbam o projeto em todo caminho: o
-derivado herda de quem ele recortou, e toda geração que aponta para um asset o carimba. O
-filme, que não passa por nenhum dos dois, entra por `record_montage`, que ganhou
-`p_project_id` **sem `default`**. Backfill: **85 com projeto, 17 sem** — os 17 são 11
-envios avulsos e 6 imagens de entidade, e **nenhum é acidente**. E consertou junto o que
-ninguém tinha notado: **os quadros do elo estavam invisíveis na galeria desde 15/08/2026.**
-
-Evidência e os quatro prints em `scratchpad\evidencias\video-final-parada\`.
-
-**Depois do veredito dele:** as Fases 4, 6 e 7, e o fechamento do mini-ciclo pelo ritual do
-§8 do plano.
+**Tudo 0 ⚡**, então sela com prova estrutural + validação de tela e vai para produção no
+mesmo dia.
 
 > **⏸️ Depois da Fase 3, o trabalho para e o dono olha.** Ele tem de ver **o filme
 > montado a partir dos 3 clipes reais** do «Projeto novo teste maquina storyboard» —

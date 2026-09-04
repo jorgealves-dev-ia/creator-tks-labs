@@ -197,8 +197,15 @@ function LightboxView({ assetId, isVideo }: { assetId: string; isVideo: boolean 
       aria-label={isVideo ? copy.videoTitle : copy.title}
       onClose={close}
       onClick={close}
+      /*
+        `overflow-hidden` é declaração, não estilo: a folha do navegador dá
+        `overflow: auto` a todo `<dialog>`, e foi ela que transformou um vídeo
+        grande demais em **rolagem** — com os controles abaixo da dobra. Aqui a
+        página não rola; quem cede é o vídeo.
+      */
       className="fixed inset-0 z-50 m-0 flex size-full max-h-none max-w-none flex-col
-                 border-0 bg-canvas/95 p-0 text-ink backdrop-blur-sm backdrop:bg-transparent"
+                 overflow-hidden border-0 bg-canvas/95 p-0 text-ink backdrop-blur-sm
+                 backdrop:bg-transparent"
     >
       <div className="flex shrink-0 items-center justify-between px-5 py-3">
         <div className="flex items-center gap-3">
@@ -249,10 +256,12 @@ function LightboxView({ assetId, isVideo }: { assetId: string; isVideo: boolean 
             `stopPropagation` porque o clique no fundo fecha o overlay, e sem
             ele arrastar a barra de progresso fecharia o vídeo no meio.
           */
-          <div
-            className="relative flex max-h-full max-w-full items-center"
-            onClick={(event) => event.stopPropagation()}
-          >
+          /*
+            O embrulho não limita nada, e é honesto que não pretenda: ele existe
+            para as setas terem um `relative` de referência. Quem limita é o
+            próprio vídeo, contra a JANELA — ver abaixo.
+          */
+          <div className="relative flex items-center" onClick={(event) => event.stopPropagation()}>
             <video
               key={assetId}
               src={url}
@@ -264,13 +273,38 @@ function LightboxView({ assetId, isVideo }: { assetId: string; isVideo: boolean 
               autoPlay={emFila}
               preload="metadata"
               aria-label={copy.videoTitle}
+              /*
+                ── O VÍDEO CEDE, A PÁGINA NÃO ROLA — 04/09/2026 ──────────────
+
+                Medido no veredito da PARADA: um clipe em pé (716×1284) saía com
+                **1284 px de altura numa janela de 709**, transbordando 303 px, e
+                os controles ficavam abaixo da dobra. O dono precisava rolar para
+                achar o play.
+
+                **A causa era uma cadeia de `max-height` percentual quebrada.** O
+                `max-h-full` do vídeo resolvia contra o embrulho, cuja altura é
+                `auto` — e **porcentagem contra altura automática não resolve**,
+                então o limite era simplesmente ignorado e o vídeo ficava com seu
+                tamanho intrínseco. O embrulho entrou na Fase 2, para as setas; a
+                quebra veio com ele.
+
+                O conserto não conserta a cadeia: **descarta a cadeia**. O limite
+                passa a ser a JANELA — `100dvh` menos o cabeçalho (50 px) e a
+                folga de baixo (20 px) —, que não depende de ancestral nenhum ter
+                altura definida.
+
+                `h-auto w-auto` para o vídeo encolher pelos dois lados mantendo a
+                proporção, e `object-contain` para o que sobrar virar barra preta.
+                **É o que a tela cheia do navegador faz**, e foi o comportamento
+                que o dono apontou como referência.
+              */
               onEnded={() => {
                 // O coração da Fase 2: acabou a cena, começa a seguinte. Sem
                 // clique. No fim da fila o último quadro fica parado — fechar
                 // sozinho tiraria da tela justamente a emenda que se foi ver.
                 if (temProximo) irPara(indice + 1);
               }}
-              className="max-h-full max-w-full object-contain"
+              className="h-auto max-h-[calc(100dvh-4.5rem)] w-auto max-w-[100vw] object-contain"
             />
 
             {emFila ? (
@@ -315,7 +349,7 @@ function LightboxView({ assetId, isVideo }: { assetId: string; isVideo: boolean 
             className={
               zoomed
                 ? "max-w-none cursor-zoom-out"
-                : "max-h-full max-w-full cursor-zoom-in object-contain"
+                : "h-auto max-h-[calc(100dvh-4.5rem)] w-auto max-w-[100vw] cursor-zoom-in object-contain"
             }
           />
         ) : (

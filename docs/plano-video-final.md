@@ -69,7 +69,7 @@ Dito antes das fases, porque o escopo é a metade do plano.
 | 2ª | **1** | «Montar o vídeo»: o portão que devolve UM arquivo | ✅ **FECHADA** 04/09/2026 — o filme real montado, tocando no canvas |
 | 3ª | **2** | **a FILA de clipes** — mudou de forma antes do código | ✅ **FECHADA** 04/09/2026 — 3 cenas com **um** clique |
 | 4ª | **3** | o vídeo por cima do modal — **e a causa não era o `z-index`** | ✅ **FECHADA** 04/09/2026 |
-| ⏸️ | — | **PARADA — o dono vê o filme** | ⬜ ver §4.2 |
+| ⏸️ | — | **PARADA — o dono vê o filme** | ✅ **«testei, está ok»** 04/09/2026 — com um achado, consertado: §4.2b |
 | 5ª | **4** | as arestas que não desenham **e** o cartão que não diz «peça removida» | ⬜ não começou |
 | 6ª | **6** | o estado *"enviando"* — o terceiro braço do ternário | ⬜ não começou |
 | 7ª | **7** | aprovar a ficha não carimba `edited_at` | ⬜ não começou |
@@ -107,6 +107,70 @@ há dinheiro em jogo, e a regra recalibrada de 31/08 não a exigiria. **É outra
 veredito de 02/09 sendo atendido na frente de quem o deu.** O dono disse *"três «vídeo
 pronto» e nenhum vídeo"*; a resposta a isso não é um parágrafo de documentação dizendo
 que foi resolvido — é ele vendo o vídeo. **A documentação sela depois; ele vê antes.**
+
+---
+
+### 4.2b · O VEREDITO DA PARADA — 04/09/2026
+
+O dono percorreu os três e disse, nas palavras dele:
+
+> ## **«testei, está ok»**
+>
+> — sobre **o filme** e sobre **o cartão no canvas**.
+
+O veredito de 02/09 está atendido. Ele dizia *"três «vídeo pronto» e nenhum vídeo"*; a
+resposta não foi um parágrafo de documentação afirmando que resolveu — foi ele assistindo.
+
+#### O achado da parada: o vídeo em pé passava da dobra
+
+Junto do ok veio **um defeito, e ele valia a parada existir**:
+
+> *"o vídeo em pé (716×1284) sai maior que a janela e os controles ficam abaixo da dobra;
+> o dono precisa rolar para ver play, tempo e volume. A tela cheia do cartão faz certo —
+> o navegador encaixa o vídeo inteiro com barras pretas. É esse o comportamento de
+> referência."*
+
+Nos **dois** overlays: a fila de clipes e o lightbox da galeria.
+
+**Medido antes de mexer**, com um clipe em pé numa janela de 1600×709: o `<video>` saía com
+**1284 px de altura** — o intrínseco —, o retângulo começava em **y = −272** e terminava em
+**1012**, transbordando **303 px**; e o `<dialog>` respondia com `scrollHeight 1012 >
+clientHeight 709`, isto é, **rolagem**.
+
+**Duas causas, com ordem entre elas.** A raiz é que **o tamanho intrínseco não estava sendo
+limitado**: o `max-height: 100%` do vídeo resolvia contra um pai de altura `auto`, e
+**porcentagem contra altura automática não resolve**. O `<div>` que criou essa quebra
+**entrou na Fase 2**, para as setas terem um `relative` — antes dele o vídeo era filho
+direto do container de altura definida. *É regressão introduzida no meio deste mini-ciclo,
+e achada pelo dono, não por mim.* A causa visível é o **`overflow: auto` que a folha do
+navegador dá a todo `<dialog>`**: é ele que transforma transbordo em rolagem em vez de
+recorte.
+
+**O conserto não conserta a cadeia — descarta a cadeia.** O limite passa a ser a **janela**
+(`calc(100dvh - 4.5rem)` de altura, `100vw` de largura), que não depende de ancestral
+nenhum ter altura definida; mais `h-auto w-auto object-contain`, e `overflow-hidden` no
+`<dialog>`. **É o que a tela cheia do navegador faz**, que foi a referência que o dono deu.
+
+**Prova (§5, item 16), janela 1600×709 nos três:**
+
+| overlay | clipe | intrínseco | na tela | dentro da janela | dialog rola |
+|---|---|---|---|---|---|
+| fila | cena 3, em pé | 716×1284 | **355×637** | ✅ | não |
+| galeria | fixture, deitado | 1280×720 | **1132×637** | ✅ | não |
+| galeria | filme, em pé | 716×1284 | **355×637** | ✅ | não |
+
+`scrollTop = 0` e `overflow: hidden` nos três, proporção mantida nos três, controles
+nativos visíveis sem rolar nos três.
+
+**A quarta combinação — fila + deitado — não é alcançável no produto**, e isso fica dito em
+vez de contornado: a fila se monta dos clipes do trilho, e todo clipe do trilho vem da
+Máquina no formato do projeto. Pôr um deitado ali exigiria forjar linha em `generations`,
+que é a tabela do dinheiro. **O que sustenta a cobertura é que os dois overlays são o mesmo
+componente e o `<video>` é um só no arquivo** — a regra sob teste está num `className`
+único, exercitado nas duas orientações.
+
+*O clipe deitado foi um sintético de 1280×720 feito do próprio material (0 ⚡), subido como
+fixture e removido no fim.*
 
 ---
 
@@ -685,6 +749,7 @@ de número, e o selo da tela conferindo com as duas.
 | **12** | **o filme aparece na galeria do projeto** — e a galeria passa a listar `assets`, não `generations` | banco + tela | PARADA |
 | **13** | **um quadro derivado do elo aparece na galeria** — invisível desde 15/08/2026 sem ninguém notar | banco + tela | PARADA |
 | **14** | **a contagem do rodapé bate com o que está na tela** — *«ele já mentiu duas vezes na prateleira, não vai estrear na galeria»* | número | PARADA |
+| **16** | **o vídeo cabe na janela nos DOIS overlays e nos DOIS formatos** — retângulo ⊂ viewport, controles sem rolar, `scrollTop = 0` | número + 3 prints | PARADA |
 | 3 | **zero dinheiro**: `generations`, `ledger_transactions`, `assets` de geração e saldo idênticos, com o timestamp da última linha inalterado | número | 1 |
 | **4** | **a ordem vem de `storyboard_scenes.ordem`, e a prova ASSISTE:** hash de quadro **por posição** — cada cena ocupa a faixa de quadros que lhe cabe no montado, idêntica uma a uma | quadro (hash de pixel cru) | 1 |
 | 5 | o portão **não aparece habilitado** com um clipe faltando, e diz quantos faltam | texto | 1 |
