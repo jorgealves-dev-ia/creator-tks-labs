@@ -127,8 +127,20 @@ export const t = {
       emptyTitle: "Nada gerado ainda",
       emptyBody:
         "Abra um projeto e gere a primeira imagem: tudo o que sair fica aqui para sempre.",
-      countSuffix: "imagens",
-      countOne: "imagem",
+      /**
+       * "arquivos", e não "imagens" — 04/09/2026.
+       *
+       * A galeria passou a listar `assets` em vez de `generations`, e com isso
+       * entraram **vídeos**: os clipes de cena e o filme montado. Um rodapé que
+       * diz *"8 imagens"* embaixo de uma grade com cinco vídeos conta o número
+       * certo e dá o nome errado — e o rodapé é justamente onde a casa já foi
+       * mordida duas vezes na prateleira.
+       *
+       * "Arquivos" cobre os dois sem precisar contar por tipo, que seria uma
+       * frase mais longa para dizer a mesma coisa.
+       */
+      countSuffix: "arquivos",
+      countOne: "arquivo",
 
       /**
        * O selo do canto, nos dois casos que não são um projeto.
@@ -1908,8 +1920,20 @@ export const t = {
       openHint: "Clique para ampliar",
       untitled: "Sem legenda",
       close: "Fechar",
-      countSuffix: "imagens",
-      countOne: "imagem",
+      /**
+       * "arquivos", e não "imagens" — 04/09/2026.
+       *
+       * A galeria passou a listar `assets` em vez de `generations`, e com isso
+       * entraram **vídeos**: os clipes de cena e o filme montado. Um rodapé que
+       * diz *"8 imagens"* embaixo de uma grade com cinco vídeos conta o número
+       * certo e dá o nome errado — e o rodapé é justamente onde a casa já foi
+       * mordida duas vezes na prateleira.
+       *
+       * "Arquivos" cobre os dois sem precisar contar por tipo, que seria uma
+       * frase mais longa para dizer a mesma coisa.
+       */
+      countSuffix: "arquivos",
+      countOne: "arquivo",
     },
 
     referenceSources: {

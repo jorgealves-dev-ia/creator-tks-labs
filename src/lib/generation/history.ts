@@ -120,7 +120,14 @@ export async function loadGeneration(input: unknown): Promise<GenerationRecord |
  * um nome que inventamos para ela.
  */
 export type GenerationThumb = {
-  generationId: string;
+  /**
+   * Nulo quando o arquivo **não nasceu de uma geração**.
+   *
+   * Dois casos hoje, e os dois por desenho: o **filme montado** (montagem não é
+   * geração) e o **quadro derivado do elo**. Quem usa isto para pedir o prompt
+   * precisa checar antes — não há prompt onde não houve modelo.
+   */
+  generationId: string | null;
   assetId: string;
   url: string;
   label: string | null;
@@ -426,12 +433,24 @@ export async function listProjectGallery(input: unknown): Promise<ProjectGallery
 
   // Uma linha a mais que a página, para responder "tem mais?" sem uma segunda
   // consulta de contagem.
+  //
+  // -------------------------------------------------------------------------
+  // Lê `assets`, e não `generations` — 04/09/2026
+  // -------------------------------------------------------------------------
+  //
+  // A consulta antiga listava gerações e mostrava `result_asset_id`. Isso
+  // funciona enquanto **todo** arquivo do acervo nasce de uma geração, e dois já
+  // não nascem: o **filme montado** e o **quadro derivado do elo**. Medido: a
+  // galeria dizia «6 imagens» num projeto que tinha 6 gerações e mais dois
+  // filmes; e os quadros do elo estavam invisíveis **desde 15/08/2026, sem
+  // ninguém notar**.
+  //
+  // `assets.project_id` é a coluna que tornou isto possível, e a pergunta ficou
+  // a que sempre foi: *quais arquivos são deste projeto?*
   let query = supabase
-    .from("generations")
-    .select("id, created_at, result_asset_id")
+    .from("assets")
+    .select("id, created_at, storage_path, label, kind")
     .eq("project_id", parsed.data.projectId)
-    .eq("status", "succeeded")
-    .not("result_asset_id", "is", null)
     .order("created_at", { ascending: false })
     .limit(GALLERY_PAGE_SIZE + 1);
 
@@ -446,9 +465,70 @@ export async function listProjectGallery(input: unknown): Promise<ProjectGallery
   const hasMore = rows.length > GALLERY_PAGE_SIZE;
 
   return {
-    items: await withSignedUrls(supabase, hasMore ? rows.slice(0, GALLERY_PAGE_SIZE) : rows),
+    items: await assinarAssets(supabase, hasMore ? rows.slice(0, GALLERY_PAGE_SIZE) : rows),
     hasMore,
   };
+}
+
+/**
+ * A mesma grade, partindo de `assets` em vez de `generations`.
+ *
+ * O `generationId` vira uma **consulta a mais, e opcional**: quem tem geração
+ * ganha o id (é o que faz o "Ver prompt" funcionar); quem não tem — filme,
+ * quadro do elo — entra na grade com `null`, que é a verdade.
+ *
+ * *A miniatura continua sendo miniatura:* quem amplia é o Lightbox, que reassina
+ * por id. A faxina de egress de 27/08 vale aqui igual.
+ */
+async function assinarAssets(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  rows: readonly {
+    id: string;
+    created_at: string;
+    storage_path: string;
+    label: string | null;
+    kind: string;
+  }[],
+): Promise<GenerationThumb[]> {
+  if (rows.length === 0) return [];
+
+  const signed = await signWithThumbnails(
+    supabase,
+    rows.map((row) => row.storage_path),
+  );
+
+  const { data: geracoes } = await supabase
+    .from("generations")
+    .select("id, result_asset_id")
+    .in(
+      "result_asset_id",
+      rows.map((row) => row.id),
+    );
+
+  const geracaoPorAsset = new Map(
+    (geracoes ?? []).flatMap((linha) =>
+      linha.result_asset_id ? [[linha.result_asset_id, linha.id] as const] : [],
+    ),
+  );
+
+  return rows.flatMap((row) => {
+    const url = signed.get(row.storage_path)?.thumb;
+
+    // Um arquivo que sumiu do Storage não entra na grade. Nada a explicar: a
+    // miniatura existe para ser clicada, e essa não pode ser.
+    if (!url) return [];
+
+    return [
+      {
+        generationId: geracaoPorAsset.get(row.id) ?? null,
+        assetId: row.id,
+        url,
+        label: row.label,
+        createdAt: row.created_at,
+        isVideo: row.kind === "video",
+      },
+    ];
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -508,11 +588,13 @@ export async function listGeneralGallery(input: unknown): Promise<GeneralGallery
 
   // Uma linha a mais que a página, para responder "tem mais?" sem uma segunda
   // consulta de contagem. Mesmo truque da galeria por projeto.
+  // `assets`, e não `generations` — pelo mesmo motivo da galeria de projeto: o
+  // filme montado e o quadro derivado do elo não têm geração, e uma galeria que
+  // lista gerações não mostra nem um nem outro. Aqui a mudança é maior de vista,
+  // porque esta grade tem selo de origem — e o selo passou a sair do asset.
   let query = supabase
-    .from("generations")
-    .select("id, created_at, result_asset_id, project_id, node_id")
-    .eq("status", "succeeded")
-    .not("result_asset_id", "is", null)
+    .from("assets")
+    .select("id, created_at, storage_path, label, kind, project_id")
     .order("created_at", { ascending: false })
     .limit(GALLERY_PAGE_SIZE + 1);
 
@@ -547,24 +629,53 @@ export async function listGeneralGallery(input: unknown): Promise<GeneralGallery
     }
   }
 
-  const thumbs = await withSignedUrls(supabase, page);
-  const originById = new Map(page.map((row) => [row.id, originOf(row, projectNames)]));
+  // Quem não tem projeto pode ser folha canônica (nasce no editor da personagem)
+  // ou órfã (o projeto foi excluído, e o `ON DELETE SET NULL` apagou o vínculo).
+  // O que separa os dois deixou de ser `node_id` e passou a ser **estar citada
+  // por uma entidade** — a mesma pergunta, feita ao asset em vez de à geração.
+  const semProjeto = page.filter((row) => row.project_id === null).map((row) => row.id);
+  const canonicas = new Set<string>();
+
+  if (semProjeto.length > 0) {
+    const { data: deEntidade } = await supabase
+      .from("entity_images")
+      .select("asset_id")
+      .in("asset_id", semProjeto);
+
+    for (const linha of deEntidade ?? []) canonicas.add(linha.asset_id);
+  }
+
+  const thumbs = await assinarAssets(supabase, page);
+  const originById = new Map(
+    page.map((row) => [row.id, origemDoAsset(row, projectNames, canonicas)]),
+  );
 
   return {
     items: thumbs.map((thumb) => ({
       ...thumb,
-      // A miniatura só existe se a geração existe, então o selo sempre está lá;
-      // o `??` é o que o tipo exige, não um caso que aconteça.
-      origin: originById.get(thumb.generationId) ?? { kind: "orphan" },
+      // O selo sempre existe: `origemDoAsset` responde para toda linha da página,
+      // e o `??` é o que o tipo exige, não um caso que aconteça.
+      origin: originById.get(thumb.assetId) ?? { kind: "orphan" },
     })),
     hasMore,
   };
 }
 
-/** A regra dos três casos, num lugar só. */
-function originOf(
-  row: { project_id: string | null; node_id: string | null },
+/**
+ * A regra dos três casos, num lugar só — agora lida do ASSET.
+ *
+ * Era `originOf`, e lia da geração: projeto → projeto; sem projeto e sem node →
+ * folha canônica; sem projeto e com node → órfã (o projeto foi excluído, e o
+ * `ON DELETE SET NULL` de `generations_project_id_fkey` apagou o vínculo).
+ *
+ * A pergunta não mudou; a fonte sim. Um arquivo sem projeto é **folha canônica
+ * quando alguma entidade o cita** — que é exatamente o que o `node_id` nulo
+ * significava por tabela interposta —, e órfão quando não.
+ */
+function origemDoAsset(
+  row: { id: string; project_id: string | null },
   projectNames: ReadonlyMap<string, string>,
+  canonicas: ReadonlySet<string>,
 ): GenerationOrigin {
   if (row.project_id !== null) {
     const name = projectNames.get(row.project_id);
@@ -574,7 +685,7 @@ function originOf(
     return name ? { kind: "project", name } : { kind: "orphan" };
   }
 
-  return row.node_id === null ? { kind: "canonical" } : { kind: "orphan" };
+  return canonicas.has(row.id) ? { kind: "canonical" } : { kind: "orphan" };
 }
 
 /**

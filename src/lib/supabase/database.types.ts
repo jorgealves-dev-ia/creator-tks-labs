@@ -256,6 +256,7 @@ export type Database = {
           kind: Database["public"]["Enums"]["asset_kind"]
           label: string | null
           mime_type: string
+          project_id: string | null
           source: Database["public"]["Enums"]["asset_source"]
           storage_bucket: string
           storage_path: string
@@ -273,6 +274,7 @@ export type Database = {
           kind: Database["public"]["Enums"]["asset_kind"]
           label?: string | null
           mime_type: string
+          project_id?: string | null
           source: Database["public"]["Enums"]["asset_source"]
           storage_bucket?: string
           storage_path: string
@@ -290,6 +292,7 @@ export type Database = {
           kind?: Database["public"]["Enums"]["asset_kind"]
           label?: string | null
           mime_type?: string
+          project_id?: string | null
           source?: Database["public"]["Enums"]["asset_source"]
           storage_bucket?: string
           storage_path?: string
@@ -302,6 +305,13 @@ export type Database = {
             columns: ["derived_from_asset_id"]
             isOneToOne: false
             referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -1273,6 +1283,7 @@ export type Database = {
           p_height: number
           p_label?: string
           p_part_asset_ids: string[]
+          p_project_id: string
           p_storage_path: string
           p_width: number
         }
@@ -1287,6 +1298,7 @@ export type Database = {
           kind: Database["public"]["Enums"]["asset_kind"]
           label: string | null
           mime_type: string
+          project_id: string | null
           source: Database["public"]["Enums"]["asset_source"]
           storage_bucket: string
           storage_path: string

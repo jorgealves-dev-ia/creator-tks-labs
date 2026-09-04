@@ -162,6 +162,10 @@ export async function montarOStoryboard(
   // calada: o arquivo existe, abre, toca, e ninguém descobre até perguntarem de
   // onde ele veio.
   const { data: assetRow, error: erroRegistro } = await supabase.rpc("record_montage", {
+    // O projeto é obrigatório e não tem `default` — quem esquecer não compila.
+    // É a única porta que os dois triggers de 04/09 não alcançam: o filme não
+    // deriva de um asset só e não tem geração.
+    p_project_id: parsed.data.projectId,
     p_storage_path: storagePath,
     p_byte_size: filme.arquivo.byteLength,
     p_width: filme.largura,

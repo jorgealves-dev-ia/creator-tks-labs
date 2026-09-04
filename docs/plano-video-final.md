@@ -338,6 +338,74 @@ Ela não o recebe, e fechar isso a acoplaria ao roteiro. O que sobra em aberto �
 **do próprio dono** — montar um filme com clipes dele em qualquer ordem é uma coisa que o
 produto provavelmente vai querer oferecer. *Não é vazamento; é liberdade.*
 
+#### 4.1d · «Um asset pertence a um projeto» — decisão do dono, 04/09/2026
+
+**O buraco é mais velho que o filme.** A galeria lista `generations` e mostra
+`result_asset_id`. Isso funciona enquanto todo arquivo do acervo nasce de uma geração — e
+**dois já não nascem**: o **filme montado** (montagem não é geração) e o **quadro derivado
+do elo** (recortado de um clipe desde 15/08/2026, pela mesma razão).
+
+Medido em 04/09: a galeria do projeto diz *«6 imagens»* e mostra 3 clipes e 3 imagens; os
+dois filmes não estão lá. **E os quadros do elo estão invisíveis desde 15/08 sem ninguém
+notar** — o filme só tornou o buraco visível, porque ele é a entrega.
+
+**Duas saídas mais baratas foram recusadas, e pelo mesmo motivo: as duas fazem a galeria
+adivinhar.** Pescar filmes pelo caminho do Storage amarra a galeria a uma convenção de
+nome de arquivo; unir por `asset_montage_parts` é correto por FK mas **só serve para
+filme** — não conserta o quadro do elo, e o próximo asset sem geração recomeça a
+discussão. *"Um asset pertence a um projeto"* conserta a classe inteira.
+
+##### O passado, e o número que sobra
+
+Três passes, nenhum adivinhando — os três seguem uma FK existente até um `project_id` que
+já estava gravado: **geração → projeto**, **peça → clipe → projeto**, **derivado → origem →
+projeto** (nesta ordem, porque o terceiro lê o que o primeiro escreveu). O `db push`
+imprime as contagens.
+
+**Previsto pela medição de 04/09: 85 dos 102 assets ganham projeto, e 17 ficam nulos.**
+Os 17 foram conferidos um a um e **nenhum é acidente**:
+
+| quantos | o que são | por que não têm projeto |
+|---|---|---|
+| 11 | `image/upload` | envio avulso — a pessoa trouxe o arquivo, não gerou |
+| 6 | imagens de entidade (3 geradas, 3 enviadas) | **a folha canônica nasce no editor da personagem**, que não é um projeto |
+
+**Órfão fica nulo e a galeria de projeto ignora** — ela filtra por `project_id`, então nulo
+não aparece. É por isso que a coluna **não pode** ser `not null`: uma trava que recusasse
+nulo recusaria a folha canônica.
+
+##### O futuro: dois triggers, e não uma lista de caminhos para lembrar
+
+A exigência era *"todo caminho que cria asset passa a preencher `project_id` — exigência no
+banco se der"*. **Dá, e por um desenho melhor do que lembrar em cada chamador.**
+
+| trigger | onde | o que carimba |
+|---|---|---|
+| `assets_herdar_projeto` | `before insert on assets` | o **derivado** herda o projeto de quem ele recortou — tira a responsabilidade de `registerDerivedFrame` e de qualquer derivação futura |
+| `generations_carimbar_projeto_do_asset` | `after insert or update of result_asset_id, project_id on generations` | **o ponto por onde todos passam**: o asset de imagem nasce numa rota, o de vídeo no webhook, e amanhã pode ser outro lugar — mas todos acabam gravando `result_asset_id` |
+
+**O segundo é o que cobre os caminhos que eu não conheço**, e é por isso que ele existe em
+vez de uma lista: uma lista descreve os chamadores de hoje; o trigger pega o de amanhã.
+
+**Sobra um caminho que nenhum dos dois alcança: o filme.** Ele não deriva de um asset só e
+não tem geração. Então `record_montage` ganhou `p_project_id` **sem `default`** — quem
+chamar sem ele não compila nem executa —, e a função confere que o projeto é do chamador,
+como já conferia o caminho do Storage e as peças. *A assinatura antiga foi derrubada com
+`drop function`: um `create or replace` com parâmetro a mais criaria uma **segunda** função
+com o mesmo nome, e o dia em que alguém chamasse a antiga o filme voltaria a nascer sem
+projeto — calado, como todo o resto desta página.*
+
+##### Provas
+
+| # | o que prova | forma |
+|---|---|---|
+| **12** | **o filme aparece na galeria do projeto** | banco + tela |
+| **13** | **um quadro derivado do elo aparece na galeria** — invisível desde 15/08 | banco + tela |
+| **14** | **a contagem do rodapé bate com o que está na tela** — *"ele já mentiu duas vezes na prateleira, não vai estrear na galeria"* | número |
+| **15** | **zero Spark**: `generations`, ledger e saldo idênticos | número |
+
+---
+
 #### Invariantes que valem aqui, sem exceção
 
 - **Ingestão de assets (3):** o vídeo montado é copiado para o Storage e registrado em
@@ -614,6 +682,9 @@ de número, e o selo da tela conferindo com as duas.
 | **2b** | **o trigger de INSERT é do BANCO, não do código:** recusa linha cujo `user_id` não é o dono do filme, e recusa peça que não é da mesma pessoa | vermelho→verde no banco | 1 |
 | **2c** | **a armadilha do `on delete set null`:** o trigger de UPDATE deixa passar a transição peça→nula — que é o UPDATE que a cascata emite — e recusa **toda** outra alteração da linha; **e apagar um clipe já usado num filme FUNCIONA**, com o filme de pé e a contagem de posições intacta | vermelho→verde no banco | 1 |
 | **11** | **a fila percorre as 3 cenas com UM clique** — gestos contados do começo ao fim, `src` do `<video>` mudando e o rótulo acompanhando | número (gestos) | 2 |
+| **12** | **o filme aparece na galeria do projeto** — e a galeria passa a listar `assets`, não `generations` | banco + tela | PARADA |
+| **13** | **um quadro derivado do elo aparece na galeria** — invisível desde 15/08/2026 sem ninguém notar | banco + tela | PARADA |
+| **14** | **a contagem do rodapé bate com o que está na tela** — *«ele já mentiu duas vezes na prateleira, não vai estrear na galeria»* | número | PARADA |
 | 3 | **zero dinheiro**: `generations`, `ledger_transactions`, `assets` de geração e saldo idênticos, com o timestamp da última linha inalterado | número | 1 |
 | **4** | **a ordem vem de `storyboard_scenes.ordem`, e a prova ASSISTE:** hash de quadro **por posição** — cada cena ocupa a faixa de quadros que lhe cabe no montado, idêntica uma a uma | quadro (hash de pixel cru) | 1 |
 | 5 | o portão **não aparece habilitado** com um clipe faltando, e diz quantos faltam | texto | 1 |
