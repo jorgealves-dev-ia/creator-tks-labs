@@ -79,3 +79,38 @@ export function parseGraph(value: unknown): CanvasGraph {
 export function graphToJson(graph: z.infer<typeof graphSchema>): Json {
   return JSON.parse(JSON.stringify(graph)) as Json;
 }
+
+/**
+ * A TRAVA DO GRAFO — a regra, separada de quem a aplica.
+ *
+ * Mora aqui, e não dentro da Server Action, pela mesma razão que tirou o
+ * `vereditoDoFilme` de dentro do JSX: **uma regra embutida no chamador só se
+ * testa tendo o chamador inteiro de pé** — e o chamador aqui é uma Server Action
+ * que exige sessão e banco. A regra é uma comparação de dois números e um
+ * booleano; ela merece ser exercitada como tal.
+ *
+ * **A pergunta:** esta gravação encolheria o grafo sem ninguém ter mandado?
+ *
+ * `guardadas` vem da **linha do banco**, e essa escolha é o conserto de um erro
+ * meu: a primeira versão comparava contra "quantas o `loadWorkflow` recebeu", e
+ * essa régua é **cega exatamente no caso do incidente** — se as arestas se perdem
+ * antes do load, ele recebe zero, guarda zero, e conclui que o canvas sempre teve
+ * zero. A régua não pode compartilhar o defeito com o dado medido.
+ *
+ * `removeuAresta` é a autorização, e ela cobre as três portas legítimas de
+ * encolhimento: o ✂ do fio de cena, o Delete de aresta, e **apagar um node**, que
+ * leva os fios dele sem gerar evento de aresta nenhum. Sem essa exceção a trava
+ * transformaria "apagar" em "não dá para apagar".
+ */
+export function perderiaVinculos(input: {
+  /** Quantas arestas a linha do banco tem agora. */
+  guardadas: number;
+  /** Quantas a gravação traz. */
+  aGravar: number;
+  /** Alguém removeu aresta nesta sessão. */
+  removeuAresta: boolean;
+}): boolean {
+  if (input.removeuAresta) return false;
+
+  return input.guardadas > input.aGravar;
+}

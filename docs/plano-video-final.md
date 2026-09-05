@@ -70,7 +70,8 @@ Dito antes das fases, porque o escopo é a metade do plano.
 | 3ª | **2** | **a FILA de clipes** — mudou de forma antes do código | ✅ **FECHADA** 04/09/2026 — 3 cenas com **um** clique |
 | 4ª | **3** | o vídeo por cima do modal — **e a causa não era o `z-index`** | ✅ **FECHADA** 04/09/2026 |
 | ⏸️ | — | **PARADA — o dono vê o filme** | ✅ **«testei, está ok»** 04/09/2026 — com um achado, consertado: §4.2b |
-| 5ª | **4** | as arestas que não desenham **e** o cartão que não diz «peça removida» | ⬜ não começou |
+| 🚨 | — | **INCIDENTE — o canvas abre sem os vínculos** *(era a Fase 4; reclassificado pelo dono em 04/09)* | 🟡 **trava feita**, causa raiz para a próxima sessão — §10 e §11 |
+| 5ª | **4** | só o item 2: o cartão que não diz «peça removida» | ⬜ não começou |
 | 6ª | **6** | o estado *"enviando"* — o terceiro braço do ternário | ⬜ não começou |
 | 7ª | **7** | aprovar a ficha não carimba `edited_at` | ⬜ não começou |
 | — | — | fechamento do mini-ciclo, ritual do §8 | ⬜ |
@@ -908,3 +909,117 @@ imagem precisa ser gerada para provar as partes 1 e 2.
 etapa fica **aberta e não commitada** até a validação dele chegar. *Se o número que o
 portão mostrar não for 15 e 75, o clique não acontece* — a diferença entre os dois é o
 buraco por onde o dinheiro sai.
+
+## 10. INCIDENTE de 04/09/2026 — o canvas que abre sem os vínculos
+
+> **Isto não é a Fase 4.** A Fase 4 era *"as arestas que não desenham"*, um item de
+> acabamento ao lado do glifo com contraste fraco. A medição mostrou outra coisa, e o dono
+> reclassificou: **incidente**. As Fases 6, 7 e o fechamento esperam.
+
+### O que foi medido
+
+Carga fria do «Primeiros Testes» na 5599:
+
+| medida | valor |
+|---|---|
+| grafo no banco | 27 nodes, **23 arestas** (20 com as duas pontas; 3 órfãs já conhecidas) |
+| nodes na tela | **27** ✓ |
+| arestas no DOM | **0** — e o container `.react-flow__edges` existe **vazio** |
+| avisos do React Flow no console | **nenhum** |
+| `parseGraph` de produção contra o grafo real | **preserva as 23** (23 boas, 0 ruins) |
+| as duas Máquinas | **«(sem roteiro)»** |
+
+**As duas últimas linhas são as que decidem.** O parse não perde nada, então o sumiço é
+depois dele; e as Máquinas dizerem *"(sem roteiro)"* prova que **o store está vazio** — elas
+resolvem o Roteiro por `findGoverningBoard(edges, id)`, e sem aresta não acham. Não é um
+problema de desenho: é o dado que não chega.
+
+**A hipótese do plano está refutada.** Ela dizia `handleBounds` medidos depois do render —
+isso produziria arestas **sem `path`**, não **zero elementos**.
+
+### Por que virou incidente: é perda de dado
+
+```
+PERSISTED_NODE_CHANGES = ["add", "remove", "replace", "position"]
+autosave → saveWorkflow({ graph: { edges: store.edges, … } })
+```
+
+**Um arrasto marca o canvas como sujo, e o autosave grava o que o store tem.** Com o store
+vazio, um arrasto salvaria **0 arestas por cima das 23** — calado, sem confirmação e sem
+desfazer.
+
+*Não aconteceu:* o banco seguiu em 23 arestas, versão 2012, salvo às 15:51 — antes da
+investigação. Carregar não suja o canvas, e ninguém arrastou.
+
+### A trava — e um erro meu no caminho
+
+**Primeira versão, e ela era cega justo onde precisava enxergar.** Eu comparei contra
+*"quantas o `loadWorkflow` recebeu"*. Se as arestas se perdem **antes** do load, ele recebe
+zero, guarda zero, e a trava conclui *"este canvas sempre teve zero"*. Ela passaria batido
+no caso exato que a motivou.
+
+**A régua não pode compartilhar o defeito com o dado medido.** Então a trava mora **no
+servidor**, onde a verdade está: `saveWorkflow` lê a linha atual e recusa gravar menos
+arestas do que ela tem, a menos que a sessão declare uma remoção. *(A checagem do cliente
+ficou como primeira porta — ela poupa uma ida à rede quando a carga foi boa.)*
+
+**A exceção é obrigatória**, e cobre as **três** portas legítimas de encolhimento: o ✂ do
+fio de cena, o `remove` de aresta, e **apagar um node** — que leva os fios dele **sem gerar
+evento de aresta nenhum**. Uma trava que só olhasse a contagem transformaria *apagar* em
+*não dá para apagar*.
+
+**Prova:** 22 asserções, vermelho→verde, em `scratchpad\evidencias\incidente-vinculos\`.
+
+---
+
+## 11. O PLANO DA CAUSA RAIZ — para a próxima sessão, não para hoje
+
+**A pergunta é «quem escreve `[]`», não «por que não desenha».** Escrito aqui por exigência
+da regra 9: um plano que só existe na conversa some no fechamento.
+
+### (a) O interceptador do setter de arestas
+
+Um `subscribe` no store que registra `console.trace()` **toda vez que `edges.length` cai a
+zero**. É a única maneira de responder *quem* — o resto é adivinhação sobre *quando*.
+
+> ⚠️ **Marcado `SAI ANTES DO COMMIT`.** A trava do `git grep` da regra 8 existe exatamente
+> para isto, e já pegou cinco blocos em `master` uma vez.
+
+### (b) O experimento das 3 órfãs
+
+O «Primeiros Testes» tem **3 arestas com ponta solta** (`source` ou `target` que não é node
+nenhum), já no backlog. **Carregar o grafo sem elas e ver se as 20 aparecem.** Se
+aparecerem, a causa é **validação com `catch` que zera tudo** em vez de descartar a linha
+ruim — e o `parseGraph` já mostrou que não é ele, então seria alguém depois.
+
+### (c) A intermitência, que é a pista mais forte
+
+**Uma Máquina mostrou «Liquidificador Potente em Oferta Relâmpago» e depois deixou de
+mostrar, na mesma sessão.** Isso não é uma carga que nasce errada: é **algo depois do
+carregamento esvaziando o store**. Candidatos, para eliminar um a um:
+
+| candidato | por que suspeito |
+|---|---|
+| **StrictMode** | monta, desmonta e remonta em dev; um cleanup que zere arestas produz exatamente isto — **e só no dev** |
+| **troca de aba de projeto** | `loadWorkflow` zera `sceneSources`; se algum caminho chamar com `edges: []`, o efeito é este |
+| **Realtime** | `useGenerationFeed` escuta o projeto; um handler que reescreva o grafo a partir de um payload parcial |
+| **refetch em foco** | voltar para a aba do navegador dispara recarga em algum ponto |
+
+**A ordem: (c) primeiro** — e a medição em produção já apontou para ele.
+
+> ### ✅ A medição em produção foi feita — 04/09/2026
+>
+> `creator-tks-labs.vercel.app`, mesmo projeto, sessão do dono, **nada arrastado**: 27 nodes
+> e **20 arestas desenhadas** (as 20 válidas; as 3 órfãs corretamente não desenham), com a
+> Máquina achando «Liquidificador Potente em Oferta Relâmpago».
+>
+> **O incidente é DEV-ONLY. Produção nunca perdeu nada**, e o **StrictMode** sobe para
+> primeiro suspeito.
+>
+> **E respinga aqui:** a Fase 4 nasceu de *"19 arestas válidas desenham zero"*, medido em
+> 02/09 **no dev**. Produção desenha 20 de 20 hoje. Não dá para provar retroativamente, mas
+> **o item 1 da Fase 4 provavelmente nunca existiu como defeito de produto** — e é por isso
+> que a linha dela na tabela ficou só com o item 2.
+
+---
+

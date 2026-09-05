@@ -4,7 +4,7 @@ import { useReactFlow } from "@xyflow/react";
 import { useCallback, useEffect, useRef } from "react";
 
 import { saveWorkflow } from "@/lib/canvas/actions";
-import { useCanvasStore } from "@/lib/canvas/store";
+import { gravacaoPerderiaArestas, useCanvasStore } from "@/lib/canvas/store";
 
 const AUTOSAVE_DELAY_MS = 1200;
 
@@ -57,6 +57,29 @@ export function useSaveWorkflow() {
 
     if (!projectId) return;
 
+    // ── A TRAVA DO GRAFO ──────────────────────────────────────────────────
+    //
+    // Antes de qualquer coisa, e antes de dizer "salvando": esta gravação
+    // perderia vínculos que ninguém mandou remover?
+    //
+    // Nasceu do incidente de 04/09: o «Primeiros Testes» abriu com 27 nodes e
+    // ZERO arestas, com 23 no banco. Um arrasto teria salvado o vazio por cima
+    // — porque `"position"` marca o canvas como sujo e o autosave grava o que o
+    // store tem.
+    //
+    // **Recusar custa zero.** O pior caso daqui é uma gravação adiada com um
+    // aviso na tela; o pior caso sem isto é um projeto sem vínculos, e sem volta.
+    if (
+      gravacaoPerderiaArestas({
+        carregadas: store.arestasCarregadas,
+        atuais: store.edges.length,
+        removeuNestaSessao: store.removeuArestaNestaSessao,
+      })
+    ) {
+      store.setSaveStatus("recusado");
+      return;
+    }
+
     const revisionAtStart = store.revision;
     store.setSaveStatus("saving");
 
@@ -68,11 +91,21 @@ export function useSaveWorkflow() {
         edges: store.edges,
         viewport: getViewport(),
       },
+      // A autorização para o grafo encolher. Sem ela, o servidor recusa uma
+      // gravação com menos arestas do que a linha guardada tem.
+      removeuAresta: store.removeuArestaNestaSessao,
     });
 
     // The user may have switched tabs while this was in flight. That canvas's
     // status and version are no longer ours to write.
     if (useCanvasStore.getState().projectId !== projectId) return;
+
+    // A trava do servidor falou: o grafo encolheria sem ninguém ter mandado.
+    // Nada foi escrito, e a tela passa a dizer o gesto que resolve.
+    if (!result.ok && result.reason === "vinculos_ausentes") {
+      useCanvasStore.getState().setSaveStatus("recusado");
+      return;
+    }
 
     if (result.ok) {
       useCanvasStore

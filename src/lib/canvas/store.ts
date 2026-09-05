@@ -12,7 +12,48 @@ import { create } from "zustand";
 
 import type { SceneDirective } from "@/lib/storyboard/scene-prompt";
 
-export type SaveStatus = "saved" | "dirty" | "saving" | "failed";
+export type SaveStatus = "saved" | "dirty" | "saving" | "failed" | "recusado";
+
+/**
+ * A TRAVA DO GRAFO — 04/09/2026, nascida de um incidente.
+ *
+ * Medido no «Primeiros Testes»: o canvas abriu com **27 nodes e ZERO arestas**
+ * enquanto o banco guardava **23**. Não é que elas não desenhavam — elas não
+ * estavam no store: as duas Máquinas diziam *"(sem roteiro)"*, que é o que
+ * `findGoverningBoard` responde quando não há aresta.
+ *
+ * **E isso não era cosmético.** `"position"` está em `PERSISTED_NODE_CHANGES`, e
+ * o autosave grava `edges: store.edges`. Um arrasto — um só — marcaria o canvas
+ * como sujo e salvaria **zero arestas por cima das 23**. Calado, sem desfazer.
+ *
+ * A trava responde uma pergunta e só uma: *esta gravação perderia vínculos que
+ * ninguém mandou remover?*
+ *
+ * **Por que a exceção existe e é obrigatória:** apagar é um gesto legítimo, e
+ * ele reduz arestas de três maneiras — o ✂ do fio de cena, o `remove` de aresta,
+ * e **apagar um NODE**, que leva os fios dele junto sem gerar evento de aresta
+ * nenhum. Uma trava que só olhasse a contagem recusaria os três e transformaria
+ * "apagar" em "não dá para apagar".
+ *
+ * Por isso a pergunta não é *"diminuiu?"* e sim *"diminuiu sem ninguém ter
+ * mandado?"*. A resposta mora numa marca de sessão, posta nos três lugares.
+ *
+ * **Recusar custa zero e nunca perde o grafo.** O pior caso da trava é uma
+ * gravação adiada com um aviso na tela; o pior caso sem ela é um projeto sem
+ * vínculos, e sem volta.
+ */
+export function gravacaoPerderiaArestas(input: {
+  /** Quantas vieram do banco no `loadWorkflow`. */
+  carregadas: number;
+  /** Quantas o store tem agora. */
+  atuais: number;
+  /** Alguém removeu aresta nesta sessão — pelo ✂, pelo Delete, ou apagando um node. */
+  removeuNestaSessao: boolean;
+}): boolean {
+  if (input.removeuNestaSessao) return false;
+
+  return input.carregadas > 0 && input.atuais < input.carregadas;
+}
 
 /**
  * Why a save failed, because the two have different cures and only one of them
@@ -765,6 +806,16 @@ type CanvasState = {
   edges: Edge[];
   version: number;
   saveStatus: SaveStatus;
+  /**
+   * Quantas arestas vieram do banco nesta carga — a régua da trava.
+   *
+   * Não é `edges.length` de um instante qualquer: é o que o `loadWorkflow`
+   * recebeu. Sem esse número guardado, não há como distinguir *"o canvas sempre
+   * teve zero"* de *"o canvas perdeu as vinte e três"*.
+   */
+  arestasCarregadas: number;
+  /** Alguém removeu aresta nesta sessão — pelo ✂, pelo Delete, ou apagando node. */
+  removeuArestaNestaSessao: boolean;
   /** Set only while saveStatus is "failed"; null the rest of the time. */
   saveFailure: SaveFailure | null;
   /** Bumped by every persisted change; lets a save detect edits made while it ran. */
@@ -1032,6 +1083,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   edges: [],
   version: 1,
   saveStatus: "saved",
+  arestasCarregadas: 0,
+  removeuArestaNestaSessao: false,
   saveFailure: null,
   revision: 0,
   notice: null,
@@ -1046,6 +1099,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       nodes,
       edges,
       version,
+      // A régua da trava, e a marca zerada: projeto novo, sessão nova.
+      arestasCarregadas: edges.length,
+      removeuArestaNestaSessao: false,
       saveStatus: "saved",
       saveFailure: null,
       revision: 0,
@@ -1095,6 +1151,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       return {
         nodes: applyNodeChanges(changes, nodes),
         edges,
+        // Apagar um node leva os fios dele **sem gerar evento de aresta**. Sem
+        // esta linha a trava leria isso como perda e recusaria o apagamento.
+        removeuArestaNestaSessao:
+          state.removeuArestaNestaSessao || edges.length < state.edges.length,
         revision: persisted ? state.revision + 1 : state.revision,
         saveStatus: persisted ? "dirty" : state.saveStatus,
       };
@@ -1124,6 +1184,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       return {
         nodes,
         edges: applyEdgeChanges(changes, state.edges),
+        removeuArestaNestaSessao:
+          state.removeuArestaNestaSessao ||
+          changes.some((change) => change.type === "remove"),
         revision: persisted ? state.revision + 1 : state.revision,
         saveStatus: persisted ? "dirty" : state.saveStatus,
       };
@@ -1831,6 +1894,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       // cortou, que é a definição inteira do gesto.
       return {
         edges,
+        // O ✂ é remoção deliberada, e a trava precisa saber disso — senão ela
+        // recusaria a próxima gravação de um corte que a pessoa pediu.
+        removeuArestaNestaSessao: true,
         revision: state.revision + 1,
         saveStatus: "dirty",
         notice: null,

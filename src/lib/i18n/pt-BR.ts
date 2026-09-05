@@ -252,6 +252,14 @@ export const t = {
       saving: "Salvando…",
       unsaved: "Alterações não salvas",
       /**
+       * A recusa da trava do grafo — 04/09/2026.
+       *
+       * Diz o que aconteceu **e o gesto que resolve**. "Erro ao salvar" mandaria
+       * tentar de novo, que é a coisa errada: tentar de novo grava o vazio.
+       */
+      vinculosAusentes:
+        "Este projeto abriu sem os vínculos. Recarregue antes de editar.",
+      /**
        * Names what actually failed, and says what did not. A generated image is
        * in Storage and its debit is in the ledger long before the canvas is
        * saved, so whoever reads this needs both facts in the same sentence.

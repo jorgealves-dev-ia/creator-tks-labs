@@ -5,7 +5,7 @@
 > O *porquê* está em [`decisoes.md`](decisoes.md); o *o quê e em que ponto* de cada
 > frente está no `plano-*.md` dela; o *como está hoje* está no código.
 
-**Última reescrita:** 04/09/2026, com as **Fases 5, 1, 2 e 3 fechadas e a PARADA aprovada pelo dono** («testei, está ok»), mais o achado dele consertado — **o
+**Última reescrita:** 04/09/2026, **com um INCIDENTE aberto** — o canvas abre sem os vínculos. As Fases 5, 1, 2 e 3 fecharam e a PARADA foi aprovada («testei, está ok»); o incidente veio depois, ao medir a Fase 4 — **o
 filme existe e toca no canvas** — e com **três** defeitos que só a validação de tela
 pegaria, achados, medidos e consertados.
 
@@ -104,7 +104,7 @@ Três achados medidos que **mudam o desenho da Fase 1** — o detalhe está no �
 
 | # | o que falta | quem fecha |
 |---|---|---|
-| 1 | **[`plano-video-final.md`](plano-video-final.md): as Fases 4, 6 e 7, e o fechamento.** A PARADA passou em 04/09. Ordem decidida em 03/09: **5 → 1 → 2 → 3 → ⏸️ PARADA → 4 → 6 → 7 → fechamento** — **a 0, a 5, a 1, a 2 e a 3 já fecharam; falta a PARADA.** Tudo **0 ⚡**, então sela com prova estrutural + validação de tela e vai para produção no mesmo dia. | Claude |
+| 1 | **🚨 INCIDENTE dos vínculos — DEV-ONLY, medido em produção.** Trava empurrada; causa raiz na próxima sessão (§11 do plano, começando pelo StrictMode). Depois: Fase 4 · item 2 → 6 → 7 → fechamento. | Claude | Ordem decidida em 03/09: **5 → 1 → 2 → 3 → ⏸️ PARADA → 4 → 6 → 7 → fechamento** — **a 0, a 5, a 1, a 2 e a 3 já fecharam; falta a PARADA.** Tudo **0 ⚡**, então sela com prova estrutural + validação de tela e vai para produção no mesmo dia. | Claude |
 | 2 | **O `fix:` do produto — decidido em 03/09, ainda não executado.** A Máquina ganha o **Input de Produto** (foto + descrição na geração); enquanto não conectado, a tela avisa que o `produto` da ficha é **só nome**; e o **Roteiro passa a exigir onde o produto está na cena**. *Pôr o nome no prompt foi descartado: **nome não é foto**.* Depois deste mini-ciclo, antes do Catálogo. **Pior caso R1: 1 roteiro (15 ⚡) + 1 imagem (75 ⚡) = 90 ⚡** — a **única coisa em pauta com dinheiro dentro**, metade do dono obrigatória. | Jorge |
 | 3 | **Egress §4.5** — o egress na fatura, esperando o gráfico de Usage. | o relógio |
 | 4 | **Perguntas com gatilho:** a **0.3** (a aba escondida trava o elo?); **recusa × concorrência** (n ≥ 30); e **a trava de dono da linhagem, provada de um lado só** — o trigger de `asset_montage_parts` recusa peça cujo dono é **nulo**, mas o ramo *«peça de OUTRA pessoa existente»* **nunca foi exercitado**, porque a base tem **1 conta** *(medido em 04/09/2026)*. **O gatilho é a segunda conta:** no dia em que o painel super admin ou o primeiro convidado existir, esta prova roda — e até lá ela é uma trava que ninguém viu funcionar do lado que importa. | medição |
@@ -121,29 +121,67 @@ capacidades como dado** — fala nativa e seus idiomas, referência de áudio, l
 
 ---
 
+## 🚨 INCIDENTE ABERTO — o canvas que abre sem os vínculos
+
+> # PODE ARRASTAR: PRODUÇÃO ESTÁ SÃ, E NUNCA PERDEU NADA.
+>
+> **Medido em produção com a sessão do dono, em 04/09:** 27 nodes e **20 arestas
+> desenhadas** — as 20 válidas; as 3 órfãs corretamente não desenham —, e a Máquina achando
+> **«Liquidificador Potente em Oferta Relâmpago»**. **O incidente é DEV-ONLY.**
+>
+> **A trava foi empurrada assim mesmo:** custa uma leitura por gravação e recusa uma classe
+> inteira de perda silenciosa — inclusive a que ainda não sabemos causar. *Uma trava só é
+> barata antes de ser necessária.*
+
+**O que foi medido** (carga fria do «Primeiros Testes», na 5599): o banco tem **27 nodes e
+23 arestas**; a tela desenhou **27 nodes e ZERO arestas**, com o container
+`.react-flow__edges` **vazio** e **nenhum aviso** do React Flow. O `parseGraph` de produção,
+rodado contra o grafo real, **preserva as 23** — então o sumiço é depois dele. E as duas
+Máquinas diziam **«(sem roteiro)»**, o que prova que **o store está vazio**, não que o
+desenho falhou.
+
+**Por que é incidente e não acabamento:** `"position"` marca o canvas como sujo e o autosave
+grava `edges: store.edges`. **Um arrasto salvaria 0 arestas por cima das 23**, calado e sem
+desfazer. *Não aconteceu* — o banco segue em 23, versão 2012, salvo às 15:51, antes da
+investigação.
+
+**A trava, e um erro meu no caminho.** A primeira versão comparava contra *"quantas o
+`loadWorkflow` recebeu"* — e essa régua é **cega exatamente no caso do incidente**: se as
+arestas se perdem antes do load, ele recebe zero e conclui que sempre foi zero. A trava
+passou para o **servidor**, que lê a linha do banco. Ela recusa gravar menos arestas do que
+a linha tem, **a menos que a sessão declare uma remoção** — e a exceção cobre as três
+portas legítimas: o ✂ do fio de cena, o `remove` de aresta, e **apagar um node**, que leva
+os fios sem gerar evento de aresta. A tela passa a dizer: *"Este projeto abriu sem os
+vínculos. Recarregue antes de editar."*
+
+**A medição em PRODUÇÃO foi feita, e ela decidiu:** 27 nodes, **20 arestas com `path`**,
+container com 20 filhos, e a Máquina achando o Roteiro. **Dev-only.** O suspeito número um
+passa a ser o **StrictMode** — monta, desmonta e remonta só em desenvolvimento, e um cleanup
+que zere arestas após carga assíncrona produz exatamente este sintoma **e só ali**.
+
+**E isso respinga no plano:** a Fase 4 nasceu de *"19 arestas válidas desenham zero"*, medido
+em 02/09 **no dev**. Hoje produção desenha 20 de 20 no mesmo projeto. Não dá para provar
+retroativamente, mas **a Fase 4 · item 1 provavelmente nunca existiu como defeito de
+produto**.
+
+Evidência: `scratchpad\evidencias\incidente-vinculos\`.
+
+---
+
 ## O PRÓXIMO GESTO
 
-**As Fases 4, 6 e 7 — e depois o fechamento pelo ritual do §8.** A PARADA passou: o dono
-percorreu os três e disse **«testei, está ok»** sobre o filme e sobre o cartão no canvas.
+**A ordem nova, decidida pelo dono em 04/09:**
 
-**O achado dele valeu a parada existir:** o vídeo em pé saía **maior que a janela** nos dois
-overlays, com os controles abaixo da dobra. Duas causas — a raiz era uma cadeia de
-`max-height` percentual quebrada pelo `<div>` que a **Fase 2** introduziu (regressão minha),
-e o visível era o `overflow: auto` que a folha do navegador dá a todo `<dialog>`.
-Consertado limitando o vídeo pela **janela**, e provado nos dois overlays com clipe em pé
-**e** deitado. §4.2b do plano.
-
-**O que falta, em ordem:**
-
-| fase | o que é |
+| # | o que |
 |---|---|
-| **4** | as arestas que não desenham na carga fria **e** o cartão dizendo «peça removida» |
-| **6** | o estado *«enviando»* — o terceiro braço do ternário |
-| **7** | aprovar a ficha não carimba `edited_at` |
-| — | fechamento do mini-ciclo, ritual do §8 |
+| 1 | ~~a medição em produção~~ ✅ **feita: produção desenha 20 de 20** |
+| 2 | **a causa raiz** — o plano está escrito no §11 do `plano-video-final.md`, e a ordem lá começa pela **intermitência**, que é a pista mais forte |
+| 3 | **Fase 4 · item 2** — o cartão dizendo «peça removida» *(o item 1 virou este incidente)* |
+| 4 | **Fase 6** — o estado *«enviando»* |
+| 5 | **Fase 7** — aprovar não carimba `edited_at` |
+| 6 | **fechamento** do mini-ciclo, ritual do §8 |
 
-**Tudo 0 ⚡**, então sela com prova estrutural + validação de tela e vai para produção no
-mesmo dia.
+**Tudo 0 ⚡.**
 
 > **⏸️ Depois da Fase 3, o trabalho para e o dono olha.** Ele tem de ver **o filme
 > montado a partir dos 3 clipes reais** do «Projeto novo teste maquina storyboard» —

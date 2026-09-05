@@ -5366,3 +5366,27 @@ Consertados os dois lados: quem escreve manda `"716:1284"` (**a medida, não um 
 
 📌 **A lição que fica é sobre instrumento, não sobre processo:** *"o log não cresceu" só significa alguma coisa se o pedido que você fez deveria tê-lo feito crescer.* Uma sonda que não gera o sinal que ela procura confirma qualquer hipótese que se queira — e esta ia entrar no arquivo lido em toda sessão, mandando matar servidores sadios. **É a segunda vez que uma conclusão apressada quase vira regra permanente ali** (a primeira foi a permissão do Chrome, corrigida em 28/08).
 
+
+---
+
+### 04/09/2026 — 🚨 INCIDENTE: o canvas abre sem os vínculos — e é DEV-ONLY, medido
+
+Ao começar a Fase 4 pela medição — como o plano manda —, a hipótese escrita caiu. Ela dizia `handleBounds` medidos depois do render; isso produziria arestas **sem `path`**. O que existe é **zero elementos**: o container `.react-flow__edges` nasce vazio, e o React Flow **não avisa nada**.
+
+**Onde elas se perdem.** O banco tem 27 nodes e 23 arestas; a tela desenhou 27 nodes e nenhuma aresta. Rodei o `parseGraph` **de produção** contra o grafo real: **preserva as 23**. Então o sumiço é depois dele. E a prova de que o **store** está vazio veio do próprio produto: as duas Máquinas diziam *"(sem roteiro)"* — elas resolvem o Roteiro por `findGoverningBoard(edges, id)`, e sem aresta não acham.
+
+📌 **Por que virou incidente e não item de acabamento.** `"position"` está em `PERSISTED_NODE_CHANGES` e o autosave grava `edges: store.edges`. **Um arrasto salvaria 0 arestas por cima das 23** — calado, sem confirmação, sem desfazer. Não aconteceu: o banco seguiu em 23, versão 2012, salvo antes da investigação; carregar não suja o canvas, e ninguém arrastou.
+
+📌 **A primeira versão da trava era cega justo onde precisava enxergar.** Eu comparei contra *"quantas o `loadWorkflow` recebeu"*. Se as arestas se perdem **antes** do load, ele recebe zero, guarda zero, e a trava conclui *"este canvas sempre teve zero"* — passaria batido no caso exato que a motivou. **A régua não pode compartilhar o defeito com o dado medido.** A trava passou para o servidor, que lê a linha do banco; a do cliente ficou como primeira porta, para poupar uma ida à rede quando a carga foi boa.
+
+**E a exceção é obrigatória**, porque encolher é legítimo por **três** portas: o ✂ do fio de cena, o `remove` de aresta, e **apagar um node** — que leva os fios dele **sem gerar evento de aresta nenhum**. Uma trava que só olhasse a contagem transformaria *apagar* em *não dá para apagar*. Por isso a pergunta não é *"diminuiu?"* e sim *"diminuiu sem ninguém ter mandado?"*.
+
+📌 **E a medição em produção mudou a classe do incidente.** Tudo até ali fora na 5599, que roda com **StrictMode**. Em `creator-tks-labs.vercel.app`, mesmo projeto, sessão do dono, nada arrastado: **27 nodes e 20 arestas desenhadas** — as 20 válidas, com as 3 órfãs corretamente fora —, e a Máquina achando «Liquidificador Potente em Oferta Relâmpago».
+
+> **O incidente é DEV-ONLY. Produção nunca perdeu nada.**
+
+O StrictMode sobe para primeiro suspeito: ele monta, desmonta e remonta **só em desenvolvimento**, e um cleanup que zere arestas depois de uma carga assíncrona produz exatamente este sintoma e só ali. **A trava foi para produção assim mesmo** — ela custa uma leitura por gravação e recusa uma classe inteira de perda silenciosa, inclusive a que ainda não sabemos causar. *Uma trava só é barata antes de ser necessária.*
+
+**E respinga no plano:** a Fase 4 nasceu de *"19 arestas válidas desenham zero"*, medido em 02/09 **no dev**. Produção desenha 20 de 20 hoje, no mesmo projeto. Não dá para provar retroativamente — mas **o item 1 da Fase 4 provavelmente nunca existiu como defeito de produto**, e a linha dela ficou só com o item 2. *A lição é velha e voltou: **onde a medição foi feita é parte da medição**.*
+
+**O plano da causa raiz está escrito no §11 do [`plano-video-final.md`](plano-video-final.md)**, não executado hoje, pela regra 9 — a pergunta é *"quem escreve `[]`"*, não *"por que não desenha"*.

@@ -12,6 +12,16 @@ export function SaveIndicator() {
 
   if (!projectId) return null;
 
+  // A trava do grafo falou. Não é "erro" e não é "não salvo": é **recusa**, e a
+  // frase precisa dizer o gesto que resolve — recarregar antes de editar.
+  if (saveStatus === "recusado") {
+    return (
+      <span aria-live="polite" className="text-xs text-warning">
+        {t.studio.save.vinculosAusentes}
+      </span>
+    );
+  }
+
   if (saveStatus === "failed") {
     // Two failures, two sentences, and neither of them is "erro". What failed is
     // the *drawing* of the canvas — a generated image is already in Storage and
