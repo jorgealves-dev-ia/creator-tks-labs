@@ -123,8 +123,8 @@ Três achados medidos que **mudam o desenho da Fase 1** — o detalhe está no �
 
 | # | o que falta | quem fecha |
 |---|---|---|
-| 1 | **Apagar asset da galeria, com auditoria de referências** — *nasceu em 06/09: o dono foi apagar o filme duplicado e **o botão não existe***. Os triggers de 04/09 já tornam **seguro** o apagamento (cascade para o filme, «peça removida» para o clipe); falta **a tela** e **a auditoria da imagem usada como referência**, que mora no `data` de um node dentro do `graph` e **não tem FK — logo, não tem gatilho que avise**. **0 ⚡.** → §9 do [`plano-video-final.md`](plano-video-final.md) | Claude |
-| 2 | **O `fix:` do produto — decidido em 03/09, ainda não executado.** A Máquina ganha o **Input de Produto** (foto + descrição na geração); enquanto não conectado, a tela avisa que o `produto` da ficha é **só nome**; e o **Roteiro passa a exigir onde o produto está na cena**. *Pôr o nome no prompt foi descartado: **nome não é foto**.* Depois deste mini-ciclo, antes do Catálogo. **Pior caso R1: 1 roteiro (15 ⚡) + 1 imagem (75 ⚡) = 90 ⚡** — a **única coisa em pauta com dinheiro dentro**, metade do dono obrigatória. | Jorge |
+| 1 | **FRENTE A′ · o `fix:` do produto — investigação aberta em 06/09; plano em `docs/plano-fix-produto.md`.** A Máquina ganha o **Input de Produto** (foto + descrição na geração); enquanto não conectado, a tela avisa que o `produto` da ficha é **só nome**; e o **Roteiro passa a exigir onde o produto está na cena**. *Pôr o nome no prompt foi descartado: **nome não é foto**.* Depois deste mini-ciclo, antes do Catálogo. **Pior caso R1: 1 roteiro (15 ⚡) + 1 imagem (75 ⚡) = 90 ⚡** — a **única coisa em pauta com dinheiro dentro**, metade do dono obrigatória. | Jorge |
+| 2 | **Apagar asset da galeria, com auditoria de referências** — *nasceu em 06/09: o dono foi apagar o filme duplicado e **o botão não existe***. Os triggers de 04/09 já tornam **seguro** o apagamento (cascade para o filme, «peça removida» para o clipe); falta **a tela** e **a auditoria da imagem usada como referência**, que mora no `data` de um node dentro do `graph` e **não tem FK — logo, não tem gatilho que avise**. **0 ⚡.** → §9 do [`plano-video-final.md`](plano-video-final.md) | Claude |
 | 3 | **Egress §4.5** — o egress na fatura, esperando o gráfico de Usage. | o relógio |
 | 4 | **Perguntas com gatilho:** a **0.3** (a aba escondida trava o elo?) — *e 06/09 deu meia resposta: em aba não pintada o Chrome não faz layout, o React Flow não mede node nenhum e o canvas não desenha aresta. O elo já trata isso à parte, pausando com `aba_escondida` em vez de falhar; o que falta medir é o **percurso completo** com a aba atrás*; **recusa × concorrência** (n ≥ 30); e **a trava de dono da linhagem, provada de um lado só** — o trigger de `asset_montage_parts` recusa peça cujo dono é **nulo**, mas o ramo *«peça de OUTRA pessoa existente»* **nunca foi exercitado**, porque a base tem **1 conta** *(medido em 04/09/2026)*. **O gatilho é a segunda conta:** no dia em que o painel super admin ou o primeiro convidado existir, esta prova roda — e até lá ela é uma trava que ninguém viu funcionar do lado que importa. | medição |
 | 5 | **Backlog nomeado:** **os `assets.width`/`height` em `NULL` nos clipes de vídeo em geral** *(achado da Fase 0; o filme montado não herda isso — é a prova 5d da Fase 1)*; arquivar/ocultar na galeria; filtros e busca; **apagar asset da galeria com auditoria de referências** — *saiu do backlog e virou trabalho nomeado no §9 do [`plano-video-final.md`](plano-video-final.md) em 06/09, porque o dono foi apagar o filme duplicado e **o botão não existe**; os triggers de 04/09 já tornam seguro o apagamento (cascade para o filme, «peça removida» para o clipe), o que falta é a tela e a auditoria da imagem usada como referência, que não tem FK nenhuma*; o glifo ⇥ com contraste fraco; três arestas órfãs; o «Reanimar» é tudo-ou-nada; **montar duas vezes o mesmo roteiro faz DOIS filmes idênticos** *(04/09/2026 — **e já aconteceu**: `959dc554…` e `8fa08846…`, os dois com 11.066.457 B, 716×1284, 15.125 ms e 3 peças, no acervo agora. Nada impede, e o segundo custa **0 ⚡**; o que ele custa é confusão na galeria, duas linhas iguais sem nada que diga qual é a boa)*. **Conserto é de produto, não de banco:** perguntar antes, ou substituir o anterior. **Dois achados de 06/09:** *(a)* **re-semear o canvas quando o HMR cria um store vazio** — ferramenta de dev, não produto (some no build), e custa uma peça a mais no caminho da carga; *(b)* **`edited_at` e `updated_at` usam relógios diferentes** — o do Node e o do banco, ~2 s de diferença medidos —, e o comentário do `actions.ts` diz *"com o relógio do banco"*, descrevendo uma intenção que o código nunca teve. Adiado por decisão do dono; **`nanoid` < 3.3.18 — 1 alta do `npm audit`, achada em 04/09/2026** ao instalar a `mediabunny` *(que não é a culpada: ela tem **zero** dependências de runtime)*. Chega por `postcss`, transitiva do **Next 16.3.0 e do `@tailwindcss/postcss` 4.3.3**; hoje resolvida em **3.3.17**, e **3.3.18 corrige** (GHSA-2v37-7h3g-55p8, laço infinito com gerador custom e `size` zero). **Decisão à parte** — `audit fix` em transitiva do Next não entra de carona numa fase de vídeo. *(As arestas que não desenham viraram a Fase 4; o "falhou neste lote" virou a Fase 6; o `edited_at` virou a Fase 7.)* | plano |
@@ -209,10 +209,13 @@ Evidência: `scratchpad\evidencias\incidente-vinculos\` — `causa-raiz-nao-e-st
 **O mini-ciclo «O vídeo final» acabou.** O que vem é a frente **A′**, decidida em 03/09 e
 descrita no §9 do [`plano-video-final.md`](plano-video-final.md):
 
+**A ordem, decidida pelo dono em 06/09:**
+
 | # | o que |
 |---|---|
-| 1 | **`fix:` o `produto` da ficha** — a Máquina ganha o **Input de Produto** (foto **e** descrição na geração); enquanto não conectado, a tela avisa que o `produto` da ficha é **só nome**; e o Roteiro passa a exigir **onde o produto está na cena**. *Pôr o nome no prompt foi descartado: **nome não é foto**.* |
-| 2 | depois dele, a frente **B · Catálogo aberto** |
+| **1** | **`fix:` o `produto` da ficha** *(frente A′)* — a Máquina ganha o **Input de Produto** (foto **e** descrição na geração); enquanto não conectado, a tela avisa que o `produto` da ficha é **só nome**; e o Roteiro passa a exigir **onde o produto está na cena**. *Pôr o nome no prompt foi descartado: **nome não é foto**.* |
+| **2** | **Apagar asset da galeria, com auditoria de referências** — o botão que não existe. **0 ⚡.** → §9 do [`plano-video-final.md`](plano-video-final.md) |
+| **3** | **B · Catálogo aberto** |
 
 > ## ⚠️ O `fix:` do produto TEM DINHEIRO DENTRO — a metade do dono é obrigatória.
 >
@@ -223,11 +226,10 @@ descrita no §9 do [`plano-video-final.md`](plano-video-final.md):
 > *Nenhum dos dois gestos passa pelo motorista de lote* — é o portão de cena única, e a
 > peça que multiplicou em 29/08 não está no caminho.
 
-**E antes de tudo, a frente do backlog que o dono pediu por escrito em 06/09:** *apagar
-asset da galeria, com auditoria de referências* — os triggers de 04/09 já tornam **seguro**
-o apagamento (cascade para o filme, «peça removida» para o clipe); **o que falta é a tela e
-a auditoria da imagem usada como referência**, que não tem FK nenhuma e por isso não tem
-gatilho que avise. Detalhe no §9 do plano.
+**Sobre o item 2:** os triggers de 04/09 já tornam **seguro** o apagamento (cascade para o
+filme, «peça removida» para o clipe); **o que falta é a tela e a auditoria da imagem usada
+como referência**, que mora no `data` de um node dentro do `graph` e **não tem FK — logo,
+não tem gatilho que avise**. Detalhe no §9 do plano.
 
 > **A dependência já tem o ok:** `mediabunny` foi **aprovada em 03/09**, e entra cravada
 > em **`1.55.6`, sem caret** — o projeto lançou seis versões em dezessete dias, e o que
