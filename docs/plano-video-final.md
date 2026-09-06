@@ -893,6 +893,36 @@ depender de sorte uma vez por cena — e com dez cenas a sorte acaba.
 **Por que fora daqui:** não é vídeo final, e enfiá-lo neste plano alargaria o escopo que
 o §3 acabou de fechar.
 
+### Apagar asset da galeria, com auditoria de referências — 06/09/2026
+
+**Como chegou aqui:** o dono foi apagar o **filme duplicado** na galeria e **o botão não
+existe.** Não havia por onde. O item já estava no backlog do ESTADO como uma linha entre
+outras; sai de lá e vira trabalho nomeado, aqui.
+
+**O que mudou desde que ele foi anotado:** os dois triggers de 04/09 já tornam **seguro**
+o apagamento nos dois casos que assustavam —
+
+| caso | quem protege | o que acontece |
+|---|---|---|
+| apagar um **filme** montado | `asset_montage_parts` com `on delete cascade` no lado do filme | as linhas de linhagem vão junto, sem deixar órfã |
+| apagar um **clipe que já entrou num filme** | `on delete set null` no lado da peça | a peça vira **«peça removida»** na posição, e a contagem do filme não muda *(é o item 2 da Fase 4)* |
+
+**O que falta, então, não é banco: é tela e auditoria.**
+
+1. **A tela** — o gesto de apagar na galeria, com confirmação que diz **o que vai junto**.
+2. **A auditoria da imagem usada como referência**, que é a parte que ninguém escreveu
+   ainda. Um clipe dentro de um filme tem linha em `asset_montage_parts` e por isso se
+   conta; uma **imagem anexada como referência num bloco** mora no `data` de um node
+   dentro do `graph` do workflow — **não há FK, e portanto não há trigger que avise**.
+   Apagar uma dessas hoje deixaria um card apontando para um asset que não existe mais,
+   em silêncio. A auditoria é: **antes de apagar, varrer os grafos do usuário atrás do
+   `assetId`** e dizer em quantos blocos ele aparece.
+
+**Quando:** depois deste mini-ciclo. **0 ⚡** — não há geração no caminho.
+
+**E o que fica decidido agora, sem código:** o **filme duplicado fica** no acervo até esta
+frente existir. O «Projeto sem título 1» **já foi apagado pelo dono**.
+
 ### O ritual deste `fix:`, e ele é o outro
 
 **É a única coisa em pauta com dinheiro dentro.** Ele só se prova **gerando** — e agora
@@ -910,7 +940,7 @@ etapa fica **aberta e não commitada** até a validação dele chegar. *Se o nú
 portão mostrar não for 15 e 75, o clique não acontece* — a diferença entre os dois é o
 buraco por onde o dinheiro sai.
 
-## 10. INCIDENTE de 04/09/2026 — o canvas que abre sem os vínculos
+## 10. O «incidente» de 04/09/2026 — ✅ ENCERRADO em 06/09: era artefato de medição
 
 > **Isto não é a Fase 4.** A Fase 4 era *"as arestas que não desenham"*, um item de
 > acabamento ao lado do glifo com contraste fraco. A medição mostrou outra coisa, e o dono
@@ -972,54 +1002,60 @@ evento de aresta nenhum**. Uma trava que só olhasse a contagem transformaria *a
 
 ---
 
-## 11. O PLANO DA CAUSA RAIZ — para a próxima sessão, não para hoje
+## 11. A CAUSA RAIZ — ✅ ACHADA E MEDIDA em 06/09/2026
 
-**A pergunta é «quem escreve `[]`», não «por que não desenha».** Escrito aqui por exigência
-da regra 9: um plano que só existe na conversa some no fechamento.
+**A pergunta era «quem escreve `[]`». A resposta é «ninguém».**
 
-### (a) O interceptador do setter de arestas
+O interceptador do plano foi escrito (`sonda-vinculos.ts`, `SAI ANTES DO COMMIT`, já
+removido), rodou em **≥ 12 cargas** entre dev e produção local, e registrou
+**`🚨 ARESTAS A ZERO` = 0**. Em toda medição o store esteve em **27 nodes / 23 arestas**.
 
-Um `subscribe` no store que registra `console.trace()` **toda vez que `edges.length` cai a
-zero**. É a única maneira de responder *quem* — o resto é adivinhação sobre *quando*.
+### A causa
 
-> ⚠️ **Marcado `SAI ANTES DO COMMIT`.** A trava do `git grep` da regra 8 existe exatamente
-> para isto, e já pegou cinco blocos em `master` uma vez.
+O React Flow só desenha aresta depois de **medir** os nodes, e mede por
+`ResizeObserver`. **Em aba que nunca foi pintada o Chrome não faz layout**: o observer
+não dispara, os nodes ficam em `style.visibility: hidden` — a marca dele para *"ainda
+não medi"* — e **sem posição de handle não há aresta para desenhar**. Container vazio,
+nenhum aviso, porque para o React Flow não houve erro.
 
-### (b) O experimento das 3 órfãs
+| build | pintada? | nodes DOM | arestas DOM | `visibility:hidden` | **store nodes/arestas** |
+|---|---|---|---|---|---|
+| dev — StrictMode **ligado** | não (×3) | 27 | **0** | **27** | **27 / 23** |
+| dev — StrictMode **ligado** | sim | 27 | 19 | 0 | **27 / 23** |
+| prod — StrictMode **desligado** | não (×2) | 27 | **0** | **27** | **27 / 23** |
+| prod — StrictMode **desligado** | sim | 27 | 19 | 0 | **27 / 23** |
 
-O «Primeiros Testes» tem **3 arestas com ponta solta** (`source` ou `target` que não é node
-nenhum), já no backlog. **Carregar o grafo sem elas e ver se as 20 aparecem.** Se
-aparecerem, a causa é **validação com `catch` que zera tudo** em vez de descartar a linha
-ruim — e o `parseGraph` já mostrou que não é ele, então seria alguém depois.
+### As quatro consequências
 
-### (c) A intermitência, que é a pista mais forte
+1. **O StrictMode está inocente**, medido: produção não o tem — a sonda mostra
+   `efeito loadWorkflow` uma vez, sem `cleanup` — e reproduz o sintoma igual. **Nunca foi
+   dev-only: era aba-não-pintada.** Produção desenhou 20 de 20 em 04/09 porque o dono
+   estava olhando para a tela.
+2. **A Fase 4 · item 1 nunca existiu.** Os *"19 que desenham zero"* de 02/09 são
+   exatamente os **19 que uma aba pintada desenha no primeiro segundo**.
+3. **O erro de inferência tem nome:** *«as duas Máquinas dizem "(sem roteiro)" ⇒ o store
+   está vazio»*. No estado falho reproduzido, «Nenhum roteiro ligado» aparece **zero
+   vezes** e o store tem as 23. **Toda afirmação sobre o store lê o store.**
+4. **A trava do grafo fica**, com o porquê corrigido: o valor dela é pôr **o servidor
+   como juiz**, e o achado do HMR mostra que a classe *"o navegador pode segurar um store
+   que não é o documento"* é real. *(O caminho «arrasto grava `[]` por cima de 23» não foi
+   demonstrado: no estado medido o store novo nasce com `projectId: null` e o canvas nem
+   renderiza — está registrado assim no diário.)*
 
-**Uma Máquina mostrou «Liquidificador Potente em Oferta Relâmpago» e depois deixou de
-mostrar, na mesma sessão.** Isso não é uma carga que nasce errada: é **algo depois do
-carregamento esvaziando o store**. Candidatos, para eliminar um a um:
+### O mecanismo que substitui a frase
 
-| candidato | por que suspeito |
-|---|---|
-| **StrictMode** | monta, desmonta e remonta em dev; um cleanup que zere arestas produz exatamente isto — **e só no dev** |
-| **troca de aba de projeto** | `loadWorkflow` zera `sceneSources`; se algum caminho chamar com `edges: []`, o efeito é este |
-| **Realtime** | `useGenerationFeed` escuta o projeto; um handler que reescreva o grafo a partir de um payload parcial |
-| **refetch em foco** | voltar para a aba do navegador dispara recarga em algum ponto |
+`scratchpad\harness\medir-canvas.js` **recusa devolver número** de um canvas não pintado,
+por duas portas — pintura ao vivo (`visible` + rAF que dispara) ou pintura anterior
+(**nenhum** node por medir). Vermelho→verde medido, e uma linha na regra 8 do `CLAUDE.md`.
 
-**A ordem: (c) primeiro** — e a medição em produção já apontou para ele.
+### Achado lateral, no backlog
 
-> ### ✅ A medição em produção foi feita — 04/09/2026
->
-> `creator-tks-labs.vercel.app`, mesmo projeto, sessão do dono, **nada arrastado**: 27 nodes
-> e **20 arestas desenhadas** (as 20 válidas; as 3 órfãs corretamente não desenham), com a
-> Máquina achando «Liquidificador Potente em Oferta Relâmpago».
->
-> **O incidente é DEV-ONLY. Produção nunca perdeu nada**, e o **StrictMode** sobe para
-> primeiro suspeito.
->
-> **E respinga aqui:** a Fase 4 nasceu de *"19 arestas válidas desenham zero"*, medido em
-> 02/09 **no dev**. Produção desenha 20 de 20 hoje. Não dá para provar retroativamente, mas
-> **o item 1 da Fase 4 provavelmente nunca existiu como defeito de produto** — e é por isso
-> que a linha dela na tabela ficou só com o item 2.
+**Editar `src/lib/canvas/store.ts` com a página aberta apaga o canvas:** o `create()` do
+zustand roda de novo, nasce um **segundo store vazio**, e o efeito que semeia tem
+dependência `[]` — nunca mais roda. Recarregar é a única saída. **Re-semear quando o store
+nasce vazio com `props` boas é ferramenta de dev, não produto** (some no build) e custa uma
+peça a mais no caminho da carga: **anotado, não feito** — decisão do dono, 06/09.
+
+Evidência: `scratchpad\evidencias\incidente-vinculos\`.
 
 ---
-

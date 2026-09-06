@@ -5390,3 +5390,53 @@ O StrictMode sobe para primeiro suspeito: ele monta, desmonta e remonta **só em
 **E respinga no plano:** a Fase 4 nasceu de *"19 arestas válidas desenham zero"*, medido em 02/09 **no dev**. Produção desenha 20 de 20 hoje, no mesmo projeto. Não dá para provar retroativamente — mas **o item 1 da Fase 4 provavelmente nunca existiu como defeito de produto**, e a linha dela ficou só com o item 2. *A lição é velha e voltou: **onde a medição foi feita é parte da medição**.*
 
 **O plano da causa raiz está escrito no §11 do [`plano-video-final.md`](plano-video-final.md)**, não executado hoje, pela regra 9 — a pergunta é *"quem escreve `[]`"*, não *"por que não desenha"*.
+
+
+---
+
+### 06/09/2026 — ✅ O «incidente dos vínculos» ENCERRADO: não era incidente, era artefato de medição
+
+**A causa raiz, medida dos dois lados.** O React Flow só desenha aresta depois de **medir** os nodes, e ele mede por `ResizeObserver`. **Em aba que nunca foi pintada o Chrome não faz layout**: o observer não dispara, os 27 nodes ficam em `style.visibility: hidden` — a marca do React Flow para *"ainda não medi este node"* —, e **sem posição de handle não existe aresta para desenhar**. O container `.react-flow__edges` fica vazio e o React Flow não avisa nada, porque do ponto de vista dele não houve erro.
+
+**A tabela que decide.** Mesma URL, mesmo projeto, mesma espera de 7 s. A **única** variável é se houve um `screenshot` (que pinta a aba) entre a navegação e a leitura:
+
+| build | pintada? | nodes no DOM | arestas no DOM | `visibility:hidden` | **store nodes/arestas** |
+|---|---|---|---|---|---|
+| dev — StrictMode **ligado** | não (×3) | 27 | **0** | **27** | **27 / 23** |
+| dev — StrictMode **ligado** | sim | 27 | 19 | 0 | **27 / 23** |
+| prod — StrictMode **desligado** | não (×2) | 27 | **0** | **27** | **27 / 23** |
+| prod — StrictMode **desligado** | sim | 27 | 19 | 0 | **27 / 23** |
+
+📌 **O interceptador do §11 (a) foi escrito, rodou em ≥ 12 cargas e a resposta dele é «ninguém».** A pergunta era *"quem escreve `[]`"*: `🚨 ARESTAS A ZERO` = **0**, e o store esteve em **27 / 23** em toda medição, dev e produção. **A premissa do incidente era falsa.**
+
+📌 **O StrictMode está inocente, e isso é medido, não argumentado.** O build de produção local não o tem — a sonda mostra `efeito loadWorkflow` **uma vez, sem `cleanup`**, enquanto o dev mostra `efeito → cleanup → efeito` — e **reproduz o sintoma igual**. Pela régua escrita no §11, *"se zerar, a hipótese cai"*. Ela caiu; e com ela cai a **classe**: nunca foi dev-only, era **aba-não-pintada**. Produção desenhou 20 de 20 em 04/09 porque o Jorge estava **olhando para a tela**.
+
+📌 **E a medição tinha de mudar de lugar para poder ser feita.** Ler a tela pela extensão **ativa a aba** — e ativar a aba é exatamente a variável em teste. A medida mudaria o medido. A saída foi a página **medir a si mesma**, em marcos de 1/3/6/10 s guardados num objeto que só é lido depois. *Um instrumento que perturba o fenômeno confirma qualquer hipótese que se queira — é a mesma lição da sonda que não gerava log, de 04/09, duas entradas acima.*
+
+#### A reclassificação, e o erro de inferência que a produziu
+
+**A entrada de 04/09 acima está corrigida por esta:** não houve incidente. Não houve perda de dado em nenhum momento, em nenhum ambiente. O que houve foi **uma medição feita numa aba que o navegador nunca pintou**, e uma conclusão tirada dela.
+
+📌 **O erro tem nome: «as duas Máquinas dizem "(sem roteiro)" ⇒ o store está vazio».** Eu inferi o estado do **store** a partir do que a **tela** mostrava. Hoje, no estado falho reproduzido, contei as ocorrências de «Nenhum roteiro ligado» na página: **zero** — e o store tinha as 23. **Toda afirmação sobre o store lê o store.** A sonda ganhou `window.__STORE__` exatamente para separar *"a tela não desenhou"* de *"o dado não está lá"*, que é a distinção que faltava.
+
+📌 **E respinga na Fase 4 · item 1: ele nunca existiu.** Os *"19 arestas válidas desenham zero"* de 02/09 são, hoje, **exatamente os 19 que uma aba pintada desenha no primeiro segundo** (o vigésimo aparece logo depois). Em 04/09 isso era «provavelmente»; agora é medido dos dois lados, e a linha da Fase 4 fica só com o item 2.
+
+#### A trava do grafo FICA — e o porquê dela muda
+
+A trava nasceu para um incidente que a medição diz não ter existido. **Ela fica assim mesmo**, e por uma razão que sobrevive à reclassificação: **ela põe o servidor como juiz.** A régua mora na linha do banco, e não em quantas arestas o navegador acha que carregou — que era o erro da primeira versão, e é o mesmo erro de método da inferência acima: *a régua não pode compartilhar o defeito com o dado medido.*
+
+⚠️ **E aqui uma precisão que o registro exige, porque o diário não pode guardar um porquê que não foi provado.** O achado do HMR (abaixo) é a razão nova mais forte para a trava existir — mas **o caminho «arrasto grava `[]` por cima de 23» não foi demonstrado**: no estado medido o store novo nasce com `projectId: null`, o `FlowCanvas` cai no ramo do canvas em branco, **não há React Flow para arrastar**, e o `write()` do autosave sai cedo em `if (!projectId) return`. O que está provado é a **classe**: *o navegador pode segurar um store que não é o documento*. A trava recusa gravação de uma sessão nesse estado, custa uma leitura por gravação, e continua sendo o que era — **seguro barato**. *Uma trava só é barata antes de ser necessária.*
+
+#### Achado lateral, medido: editar `store.ts` com a página aberta apaga o canvas
+
+Página sã (27 nodes, 20 arestas). Um comentário acrescentado ao fim de `src/lib/canvas/store.ts`; o dev recompilou em 781 ms. Resultado: **0 nodes, 0 arestas, e `.react-flow` inexistente** — e a sonda **não acusou perda nenhuma**, porque não houve: o `create()` do zustand rodou de novo e nasceu um **segundo store, vazio**. O antigo continua íntegro; ninguém mais olha para ele. O `FlowCanvas` re-renderizou lendo o novo, e o efeito que semeia tem dependência `[]` — o React Refresh preservou o estado do componente em vez de remontá-lo, então **o efeito nunca mais rodou**.
+
+É a memória `fast-refresh-esvazia-store` (17/08/2026) **com o mecanismo medido**: não é *"o store some"*, é *"nasce um segundo store e o primeiro fica órfão"*. Tocar `machine-node.tsx` **não** faz isso (27/20 intactos). **Recarregar resolve, e é a única coisa que resolve.**
+
+📌 **Backlog nomeado, decidido pelo dono:** re-semear o canvas quando o store nasce vazio com `props` boas é **ferramenta de desenvolvimento**, não produto — some no build. Custa uma peça a mais no caminho da carga, que é o caminho mais sensível que existe aqui. Fica anotado, não feito.
+
+#### A lição vira MECANISMO, não frase — decisão do dono
+
+A armadilha já estava escrita — *«NADA de canvas vale em aba escondida»*, 18/08/2026 — e mordeu assim mesmo, por três semanas, produzindo um incidente, uma trava de servidor e uma fase inteira do plano. **Uma frase num arquivo não é uma trava**, exatamente como o `SAI ANTES DO COMMIT` não era antes de virar `git grep`.
+
+Então: **toda leitura de número do canvas passa a AFIRMAR que a aba foi pintada** — `document.visibilityState === "visible"` **e** um `requestAnimationFrame` efetivamente disparado — e **recusa a leitura** se não for o caso. Está no `CLAUDE.md`, na régua da regra 8, onde a validação de tela é decidida.

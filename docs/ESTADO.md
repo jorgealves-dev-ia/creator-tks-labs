@@ -5,9 +5,10 @@
 > O *porquê* está em [`decisoes.md`](decisoes.md); o *o quê e em que ponto* de cada
 > frente está no `plano-*.md` dela; o *como está hoje* está no código.
 
-**Última reescrita:** 04/09/2026, **com um INCIDENTE aberto** — o canvas abre sem os vínculos. As Fases 5, 1, 2 e 3 fecharam e a PARADA foi aprovada («testei, está ok»); o incidente veio depois, ao medir a Fase 4 — **o
-filme existe e toca no canvas** — e com **três** defeitos que só a validação de tela
-pegaria, achados, medidos e consertados.
+**Última reescrita:** 06/09/2026, com o **INCIDENTE dos vínculos ENCERRADO por medição**:
+não havia perda de dado, em nenhum momento — a causa é **a aba nunca ter sido pintada**,
+e ela reproduz igual em produção. As Fases 5, 1, 2 e 3 fecharam e a PARADA foi aprovada
+(«testei, está ok»). Falta a Fase 4 · item 2, a 6, a 7 e o fechamento.
 
 ---
 
@@ -104,11 +105,11 @@ Três achados medidos que **mudam o desenho da Fase 1** — o detalhe está no �
 
 | # | o que falta | quem fecha |
 |---|---|---|
-| 1 | **🚨 INCIDENTE dos vínculos — DEV-ONLY, medido em produção.** Trava empurrada; causa raiz na próxima sessão (§11 do plano, começando pelo StrictMode). Depois: Fase 4 · item 2 → 6 → 7 → fechamento. | Claude | Ordem decidida em 03/09: **5 → 1 → 2 → 3 → ⏸️ PARADA → 4 → 6 → 7 → fechamento** — **a 0, a 5, a 1, a 2 e a 3 já fecharam; falta a PARADA.** Tudo **0 ⚡**, então sela com prova estrutural + validação de tela e vai para produção no mesmo dia. | Claude |
+| 1 | **O mini-ciclo «O vídeo final», na reta final.** Ordem decidida em 03/09: **5 → 1 → 2 → 3 → ⏸️ PARADA → 4 → 6 → 7 → fechamento**; a 0, a 5, a 1, a 2, a 3 e a PARADA já fecharam, e o incidente que interrompeu a 4 **está encerrado por medição**. Falta a **Fase 4 · item 2** (o cartão diz «peça removida»), a **6** (o estado *enviando*), a **7** (aprovar não carimba `edited_at`) e o **fechamento**. Tudo **0 ⚡**: sela com prova estrutural + validação de tela e vai para produção no mesmo dia. | Claude |
 | 2 | **O `fix:` do produto — decidido em 03/09, ainda não executado.** A Máquina ganha o **Input de Produto** (foto + descrição na geração); enquanto não conectado, a tela avisa que o `produto` da ficha é **só nome**; e o **Roteiro passa a exigir onde o produto está na cena**. *Pôr o nome no prompt foi descartado: **nome não é foto**.* Depois deste mini-ciclo, antes do Catálogo. **Pior caso R1: 1 roteiro (15 ⚡) + 1 imagem (75 ⚡) = 90 ⚡** — a **única coisa em pauta com dinheiro dentro**, metade do dono obrigatória. | Jorge |
 | 3 | **Egress §4.5** — o egress na fatura, esperando o gráfico de Usage. | o relógio |
 | 4 | **Perguntas com gatilho:** a **0.3** (a aba escondida trava o elo?); **recusa × concorrência** (n ≥ 30); e **a trava de dono da linhagem, provada de um lado só** — o trigger de `asset_montage_parts` recusa peça cujo dono é **nulo**, mas o ramo *«peça de OUTRA pessoa existente»* **nunca foi exercitado**, porque a base tem **1 conta** *(medido em 04/09/2026)*. **O gatilho é a segunda conta:** no dia em que o painel super admin ou o primeiro convidado existir, esta prova roda — e até lá ela é uma trava que ninguém viu funcionar do lado que importa. | medição |
-| 5 | **Backlog nomeado:** **os `assets.width`/`height` em `NULL` nos clipes de vídeo em geral** *(achado da Fase 0; o filme montado não herda isso — é a prova 5d da Fase 1)*; arquivar/ocultar na galeria; filtros e busca; o glifo ⇥ com contraste fraco; três arestas órfãs; o «Reanimar» é tudo-ou-nada; **montar duas vezes o mesmo roteiro faz DOIS filmes idênticos** *(04/09/2026 — **e já aconteceu**: `959dc554…` e `8fa08846…`, os dois com 11.066.457 B, 716×1284, 15.125 ms e 3 peças, no acervo agora. Nada impede, e o segundo custa **0 ⚡**; o que ele custa é confusão na galeria, duas linhas iguais sem nada que diga qual é a boa)*. **Conserto é de produto, não de banco:** perguntar antes, ou substituir o anterior. Adiado por decisão do dono; **`nanoid` < 3.3.18 — 1 alta do `npm audit`, achada em 04/09/2026** ao instalar a `mediabunny` *(que não é a culpada: ela tem **zero** dependências de runtime)*. Chega por `postcss`, transitiva do **Next 16.3.0 e do `@tailwindcss/postcss` 4.3.3**; hoje resolvida em **3.3.17**, e **3.3.18 corrige** (GHSA-2v37-7h3g-55p8, laço infinito com gerador custom e `size` zero). **Decisão à parte** — `audit fix` em transitiva do Next não entra de carona numa fase de vídeo. *(As arestas que não desenham viraram a Fase 4; o "falhou neste lote" virou a Fase 6; o `edited_at` virou a Fase 7.)* | plano |
+| 5 | **Backlog nomeado:** **os `assets.width`/`height` em `NULL` nos clipes de vídeo em geral** *(achado da Fase 0; o filme montado não herda isso — é a prova 5d da Fase 1)*; arquivar/ocultar na galeria; filtros e busca; **apagar asset da galeria com auditoria de referências** — *saiu do backlog e virou trabalho nomeado no §9 do [`plano-video-final.md`](plano-video-final.md) em 06/09, porque o dono foi apagar o filme duplicado e **o botão não existe**; os triggers de 04/09 já tornam seguro o apagamento (cascade para o filme, «peça removida» para o clipe), o que falta é a tela e a auditoria da imagem usada como referência, que não tem FK nenhuma*; o glifo ⇥ com contraste fraco; três arestas órfãs; o «Reanimar» é tudo-ou-nada; **montar duas vezes o mesmo roteiro faz DOIS filmes idênticos** *(04/09/2026 — **e já aconteceu**: `959dc554…` e `8fa08846…`, os dois com 11.066.457 B, 716×1284, 15.125 ms e 3 peças, no acervo agora. Nada impede, e o segundo custa **0 ⚡**; o que ele custa é confusão na galeria, duas linhas iguais sem nada que diga qual é a boa)*. **Conserto é de produto, não de banco:** perguntar antes, ou substituir o anterior. Adiado por decisão do dono; **`nanoid` < 3.3.18 — 1 alta do `npm audit`, achada em 04/09/2026** ao instalar a `mediabunny` *(que não é a culpada: ela tem **zero** dependências de runtime)*. Chega por `postcss`, transitiva do **Next 16.3.0 e do `@tailwindcss/postcss` 4.3.3**; hoje resolvida em **3.3.17**, e **3.3.18 corrige** (GHSA-2v37-7h3g-55p8, laço infinito com gerador custom e `size` zero). **Decisão à parte** — `audit fix` em transitiva do Next não entra de carona numa fase de vídeo. *(As arestas que não desenham viraram a Fase 4; o "falhou neste lote" virou a Fase 6; o `edited_at` virou a Fase 7.)* | plano |
 
 **A ordem das frentes, decidida em 02/09/2026:**
 **A · O vídeo final** → **B · Catálogo aberto** → **C · Modo Take** → **D · Voz e áudio**
@@ -121,67 +122,87 @@ capacidades como dado** — fala nativa e seus idiomas, referência de áudio, l
 
 ---
 
-## 🚨 INCIDENTE ABERTO — o canvas que abre sem os vínculos
+## ✅ INCIDENTE ENCERRADO — e a causa não era nossa
 
-> # PODE ARRASTAR: PRODUÇÃO ESTÁ SÃ, E NUNCA PERDEU NADA.
->
-> **Medido em produção com a sessão do dono, em 04/09:** 27 nodes e **20 arestas
-> desenhadas** — as 20 válidas; as 3 órfãs corretamente não desenham —, e a Máquina achando
-> **«Liquidificador Potente em Oferta Relâmpago»**. **O incidente é DEV-ONLY.**
->
-> **A trava foi empurrada assim mesmo:** custa uma leitura por gravação e recusa uma classe
-> inteira de perda silenciosa — inclusive a que ainda não sabemos causar. *Uma trava só é
-> barata antes de ser necessária.*
+> # NUNCA HOUVE PERDA. Nem em produção, nem no dev, nem por um instante.
 
-**O que foi medido** (carga fria do «Primeiros Testes», na 5599): o banco tem **27 nodes e
-23 arestas**; a tela desenhou **27 nodes e ZERO arestas**, com o container
-`.react-flow__edges` **vazio** e **nenhum aviso** do React Flow. O `parseGraph` de produção,
-rodado contra o grafo real, **preserva as 23** — então o sumiço é depois dele. E as duas
-Máquinas diziam **«(sem roteiro)»**, o que prova que **o store está vazio**, não que o
-desenho falhou.
+**A causa, medida em 06/09:** o canvas só desenha aresta depois que o React Flow
+**mede** os nodes, e ele mede por `ResizeObserver`. **Em aba que nunca foi pintada o
+Chrome não faz layout**, o observer não dispara, os 27 nodes ficam em
+`style.visibility: hidden` — a marca do React Flow para *"ainda não medi"* — e **sem
+posição de handle não existe aresta para desenhar**. O container fica vazio e o React
+Flow não avisa nada, porque para ele não houve erro.
 
-**Por que é incidente e não acabamento:** `"position"` marca o canvas como sujo e o autosave
-grava `edges: store.edges`. **Um arrasto salvaria 0 arestas por cima das 23**, calado e sem
-desfazer. *Não aconteceu* — o banco segue em 23, versão 2012, salvo às 15:51, antes da
-investigação.
+**A tabela que decide** — mesma URL, mesmo projeto, mesma espera; a **única** variável é
+se houve um `screenshot` (que pinta a aba) entre a navegação e a medição:
 
-**A trava, e um erro meu no caminho.** A primeira versão comparava contra *"quantas o
-`loadWorkflow` recebeu"* — e essa régua é **cega exatamente no caso do incidente**: se as
-arestas se perdem antes do load, ele recebe zero e conclui que sempre foi zero. A trava
-passou para o **servidor**, que lê a linha do banco. Ela recusa gravar menos arestas do que
-a linha tem, **a menos que a sessão declare uma remoção** — e a exceção cobre as três
-portas legítimas: o ✂ do fio de cena, o `remove` de aresta, e **apagar um node**, que leva
-os fios sem gerar evento de aresta. A tela passa a dizer: *"Este projeto abriu sem os
-vínculos. Recarregue antes de editar."*
+| build | pintada? | nodes no DOM | arestas no DOM | `visibility:hidden` | **store nodes/arestas** |
+|---|---|---|---|---|---|
+| dev — StrictMode **ligado** | não (×3) | 27 | **0** | **27** | **27 / 23** |
+| dev — StrictMode **ligado** | sim | 27 | 19 | 0 | **27 / 23** |
+| prod — StrictMode **desligado** | não (×2) | 27 | **0** | **27** | **27 / 23** |
+| prod — StrictMode **desligado** | sim | 27 | 19 | 0 | **27 / 23** |
 
-**A medição em PRODUÇÃO foi feita, e ela decidiu:** 27 nodes, **20 arestas com `path`**,
-container com 20 filhos, e a Máquina achando o Roteiro. **Dev-only.** O suspeito número um
-passa a ser o **StrictMode** — monta, desmonta e remonta só em desenvolvimento, e um cleanup
-que zere arestas após carga assíncrona produz exatamente este sintoma **e só ali**.
+**O interceptador do §11 (a) foi escrito e rodou em ≥ 12 cargas: `🚨 ARESTAS A ZERO` = 0.**
+*Ninguém escreve `[]`.* E a medição é feita **pela própria página**, em marcos de 1/3/6/10 s
+guardados em `window.__MED__` — ler a tela pela extensão **ativa a aba**, e ativar a aba é
+exatamente a variável em teste.
 
-**E isso respinga no plano:** a Fase 4 nasceu de *"19 arestas válidas desenham zero"*, medido
-em 02/09 **no dev**. Hoje produção desenha 20 de 20 no mesmo projeto. Não dá para provar
-retroativamente, mas **a Fase 4 · item 1 provavelmente nunca existiu como defeito de
-produto**.
+**Três consequências:**
 
-Evidência: `scratchpad\evidencias\incidente-vinculos\`.
+1. **O StrictMode está inocente**, e isso é medido dos dois lados: produção não o tem e
+   reproduz o sintoma igual. **O incidente nunca foi dev-only — era aba-não-pintada.**
+   Produção desenhou 20 de 20 em 04/09 porque o Jorge estava **olhando para a tela**.
+2. **A Fase 4 · item 1 nunca existiu como defeito de produto.** Os *"19 que desenham
+   zero"* de 02/09 são, hoje, **exatamente os 19 que uma aba pintada desenha no primeiro
+   segundo**. Agora não é «provavelmente»: é medido.
+3. **A trava do grafo FICA — decisão do dono, 06/09 — e o porquê muda.** O valor dela é
+   pôr **o servidor como juiz**: a régua mora na linha do banco, não em quantas arestas o
+   navegador acha que carregou. E o achado do HMR abaixo mostra que a classe *"o navegador
+   pode segurar um store que não é o documento"* é real. ⚠️ *O caminho «arrasto grava `[]`
+   por cima de 23» **não foi demonstrado**: no estado medido o store novo nasce com
+   `projectId: null` e o canvas nem renderiza.* Ela continua sendo o que era — **seguro
+   barato**.
+
+**A lição virou MECANISMO, não frase** *(emenda do dono, 06/09)*. A armadilha já estava
+escrita — *«NADA de canvas vale em aba escondida»*, 18/08/2026 — e mordeu assim mesmo, por
+três semanas. Agora `scratchpad\harness\medir-canvas.js` **recusa devolver número** de um
+canvas não pintado, por duas portas: **pintura ao vivo** (`visible` + um `rAF` que dispara)
+ou **pintura anterior** (**nenhum** node em `visibility: hidden`). Vermelho→verde medido:
+sem `screenshot`, *"27 de 27 nodes por medir · LEITURA RECUSADA"*; com `screenshot`,
+`27 nodes · 20 arestas · 0 por medir`. Está na regra 8 do [`CLAUDE.md`](../CLAUDE.md).
+**E toda afirmação sobre o store lê o store.**
+
+**Achado lateral, medido no caminho:** editar `src/lib/canvas/store.ts` com a página
+aberta **apaga o canvas** — o `create()` do zustand roda de novo e nasce um **segundo
+store, vazio**; o efeito que semeia tem dependência `[]` e nunca mais roda. É a memória
+`fast-refresh-esvazia-store` com o mecanismo medido. **Recarregar resolve, e é a única
+coisa que resolve.** 📌 **Backlog nomeado:** re-semear quando o store nasce vazio com
+`props` boas é **ferramenta de dev, não produto** — some no build — e custa uma peça a mais
+no caminho da carga. **Anotado, não feito** (decisão do dono, 06/09).
+
+Evidência: `scratchpad\evidencias\incidente-vinculos\` — `causa-raiz-nao-e-strictmode-e-a-aba-nao-pintada.md`,
+`o-interceptador-ninguem-escreve-vazio.md`, `achado-lateral-hmr-em-store-ts-esvazia-o-canvas.md`.
 
 ---
 
 ## O PRÓXIMO GESTO
 
-**A ordem nova, decidida pelo dono em 04/09:**
-
 | # | o que |
 |---|---|
 | 1 | ~~a medição em produção~~ ✅ **feita: produção desenha 20 de 20** |
-| 2 | **a causa raiz** — o plano está escrito no §11 do `plano-video-final.md`, e a ordem lá começa pela **intermitência**, que é a pista mais forte |
-| 3 | **Fase 4 · item 2** — o cartão dizendo «peça removida» *(o item 1 virou este incidente)* |
+| 2 | ~~a causa raiz~~ ✅ **nomeada e medida em 06/09: a aba nunca pintada. Não é o StrictMode, não é dev-only, e nunca houve perda** |
+| 3 | **Fase 4 · item 2** — o cartão do filme dizendo «peça removida» na posição, com a contagem inalterada *(o item 1 morreu com o incidente: nunca existiu)* |
 | 4 | **Fase 6** — o estado *«enviando»* |
 | 5 | **Fase 7** — aprovar não carimba `edited_at` |
 | 6 | **fechamento** do mini-ciclo, ritual do §8 |
 
 **Tudo 0 ⚡.**
+
+> **A sonda do incidente ainda está no disco e marcada `SAI ANTES DO COMMIT`** —
+> `src/lib/canvas/sonda-vinculos.ts` mais os pontos em `store.ts` e `flow-canvas.tsx`.
+> Ela **não pode** entrar em nenhum commit; a trava do `git grep` da regra 8 pega os
+> quatro arquivos.
 
 > **⏸️ Depois da Fase 3, o trabalho para e o dono olha.** Ele tem de ver **o filme
 > montado a partir dos 3 clipes reais** do «Projeto novo teste maquina storyboard» —
@@ -194,12 +215,14 @@ Evidência: `scratchpad\evidencias\incidente-vinculos\`.
 > a diligência mediu foi esta. Atualizar vira gesto, não efeito colateral de um
 > `npm install`.
 
-> **🧹 Um projeto de rascunho ficou no estúdio e pode ser apagado:** «Projeto sem
-> título 1», criado em 04/09 só para a validação de tela da Fase 5. Tem 4 pares
-> Máquina+Roteiro vazios e nada mais — **nenhuma geração, nenhum Spark, nada no
-> ledger**. As medições dele já estão em
-> `scratchpad\evidencias\video-final-fase5\`, então apagar não perde nada. **Quem
-> apaga é o Jorge** — apagar recurso remoto é dele.
+> **🧹 O «Projeto sem título 1» JÁ FOI APAGADO pelo dono** *(06/09)*. Era o rascunho da
+> validação de tela da Fase 5; as medições dele já estavam em
+> `scratchpad\evidencias\video-final-fase5\`, então nada se perdeu.
+
+> **🎬 O filme duplicado FICA no acervo, por decisão do dono** *(06/09)*. São dois assets
+> idênticos — `959dc554…` e `8fa08846…`, os dois com 11.066.457 B, 716×1284, 15.125 ms e 3
+> peças —, e **nenhum dos dois pode ser apagado hoje: o botão não existe.** É o que
+> transformou «apagar asset da galeria» em trabalho nomeado no §9 do plano.
 
 > **Dois projetos de prova ficaram no estúdio:** «Prova · C3 Fase 4» (o par do template)
 > e «Projeto novo teste maquina storyboard» (o percurso do dono, com os 3 clipes). O
