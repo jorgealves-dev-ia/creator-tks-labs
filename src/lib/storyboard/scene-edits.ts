@@ -21,8 +21,14 @@
  *
  * A regra é *"`status` não é edição de conteúdo"*. Ela podia ser um campo
  * ignorado na comparação, com um comentário pedindo para ninguém acrescentá-lo.
- * **Um comentário não é uma trava** — a lição do `SAI ANTES DO COMMIT`. Aqui o
- * campo simplesmente **não existe no tipo**: quem tentar compará-lo não compila.
+ * **Um comentário não é uma trava** — a lição da marca que a regra 8 varre com
+ * `git grep`, e que atravessou um commit por ser só uma frase em maiúsculas.
+ * Aqui o campo simplesmente **não existe no tipo**: quem tentar compará-lo não
+ * compila.
+ *
+ * *(E a frase está escrita assim de propósito: citar a marca literalmente faria
+ * este arquivo aparecer na própria varredura, e uma trava que acusa quem a
+ * elogia é uma trava que se aprende a ignorar.)*
  *
  * A lista abaixo é a do plano, e é fechada: `acao`, `cenario`, `enquadramento`,
  * `movimento`, `fala`, `produto`, `cta_id`, `cta_texto`, `duracao_segundos`,
