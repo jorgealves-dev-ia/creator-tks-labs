@@ -111,6 +111,30 @@ export type SituacaoDeVideo =
    * repetir **sem ninguém pedir**.
    */
   | { anima: false; motivo: "falhou_no_lote" }
+  /**
+   * **Tentada neste lote, e o banco ainda não tem tentativa nenhuma dela** —
+   * Fase 6, 06/09/2026.
+   *
+   * O terceiro braço que faltava, e ele **não é o que a auditoria de 02/09
+   * escreveu**. Ela disse que uma cena *em voo* caía no `else` e era acusada de
+   * ter falhado; hoje não cai — `cena.video === "gerando"` é respondido lá em
+   * cima, antes desta guarda, desde que o arquivo nasceu em 31/08.
+   *
+   * **O que cai aqui é o `nenhum`**, e ele é outra coisa: a cena entra em
+   * `jaTentadas` **antes** de a requisição voltar, então toda cena de todo lote
+   * passa por este estado na janela entre despachar e o banco reconhecer. E
+   * uma submissão **recusada** — saldo que acabou na vez dela, provedor fora do
+   * ar, still que não pôde ser derivado — fica aqui até o lote fechar.
+   *
+   * Nos dois casos, dizer *"falhou neste lote"* é acusar de fracasso um trabalho
+   * que **não produziu registro de fracasso nenhum**. A regra da fase é essa e
+   * cabe numa linha: **"falhou" só quando o banco escreveu `failed`.**
+   *
+   * *A recusa não fica sem explicação:* ela já põe o aviso do erro ao lado, com
+   * a frase do motivo, e este rótulo some sozinho quando o lote fecha e
+   * `jaTentadas` esvazia.
+   */
+  | { anima: false; motivo: "enviando" }
   /** Cena de corte sem imagem aprovada. Vídeo só de cena aprovada, sem exceção. */
   | { anima: false; motivo: "nao_aprovada" }
   /** Emenda cuja cena de origem na cadeia não foi aprovada. */
@@ -412,11 +436,19 @@ function situacaoDaCena(input: {
   // tela precisa dizer a verdade daquela cena — mas nenhuma delas volta ao lote.
   //
   // Prova reexecutável: `scratchpad/storyboard-c3/motorista-teto.ts`.
+  //
+  // ── FASE 6 · "falhou" só quando o banco escreveu `failed` ─────────────
+  //
+  // Era um ternário: dois braços para os quatro estados de `cena.video`. Tudo
+  // que não fosse `pronto` era anunciado como **"falhou neste lote"** — e duas
+  // das três sobras não falharam coisa nenhuma. Ver o motivo `"enviando"`.
   if (input.jaTentadas?.has(cena.id)) {
-    return {
-      anima: false,
-      motivo: cena.video === "pronto" ? "ja_tem_video" : "falhou_no_lote",
-    };
+    if (cena.video === "pronto") return { anima: false, motivo: "ja_tem_video" };
+    if (cena.video === "falhou") return { anima: false, motivo: "falhou_no_lote" };
+
+    // `nenhum` (e `gerando`, se um dia chegar aqui): tentada, sem clipe e sem
+    // fracasso registrado. Está a caminho até o banco dizer o contrário.
+    return { anima: false, motivo: "enviando" };
   }
 
   // Ter clipe tira a cena do lote — a não ser que o dono tenha mandado refazer.

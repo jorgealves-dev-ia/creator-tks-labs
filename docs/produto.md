@@ -258,7 +258,8 @@ Um modelo só, na configuração mais barata: Kling 2.1 image-to-video, 5s, 720p
 
 | # | ciclo | o que ele resolve |
 |---:|---|---|
-| **A** | **O vídeo final** 🔜 | o rabo do Ciclo 3: a Máquina termina em **UM vídeo montado**, no canvas, **sem Spark**. Mini-player, e a Máquina vazia apontando para o «Fluxo». → [`plano-video-final.md`](./plano-video-final.md) |
+| **A** | **O vídeo final** ✅ **FECHADO 06/09/2026** | o rabo do Ciclo 3, entregue: a Máquina termina em **UM vídeo montado** no canvas, **sem Spark**, com a **fila de clipes** num clique, o cartão dizendo **de que peças o filme é feito**, e a Máquina vazia **criando** o Roteiro ligado (não apontando: apontar daria uma segunda Máquina a quem já tem uma). → [`plano-video-final.md`](./plano-video-final.md) |
+| **A′** | **`fix:` o produto da ficha** 🔜 | a única coisa em pauta com dinheiro dentro — **nome não é foto**: a Máquina ganha o Input de Produto. Antes do Catálogo. → §9 do [`plano-video-final.md`](./plano-video-final.md) |
 | **B** | **Catálogo aberto** | provedores e modelos como **dado**: *"modelo novo = linha no catálogo + adaptador"*. É a invariante 2 e a 6 saindo do papel — e é onde entram as **capacidades** (fala nativa, referência de áudio, lipsync, voice_id). |
 | **C** | **Modo Take** | a repetição barata do que já existe, no lugar de refazer tudo — e o caminho para um modelo que entende **papéis de referência e linha do tempo**. → [`notas-modo-take.md`](./notas-modo-take.md) |
 | **D** | **Voz e áudio** | `storyboard_scenes.fala` deixa de dormir. **Voz é identidade**, não efeito. → [`notas-voz.md`](./notas-voz.md) |

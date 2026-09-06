@@ -10,6 +10,8 @@ import { usePromptInspector } from "@/lib/canvas/prompt-inspector-store";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { signAssetDownload } from "@/lib/generation/history";
 import { t } from "@/lib/i18n/pt-BR";
+import { lerLinhagemDoFilme } from "@/lib/video/linhagem-actions";
+import type { PecaDaLinhagem } from "@/lib/video/linhagem";
 
 /**
  * "Resultado" — a finished image, as a piece of the flow (§5).
@@ -57,6 +59,14 @@ export function ResultNode({ id, data, selected }: NodeProps<ResultNodeType>) {
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  /**
+   * As peças do filme, quando este cartão é um filme — Fase 4 · item 2.
+   *
+   * `null` quer dizer as duas coisas que aqui dão no mesmo: *ainda não perguntei*
+   * e *não é filme*. Nenhuma delas desenha faixa, e distingui-las custaria um
+   * estado a mais para produzir exatamente a mesma tela.
+   */
+  const [linhagem, setLinhagem] = useState<PecaDaLinhagem[] | null>(null);
 
   const addChainedGenerator = useCanvasStore((state) => state.addChainedGenerator);
   const inspect = usePromptInspector((state) => state.open);
@@ -80,6 +90,29 @@ export function ResultNode({ id, data, selected }: NodeProps<ResultNodeType>) {
 
     return () => {
       cancelled = true;
+    };
+  }, [assetId, ehVideo]);
+
+  /**
+   * A linhagem, só para cartão de vídeo.
+   *
+   * Um clipe também é vídeo e não tem linhagem: a consulta volta vazia, a ação
+   * responde `null`, e nada é desenhado. Perguntar por ele custa um índice; não
+   * perguntar custaria um caso especial baseado em adivinhar, pelo `data` do
+   * node, se aquele vídeo é filme — e o `data` é justamente o que não pode ser a
+   * fonte da verdade aqui.
+   */
+  useEffect(() => {
+    if (!ehVideo) return;
+
+    let cancelado = false;
+
+    void lerLinhagemDoFilme({ assetId }).then((pecas) => {
+      if (!cancelado) setLinhagem(pecas);
+    });
+
+    return () => {
+      cancelado = true;
     };
   }, [assetId, ehVideo]);
 
@@ -178,6 +211,39 @@ export function ResultNode({ id, data, selected }: NodeProps<ResultNodeType>) {
           </span>
         )}
       </div>
+
+      {/*
+        As peças que formaram o filme, na ordem delas — e a posição de uma peça
+        apagada NÃO some: ela diz «peça removida». Um buraco na numeração
+        obrigaria quem lê a adivinhar se faltou uma peça ou se o filme só tinha
+        duas.
+      */}
+      {linhagem ? (
+        <div className="border-t border-line px-3 py-2">
+          <p className="text-[9px] uppercase tracking-wide text-ink-faint">
+            {copy.linhagemTitulo}
+          </p>
+
+          <ol className="mt-1 space-y-0.5">
+            {linhagem.map((peca) => (
+              <li key={peca.ordem} className="flex gap-1.5 text-[10px] leading-snug">
+                <span className="shrink-0 tabular-nums text-ink-faint">{peca.ordem}</span>
+
+                {peca.removida ? (
+                  <span
+                    title={copy.linhagemRemovidaHint}
+                    className="italic text-ink-faint"
+                  >
+                    {copy.linhagemRemovida}
+                  </span>
+                ) : (
+                  <span className="min-w-0 truncate text-ink-muted">{peca.rotulo ?? "—"}</span>
+                )}
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
 
       {!loading && !url ? (
         <p className="border-t border-line px-3 py-2 text-[10px] leading-relaxed text-ink-faint">

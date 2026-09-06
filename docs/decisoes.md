@@ -5440,3 +5440,86 @@ Página sã (27 nodes, 20 arestas). Um comentário acrescentado ao fim de `src/l
 A armadilha já estava escrita — *«NADA de canvas vale em aba escondida»*, 18/08/2026 — e mordeu assim mesmo, por três semanas, produzindo um incidente, uma trava de servidor e uma fase inteira do plano. **Uma frase num arquivo não é uma trava**, exatamente como o `SAI ANTES DO COMMIT` não era antes de virar `git grep`.
 
 Então: **toda leitura de número do canvas passa a AFIRMAR que a aba foi pintada** — `document.visibilityState === "visible"` **e** um `requestAnimationFrame` efetivamente disparado — e **recusa a leitura** se não for o caso. Está no `CLAUDE.md`, na régua da regra 8, onde a validação de tela é decidida.
+
+
+---
+
+### 06/09/2026 — Fases 4·2, 6 e 7: as três telas que mentiam sobre o que o banco diz, e o mini-ciclo «O vídeo final» FECHA
+
+As três são a mesma família, e a família tem nome desde o §4 do plano: **a tela mente
+sobre o que o banco diz.** Nenhuma gasta. **0 ⚡ nas três.**
+
+#### Fase 4 · item 2 — o cartão do filme diz de que peças ele é feito
+
+A linhagem existia só no banco. `on delete set null` anula a peça quando o clipe é
+apagado, e **o filme continua inteiro** — os bytes dele são dele —, mas o cartão não
+tinha como dizer que a posição 2 veio de um clipe que não existe mais.
+
+📌 **A regra é uma frase, e ela é o oposto do instinto: a posição nunca some.** Filtrar a
+peça anulada seria a tentação óbvia; um buraco na numeração obriga quem lê a adivinhar se
+faltou uma peça ou se o filme só tinha duas. É o mesmo argumento que fez a coluna ser
+**anulável** em vez de a linha ser apagada. **Prova vermelho→verde com a implementação
+ingênua rodando ao lado:** produção 9/9, ingênua 6/7 vermelhas. *Um teste que só passa não
+prova que estava testando.*
+
+📌 **A linhagem é lida do BANCO, não guardada no `data` do node** — e é isso que faz o
+cartão **de 04/09**, salvo num grafo escrito antes desta fase existir, mostrar as três
+peças. Uma cópia no grafo só existiria para poder discordar da linha em `assets` no dia em
+que uma peça fosse apagada, que é exatamente o dia que a fase atende.
+
+**O que ficou por provar, e está dito na evidência:** a frase «peça removida» **não foi
+exercitada contra o banco vivo**, porque não existe caminho de produto para apagar um
+asset — é o backlog que nasceu nesta mesma sessão — e os dois filmes do acervo
+compartilham os mesmos três clipes.
+
+#### Fase 6 — 📌 a premissa da auditoria de 02/09 estava errada
+
+O plano dizia que uma cena **em voo** caía no `else` do ternário e era anunciada como
+*"falhou neste lote"*. **Não cai.** `if (cena.video === "gerando") return { motivo:
+"gerando" }` responde **antes** da guarda, e está no arquivo desde que ele nasceu, no
+commit `7eb2050` de **31/08** — dois dias antes da auditoria. *A auditoria leu o ternário
+isolado e concluiu sobre um caminho que a linha de cima já cobria.*
+
+**O defeito real era o `nenhum`**, e ele é mais comum que o descrito: uma cena entra em
+`jaTentadas` **antes** de a requisição voltar, então **toda cena de todo lote** passa por
+ele na janela entre despachar e o banco reconhecer. E uma submissão **recusada** — saldo
+que acabou na vez dela, provedor fora do ar — fica ali até o lote fechar. Nos dois casos,
+"falhou neste lote" acusa de fracasso um trabalho que **não produziu registro de fracasso
+nenhum**. Regra cumprida: **«falhou» só quando o banco escreveu `failed`**; o resto é
+*"enviando…"*, **em cinza** — em amarelo continuaria dizendo que algo está errado, que é a
+mentira que a frase existe para desfazer. Quatro estados percorridos, 4/4, zero submissão.
+
+#### Fase 7 — aprovar não é editar, e `status` não está no tipo
+
+`saveScene` carimbava `edited_at` em toda gravação, e aprovar é uma gravação: **aprovar
+acusava de "editada à mão" quem só aprovou.** O estrago não é estético — é a coluna que a
+confirmação de "gerar de novo" conta em voz alta antes de substituir, e **uma coluna de
+auditoria que marca todo mundo não distingue ninguém**.
+
+📌 **A regra virou tipo, não comentário.** `status` **não existe** em `ConteudoDaFicha`:
+quem tentar compará-lo não compila. Era possível ignorá-lo na comparação com um comentário
+pedindo cuidado — e a casa já sabe que **um comentário não é uma trava**, do `SAI ANTES DO
+COMMIT` ao `git grep`.
+
+📌 **E a comparação é sobre o valor NORMALIZADO**, não sobre o cru do formulário. Medido ao
+vivo: três espaços digitados no fim de `movimento`, gravação feita, `movimento` idêntico ao
+de antes, `edited_at` intacto. Comparar o cru carimbaria a ficha por uma diferença que o
+próprio `update` apaga.
+
+**Cinco gravações reais pelo diálogo, com o banco lido nos dois instantes:** aprovar →
+`edited_at` nulo; desaprovar → nulo; espaços → data velha intacta; duração 5→6 → data nova;
+6→5 → data nova. `updated_at` andou nas cinco — não é o `update` que deixou de rodar, é só
+o `edited_at` que deixou de ser tocado. E o Roteiro seguiu dizendo **«1 ficha foi editada à
+mão»** o percurso inteiro.
+
+📌 **Achado lateral, de graça:** `edited_at` sai ~2 s **depois** de `updated_at`. São
+relógios diferentes — o do banco, por trigger, e o do Node, por `new Date()`. E o
+comentário do `actions.ts` diz *"com o relógio do banco (`now()`)"*: **descreve uma
+intenção que o código nunca teve**. Anotado, não consertado — a pergunta desta fase é
+*quando* carimbar, não de quem é o relógio.
+
+#### O mini-ciclo fecha
+
+Fases 0, 5, 1, 2, 3, a PARADA aprovada pelo dono, 4·2, 6 e 7. **De três clipes pagos, um
+arquivo** — e agora o cartão dele diz de que peças é feito. Nada neste mini-ciclo gastou um
+Spark depois da Fase 1.

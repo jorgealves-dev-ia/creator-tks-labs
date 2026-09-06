@@ -70,11 +70,11 @@ Dito antes das fases, porque o escopo é a metade do plano.
 | 3ª | **2** | **a FILA de clipes** — mudou de forma antes do código | ✅ **FECHADA** 04/09/2026 — 3 cenas com **um** clique |
 | 4ª | **3** | o vídeo por cima do modal — **e a causa não era o `z-index`** | ✅ **FECHADA** 04/09/2026 |
 | ⏸️ | — | **PARADA — o dono vê o filme** | ✅ **«testei, está ok»** 04/09/2026 — com um achado, consertado: §4.2b |
-| 🚨 | — | **INCIDENTE — o canvas abre sem os vínculos** *(era a Fase 4; reclassificado pelo dono em 04/09)* | 🟡 **trava feita**, causa raiz para a próxima sessão — §10 e §11 |
-| 5ª | **4** | só o item 2: o cartão que não diz «peça removida» | ⬜ não começou |
-| 6ª | **6** | o estado *"enviando"* — o terceiro braço do ternário | ⬜ não começou |
-| 7ª | **7** | aprovar a ficha não carimba `edited_at` | ⬜ não começou |
-| — | — | fechamento do mini-ciclo, ritual do §8 | ⬜ |
+| ✅ | — | **O «incidente» dos vínculos** *(era a Fase 4; reclassificado pelo dono em 04/09)* | ✅ **ENCERRADO** 06/09/2026 — **artefato de medição**: aba nunca pintada, store íntegro nas 4 células, StrictMode inocente — §10 e §11 |
+| 5ª | **4** | só o item 2: o cartão que não diz «peça removida» | ✅ **FECHADA** 06/09/2026 — faixa «Peças do filme» lida do banco; 9/9 estruturais com a peça anulada, e a ingênua falha 6/7 |
+| 6ª | **6** | o estado *"enviando"* — e a premissa da auditoria estava errada | ✅ **FECHADA** 06/09/2026 — 4/4 estados; o que mentia era o `nenhum`, não o `gerando` |
+| 7ª | **7** | aprovar a ficha não carimba `edited_at` | ✅ **FECHADA** 06/09/2026 — 5 gravações ao vivo + tabela-verdade 12/12 |
+| — | — | fechamento do mini-ciclo, ritual do §8 | ✅ **06/09/2026** |
 
 **A ordem, decidida em 03/09: `5 → 1 → 2 → 3 → PARADA → 4 → 6 → 7 → fechamento`.**
 A Fase 0 já correu, então o que resta começa na **5**. As fases **6 e 7** nasceram na
@@ -573,7 +573,12 @@ ainda em 50, intocado**, que é a prova de que o número nunca foi o problema.
 
 ### Fase 4 · Duas coisas que o banco sabe e a tela não mostra
 
-#### Item 1 · as arestas que não desenham na carga fria
+#### Item 1 · as arestas que não desenham na carga fria — ❌ NUNCA EXISTIU (06/09/2026)
+
+> **Não era defeito de produto.** A medição de 06/09 mostrou que os *"19 que desenham
+> zero"* são exatamente os **19 que uma aba pintada desenha no primeiro segundo**; em aba
+> não pintada, o Chrome não faz layout e o React Flow não mede node nenhum. O §11 tem a
+> tabela. O texto abaixo fica como estava, porque é o que se acreditava.
 
 **Entrega.** O item que entrou no backlog em 02/09 com reprodução escrita: numa carga
 fria do «Primeiros Testes», **19 arestas válidas desenham zero**; o `workflows.graph` tem
@@ -586,7 +591,7 @@ começa medindo isso e não presumindo.**
 **Prova:** contagem de arestas no DOM × no grafo salvo, em carga fria, antes e depois —
 no projeto grande, que é onde falha.
 
-#### Item 2 · o cartão do filme diz «peça removida» — decisão do dono, 04/09/2026
+#### Item 2 · o cartão do filme diz «peça removida» — ✅ FECHADO em 06/09/2026
 
 **Entrega.** Quando um clipe que formou o filme é apagado, o banco anula a peça
 (`asset_montage_parts.part_asset_id` → `null`, pelo `on delete set null`) **e o filme
@@ -693,7 +698,7 @@ subindo até o wrapper do node**, e ele roda **depois** do nosso `set`. O conser
 
 ---
 
-### Fase 6 · O estado "enviando" — o terceiro braço do ternário
+### Fase 6 · O estado "enviando" — ✅ FECHADA em 06/09/2026
 
 **Entrega.** O achado **(b)** da auditoria de 02/09, com endereço:
 `src/lib/storyboard/machine-video.ts:418`.
@@ -717,7 +722,7 @@ frase que a tela mostra, ao lado do `generations.status` no banco no mesmo insta
 
 ---
 
-### Fase 7 · Aprovar a ficha não carimba `edited_at`
+### Fase 7 · Aprovar a ficha não carimba `edited_at` — ✅ FECHADA em 06/09/2026
 
 **Entrega.** O achado **(d)**: `src/lib/storyboard/actions.ts:323`, dentro de
 `saveScene`, escreve `edited_at` **em toda gravação** — inclusive quando o único campo

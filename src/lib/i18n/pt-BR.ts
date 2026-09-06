@@ -1416,6 +1416,9 @@ export const t = {
       ja_tem_video: "vídeo pronto",
       nao_aprovada: "aprove para animar",
       falhou_no_lote: "falhou neste lote",
+      // Fase 6: tentada, sem clipe e SEM fracasso registrado. As reticências
+      // fazem o trabalho de dizer que isto ainda anda.
+      enviando: "enviando…",
       fora_do_lote: "fica para o próximo",
       sem_catalogo: "",
     } as Record<string, string>,
@@ -2096,6 +2099,18 @@ export const t = {
        * rather than hidden, so the header is the same header everywhere.
        */
       noDuplicate: "A imagem já está na galeria — duplicar o cartão não cria nada novo.",
+
+      /**
+       * A linhagem do filme montado — Fase 4 · item 2.
+       *
+       * «peça removida» e não «cena apagada»: o que sumiu foi o **clipe**, e a
+       * cena continua no roteiro. Dizer "cena" mandaria a pessoa procurar no
+       * lugar errado.
+       */
+      linhagemTitulo: "Peças do filme",
+      linhagemRemovida: "peça removida",
+      linhagemRemovidaHint:
+        "O clipe desta posição foi apagado. O filme continua inteiro — os bytes dele são dele.",
     },
 
     lightbox: {

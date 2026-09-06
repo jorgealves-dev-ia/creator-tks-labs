@@ -14,6 +14,10 @@ import {
   type Cena,
   type Historia,
 } from "@/lib/storyboard/contract";
+import {
+  houveEdicaoDeConteudo,
+  type ConteudoDaFicha,
+} from "@/lib/storyboard/scene-edits";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
@@ -268,7 +272,11 @@ const saveSceneSchema = z
   });
 
 export type SaveSceneResult =
-  | { ok: true; editedAt: string }
+  /**
+   * `null` quando a ficha **nunca** foi editada à mão — e desde a Fase 7 isso
+   * inclui a gravação que acabou de acontecer, se ela só aprovou.
+   */
+  | { ok: true; editedAt: string | null }
   | { ok: false; reason: "invalid" | "not_found" | "error" };
 
 /**
@@ -282,6 +290,23 @@ export type SaveSceneResult =
  * `new Date().toISOString()` seria o relógio de quem chamou). É a coluna que a
  * confirmação de "gerar de novo" vai contar em voz alta antes de substituir — e
  * uma coluna de auditoria com a hora do cliente não audita nada.
+ *
+ * ---------------------------------------------------------------------------
+ * FASE 7 · e só é carimbado quando algum CONTEÚDO mudou
+ * ---------------------------------------------------------------------------
+ *
+ * Era em toda gravação. Aprovar é uma gravação — o `status` viaja no mesmo
+ * patch —, então **aprovar acusava de "editada à mão" quem só aprovou**, e a
+ * coluna que existe para distinguir passava a marcar todo mundo.
+ *
+ * Por isso a leitura de antes: sem ela não há com o que comparar. É uma ida a
+ * mais ao banco por gravação de ficha, e ela paga a própria passagem — a
+ * alternativa seria um gatilho comparando `OLD`/`NEW`, que resolveria o mesmo e
+ * poria a regra num lugar onde o `typecheck` não a alcança.
+ *
+ * A regra em si mora em `scene-edits.ts`, fora deste arquivo `"use server"`,
+ * pelo motivo de sempre: **uma regra embutida no chamador só se testa tendo o
+ * chamador inteiro de pé**, e este exige sessão e banco.
  */
 export async function saveScene(input: unknown): Promise<SaveSceneResult> {
   const parsed = saveSceneSchema.safeParse(input);
@@ -304,23 +329,45 @@ export async function saveScene(input: unknown): Promise<SaveSceneResult> {
 
   if (!storyboard) return { ok: false, reason: "not_found" };
 
-  const editedAt = new Date().toISOString();
+  // O conteúdo que a gravação quer deixar, já normalizado — é este, e não o
+  // cru do formulário, que tem de ser comparado: um espaço no fim viraria
+  // "edição" de um texto que o próprio `update` grava idêntico ao de antes.
+  const conteudo: ConteudoDaFicha = {
+    acao: patch.acao.trim(),
+    cenario: patch.cenario.trim(),
+    enquadramento: patch.enquadramento,
+    movimento: patch.movimento.trim(),
+    fala: emptyToNull(patch.fala),
+    produto: emptyToNull(patch.produto),
+    cta_id: emptyToNull(patch.ctaId),
+    cta_texto: emptyToNull(patch.ctaTexto),
+    duracao_segundos: patch.duracaoSegundos,
+    transicao: patch.transicao,
+  };
+
+  const { data: antes } = await supabase
+    .from("storyboard_scenes")
+    .select(
+      "acao, cenario, enquadramento, movimento, fala, produto, cta_id, cta_texto, duracao_segundos, transicao, edited_at",
+    )
+    .eq("storyboard_id", storyboard.id)
+    .eq("ordem", ordem)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!antes) return { ok: false, reason: "not_found" };
+
+  const editou = houveEdicaoDeConteudo(antes, conteudo);
 
   const { data: updated, error } = await supabase
     .from("storyboard_scenes")
     .update({
-      acao: patch.acao.trim(),
-      cenario: patch.cenario.trim(),
-      enquadramento: patch.enquadramento,
-      movimento: patch.movimento.trim(),
-      fala: emptyToNull(patch.fala),
-      produto: emptyToNull(patch.produto),
-      cta_id: emptyToNull(patch.ctaId),
-      cta_texto: emptyToNull(patch.ctaTexto),
-      duracao_segundos: patch.duracaoSegundos,
-      transicao: patch.transicao,
+      ...conteudo,
       status: patch.status,
-      edited_at: editedAt,
+      // Só quando algum conteúdo mudou. Sem a chave, a coluna fica como está —
+      // que é o que faz aprovar não carimbar, e o que preserva a data de uma
+      // edição antiga quando a gravação de hoje só aprovou.
+      ...(editou ? { edited_at: new Date().toISOString() } : {}),
     })
     .eq("storyboard_id", storyboard.id)
     .eq("ordem", ordem)
@@ -331,7 +378,10 @@ export async function saveScene(input: unknown): Promise<SaveSceneResult> {
   if (error) return { ok: false, reason: "error" };
   if (!updated) return { ok: false, reason: "not_found" };
 
-  return { ok: true, editedAt: updated.edited_at ?? editedAt };
+  // O valor do BANCO, sem fallback para o relógio desta função: uma ficha que
+  // nunca foi editada tem de voltar `null`, e um `?? agora` faria a tela
+  // carimbar "editada à mão" exatamente na gravação que não editou nada.
+  return { ok: true, editedAt: updated.edited_at };
 }
 
 // ---------------------------------------------------------------------------

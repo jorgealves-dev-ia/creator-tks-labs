@@ -1513,6 +1513,11 @@ function fraseDoVideo(linha: LinhaDoPlano): { texto: string; hint: string; tom: 
       return { texto: copy.videoMotivos.ja_tem_video, hint: "", tom: "text-positive" };
     case "falhou_no_lote":
       return { texto: copy.videoMotivos.falhou_no_lote, hint: "", tom: aviso };
+    // Fase 6 · tom NEUTRO, e é metade do conserto: "enviando…" em amarelo
+    // continuaria dizendo que algo está errado, que é exatamente a mentira que
+    // esta frase existe para desfazer.
+    case "enviando":
+      return { texto: copy.videoMotivos.enviando, hint: "", tom: faint };
     case "fora_do_lote":
       return {
         texto: copy.videoMotivos.fora_do_lote,
