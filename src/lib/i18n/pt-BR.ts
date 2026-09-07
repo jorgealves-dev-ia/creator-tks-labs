@@ -1123,6 +1123,29 @@ export const t = {
     inputsSwitch: "Input Referências",
     /** Nasce desligada, invariante 12. Sem exceção para a Máquina. */
     inputsOff: "Desligada: as referências ficam conectadas e visíveis, e não entram na geração.",
+
+    // ── Frente A′ · P3 — os três estados do produto ────────────────────────
+    /**
+     * Mesma frase do bloco de imagem (`generation.node.sceneProduct`), e uma
+     * chave própria de propósito: os dois contextos podem divergir — lá é *esta*
+     * cena, aqui são **todas** —, e o dia em que divergirem é melhor que sejam
+     * duas linhas do que uma condicional dentro do texto.
+     */
+    produtoSoNome: (nome: string) =>
+      `Esta cena tem um produto: ${nome}. Conecte um Input de Produto para a foto dele entrar.`,
+    /** O estado do meio, o que engana — a chave nasce desligada. */
+    produtoMudo: (fotos: number) =>
+      fotos === 1
+        ? "A foto do produto está conectada e MUDA. Ligue «Input Referências» para ela entrar."
+        : `As ${fotos} fotos do produto estão conectadas e MUDAS. Ligue «Input Referências» para elas entrarem.`,
+    /**
+     * A emenda na linha de custo — exigência do dono, 06/09/2026.
+     *
+     * O aviso do trilho é onde se lê; a linha de custo é onde se decide. Um
+     * número que promete seis imagens sem dizer que a foto ficou de fora é um
+     * número que conta metade da verdade antes do clique.
+     */
+    portaoSemFoto: "sem a foto do produto — a chave está desligada",
     inputsOn: "Ligada: as referências entram em todas as cenas.",
 
     // ── O trilho ───────────────────────────────────────────────────────────
@@ -1232,6 +1255,18 @@ export const t = {
      */
     portaoCusto: (n: number, preco: number, total: number, saldo: number) =>
       `Custará ${n} × ${preco} = ${sparks(total)} ⚡ · Saldo: ${sparks(saldo)} ⚡`,
+    /**
+     * O custo do ↻ de UMA cena — Frente A′ · P3, 06/09/2026.
+     *
+     * 📌 **Ele não existia.** O ↻ cobrava o preço de uma imagem sem pôr número
+     * nenhum na tela, e é o gesto que o dono usa para refazer uma cena solta.
+     * A invariante 12 manda o custo falar a verdade **antes** do clique, e a
+     * régua R1 — *"se o número que o portão mostrar não for o esperado, o clique
+     * não acontece"* — não tem o que comparar com uma tela muda.
+     */
+    repetirCusto: (preco: number, saldo: number) =>
+      `Custará ${sparks(preco)} ⚡ · Saldo: ${sparks(saldo)} ⚡`,
+    repetirSemSaldo: (faltam: number) => `Faltam ${sparks(faltam)} ⚡ para refazer esta cena.`,
     portaoSemCenas: "Todas as cenas de corte já têm imagem.",
     portaoSemCenasVazio: "Este roteiro não tem cena de corte para gerar.",
     portaoSemPreco: "Este modelo não vende essa qualidade. Escolha outra.",

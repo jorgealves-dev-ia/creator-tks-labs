@@ -255,11 +255,30 @@ function wiredPair(
   const source = nodes.find((node) => node.id === connection.source);
   const generator = nodes.find((node) => node.id === connection.target);
 
-  if (!source || generator?.type !== "generator") return null;
+  if (!source || !generator || !ATTACHING_TARGETS.has(generator.type ?? "")) return null;
   if (!ATTACHING_SOURCES.has(source.type ?? "")) return null;
 
   return { source, generator };
 }
+
+/**
+ * Os blocos que RECEBEM referência por fio — Frente A′ · P1, 06/09/2026.
+ *
+ * A Máquina entrou aqui, e o que ela ganhou não foi um slot: **o slot já
+ * existia**. O handle `referencias` está no node desde que ele nasceu, e a
+ * legenda dele promete *«Cards de Input que entram em TODAS as cenas — o mesmo
+ * produto em dez imagens»*. O que faltava era o fio **fazer** o que a legenda
+ * dizia: `wiredPair` exigia `type === "generator"`, então conectar um Input de
+ * Produto à Máquina desenhava a aresta e não entregava nada.
+ *
+ * **O pior caso não era o slot faltar — era o slot prometer.** É a mesma família
+ * das Fases 3, 4, 6 e 7: a tela dizendo uma coisa e a máquina fazendo outra.
+ *
+ * Um conjunto e não um `||`, pela razão de sempre nesta casa: a lista vai
+ * crescer, e uma condição que precisa ser editada em três lugares para aceitar
+ * um terceiro bloco é uma condição que vai ser editada em dois.
+ */
+const ATTACHING_TARGETS = new Set(["generator", "machine"]);
 
 /**
  * The kinds of card whose wire into a generating block means "attach this".
@@ -411,7 +430,10 @@ function syncInputInto(nodes: Node[], edges: readonly Edge[], input: Node): Node
       continue;
     }
 
-    if (generator?.type !== "generator") continue;
+    // A Máquina entra aqui junto com o bloco de imagem, e pela mesma razão que o
+    // fio vivo existe: trocar a foto do card tem de trocar o que a geração usa.
+    // Sem isto, o card mostraria uma imagem e as seis cenas gerariam com outra.
+    if (!generator || !ATTACHING_TARGETS.has(generator.type ?? "")) continue;
 
     const current = readReferences(generator);
     const first = current.findIndex((reference) => reference.groupId === input.id);

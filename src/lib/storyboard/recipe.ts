@@ -225,8 +225,48 @@ Use "${personagem.handle}" — o handle, SEM o @ — no campo "personagem" de to
 cena em que ela aparece. Não invente outras personagens.`.trim();
 }
 
+/**
+ * Dureza 4 — em história de produto, TODA ficha diz ONDE o produto está.
+ *
+ * ---------------------------------------------------------------------------
+ * A cena que custou a regra
+ * ---------------------------------------------------------------------------
+ *
+ * No percurso de 02/09 a cena 3 saiu **sem a blusa**. As cenas 1 e 2 escaparam
+ * **por sorte**: elas nomeavam a peça dentro da própria `acao` — *"retira a
+ * blusa da Mine"*, *"já com a blusa vestida"* —, então a direção de atuação
+ * carregava o produto de carona. A 3 não nomeia, e saiu sem.
+ *
+ * Depender de o modelo lembrar de vestir a personagem em toda ação é depender de
+ * sorte uma vez por cena. **Com dez cenas, a sorte acaba.**
+ *
+ * Os exemplos ruins estão aqui pelo mesmo motivo das Durezas 1–3: a instrução
+ * abstrata sozinha não bastou. *"blusa da Mine"* é uma resposta plausível e
+ * inútil — diz o **quê** e não diz **onde**, que é a única metade que a imagem
+ * precisa.
+ *
+ * E a frase de fechamento é deliberada: **o produto não é adereço de uma cena
+ * só.** Um roteiro de unboxing em que o produto aparece na 1 e some na 4 é um
+ * roteiro que vende metade.
+ */
 function blocoProduto(produto: string | null): string {
-  return produto ? `Produto em cena: ${produto}` : "Sem produto em cena.";
+  if (!produto) return "Sem produto em cena.";
+
+  return `
+Produto desta história: ${produto}
+
+- "produto" de CADA cena diz o produto **e onde ele está na cena** — na mão,
+  vestido, na mesa, na bancada, dentro da embalagem. Escreva a posição junto do
+  nome, sempre.
+  Bom:  "${produto}, vestida no corpo"
+  Bom:  "${produto}, segurada na altura do rosto"
+  Bom:  "${produto}, sobre a bancada ao lado dela"
+  Ruim: "${produto}"   (diz o quê, não diz onde)
+  Ruim: "o produto"    (não diz nem o quê)
+- Não conte com a "acao" para carregar o produto: ela dirige a atuação, e uma
+  cena em que a acao não o menciona sai sem ele.
+- O produto aparece na MAIORIA das cenas. Use null em "produto" só nas cenas em
+  que ele deliberadamente não está em quadro.`.trim();
 }
 
 // ---------------------------------------------------------------------------

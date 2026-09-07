@@ -145,7 +145,19 @@ function cenaSchemaJson(duracoes: readonly number[]) {
     ordem: { type: "integer", minimum: 1, maximum: TETO_CENAS },
     acao: { type: "string", description: "Direção de atuação com tempo, em português." },
     personagem: { type: ["string", "null"], description: "Handle da personagem, sem @." },
-    produto: { type: ["string", "null"] },
+    /**
+     * Frente A′ · P4 — o campo tinha tipo e não tinha instrução, e um campo sem
+     * descrição num schema é um campo que o modelo preenche por analogia. Foi o
+     * que aconteceu: nas 6 cenas do Liquidificador ele dizia "Liquidificador"
+     * seis vezes — o **nome**, nunca **onde ele está**.
+     */
+    produto: {
+      type: ["string", "null"],
+      description:
+        "O produto E ONDE ELE ESTA nesta cena, em português. Ex.: " +
+        '"blusa da Mine, vestida no corpo"; "liquidificador, na bancada ao lado dela". ' +
+        "null quando o produto não aparece nesta cena.",
+    },
     cenario: { type: "string" },
     enquadramento: { type: "string", enum: [...ENQUADRAMENTO_KEYS] },
     movimento: {

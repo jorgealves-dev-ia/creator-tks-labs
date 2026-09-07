@@ -1,11 +1,19 @@
 # Frente A′ — `fix:` o produto da ficha chega à imagem
 
-> **Status:** 🟡 **PLANO EM APROVAÇÃO** — escrito em 06/09/2026, **nenhuma linha de código
-> executada**. Regra 9 do [`CLAUDE.md`](../CLAUDE.md): o plano vai para o disco antes da
-> primeira fase.
+> **Status:** ✅ **FRENTE FECHADA em 07/09/2026** — provada pelo dono, commitada e em
+> produção. Aprovada em 06/09 com as cinco respostas do §8 e a **sexta exigência** que
+> entrou na P3 (o portão do clique, §5·P3).
 >
-> **A investigação que o gerou custou 0 ⚡.** As duas provas ao vivo custam **90 ⚡** e são
-> **do dono**.
+> **Custo real: 90 ⚡ — o pior caso R1 exato** (15 do roteiro + 75 da imagem), saldo
+> 3.280 → **3.190**. A investigação que gerou o plano custou 0 ⚡.
+>
+> **O que ficou provado:** a foto do produto **chega ao provedor** — `params` de
+> `0cf3f069` com o asset `06778db7` na **posição 2**, `origem: "input"`, `grupo_id` igual
+> ao id do node do card e `referencias_mudas: null`.
+>
+> **O que NÃO ficou provado, e não é desta frente:** a **fidelidade**. O modelo desenhou
+> um vestido porque a palavra «blusa» nunca entrou no texto — vira o endereço da próxima
+> frente. → [`ESTADO.md`](ESTADO.md), item 1 do que está aberto.
 
 ---
 
@@ -155,13 +163,32 @@ slot promete; depois a tela para de mentir enquanto não entrega; só então o R
 pedir melhor. *Consertar o Roteiro primeiro produziria fichas melhores para um caminho que
 ainda joga a foto fora.*
 
-| ordem | fase | entrega | custo |
-|---|---|---|---|
-| 1ª | **P1** | **o fio vivo alcança a Máquina** — Input conectado contribui de verdade | 0 ⚡ |
-| 2ª | **P2** | **a conta de vagas na Máquina**, antes do clique | 0 ⚡ |
-| 3ª | **P3** | **o aviso «só nome»** por cena, e ele some ao conectar | 0 ⚡ |
-| 4ª | **P4** | **o Roteiro exige a posição do produto** | 0 ⚡ estrutural |
-| ⏸️ | — | **as duas provas do dono** | **90 ⚡** |
+| ordem | fase | entrega | custo | status |
+|---|---|---|---|---|
+| 1ª | **P1** | **o fio vivo alcança a Máquina** — Input conectado contribui de verdade | 0 ⚡ | ✅ **9/9**, e o predicado antigo vermelho |
+| 2ª | **P2** | **a conta de vagas na Máquina**, antes do clique | 0 ⚡ | ✅ **13/13** |
+| 3ª | **P3** | os **três estados** + a **emenda no portão** | 0 ⚡ | ✅ **27/27** — e achou que **o ↻ cobrava sem dizer quanto** |
+| 4ª | **P4** | **o Roteiro exige a posição do produto** | 0 ⚡ | ✅ **13/13** |
+| 5ª | **P5** | a Máquina **nascida do template** — premissa nova do dono, 07/09 | 0 ⚡ | ✅ **24/24** — o alcance é por **tipo de node**, não por origem |
+| ✅ | — | **as duas provas do dono** | **90 ⚡** | ✅ **FEITAS em 07/09** — pior caso exato; a foto no payload, provada **pelo banco** |
+
+> ### 🚩 O que a P3 achou no caminho: **o ↻ de uma cena cobrava 75 ⚡ sem número na tela**
+>
+> `ColunaDaCena` não recebia preço, e `confirmarRepeticao` chamava `pedirCena` direto. É a
+> **invariante 12** (*o custo fala a verdade multiplicada antes do clique*) e é **o gesto
+> exato do V2** — a régua **R1** não tem o que comparar com uma tela muda.
+>
+> Consertado dentro da P3, porque a emenda do produto precisava de uma linha onde morar.
+> Visto na tela: **«Custará 75 ⚡ · Saldo: 3.280 ⚡»** no ↻ da cena 3.
+
+**Evidência:** `scratchpad\evidenciasix-produto-p1-p4
+umeros.md`
+
+⚠️ **O que ficou sem prova de tela:** os estados `mudo` e `entrando` exigem um card
+conectado **por fio**, e quatro tentativas de desenhar esse fio pela extensão falharam
+(`left_click_drag`, eventos de ponteiro sintéticos, clique-a-clique). No lugar ficam **seis
+asserções atravessando o store de produção** — o que resta sem tela é o JSX que lê um
+booleano já provado. **O dono vê os dois no percurso dele.**
 
 ### P1 · O fio vivo alcança a Máquina
 
@@ -212,7 +239,26 @@ A frase `sceneProduct` já existe. A Máquina passa a mostrá-la **por cena que 
 o segundo estado **não é raro: é o que acontece logo depois de conectar**, e uma tela que o
 confundisse com o terceiro mandaria a pessoa gerar seis imagens achando que a foto entrou.
 
-**Prova (0 ⚡):** os três estados na tela, lidos do DOM, com o grafo real.
+> ## 🔴 EXIGÊNCIA DO DONO — 06/09/2026: o aviso também vai para o PORTÃO
+>
+> **O terceiro estado do aviso não basta se ele não estiver onde o dedo vai.**
+>
+> Com a foto conectada e a chave **desligada**, a **linha de custo do portão** — a que diz
+> `6 × 75 = 450 ⚡` antes do clique — passa a dizer, junto:
+>
+> > **«sem a foto do produto — a chave está desligada»**
+>
+> **Por que ali e não só na cena:** o aviso por cena mora no trilho, que é onde se *lê*; a
+> linha de custo é onde se *decide*. Uma pessoa que já leu o trilho e desceu para o botão
+> tem o número na frente e a informação atrás. **A invariante 12 manda o custo falar a
+> verdade multiplicada antes do clique** — e "450 ⚡ sem a foto que você acabou de conectar"
+> é parte dessa verdade.
+>
+> A chave **continua nascendo desligada** (invariante 12, não muda): o caso base é gerar sem
+> referência, e ligada por padrão poria imagens em geração paga sem ninguém pedir.
+
+**Prova (0 ⚡):** os três estados na tela, lidos do DOM, com o grafo real — **e a linha do
+portão**, com a frase presente com a chave desligada e ausente com ela ligada.
 
 ### P4 · O Roteiro exige onde o produto está
 
@@ -297,30 +343,46 @@ então é a única que não escapa por sorte. Provar na cena 1 provaria o que j�
 
 ---
 
-## 8. AS PERGUNTAS QUE SÓ O DONO RESPONDE
+## 8. AS RESPOSTAS DO DONO — 06/09/2026
 
-**8.1 · O produto entra em todas as cenas, sem exceção?** Hoje a legenda promete isso. A
-alternativa — *só nas cenas cuja ficha tem `produto` preenchido* — é uma linha de código e muda
-o significado do card. **Recomendo: todas.** O card é do bloco, e *"o mesmo produto em dez
-imagens"* é a frase que a Máquina já assinou.
+| # | pergunta | **resposta** |
+|---|---|---|
+| 8.1 | o produto entra em todas as cenas? | ✅ **todas as cenas** |
+| 8.2 | a receita do Roteiro ganha versão agora? | ⏭️ **fica para o Catálogo** (frente B) |
+| 8.3 | o `prompt_compiled` ganha carimbo de compilador? | ⏭️ **fica** — **com uma condição** |
+| 8.4 | qual foto para a V2? | a **foto real da blusa da Mine**, subida pelo dono |
+| 8.5 | o roteiro da V1 é novo? | ✅ **novo, 15 ⚡** |
 
-**8.2 · A receita do Roteiro ganha versão agora, ou fica para o Catálogo?** É uma coluna e um
-carimbo em `storyboards`. **Recomendo: fica** — é assunto do Catálogo aberto (frente B), e
-enfiá-la aqui alarga o escopo que o §3 acabou de fechar.
+### 8.3 · A condição: a auditoria por `created_at`
 
-**8.3 · O `prompt_compiled` ganha um carimbo de compilador?** Mesma resposta e mesma razão —
-com uma agravante: esta é **a mudança de compilador mais visível desde a Camada 2**, e é a
-primeira vez que uma geração da Máquina passa a levar imagem além da folha.
+O compilador não ganha carimbo agora — **mas a entrada no
+[`decisoes.md`](decisoes.md) leva data E HORA da mudança**, para que a auditoria possa
+separar as gerações pelo `created_at` delas.
 
-**8.4 · Qual produto e qual foto para a V2?** A **blusa da Mine** tem 3 clipes e um filme, mas
-**as fotos do produto** precisam existir na galeria. Se não existirem, subir uma foto é gesto do
-dono e **0 ⚡**.
+> **É a única régua que sobra, e por isso ela tem de existir antes da primeira geração
+> nova.** Sem carimbo no `prompt_compiled`, a pergunta *"esta imagem foi feita com o
+> compilador que leva produto?"* só se responde comparando a hora da linha em `generations`
+> com a hora escrita no diário. Uma entrada sem hora transformaria essa comparação num
+> palpite sobre o dia inteiro.
 
-**8.5 · O roteiro da V1 é novo ou reaproveita o «Unboxing e Provador Blusa da Mine»?** Novo
-custa 15 ⚡ e prova a regra nova; reaproveitar custa 0 ⚡ e **não prova nada** — as fichas de lá
-foram escritas pela receita velha.
+### 8.4 · O custo do Input de Produto — DECLARADO ANTES DE O DONO SUBIR A FOTO
 
----
+**Medido no código, 06/09:**
+
+| gesto | o que acontece | custo |
+|---|---|---|
+| **subir a foto** | `supabase.storage.upload` + `registerUploadedAsset`, que faz **um `insert` em `assets`** e nada mais — sem provedor, sem `record_*`, **sem linha no ledger** | **0 ⚡** |
+| **a miniatura** | derivada no próprio navegador (`storeThumbnailInBrowser`), best-effort | **0 ⚡** |
+| **a "descrição"** | 🚩 **não existe extração de produto.** O card guarda `nome`, `assetIds` e `instrucao` — e a `instrucao` é uma frase **digitada pela pessoa** | **0 ⚡** |
+| **conectar o card à Máquina** | uma aresta no grafo | **0 ⚡** |
+
+> ## O Input de Produto inteiro custa **0 ⚡**. Não há extração para o R1 cobrir.
+>
+> **E isso é um achado, não uma boa notícia disfarçada:** o dono pediu o custo de *"upload +
+> extração da descrição"*, e **a extração não existe** — o card nunca leu uma foto. A
+> descrição do produto é o que a pessoa escrever ali. Se um dia houver extrator de produto,
+> ele entra pelo catálogo (`ai_models.extraction_sparks`, como a extração da ficha), e **só
+> aí** ganha portão, preço e pior caso. Está no §3: esta frente **não cria extrator**.
 
 ## 9. O RITUAL
 

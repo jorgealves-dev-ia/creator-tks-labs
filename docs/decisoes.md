@@ -5523,3 +5523,167 @@ intenção que o código nunca teve**. Anotado, não consertado — a pergunta d
 Fases 0, 5, 1, 2, 3, a PARADA aprovada pelo dono, 4·2, 6 e 7. **De três clipes pagos, um
 arquivo** — e agora o cartão dele diz de que peças é feito. Nada neste mini-ciclo gastou um
 Spark depois da Fase 1.
+
+
+---
+
+### 06/09/2026 — ⚠️ A armadilha do `dev` sobrevivente, TERCEIRA ocorrência — e desta vez pela MEMÓRIA
+
+A notificação disse **`killed`**, com o motivo escrito: *"was stopped because the system is running low on memory"*. O `next dev` estava **de pé**.
+
+| sonda | resultado |
+|---|---|
+| `netstat` na 5599 | **LISTENING**, PID **19740** |
+| `GET /login` | **200**, em ~95 ms |
+| o log ainda cresce? | **sim** — 21.641 → 21.799 bytes, com as duas linhas `GET /login 200` |
+| memória do processo | **183 MB** — normal para um `next dev` |
+
+**A novidade não é o processo sobreviver — isso já era regra desde 02/09.** É *o que* morreu: nas duas primeiras vezes foi o shell que segurava o comando; aqui foi o **próprio supervisor de tarefas de fundo**, por pressão de memória do sistema, e ele derrubou o invólucro sem derrubar o `node`.
+
+📌 **E a regra corrigida em 04/09 pagou o próprio custo pela primeira vez.** Naquele dia eu quase escrevi no `CLAUDE.md` que o sobrevivente ficava *"cego"* — que o log morria com o shell. Estava errado: a sonda é que não gerava o sinal que procurava. Desta vez eu **medi com a rota certa** (`/login`, que responde 200 e escreve) em vez de supor pelo `/studio` (307 do proxy, que não escreve linha nenhuma) — e o log estava vivo, com o redirecionamento intacto. **A lição de 04/09 era sobre o instrumento, e o instrumento funcionou.**
+
+**A decisão do dono, e ela é sobre dinheiro:** *"um servidor que o sistema já tentou matar não passa a noite ligado"*. Ele foi morto e a porta conferida — sem `LISTENING`, e `curl` a `/login` devolvendo `000`. **As duas sondas, porque uma só já enganou esta casa três vezes.**
+
+**O porquê é o percurso pago que vem a seguir.** A imagem é síncrona (invariante 1): um servidor que cai **no meio** do clique pode ter debitado e perdido a resposta — o Spark sai, a linha fica em `generations`, e o cartão não aparece. Recuperável, e confuso na hora. **Um processo que o sistema marcou para morrer não é onde se gasta 90 ⚡.**
+
+---
+
+## Frente A′ — o `fix:` do produto
+
+### 07/09/2026 — ✅ A FRENTE FECHA: a foto do produto chega ao provedor. E o vestido tinha outra causa.
+
+**O que estava em jogo.** Em 03/09 o dono decidiu que *nome não é foto*: pôr *"blusa da
+Mine"* no prompt faria o modelo **inventar** uma blusa em vez de vestir a **dela**. O `fix:`
+tinha três partes — a Máquina ganha o Input de Produto, a tela avisa enquanto ele não está
+conectado, e o Roteiro passa a exigir **onde** o produto está na cena.
+
+**As cinco fases estruturais, 86 asserções:** P1 o fio vivo alcança a Máquina (**9/9**, com
+o predicado antigo rodando ao lado e vermelho); P2 a conta de vagas recusa antes de gastar
+(**13/13**); P3 os três estados do produto e a emenda no portão (**27/27**); P4 o Roteiro
+exige a posição (**13/13**); e P5, escrita em 07/09 quando o dono mudou a premissa para um
+**projeto novo criado pelo template**, a Máquina nascida do «Fluxo de Storyboard»
+(**24/24**).
+
+📌 **A P5 existiu porque a premissa mudou, e a pergunta que ela responde não era retórica.**
+As P1–P4 usaram uma Máquina montada à mão no harness. *A Máquina que nasce do template é a
+mesma Máquina?* É — e não por semelhança: `addStoryboardMachine` cria o node com
+`type: MACHINE_TARGET`, e esse é **o mesmo membro** de `ATTACHING_TARGETS` que a P1 abriu. O
+alcance é por **tipo de node**, não por origem, não por identidade, não por como o node
+entrou no canvas. *Ler o código dizia isso; a P5 mediu.*
+
+#### A prova do dono, e ela é do banco — não da tela
+
+O percurso custou **90 ⚡ — o pior caso exato**, escrito antes do primeiro clique (R1):
+1 roteiro (15) + 1 imagem (75). Saldo 3.280 → **3.190**.
+
+**E o dono não aceitou a tela como prova.** A imagem saiu com um **vestido azul-marinho**
+onde a foto é uma **blusa azul** — cor e manga batendo, a peça não. A pergunta certa foi
+dele: *a tela não distingue «a foto chegou e o modelo desobedeceu» de «a foto não chegou»*.
+Uma dessas é a frente provada; a outra é defeito. **O banco distingue.**
+
+`generations.params` da cena 2 (`0cf3f069`):
+
+```json
+"reference_asset_ids": [
+    "2c88aadb-9cdf-474a-864b-c4b95a88ef83",
+    "06778db7-8a84-4fcb-88ab-1f19e0a69743"
+]
+```
+
+`2c88aadb` é a **folha completa da @luna v4** (bate com `entity_versions`); `06778db7` é um
+**upload de 07/09 às 13:15:47**, em `…/references/`. E o `prompt_compiled.structure`
+fecha o elo com o card:
+
+```json
+"referencias": [{
+    "tipo": "produto", "origem": "input", "ordem": 2,
+    "asset_id": "06778db7-8a84-4fcb-88ab-1f19e0a69743",
+    "grupo": { "rotulo": "blusa-azul-de-linho-manga-curta",
+               "grupo_id": "63989469-7f51-4464-9ba7-5ca20f3f2dd8" },
+    "diretiva_en": "Use the product shown in reference image 2, faithfully",
+    "fidelidade_en": "Reproduce the exact product shown in reference image 2 — same colors, pattern, materials and details, without alteration"
+}],
+"referencias_mudas": null
+```
+
+O `grupo_id` **é o id do node `input-product`** no grafo, e `referencias_mudas: null` diz que
+a chave estava ligada. **A foto sai do card, atravessa a Máquina, entra no payload como
+imagem 2 e é anunciada com duas diretivas de fidelidade.** As partes 1 e 2 estão provadas.
+
+#### A NOTA da frente — por que saiu um vestido *(nota, não pendência)*
+
+**A fidelidade não faz parte desta frente e não está provada.** Mas a causa apareceu no
+mesmo texto compilado, e ela não é do motor: **a palavra «blusa» nunca chegou ao modelo.**
+O prompt final não contém *blouse* em lugar nenhum. Contém isto:
+
+> «She adjusts **the hem** of the piece … slowly turns her body … to show the fabric»
+> «**Full-body shot**, entire figure visible from head to toe.»
+
+`hem` é **barra/bainha** — vocabulário de vestido e saia. Três coisas somadas, e nenhuma
+delas é a Máquina:
+
+1. **O nome do card não vira palavra no prompt.** *"blusa-azul-de-linho-manga-curta"* viaja
+   como `grupo.rotulo`, que é **metadado de auditoria**, e não entra no texto em inglês.
+2. **A descrição do card estava vazia** (`instrucao: null` → `instrucao_en: ""`). É o campo
+   desenhado justamente para dizer *"blusa de linho, manga curta, comprimento na cintura"*.
+3. **O Roteiro escreveu «a barra da peça»** — e a P4 o ensinou a dizer *onde* o produto
+   está, não *o que ele é*.
+
+Sem 1 e sem 2, a **única** fonte da forma da peça era a foto — contra *"hem"* e *"da cabeça
+aos pés"* no texto. **É a parte 3 encostando num vizinho:** o Roteiro passou a dizer onde o
+produto está, e agora se vê que falta dizer o que ele é.
+
+> ### O endereço da próxima frente
+> **O produto precisa dizer O QUE É, não só onde está.** Dois caminhos, não excludentes:
+> **(a)** o nome do card vira **palavra no prompt**, e não só rótulo de auditoria;
+> **(b)** a descrição do card nasce com **valor padrão derivado do nome** — quem escreve
+> *"blusa azul de linho manga curta"* no nome já disse o que precisa ser dito, e um campo
+> vazio ao lado de um nome cheio é a informação existindo e não viajando.
+
+#### Dois fatos provados AO VIVO, de graça, no caminho
+
+**1 · Recusa do provedor NÃO debita.** O primeiro ↻ voltou recusado (`a10f13c0`), com
+`cost_charged_cents = 0`, `sparks_charged = 0`, e **nenhuma linha no ledger** — as únicas
+duas de 07/09 são a do roteiro (−15) e a da imagem que ficou pronta (−75). A regra do
+CLAUDE.md diz que *fila é intenção, ledger é fato*; aqui foi um provedor recusando depois da
+submissão, e o efeito é o mesmo: **quem não entrega não cobra.** *Antes disto, a regra estava
+provada por simulação; agora está provada por um 400 real.*
+
+**2 · O filtro que barrou é do Google, e a mensagem é verbatim.** A linha gravada:
+
+```
+"the provider declined to draw this: 400 Image generation blocked due to
+ safety violations. Please modify your input and retry."
+```
+
+O prefixo é da casa (`src/lib/providers/google.ts:258`); **o resto é o corpo da resposta do
+provedor, copiado sem reescrita** — *"a message we write ourselves can only repeat what we
+already assumed"*. É a invariante 7 em funcionamento: recusa de política é erro **esperado**,
+com mensagem clara. **Nada nosso bloqueou**, e a mesma requisição, repetida, passou 58
+segundos depois — com o payload idêntico, byte a byte.
+
+#### Três achados de tela, do percurso — backlog de UI, 0 ⚡
+
+Nenhum toca dinheiro; os três foram vistos pelo dono enquanto fazia a metade dele.
+
+| # | o que está errado | por que importa |
+|---|---|---|
+| a | **o scroll dentro do diálogo de cena rola o CANVAS**, não o diálogo | ler uma ficha longa exige sair do gesto natural, e o canvas se move por baixo |
+| b | **o botão do portão diz «Gerar de novo» em cena que nunca teve imagem** | *"de novo"* é uma afirmação sobre o passado, e ela é falsa na primeira vez. **«Gerar»** na primeira; **«Gerar de novo»** só após falha ou com imagem existente |
+| c | **a recusa não nomeia o filtro** | a mensagem deve dizer **«bloqueada pelo filtro do Google»** — quem lê precisa saber que a recusa é do provedor e que reescrever a frase é o caminho |
+
+#### O que muda numa Máquina nascida do template — medido, e o dono precisava saber antes
+
+Três diferenças que o percurso do filme não tinha, achadas ao preparar a sequência:
+
+- **O Roteiro do template nasce com 6 cenas**, não 3 (`clamp(data.cenas ?? 6, …)`). Com 6
+  sem imagem, o botão do lote ofereceria **450 ⚡** — e o aviso que o dono pediu falava em
+  225, que era o número do projeto do filme. **Um aviso com o número errado é um aviso.**
+- **Projeto novo nasce com o Arsenal vazio** — medido: «Prova · C3 Fase 4» tem 0 entidades
+  vinculadas. Vincular a personagem virou passo 0 da sequência.
+- **@luna v4 é a única personagem com folha completa** das oito ativas. É ela que reserva a
+  imagem 1 e ancora a identidade.
+
+Evidência: `scratchpad\evidencias\fix-produto-p1-p4\numeros.md`,
+`scratchpad\evidencias\fix-produto-p5-template\numeros.md` e
+`a-foto-chegou-ao-provedor.md`.

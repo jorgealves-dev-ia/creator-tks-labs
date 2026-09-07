@@ -8,6 +8,7 @@ import {
   ReactFlow,
   useReactFlow,
   type Connection,
+  type Edge,
   type Node,
   type NodeTypes,
   type OnNodesChange,
@@ -31,7 +32,7 @@ import { defaultModelId, findModel } from "@/components/ui/model-select";
 import { NODE_TYPE_MIME } from "@/lib/canvas/drag";
 import type { CanvasGraph } from "@/lib/canvas/graph";
 import { applyHelperLines, NO_LINES, type HelperLines } from "@/lib/canvas/helper-lines";
-import { useCanvasStore } from "@/lib/canvas/store";
+import { findGoverningBoard, useCanvasStore } from "@/lib/canvas/store";
 import { useWorkflowAutosave } from "@/lib/canvas/use-autosave";
 import { useEntitiesStore } from "@/lib/entities/store";
 import {
@@ -129,9 +130,9 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
    */
   useEffect(() => {
     useCanvasStore.getState().setCapacityResolver((generatorId) => {
-      const target = useCanvasStore.getState().nodes.find((node) => node.id === generatorId);
+      const { nodes: todos, edges: fios } = useCanvasStore.getState();
 
-      return freeSlots(target, providers, characters);
+      return freeSlots(todos.find((node) => node.id === generatorId), todos, fios, providers, characters);
     });
   }, [providers, characters]);
 
@@ -251,12 +252,13 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
 /** How many more images a generating block can take. Zero for anything else. */
 function freeSlots(
   target: Node | undefined,
+  nodes: readonly Node[],
+  edges: readonly Edge[],
   providers: ReturnType<typeof useImageCatalog>,
   characters: ReturnType<typeof useEntitiesStore.getState>["characters"],
 ): number {
-  if (target?.type !== "generator") return 0;
+  if (!target || (target.type !== "generator" && target.type !== "machine")) return 0;
 
-  const prompt = typeof target.data.prompt === "string" ? target.data.prompt : "";
   const modelId =
     typeof target.data.modelId === "string" ? target.data.modelId : defaultModelId(providers);
   const references = Array.isArray(target.data.references) ? target.data.references : [];
@@ -264,8 +266,42 @@ function freeSlots(
   return generatorCapacity({
     modelSlug: findModel(providers, modelId)?.slug ?? null,
     referenceCount: references.length,
-    reserved: sheetAnchorSlots(mentionedCharacter(prompt, characters)),
+    reserved: sheetAnchorSlots(personagemDoBloco(target, nodes, edges, characters)),
   }).free;
+}
+
+/**
+ * Quem vai ocupar a imagem 1 — e a pergunta é diferente nos dois blocos.
+ *
+ * No bloco de imagem, a personagem vem da **menção no prompt**: quem escreve
+ * `@luna` reserva a vaga da folha. Na Máquina não há prompt para mencionar — a
+ * personagem é a do **Roteiro que ela rege**, e o Roteiro a guarda no próprio
+ * `data` (`StoryboardNodeData.personagem`, o handle sem `@`).
+ *
+ * Ler do grafo e não do banco é o que faz esta conta ser **síncrona**, que é o
+ * requisito: ela responde no instante do fio, antes de a aresta existir, para
+ * uma foto a mais ser recusada **em palavras** em vez de descoberta como erro
+ * da API depois de pagar.
+ */
+function personagemDoBloco(
+  bloco: Node,
+  nodes: readonly Node[],
+  edges: readonly Edge[],
+  characters: ReturnType<typeof useEntitiesStore.getState>["characters"],
+) {
+  if (bloco.type !== "machine") {
+    const prompt = typeof bloco.data.prompt === "string" ? bloco.data.prompt : "";
+
+    return mentionedCharacter(prompt, characters);
+  }
+
+  const roteiroId = findGoverningBoard(edges, bloco.id);
+  const roteiro = roteiroId ? nodes.find((node) => node.id === roteiroId) : undefined;
+  const handle = typeof roteiro?.data.personagem === "string" ? roteiro.data.personagem : null;
+
+  if (!handle) return null;
+
+  return Object.values(characters).find((personagem) => personagem.handle === handle) ?? null;
 }
 
 function EmptyCanvasHint() {

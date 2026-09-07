@@ -71,7 +71,7 @@ Dito antes das fases, porque o escopo é a metade do plano.
 | 4ª | **3** | o vídeo por cima do modal — **e a causa não era o `z-index`** | ✅ **FECHADA** 04/09/2026 |
 | ⏸️ | — | **PARADA — o dono vê o filme** | ✅ **«testei, está ok»** 04/09/2026 — com um achado, consertado: §4.2b |
 | ✅ | — | **O «incidente» dos vínculos** *(era a Fase 4; reclassificado pelo dono em 04/09)* | ✅ **ENCERRADO** 06/09/2026 — **artefato de medição**: aba nunca pintada, store íntegro nas 4 células, StrictMode inocente — §10 e §11 |
-| 5ª | **4** | só o item 2: o cartão que não diz «peça removida» | ✅ **FECHADA** 06/09/2026 — faixa «Peças do filme» lida do banco; 9/9 estruturais com a peça anulada, e a ingênua falha 6/7 |
+| 5ª | **4** | só o item 2: o cartão que não diz «peça removida» | ✅ **FECHADA E CONFIRMADA NO BANCO VIVO** 06/09/2026 — faixa «Peças do filme» lida do banco; 9/9 estruturais; **e o dono anulou a peça 2 do filme duplicado pelo SQL Editor: 3 linhas, a 2 nula, e o cartão diz «peça removida» na posição 2 com a contagem em 3** |
 | 6ª | **6** | o estado *"enviando"* — e a premissa da auditoria estava errada | ✅ **FECHADA** 06/09/2026 — 4/4 estados; o que mentia era o `nenhum`, não o `gerando` |
 | 7ª | **7** | aprovar a ficha não carimba `edited_at` | ✅ **FECHADA** 06/09/2026 — 5 gravações ao vivo + tabela-verdade 12/12 |
 | — | — | fechamento do mini-ciclo, ritual do §8 | ✅ **06/09/2026** |
@@ -612,6 +612,23 @@ linha ser apagada.
 **Prova:** apagar um clipe de um filme montado, e ler os dois lados no mesmo instante —
 `part_asset_id` nulo no banco, «peça removida» na posição certa do cartão, e a contagem de
 posições **inalterada** antes e depois.
+
+> ### ✅ A PROVA FOI FECHADA NO BANCO VIVO — 06/09/2026, pelo dono
+>
+> O que faltava não era a regra nem o trigger: era o trecho entre os dois, contra o banco de
+> verdade. Não havia caminho de produto para apagar um asset *(é o backlog nascido nesta
+> mesma sessão)*, e os dois filmes do acervo dividem os mesmos três clipes — então o gesto
+> foi um `update` cirúrgico no SQL Editor, anulando a **peça 2 do filme duplicado**.
+>
+> | medida | valor |
+> |---|---|
+> | linhas em `asset_montage_parts` do filme | **3** — *a posição não sumiu* |
+> | `part_asset_id` da ordem 2 | **`NULL`** |
+> | o clipe `428ace61…` ainda existe? | **sim** — morreu o vínculo, não o clipe |
+> | o filme **original** tem peça nula? | **0 de 3** — o outro filme não sentiu nada |
+> | no cartão: posições / «peça removida» / em qual | **3 / 1 / a 2** |
+>
+> Evidência: `scratchpad\evidenciasideo-final-fase4\peca-removida-no-banco-vivo.md`
 
 ---
 

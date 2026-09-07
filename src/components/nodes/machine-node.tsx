@@ -12,8 +12,10 @@ import {
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 
 import { useLightbox } from "@/components/nodes/lightbox";
+import { emendaDoPortao, estadoDoProduto } from "@/lib/storyboard/machine-produto";
 import type { RecusaDeMontagem } from "@/lib/video/montagem";
 import { NodeHeader } from "@/components/nodes/node-header";
+import type { ReferenceEntry } from "@/components/nodes/reference-strip";
 import { useImageCatalog } from "@/components/nodes/use-image-catalog";
 import { useVideoCatalog } from "@/components/nodes/use-video-catalog";
 import { defaultModelId, findModel, ModelSelect } from "@/components/ui/model-select";
@@ -91,6 +93,15 @@ export type MachineData = {
   referencesEnabled?: boolean;
   modelId?: string;
   imageSize?: string;
+  /**
+   * O que os Inputs conectados entregam — Frente A′ · P1, 06/09/2026.
+   *
+   * Escrito pelo `syncInputInto` do store, exatamente como no bloco de imagem, e
+   * lido daqui na hora de pedir. **A lista é do BLOCO, não da cena:** ela entra
+   * igual em todas as cenas do lote, que é o que a legenda do handle promete
+   * desde que ele existe — *«o mesmo produto em dez imagens»*.
+   */
+  references?: ReferenceEntry[];
 };
 
 export type MachineNodeType = Node<MachineData, "machine">;
@@ -373,6 +384,18 @@ export function MachineNode({ id, data, selected }: NodeProps<MachineNodeType>) 
   const tickMaquina = useGenerationTick(id);
 
   const referencesEnabled = data.referencesEnabled === true;
+  const references = data.references ?? [];
+  /** Um fio que o canvas recusou por falta de vaga, mirado nesta Máquina. */
+  const fioRecusado =
+    notice?.nodeId === id && notice.reason === "product_over_limit" ? notice : null;
+
+  /**
+   * Em que pé está o produto — Frente A′ · P3.
+   *
+   * `cenas` só existe depois de o roteiro ser lido, então o estado é calculado
+   * mais abaixo, junto com o resto que depende do `board`. Aqui fica só o que
+   * não depende dele.
+   */
 
   // Resolvidos, nunca gravados na montagem: escrever um default no `data` ao
   // montar marcaria o canvas como sujo só por alguém ter aberto o projeto.
@@ -414,6 +437,14 @@ export function MachineNode({ id, data, selected }: NodeProps<MachineNodeType>) 
   const podeMontar = vereditoFilme.pode && !montando;
   const lote = loteDeImagens(cenas);
   const veredito = vereditoDoPortao({ cenas, precoPorImagem, saldo: balance });
+
+  // Frente A′ · P3 — os três estados do produto, e a emenda que o portão recebe.
+  const produto = estadoDoProduto({
+    produtos: cenas.map((cena) => cena.produto),
+    fotosConectadas: references.length,
+    chaveLigada: referencesEnabled,
+  });
+  const portaoSemFoto = emendaDoPortao(produto) !== null;
   const vivos = liveCount(slots);
   const aprovaveis = cenas.filter((cena) => cena.estado === "pronta");
 
@@ -489,7 +520,10 @@ export function MachineNode({ id, data, selected }: NodeProps<MachineNodeType>) 
         anguloKey: cena.enquadramento,
         iluminacaoKey: null,
         expressaoKey: null,
-        references: [],
+        // Frente A′ · P1: era `[]` literal. A Máquina tinha o slot e jogava fora o
+        // que ele entregava — as seis cenas saíam sem a foto do produto que a
+        // pessoa via conectada na tela.
+        references,
         referencesEnabled,
         scene: { id: cena.id, instrucaoPt },
       },
@@ -880,6 +914,48 @@ export function MachineNode({ id, data, selected }: NodeProps<MachineNodeType>) 
               </span>
             </label>
 
+            {/*
+              ── P2 · A CONTA DE VAGAS, dita quando o fio é recusado ────────
+
+              A frase é a MESMA do bloco de imagem, de propósito: uma recusa que
+              muda de palavras conforme o bloco ensina que são duas regras. É uma
+              só — `generatorCapacity`, a mesma função —, e o que muda é só quem
+              reserva a imagem 1: lá é a menção no prompt, aqui é a personagem do
+              Roteiro que esta Máquina rege.
+
+              Nunca truncar em silêncio: cortar a 6ª foto sozinho seria a tela
+              decidindo por quem clicou, com o portão prometendo um número.
+            */}
+            {/*
+              ── P3 · OS TRÊS ESTADOS DO PRODUTO ───────────────────────────
+
+              O do meio é o que engana, e ele não é raro: a chave nasce
+              desligada (invariante 12), então «conectado e mudo» é o estado
+              imediatamente posterior a conectar. O terceiro não diz nada —
+              aviso que fica depois de resolvido é aviso que se aprende a
+              ignorar.
+            */}
+            {produto.estado === "so_nome" ? (
+              <p className="rounded-lg border border-line bg-surface px-2 py-1.5
+                            text-[11px] leading-relaxed text-ink-faint">
+                {copy.produtoSoNome(produto.nome)}
+              </p>
+            ) : produto.estado === "mudo" ? (
+              <p className="rounded-lg border border-warning/40 bg-warning/10 px-2 py-1.5
+                            text-[11px] leading-relaxed text-warning">
+                {copy.produtoMudo(produto.fotos)}
+              </p>
+            ) : null}
+
+            {fioRecusado ? (
+              <p className="rounded-lg border border-warning/40 bg-warning/10 px-2 py-1.5
+                            text-[11px] leading-relaxed text-warning">
+                {t.generation.errors.productOverLimitPrefix} {fioRecusado.needed}{" "}
+                {t.generation.errors.productOverLimitMiddle} {fioRecusado.free}.{" "}
+                {t.generation.errors.productOverLimitSuffix}
+              </p>
+            ) : null}
+
             {/* ── O TRILHO ──────────────────────────────────────────────── */}
             <div>
               <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-ink-faint">
@@ -895,6 +971,9 @@ export function MachineNode({ id, data, selected }: NodeProps<MachineNodeType>) 
                         slot.tag === linha.cena.id &&
                         (slot.status === "queued" || slot.status === "running"),
                     )}
+                    precoPorImagem={precoPorImagem}
+                    saldo={balance}
+                    semFoto={portaoSemFoto}
                     repetindo={repetindo === linha.cena.id}
                     instrucao={instrucao}
                     onInstrucao={setInstrucao}
@@ -941,10 +1020,17 @@ export function MachineNode({ id, data, selected }: NodeProps<MachineNodeType>) 
                     : copy.portaoGerar(veredito.pode ? veredito.quantas : lote.length)}
                 </button>
 
-                {/* O custo fala a verdade multiplicada ANTES do clique. */}
+                {/*
+                  O custo fala a verdade multiplicada ANTES do clique — e desde
+                  06/09 ele diz também o que NÃO vai junto: uma foto conectada
+                  com a chave desligada é dinheiro saindo sem o produto entrar.
+                  O aviso do trilho é onde se lê; esta linha é onde se decide.
+                */}
                 <p className="mt-1 text-[11px] text-ink-faint">
                   {veredito.pode && precoPorImagem !== null && balance !== null
-                    ? copy.portaoCusto(veredito.quantas, precoPorImagem, veredito.total, balance)
+                    ? `${copy.portaoCusto(veredito.quantas, precoPorImagem, veredito.total, balance)}${
+                        portaoSemFoto ? ` · ${copy.portaoSemFoto}` : ""
+                      }`
                     : !veredito.pode && veredito.motivo === "sem_saldo"
                       ? `${copy.portaoSemSaldo(veredito.faltam)} ${copy.portaoSemSaldoHint}`
                       : !veredito.pode && veredito.motivo === "sem_preco"
@@ -1208,6 +1294,9 @@ function EmptyState({
 function ColunaDaCena({
   linha,
   gerando,
+  precoPorImagem,
+  saldo,
+  semFoto,
   repetindo,
   instrucao,
   onInstrucao,
@@ -1223,6 +1312,11 @@ function ColunaDaCena({
 }: {
   linha: LinhaDoPlano;
   gerando: boolean;
+  /** O preço de UMA imagem, e o saldo — o custo do ↻, que não existia. */
+  precoPorImagem: number | null;
+  saldo: number | null;
+  /** A foto está conectada e muda? A emenda vai junto do número. */
+  semFoto: boolean;
   /** Esta cena está marcada para refazer o clipe? — D7, segunda metade. */
   marcada: boolean;
   onMarcarRefazer: () => void;
@@ -1430,6 +1524,24 @@ function ColunaDaCena({
               {copy.repetirCancelar}
             </button>
           </div>
+
+          {/*
+            ── O CUSTO DO ↻, e ele NÃO EXISTIA — Frente A′ · P3 ───────────
+
+            Este botão cobra o preço de uma imagem e não punha número nenhum na
+            tela. A invariante 12 manda o custo falar a verdade antes do clique,
+            e a régua R1 não tem o que comparar com uma tela muda.
+
+            A emenda do produto vem junto, pela exigência do dono de 06/09: o
+            aviso do trilho é onde se lê, e **esta** linha é onde se decide.
+          */}
+          {precoPorImagem !== null && saldo !== null ? (
+            <p className="text-[9px] leading-relaxed text-ink-faint">
+              {saldo < precoPorImagem
+                ? copy.repetirSemSaldo(precoPorImagem - saldo)
+                : `${copy.repetirCusto(precoPorImagem, saldo)}${semFoto ? ` · ${copy.portaoSemFoto}` : ""}`}
+            </p>
+          ) : null}
         </div>
       ) : (
         <div className="mt-1 flex gap-1">
