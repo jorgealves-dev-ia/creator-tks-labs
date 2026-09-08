@@ -258,7 +258,21 @@ export function StoryboardSceneDialog({
       onClick={(event) => {
         if (event.target === dialogRef.current) dialogRef.current?.close();
       }}
-      className="fixed inset-0 m-auto max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-xl
+      /*
+        ── `nowheel`: rolar a ficha rola A FICHA, nunca o canvas — 07/09/2026 ──
+
+        Um `<dialog>` modal vive na **top layer**, acima de qualquer z-index —
+        mas top layer é pintura, não parentesco: na árvore do DOM este elemento
+        continua **dentro do node**, e o `wheel` borbulha até o painel do React
+        Flow, que o lê como zoom. O efeito medido pelo dono: rolar uma ficha
+        longa afastava o canvas por baixo do modal.
+
+        `nowheel` é a classe que o React Flow procura com `closest()` antes de
+        tratar o evento — o mesmo idioma do `nodrag` que os cards já usam, e por
+        isso vai no `<dialog>` e não só na área rolável: assim cobre a ficha, o
+        cabeçalho e o rodapé de uma vez.
+      */
+      className="nowheel fixed inset-0 m-auto max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-xl
                  border border-line bg-surface p-0 text-ink shadow-2xl shadow-black/50
                  backdrop:bg-canvas/80 backdrop:backdrop-blur-sm"
     >

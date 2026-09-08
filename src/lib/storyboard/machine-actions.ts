@@ -106,7 +106,7 @@ export async function loadMachineBoard(input: unknown): Promise<MachineBoard | n
   const { data: tentativas } = await supabase
     .from("generations")
     .select(
-      "id, scene_id, media_kind, status, result_asset_id, error_message, created_at, started_at, params, prompt_compiled, prompt_user_pt",
+      "id, scene_id, media_kind, status, result_asset_id, error_message, provider, created_at, started_at, params, prompt_compiled, prompt_user_pt",
     )
     .in("scene_id", sceneIds)
     .order("created_at", { ascending: false });
@@ -120,6 +120,38 @@ export async function loadMachineBoard(input: unknown): Promise<MachineBoard | n
 
     lista.push(linha);
     porCena.set(linha.scene_id, lista);
+  }
+
+  // -------------------------------------------------------------------------
+  // QUEM recusou — o nome de exibição do provedor, do catálogo
+  //
+  // *"Bloqueada pelo filtro"* não diz de quem é o filtro, e quem lê precisa saber
+  // que a recusa veio de fora. O nome sai de `ai_providers.display_name`
+  // (invariante 6: o catálogo decide como o provedor se chama, nunca a tela) e
+  // é casado com o slug gravado **naquela** linha de `generations` — não com o
+  // provedor ativo de hoje, que pode já ser outro.
+  //
+  // **A consulta só acontece quando há falha para nomear.** São cinco linhas, mas
+  // a lição da Fase 5 do Egress é sobre VIAGENS: no caso comum — nenhuma cena
+  // recusada — esta não sai.
+  // -------------------------------------------------------------------------
+  const slugsQueRecusaram = new Set(
+    (tentativas ?? [])
+      .filter((linha) => linha.status === "failed" && linha.provider !== null)
+      .map((linha) => linha.provider as string),
+  );
+
+  const nomePorSlug = new Map<string, string>();
+
+  if (slugsQueRecusaram.size > 0) {
+    const { data: fornecedores } = await supabase
+      .from("ai_providers")
+      .select("slug, display_name")
+      .in("slug", [...slugsQueRecusaram]);
+
+    for (const fornecedor of fornecedores ?? []) {
+      nomePorSlug.set(fornecedor.slug, fornecedor.display_name);
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -294,6 +326,12 @@ export async function loadMachineBoard(input: unknown): Promise<MachineBoard | n
       thumbUrl: assetVisivel ? (urlPorAsset.get(assetVisivel) ?? null) : null,
       tentativas: imagens.length,
       erro: ultimaImagem?.status === "failed" ? ultimaImagem.error_message : null,
+      // Nulo quando o slug gravado não está mais no catálogo: a tela cai na frase
+      // sem nome, que é a de antes — nunca num "undefined" na cara da pessoa.
+      provedor:
+        ultimaImagem?.status === "failed" && ultimaImagem.provider !== null
+          ? (nomePorSlug.get(ultimaImagem.provider) ?? null)
+          : null,
       recusasSeguidas,
       video: estadoDoVideo(video?.status ?? null),
       // O clipe só existe quando o vídeo ficou pronto: um `result_asset_id` de
@@ -306,6 +344,10 @@ export async function loadMachineBoard(input: unknown): Promise<MachineBoard | n
       videoFonteClipeId:
         continuacao && fonteDoVideo ? (clipeDoQuadro.get(fonteDoVideo) ?? null) : null,
       videoErro: video?.status === "failed" ? video.error_message : null,
+      videoProvedor:
+        video?.status === "failed" && video.provider !== null
+          ? (nomePorSlug.get(video.provider) ?? null)
+          : null,
       videoGeracaoId: videoVivo ? video.id : null,
       videoIdadeSegundos: videoVivo
         ? Math.max(

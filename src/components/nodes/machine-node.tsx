@@ -35,6 +35,7 @@ import { aprovarCenas, loadMachineBoard } from "@/lib/storyboard/machine-actions
 import {
   classificarFalha,
   gestoDaFalha,
+  jaGerouAntes,
   loteDeImagens,
   presetDoCanal,
   vereditoDoPortao,
@@ -1335,6 +1336,15 @@ function ColunaDaCena({
   const continuacao = cena.transicao === "continuacao";
   const video = fraseDoVideo(linha);
 
+  // «Gerar» ou «Gerar de novo» — 07/09/2026. Lê o ESTADO da cena, e não a
+  // contagem de tentativas: uma geração em voo já conta como tentativa e ainda
+  // não produziu nem imagem nem recusa. A regra mora no `machine-state`, onde se
+  // prova por tabela-verdade em vez de por inspeção de JSX.
+  const jaGerou = jaGerouAntes({
+    temImagem: cena.estado === "pronta" || cena.estado === "aprovada",
+    houveFalha: cena.estado === "falhou",
+  });
+
   return (
     <div className="w-[7.5rem] shrink-0 rounded-lg border border-line bg-surface p-1.5">
       <div className="mb-1 flex items-center justify-between text-[10px] text-ink-faint">
@@ -1446,7 +1456,9 @@ function ColunaDaCena({
         </p>
       ) : null}
 
-      {cena.videoErro ? <Falha erro={cena.videoErro} recusasSeguidas={0} /> : null}
+      {cena.videoErro ? (
+        <Falha erro={cena.videoErro} recusasSeguidas={0} provedor={cena.videoProvedor} />
+      ) : null}
 
       {/*
         Um webhook que não chega não trava um node: trava as cenas DE BAIXO.
@@ -1495,7 +1507,9 @@ function ColunaDaCena({
         O texto cru do provedor vai para o `title`, onde quem investiga o acha, e
         fora da frase principal, onde ele só assustaria.
       */}
-      {cena.erro ? <Falha erro={cena.erro} recusasSeguidas={cena.recusasSeguidas} /> : null}
+      {cena.erro ? (
+        <Falha erro={cena.erro} recusasSeguidas={cena.recusasSeguidas} provedor={cena.provedor} />
+      ) : null}
 
       {/* ── As ações da cena. Continuação não tem nenhuma. ────────────────── */}
       {continuacao ? null : repetindo ? (
@@ -1514,7 +1528,7 @@ function ColunaDaCena({
               onClick={onConfirmarRepetir}
               className="nodrag flex-1 rounded bg-accent py-0.5 text-[9px] text-canvas"
             >
-              {copy.repetirConfirmar}
+              {jaGerou ? copy.repetirConfirmar : copy.gerarConfirmar}
             </button>
             <button
               type="button"
@@ -1549,7 +1563,7 @@ function ColunaDaCena({
             type="button"
             onClick={onAbrirRepetir}
             disabled={gerando}
-            title={copy.repetir}
+            title={jaGerou ? copy.repetir : copy.repetirPrimeira}
             className="nodrag flex-1 rounded border border-line py-0.5 text-[9px] text-ink-muted
                        transition-colors hover:border-line-strong disabled:opacity-40"
           >
@@ -1647,17 +1661,30 @@ function fraseDoVideo(linha: LinhaDoPlano): { texto: string; hint: string; tom: 
  * A classificação é do `machine-state`, e é pura: ela roda fora do React e se
  * prova por tabela-verdade, inclusive contra a armadilha do `b-locked`.
  */
-function Falha({ erro, recusasSeguidas }: { erro: string; recusasSeguidas: number }) {
+function Falha({
+  erro,
+  recusasSeguidas,
+  provedor,
+}: {
+  erro: string;
+  recusasSeguidas: number;
+  provedor: string | null;
+}) {
   const tipo = classificarFalha(erro);
   const classe = copy.falhas[tipo] ?? copy.falhas.desconhecida;
   const gesto = copy.gestos[gestoDaFalha(tipo, recusasSeguidas)];
+
+  // Só o filtro ganha nome, e só ele precisa: é a única classe em que a frase
+  // deixava em aberto se a trava era **nossa**. "Sem saldo" e "sem resposta" já
+  // dizem de quem é o problema.
+  const selo = tipo === "filtro" ? copy.seloFiltro(provedor) : classe.selo;
 
   return (
     <p
       className="mt-0.5 text-[9px] leading-tight text-warning"
       title={`${classe.frase} ${gesto}\n\n${copy.erroCru(erro)}`}
     >
-      <span className="font-medium">{classe.selo}</span>
+      <span className="font-medium">{selo}</span>
       <span className="block text-ink-faint">
         {recusasSeguidas >= 3 ? copy.recusouTresVezes : gesto}
       </span>

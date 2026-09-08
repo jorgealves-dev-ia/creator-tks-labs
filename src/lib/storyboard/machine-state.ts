@@ -62,6 +62,21 @@ export type MachineScene = {
   /** O que o provedor disse na última falha, quando houve uma. */
   erro: string | null;
   /**
+   * QUEM recusou — o nome de exibição do provedor da última falha.
+   *
+   * *"Bloqueada pelo filtro"* não diz de quem é o filtro, e a diferença não é
+   * cosmética: quem lê precisa saber que a recusa veio **de fora**, do provedor
+   * que rodou o pedido, e não de uma trava nossa. A frase que não nomeia manda a
+   * pessoa procurar o defeito no lugar errado — aqui dentro.
+   *
+   * Vem de `ai_providers.display_name`, casado com o `generations.provider`
+   * gravado **naquela** linha: o catálogo decide como o nome aparece
+   * (invariante 6), e a linha decide **qual** provedor foi. Nulo quando não
+   * houve falha, ou quando o slug gravado não está mais no catálogo — e aí a
+   * tela cai na frase sem nome, que é a de antes.
+   */
+  provedor: string | null;
+  /**
    * Quantas recusas seguidas do **mesmo texto**, contando a última.
    *
    * É o que faz o gesto escalar: uma recusa do filtro é ruído e pede *repita*;
@@ -102,6 +117,15 @@ export type MachineScene = {
   videoFonteClipeId: string | null;
   /** O que o provedor disse quando o vídeo falhou. */
   videoErro: string | null;
+  /**
+   * Quem recusou o VÍDEO — e ele é um campo próprio de propósito.
+   *
+   * O vídeo e a imagem de uma mesma cena saem de **fornecedores diferentes**
+   * (fal e Google, hoje). Reaproveitar o `provedor` da imagem aqui poria o nome
+   * errado na recusa — e uma frase que nomeia o culpado errado é pior que a
+   * frase que não nomeia ninguém.
+   */
+  videoProvedor: string | null;
   /**
    * A geração do vídeo vivo, e há quanto tempo ela está em voo.
    *
@@ -231,6 +255,25 @@ export function loteDeImagens(cenas: readonly MachineScene[]): MachineScene[] {
     (cena) =>
       cena.transicao === "corte" && (cena.estado === "rascunho" || cena.estado === "falhou"),
   );
+}
+
+/**
+ * O botão deste gesto já gerou alguma vez? — 07/09/2026.
+ *
+ * *"Gerar de novo"* é uma **afirmação sobre o passado**, e numa cena que nunca
+ * teve imagem ela é falsa. O custo de errar isso não é estético: o botão cobra
+ * uma imagem, e um rótulo que sugere repetição convida quem está em dúvida a
+ * clicar achando que **desfaz** ou **substitui** algo — quando o que ele faz é
+ * gastar pela primeira vez.
+ *
+ * As duas portas são as que o dono nomeou, e são independentes: **imagem que
+ * existe** e **falha que aconteceu**. A segunda é a que uma contagem de
+ * tentativas erraria — uma geração em voo já conta como tentativa e ainda não
+ * produziu nem imagem nem recusa, e chamar aquilo de *"de novo"* seria a mesma
+ * mentira com outra roupa.
+ */
+export function jaGerouAntes(input: { temImagem: boolean; houveFalha: boolean }): boolean {
+  return input.temImagem || input.houveFalha;
 }
 
 export type CustoDoLote = {

@@ -1208,6 +1208,20 @@ export const t = {
      * reescrever ali faria a pessoa desfazer o que ia funcionar. Três do mesmo
      * texto deixam de ser ruído, e a tela para de dizer "repita" para sempre.
      */
+    /**
+     * O selo do filtro, COM O NOME DE QUEM BLOQUEOU — 07/09/2026.
+     *
+     * *"Bloqueada pelo filtro"* não diz de quem é o filtro, e a diferença não é
+     * cosmética: sem o nome, a frase deixa em aberto se a trava é **nossa**, e
+     * manda a pessoa procurar o defeito aqui dentro. Provado ao vivo em 07/09 —
+     * o 400 que barrou a cena 2 era do Google, e a tela não dizia.
+     *
+     * O nome vem do catálogo (`ai_providers.display_name`) casado com o
+     * `generations.provider` **daquela linha**. Sem nome — slug fora do
+     * catálogo — cai na frase antiga, que continua verdadeira.
+     */
+    seloFiltro: (provedor: string | null) =>
+      provedor === null ? "bloqueada pelo filtro" : `bloqueada pelo filtro do ${provedor}`,
     gestos: {
       repetir: "Repita — e não mexa no texto.",
       reescrever: "Reescreva a cena no Roteiro.",
@@ -1293,7 +1307,12 @@ export const t = {
     aprovarCena: "Aprovar esta imagem",
     /** Aprovar não gasta, e a tela diz isso ao lado de um botão que gasta. */
     aprovarSemCusto: "Aprovar não custa Spark nenhum.",
+    /**
+     * O `title` do ↻, e ele tem as duas caras pela mesma razão do botão de
+     * confirmar: *"de novo"* numa cena que nunca teve imagem é falso.
+     */
     repetir: "Gerar esta cena de novo",
+    repetirPrimeira: "Gerar a imagem desta cena",
     repetirInstrucaoLabel: "Instrução para esta tentativa (opcional)",
     repetirInstrucaoPlaceholder: "mais fechado no rosto…",
     /**
@@ -1302,7 +1321,17 @@ export const t = {
      */
     repetirInstrucaoHint:
       "Dirige só esta tentativa. A ficha não muda — para reescrevê-la, abra o Roteiro.",
+    /**
+     * **«Gerar de novo» é uma afirmação sobre o passado** — 07/09/2026.
+     *
+     * Numa cena que nunca teve imagem ela é falsa, e o botão **cobra uma
+     * imagem**: um rótulo que sugere repetição convida quem está em dúvida a
+     * clicar achando que substitui algo, quando o que ele faz é gastar pela
+     * primeira vez. Quem decide qual das duas é `jaGerouAntes`, no
+     * `machine-state`, com tabela-verdade.
+     */
     repetirConfirmar: "Gerar de novo",
+    gerarConfirmar: "Gerar",
     repetirCancelar: "Cancelar",
 
     erroCena: (frase: string) => `Cena recusada: ${frase}`,

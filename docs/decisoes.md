@@ -5687,3 +5687,120 @@ Três diferenças que o percurso do filme não tinha, achadas ao preparar a sequ
 Evidência: `scratchpad\evidencias\fix-produto-p1-p4\numeros.md`,
 `scratchpad\evidencias\fix-produto-p5-template\numeros.md` e
 `a-foto-chegou-ao-provedor.md`.
+
+### 07/09/2026 — Os três itens de UI do percurso da frente A′ — ✅ FECHADOS, 0 ⚡
+
+Três defeitos que o dono viu **enquanto fazia a metade dele**, e nenhum toca dinheiro. Vão
+juntos porque nasceram do mesmo percurso e porque separá-los daria três commits de uma
+linha cada.
+
+#### (a) Rolar a ficha rolava o CANVAS
+
+**A causa é sutil e vale escrever:** um `<dialog>` modal vive na **top layer** do
+navegador, acima de qualquer z-index — mas *top layer é pintura, não parentesco*. Na
+árvore do DOM ele continua **dentro do node**, e o `wheel` borbulha até o painel do React
+Flow, que o lê como **zoom**. Quem rolava uma ficha longa via o canvas afastar-se por baixo
+do modal.
+
+**O conserto é uma classe:** `nowheel`, a que o React Flow procura com `closest()` antes de
+tratar o evento — o mesmo idioma do `nodrag` que os cards já usam. Vai no `<dialog>`
+inteiro, e não só na área rolável, para cobrir ficha, cabeçalho e rodapé de uma vez.
+
+**Vermelho→verde medido, mesmo gesto (5 cliques de roda), com e sem a classe:**
+
+| | com `nowheel` | sem `nowheel` |
+|---|---|---|
+| `dialogo.scrollTop` | 0 → **561** *(até o fim)* | 0 → 500 |
+| `canvas.transform` | **string idêntica** | `scale(0.468879)` → **`scale(0.234439)`** |
+| o canvas moveu? | **não** | **sim — o zoom caiu pela metade** |
+
+📌 **Os outros quatro `<dialog>` do produto têm o mesmo buraco** — wizard, save-version,
+sheet-editor, reference-picker, lightbox. Não foram tocados: o pedido era o diálogo de
+cena, e alargar escopo em etapa de acabamento é como se perde o fio. **Anotado no backlog.**
+
+#### (b) «Gerar de novo» numa cena que nunca teve imagem
+
+*"De novo"* é uma **afirmação sobre o passado**, e numa cena sem imagem ela é falsa. O
+custo de errar isso não é estético: **o botão cobra uma imagem**, e um rótulo que sugere
+repetição convida quem está em dúvida a clicar achando que substitui algo — quando o que
+ele faz é gastar pela primeira vez.
+
+A regra virou `jaGerouAntes({ temImagem, houveFalha })`, no `machine-state`, com
+tabela-verdade. **Lê o ESTADO da cena, e não a contagem de tentativas** — uma geração em
+voo já conta como tentativa e ainda não produziu nem imagem nem recusa; chamar aquilo de
+*"de novo"* seria a mesma mentira com outra roupa. O `title` do próprio ↻ tinha o defeito
+gêmeo e foi junto.
+
+Na tela, no mesmo trilho: cena 1 (0 tentativas) **«Gerar»**, cena 2 (com imagem)
+**«Gerar de novo»**.
+
+#### (c) A recusa não dizia de quem era o filtro
+
+*"Bloqueada pelo filtro"* deixa em aberto se a trava é **nossa**, e manda a pessoa procurar
+o defeito aqui dentro. Agora: **«bloqueada pelo filtro do Google»**, com o nome vindo de
+`ai_providers.display_name` casado com o `generations.provider` **daquela linha** — nunca
+com o provedor ativo de hoje, que pode já ser outro. Sem nome no catálogo, cai na frase
+antiga, que continua verdadeira; e **nunca** vira *"do null"*.
+
+A consulta ao catálogo **só acontece quando há falha para nomear** — no caso comum ela não
+sai, que é a lição da Fase 5 do Egress sobre viagens.
+
+> ### 📌 O achado: são DOIS provedores, e reaproveitar um poria o nome ERRADO
+>
+> O `typecheck` pegou uma **segunda** chamada de `Falha` que eu não tinha visto — a do
+> **vídeo**. Numa mesma cena, a imagem sai do **Google** e o clipe sai da **fal**: usar ali
+> o `provedor` da imagem nomearia o culpado errado, e **uma frase que acusa o inocente é
+> pior que a frase que não acusa ninguém**. São dois campos separados, `provedor` e
+> `videoProvedor`, cada um lido da sua própria linha.
+>
+> *Foi o compilador que achou, não a revisão: o campo entrou como obrigatório no tipo, e a
+> chamada que não o passava parou de compilar.*
+
+#### A prova viva do (c) fica PENDENTE e OPORTUNISTA — decisão do dono
+
+**Não há como fotografar o selo hoje:** as **8** últimas gerações de imagem do banco estão
+todas `succeeded`. A recusa de 07/09 (`a10f13c0`) existe, mas a cena 2 foi gerada de novo
+58 s depois e `ultimaImagem` é a boa — o selo não aparece em tela nenhuma.
+
+Fotografá-lo exigiria **provocar uma recusa**, e isso não é 0 ⚡: custa 0 se o filtro barrar
+e **75 ⚡ se passar**. O dono decidiu, e o raciocínio é a régua da regra 8 lida ao contrário:
+
+> **A prova viva é obrigatória onde há dinheiro. Aqui o dinheiro seria para fotografar um
+> rótulo.**
+
+Então ela vira **pendente e oportunista**: a próxima recusa numa geração que o dono faria
+**de qualquer forma** fecha a prova, com **0 ⚡ extra**. Fica no ESTADO até lá — e uma
+etapa esperando prova continua parecendo diferente de uma etapa fechada, que é o que a
+regra 8 exige.
+
+**Prova estrutural:** `scratchpad\harness\prova-tres-itens-ui.ts` — **13/13**.
+Evidência: `scratchpad\evidencias\ui-tres-itens\`.
+
+---
+
+### 07/09/2026 — ⚠️ A armadilha do `dev` sobrevivente, QUARTA ocorrência — e a primeira DUAS VEZES na mesma sessão
+
+A notificação disse **`killed`**, com o motivo de sempre: *"was stopped because the system
+is running low on memory"*. As duas sondas:
+
+| sonda | resultado |
+|---|---|
+| `netstat` na 5599 | **LISTENING**, PID **14412** |
+| `GET /login` | **200** |
+
+**O `next dev` estava de pé, servindo.**
+
+**O que esta ocorrência acrescenta às três anteriores:** foi a **primeira vez que a memória
+do sistema derrubou a tarefa duas vezes na mesma sessão**. A primeira morte foi minha, a
+pedido do dono, e conferida; a segunda veio do supervisor, sozinha, **algumas horas depois**
+— e no intervalo o servidor tinha sido subido de novo para a validação de tela.
+
+📌 **A consequência prática, e ela é nova:** a armadilha não é um evento de fim de sessão
+que se confere uma vez e se esquece. **Numa sessão longa ela pode morder mais de uma vez**,
+e cada `npm run dev` novo é um candidato. A conferência é **por ocorrência do aviso**, não
+por sessão — e o aviso, sendo o sinal que deveria tranquilizar, é justamente o que não se
+acredita.
+
+A regra do `CLAUDE.md` já cobre o gesto (*conferir a porta em vez de acreditar no aviso*, e
+matar pelo PID). O que muda é a expectativa de **frequência**: não é raro, e não é só no
+fim.
