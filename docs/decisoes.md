@@ -5804,3 +5804,106 @@ acredita.
 A regra do `CLAUDE.md` já cobre o gesto (*conferir a porta em vez de acreditar no aviso*, e
 matar pelo PID). O que muda é a expectativa de **frequência**: não é raro, e não é só no
 fim.
+
+---
+
+## O mapa — o ROADMAP e a nova arquitetura
+
+### 16/09/2026 — 🔒 DECISÃO do dono: um núcleo, três superfícies, um módulo — e a fila passa a ser medida até o post publicado
+
+**Duas decisões, registradas juntas porque a segunda só faz sentido com a primeira.** Nasceram
+do [`ROADMAP.md`](ROADMAP.md), o checklist que o projeto nunca teve: o esboço inicial item a
+item, contra um inventário lido do código e do banco — e não da memória. **0 ⚡, nenhuma linha
+de código.**
+
+#### 1 · A arquitetura: um núcleo, três superfícies, um módulo
+
+**Registrada, não implementada.** Nada no código muda hoje.
+
+- **Núcleo** — o que já existe: adapters, catálogo e preços, ledger, compilador, character
+  sheet, Roteiro e Máquina. Hoje ele tem uma porta só.
+- **Estúdio** — essa porta: o canvas, `/studio`.
+- **Modo Rápido** — templates de post, carrossel e reel rodando **o mesmo motor sem mostrar
+  nós**, pelo mecanismo do «Fluxo de Storyboard» (`addStoryboardMachine`): o template monta o
+  que uma pessoa montaria à mão, só que atrás de um formulário.
+- **MCP server** — o agente.
+- **Módulo Publicação** — contas sociais por projeto, fila do aprovado, calendário, Meta Graph
+  API. **Tabelas e RLS próprias, e nunca escreve em `generations`.**
+
+📌 **Por que "nunca escreve em `generations`" é desenho, e não gosto:** `generations` é *"uma
+execução de modelo"* — o comentário da própria tabela — e só recebe escrita por
+`record_generation`, na mesma transação que cobra. Publicar não executa modelo e não cobra.
+
+#### 2 · A fila, reordenada pelo caminho mais curto até um post publicado
+
+**ROADMAP → o produto diz o que é → Modo Rápido (post estático com produto) → formatos IG 4:5
+e 1:1 + legenda e hashtags → carrossel (texto por template HTML, nunca pelo modelo) → módulo
+Publicação → MCP → voz → Catálogo aberto, Modo Take, passe de UI/UX.**
+
+**Substitui a ordem de 02/09** — A vídeo final → B Catálogo aberto → C Modo Take → D Voz e
+áudio → E UI/UX → F Publicação — e, com ela, a de 31/08 registrada mais acima neste diário.
+
+| o que mudou de lugar | de → para | pela régua nova |
+|---|---|---|
+| **Publicação** | último → **5º** | era *"o produto saindo para fora"*, depois de tudo; agora é o fim do caminho, e o caminho passa a ser medido até ele |
+| **Catálogo aberto** | 1º → **8º** | nenhum post precisa de um segundo fornecedor de imagem: o Nano Banana já desenha o post |
+| **Modo Rápido, formatos + legenda, carrossel, MCP** | fora da fila → **2º, 3º, 4º e 6º** | são o caminho — não existiam na fila porque a fila não media até o post |
+
+📌 **É a régua de 02/09, esticada um passo.** O veredito do Ciclo 3 moveu o fim dela de
+*"clipe pronto"* para *"um vídeo"* — *o fluxo ficou curto, mas para antes do fim*. Hoje o fim
+passou a ser **um post publicado pelo sistema**.
+
+**O número, com ele:** do esboço inicial, **6 FEITOS · 7 PARCIAIS · 2 NÃO**, em 15 itens; **5
+frentes** até o primeiro post publicado.
+
+#### O que a leitura achou — achados, não decisões
+
+1. **Catálogo não é modelo usável.** 14 modelos em 5 fornecedores, e só **3 fornecedores com
+   adapter** (Anthropic, Google, fal). GPT Image 2 e Grok Imagine não são "só o adapter": o
+   bloco sempre nomeia tamanho, e `record_generation` **recusa** tamanho sem linha de preço
+   (`GN005`) — os dois não têm nenhuma.
+2. **Nenhum preset sai no pixel do canal.** O 4:5 em 2K sai **1856 × 2304** (razão 0,806, não
+   0,800), e **o banco não sabe o pixel** de 39 das 48 imagens nem de nenhum dos 35 vídeos.
+3. **Os inputs de cena, roupa e acessório existem só como nome** — `scene`, `outfit` e
+   `accessory` no enum `entity_kind`, sem linha em `entities` e sem código que os cite.
+4. **Há um template só**, o «Fluxo de Storyboard» — e ele é o precedente do Modo Rápido.
+5. **O bucket é privado e a URL assinada vive 7 dias** — o dado de partida da Publicação.
+
+#### Duas perguntas registradas para quando a frente 5 abrir — não decididas hoje
+
+- **A régua da regra 8 pergunta *"isto pode gastar?"*.** Publicar não gasta — e não tem volta.
+  É a primeira frente em que as duas coisas se separam. **A primeira publicação real é metade
+  do dono?**
+- **Contas sociais por projeto são N tokens, e N tokens não cabem em variável de ambiente.**
+  Morar no banco é exceção às regras de Segurança do `CLAUDE.md` — e exceção se registra antes
+  do primeiro token, não se descobre na implementação.
+
+#### ⚠️ O ROADMAP aprovado tinha afirmações erradas — corrigidas antes do commit
+
+O dono aprovou a primeira versão. Antes de commitar, reli cada afirmação contra o código e o
+banco — *número citado é hipótese*, e a regra vale para os meus. **Três estavam erradas e uma
+incompleta:**
+
+| o que a versão aprovada dizia | o que o código e o banco dizem | onde |
+|---|---|---|
+| Catálogo aberto **não mexe com dinheiro** — "é o painel/admin sobre o catálogo" | é *"modelo novo = linha no catálogo + adaptador"*; cada adapter só se prova gerando → **⚠️ dinheiro** | `produto.md` §7.1 |
+| GPT e Grok: **falta só o adapter**, "não precisa de migration nova" | o bloco sempre nomeia tamanho, e o banco recusa tamanho sem preço → **adapter + migration** | `20260816185559_text_generation_catalog.sql:486`, `presets.ts:224` |
+| a Publicação não escreve em `generations` porque **"quebraria a invariante 5"** | **porquê inventado.** A invariante 5 é sobre centavos e ledger; o porquê verdadeiro é o comentário da tabela | comentário de `generations` |
+| presets **"só por proporção, nenhum pixel fixo"** *(incompleta — o pedido era proporção **e** pixels)* | medido: 1856 × 2304 e 1536 × 2752; 39 de 48 imagens sem pixel no banco | `assets` × `generations` |
+
+E as de precisão que mudam o que se lê: *"15 itens"* de modelo eram **nove nomes**; *"§9 do PDF"* são **as
+páginas 7 a 10**; *"3 cenas → 1 clipe"* é **3 cenas → 3 clipes → 1 filme montado**; e a frente
+3 passou de *"um dia"* para **um ciclo** — o trabalho é o pixel do canal, não duas linhas de
+JSON que já existem.
+
+📌 **Nenhuma correção mexeu no que o dono decidiu** — a arquitetura e a ordem ficaram como ele
+deu — **nem no número do topo**: 6 · 7 · 2, e 5 frentes. Se tivesse mexido, o commit esperaria
+uma segunda aprovação.
+
+📌 **Dos quatro, o porquê inventado é o que mais importa.** Um número errado se acha comparando
+com o banco. Um porquê errado mora no arquivo que guarda os porquês — e ensina a próxima sessão
+a defender uma regra certa pela razão errada.
+
+**Fora do escopo, e dito em voz alta:** `docs/produto.md` §7.1 ainda mostra a ordem de 02/09, e
+o índice do `CLAUDE.md` não lista o `ROADMAP.md`. Não foram tocados — o escopo declarado era
+ROADMAP, diário e ESTADO — e ficam no ESTADO como abertos.
