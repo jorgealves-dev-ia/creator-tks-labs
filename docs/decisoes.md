@@ -5907,3 +5907,68 @@ a defender uma regra certa pela razão errada.
 **Fora do escopo, e dito em voz alta:** `docs/produto.md` §7.1 ainda mostra a ordem de 02/09, e
 o índice do `CLAUDE.md` não lista o `ROADMAP.md`. Não foram tocados — o escopo declarado era
 ROADMAP, diário e ESTADO — e ficam no ESTADO como abertos.
+
+---
+
+## Frente 1 — o produto diz o que é
+
+### 21/09/2026 — 🔒 DECISÃO do dono: o produto diz o que é — e a N4 é revista em parte *(registrada em 26/09, no commit do plano)*
+
+**O que o dono decidiu.** O Input de Produto ganha **Nome** e **Descrição** — texto livre, grande —,
+preenchidos por três portas: o botão **«Ler a foto · N ⚡»**, com portão R1; **colar à mão** (uma
+página da Shopee, por exemplo); ou **editar o que a IA escreveu**. **O que está nos campos na hora de
+gerar é o que entra.** A leitura tem **seletor de modelo** — o catálogo de `extraction`, selecionável
+só quem tem adapter, no padrão do dropdown da Máquina —, e o Gemini Flash ganha leitura em
+`google.ts` nesta frente; GPT e Grok ficam para a 1.5. **Sem taxonomia de categoria de uso:** a
+leitura devolve texto livre em português e em inglês — o que é, os atributos, como se usa —, e o
+compilador cola o inglês na diretiva do produto, continuando função pura: **recebe texto, não
+decide.** E a chave «Input Referências» continua mandando: desligada, nada entra.
+
+**O que isso muda no que já estava decidido.**
+
+- **A N4 (09/08) cai pela metade.** Ela dizia *"o modelo vê a foto real do produto; nada de
+  descrever o produto em texto na v1"*, e deixava o botão de extrair a descrição *"para quando a
+  consistência pedir"*. A foto continua sendo o que o modelo vê; o *"nada de texto"* cai, porque a
+  consistência pediu — em 07/09, um vestido onde a foto é uma blusa, com a palavra «blusa» ausente
+  do texto (`0cf3f069`: 1.557 caracteres, zero *blouse*).
+- **«Nome não é foto» (03/09) continua de pé — e a chave é o que o garante.** A doença de 03/09 era o
+  nome **no lugar** da foto. Aqui as palavras viajam **dentro** da referência do produto: se a foto
+  não entra, as palavras também não. Com a foto, nunca em vez dela.
+- **Sem taxonomia não viola a invariante 10.** O dicionário literal é a regra da compilação do
+  character sheet; a descrição é campo livre, como a cena do prompt, e segue o caminho da
+  invariante 4 — o português é traduzido **antes** do compilador, nunca dentro dele.
+
+**O plano, com as fases, o pior caso e cinco perguntas:** [`plano-produto-diz.md`](plano-produto-diz.md)
+— F0 medir → F1 o card, o botão, o seletor e a leitura gravada → F2 o compilador cola → F3 a prova
+viva. **Pior caso: 79 ⚡ da carteira + 8 ⚡ de leituras fora do produto.**
+
+📌 **Três achados da investigação de 26/09 têm dinheiro dentro, e mudam o desenho mais curto:** o
+adapter é registrado **por fornecedor** — ligar o Google para ler produto acenderia o Gemini também na
+extração de personagem, que cobra e nunca foi medida nele; o modelo **padrão** de extração é o
+Sonnet, a **20 ⚡**, e não um dos dois de 4 ⚡; e `extractions` exige personagem (`entity_id NOT
+NULL`), então a leitura de produto nasce com migration.
+
+### 26/09/2026 — 🔒 DECISÃO do dono: o plano aprovado, e a lista de produto ganha padrão próprio
+
+**O plano da Frente 1 foi aprovado com as cinco respostas do §9** — o registro inteiro está no
+próprio [`plano-produto-diz.md`](plano-produto-diz.md). A Instrução vira a Descrição, um campo só
+(9.1); o Nome entra só quando a Descrição estiver vazia (9.2); o Gemini não lê personagem, e o 2.5
+Pro entra na lista de produto (9.3); a frente 1.5 vem depois das cinco frentes se a F3 passar, e é a
+próxima se a F3 falhar com o texto certo no payload (9.5).
+
+**A 9.4 foi contra a minha recomendação, e é a que muda o desenho.** Eu recomendei não mexer no
+padrão do catálogo — `is_default` é um só por capability, compartilhado com a ficha de personagem — e
+deixar a primeira leitura de produto abrir no Sonnet, a 20 ⚡, com o portão dizendo o preço. **O dono
+não aceitou:** *a lista de produto tem o seu próprio padrão, separado do de personagem, decidido pela
+F0 — o que ler melhor a foto da blusa entre Haiku e Gemini Flash, os dois a 4 ⚡. Sonnet a 20 ⚡ nunca
+é padrão para produto. O card lembra o último modelo usado.*
+
+📌 **O porquê, que eu devia ter visto:** padrão é **o que acontece quando ninguém escolhe** — o caso
+de quem tem pressa, e o caso de todo post do Modo Rápido, onde não há card para lembrar nada. Um
+padrão a 20 ⚡ cobraria cinco vezes, por omissão, o trabalho que a F0 vai medir a 4.
+
+**E a migration da F1 vem no padrão RAISE EXCEPTION da casa**, pedido do dono: a função recusa com
+frase e `errcode` (como `record_extraction` e `record_montage`); o que um CHECK não alcança vira
+trigger que recusa; e a migration confere o que instala — levanta exceção se o padrão da lista de
+produto não for exatamente um modelo de `extraction` a 4 ⚡, ou se for o Sonnet. **O "nunca" do dono
+vira condição para a migration existir, e não frase num documento.**

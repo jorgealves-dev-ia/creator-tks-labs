@@ -3,7 +3,10 @@
 > **O que este arquivo é.** O plano do mini-ciclo, em disco, **antes da primeira linha de
 > código** (regra 9 do [`CLAUDE.md`](../CLAUDE.md)).
 >
-> **Status: 🔵 EM EXECUÇÃO.** As quatro perguntas foram **respondidas pelo Jorge em
+> **Status: ✅ FECHADO em 06/09/2026** (`d17a2d8`) — as oito fases, da 0 à 7, fechadas.
+> *(Corrigido em 26/09: até lá, este cabeçalho dizia «EM EXECUÇÃO».)*
+>
+> As quatro perguntas foram **respondidas pelo Jorge em
 > 03/09/2026** e estão no §7. A **Fase 0 fechou** no mesmo dia, com vencedor e números.
 > A **Fase 5** subiu para a frente pela decisão 1 e **mudou de forma na execução**:
 > a Máquina vazia **cria** o Roteiro ligado em vez de apontar para o

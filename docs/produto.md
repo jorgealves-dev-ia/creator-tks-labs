@@ -254,17 +254,28 @@ Um modelo só, na configuração mais barata: Kling 2.1 image-to-video, 5s, 720p
 
 ---
 
-## 7.1 A ordem daqui em diante — **decidida pelo dono em 02/09/2026**
+## 7.1 A ordem daqui em diante — **mora no [`ROADMAP.md`](./ROADMAP.md) §4**
 
-| # | ciclo | o que ele resolve |
-|---:|---|---|
-| **A** | **O vídeo final** ✅ **FECHADO 06/09/2026** | o rabo do Ciclo 3, entregue: a Máquina termina em **UM vídeo montado** no canvas, **sem Spark**, com a **fila de clipes** num clique, o cartão dizendo **de que peças o filme é feito**, e a Máquina vazia **criando** o Roteiro ligado (não apontando: apontar daria uma segunda Máquina a quem já tem uma). → [`plano-video-final.md`](./plano-video-final.md) |
-| **A′** | **`fix:` o produto da ficha** 🔜 | a única coisa em pauta com dinheiro dentro — **nome não é foto**: a Máquina ganha o Input de Produto. Antes do Catálogo. → §9 do [`plano-video-final.md`](./plano-video-final.md) |
-| **B** | **Catálogo aberto** | provedores e modelos como **dado**: *"modelo novo = linha no catálogo + adaptador"*. É a invariante 2 e a 6 saindo do papel — e é onde entram as **capacidades** (fala nativa, referência de áudio, lipsync, voice_id). |
-| **C** | **Modo Take** | a repetição barata do que já existe, no lugar de refazer tudo — e o caminho para um modelo que entende **papéis de referência e linha do tempo**. → [`notas-modo-take.md`](./notas-modo-take.md) |
-| **D** | **Voz e áudio** | `storyboard_scenes.fala` deixa de dormir. **Voz é identidade**, não efeito. → [`notas-voz.md`](./notas-voz.md) |
-| **E** | **Passe de UI/UX** | a arte da máquina, o contraste do ⇥, o acabamento. |
-| **F** | **Publicação** | o produto saindo para fora. |
+**Decidida pelo dono em 16/09/2026**, e medida até um ponto novo: **o primeiro post publicado pelo
+sistema.** A fila vive num lugar só — o §4 do ROADMAP, que toda frente atualiza ao fechar —, e esta
+seção aponta para ela em vez de copiá-la: duas listas da mesma fila são duas chances de divergir, e
+foi exatamente o que aconteceu aqui entre 16/09 e 26/09, com esta seção mostrando a ordem velha.
+
+**Em curso:** a frente 1 — *o produto diz o que é* —, com plano em aprovação desde 26/09. →
+[`plano-produto-diz.md`](./plano-produto-diz.md)
+
+**O que a ordem de 02/09 virou** — ela ia de A a F:
+
+- **A · O vídeo final** — ✅ **fechado em 06/09/2026**: a Máquina termina em **um vídeo montado**, sem
+  Spark. → [`plano-video-final.md`](./plano-video-final.md)
+- **A′ · `fix:` o produto da ficha** — ✅ **fechada em 07/09/2026**: a foto do produto chega ao
+  provedor, provada pelo banco a 90 ⚡. A fidelidade não chegou junto — a palavra «blusa» nunca entrou
+  no texto — e virou a frente 1. → [`plano-fix-produto.md`](./plano-fix-produto.md)
+- **B a E · Catálogo aberto, Modo Take, Voz e áudio, passe de UI/UX** — continuam na fila,
+  **depois** do primeiro post. O Catálogo, que era o primeiro, passou para depois do post em 16/09:
+  nenhum post precisa de um segundo fornecedor de imagem.
+- **F · Publicação** — em 16/09, de último para o **fim do caminho**: é ela que publica o post, e o
+  caminho passou a ser medido até ele.
 
 **A visão registrada, sem data:** **Smart Edit** — uma campanha, N produtos: trocar o produto no vídeo sem regenerar —, edição por trecho, e modelo 3D como referência de movimento.
 
