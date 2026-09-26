@@ -247,7 +247,7 @@ falha é a que já existe — `translation_failed`, **antes de qualquer Spark**.
 
 | ordem | fase | entrega | ⚡ | status |
 |---|---|---|---|---|
-| 1ª | **F0** | o que o compilador envia hoje; o que Haiku e Gemini leem da foto da blusa — **e o padrão da lista de produto** | 0 ⚡ + ⚠️ **8 ⚡ fora do produto** | 🔵 **aberta** |
+| 1ª | **F0** | o que o compilador envia hoje; o que Haiku e Gemini leem da foto da blusa — **e o padrão da lista de produto** | 0 ⚡ + ⚠️ **8 ⚡ fora do produto** | 🔵 **aberta** — (a) ✅ byte a byte; (b) ⛔ **parada em duas decisões do dono** (ver *O que a F0 achou*) |
 | 2ª | **F1** | o card, o botão, o seletor e a leitura gravada — **com migration** | ⚠️ **4 ⚡**, a leitura do dono | ⬜ |
 | 3ª | **F2** | o compilador cola a descrição | 0 ⚡ | ⬜ |
 | 4ª | **F3** | a prova viva: a blusa aparece | ⚠️ **75 ⚡** | ⬜ |
@@ -306,6 +306,35 @@ latência; custo real em centavos; o tamanho do pt e do en; e o **gabarito pré-
 
 **Evidência:** `scratchpad\evidencias\produto-diz-f0\` — `texto-de-hoje-0cf3f069.md`,
 `leitura-haiku.json`, `leitura-gemini-flash.json`, `numeros-f0.md`.
+
+#### O que a F0 achou — 26/09/2026
+
+**(a) ✅ O texto de hoje, remontado com o compilador de hoje, é IGUAL byte a byte ao de 07/09** —
+1.557 caracteres, md5 igual; a estrutura e a ordem das imagens também iguais. O harness fala pela
+produção, e a linha de base da F2 está gravada: *blouse* 0 · *dress* 0 · *hem* 1 · *head to toe* 1;
+o bloco do produto são duas frases, e nenhuma diz o que a peça é.
+
+**A foto, vista antes das chamadas** — md5 `2cb6f65a…`, 21.878 bytes, igual ao banco: uma blusa
+**azul-marinho, curta, de manga bufante** com elástico no punho e **decote redondo**, sobre fundo
+verde, **sem pessoa**, com uma etiqueta ilegível na gola. **O tecido parece malha lisa, não linho** —
+embora o nome do card diga linho. O gabarito pré-registrado conta *"linho"* como invenção.
+
+**(b) ⛔ As duas chamadas foram recusadas antes de gerar texto — custo real 0, nada no ledger:**
+
+| leitor | a recusa, verbatim | o que ela quer dizer |
+|---|---|---|
+| Haiku | `the provider rejected the API key: API key is invalid.` | **a chave da Anthropic do ambiente local foi rejeitada.** Não é o arquivo: as outras duas chaves dele funcionaram na mesma sessão. E ela alimenta **toda tradução do produto** — se a da Vercel for a mesma, toda geração com texto em português está sendo recusada com `translation_failed`, e **a F3 depende dela** |
+| Gemini Flash | `404 This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/gemini-3.8-flash …` | **o risco 2 do §8, confirmado:** a conta nunca usou o 2.5 Flash e é "nova" para ele. O **2.5 Pro** (resposta 9.3) deve bater na mesma parede |
+
+**Os candidatos para o lugar do 2.5 Flash** — preço oficial lido em 26/09: `gemini-3.8-flash` (a
+sugestão do Google) e `gemini-3.7-flash` (o do Roteiro, já no catálogo) custam **o mesmo** — US$ 0,75
+de entrada e US$ 3,75 de saída com pensamento, por milhão de tokens, **até 31/12/2026, e o dobro a
+partir de 01/01/2027**. O 2.5 Flash custava US$ 0,30 e 2,50: **os 4 ⚡ do catálogo podem não cobrir a
+leitura** — o número de verdade vem da chamada que passar.
+
+**A F0 retoma com duas decisões do dono** — a chave da Anthropic, e qual Gemini entra no lugar do
+2.5 Flash. O resto do plano não muda: a F0 continua decidindo o padrão da lista de produto, entre o
+Haiku e o Gemini que ficar.
 
 ### F1 · O card, o botão, o seletor e a leitura gravada
 
