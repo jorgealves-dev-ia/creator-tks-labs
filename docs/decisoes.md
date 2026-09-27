@@ -6184,6 +6184,32 @@ inteiro: uma navegação para `/studio` (que redirecionou para `/login`), um pri
 de JS da origem e dos nomes de cookie — que a extensão bloqueou. Nenhum clique, nenhuma digitação. O dono
 fechou a aba. **Daí nasceram a regra «Navegador» e a trava entre projetos** — na seção seguinte.
 
+### 27/09/2026 — 🔒 DECISÕES do dono: a F0 fecha — o padrão é o 3.7 Flash, e o público inventado vira aviso no card
+
+**1 · O padrão da lista de produto é o Gemini 3.7 Flash; o Haiku permanece no seletor.** O motivo, nas
+palavras do dono: *2 de 2 no elástico e 2 de 2 descrevendo aparência em vez de composição; empate na regra
+do público, com a falha do Flash («feminina») bem menos danosa ao prompt que a do Haiku («infantil»).* É o
+valor que a migration da F1 grava — e confere — como padrão da lista de produto.
+
+**2 · O público inventado vira aviso automático no card** — determinístico, sem chamada nova: uma **lista
+fechada** de termos de público, gênero e tamanho, em português e em inglês, aplicada ao **Nome** e à
+**Descrição**, com **destaque e remoção em um clique** — **nunca remoção silenciosa**. **A regra 2 do v2 fica
+no contrato.** Entra no escopo da F1, no card (item 9 do plano, com a lista proposta para o dono conferir).
+
+📌 **O achado, registrado como o dono pediu: regra no contrato REDUZ, não elimina.** Com o princípio de
+evidência escrito no contrato, **2 de 4 leituras** ainda inventaram público — *"infantil"* (Haiku, até no
+nome) e *"feminina"* (Flash). Uma regra num prompt é uma instrução a um modelo, e um modelo às vezes não
+obedece: a segunda rede tem de ser **determinística**, do nosso lado — como toda trava desta casa.
+
+**3 · A invariante da F1, registrada no plano (item 10):** **o rótulo ou o nome de arquivo do asset nunca
+preenche o Nome do produto nem entra no prompt.** O próprio asset da F0 prova o motivo: o rótulo de
+`06778db7` é *"blusa-azul-de-linho-manga-curta"*, e o gabarito da F0 trata *"linho"* como erro — a peça é
+malha.
+
+**4 · Os 6 registros corrigidos — script rodado pelo dono, e provado.** A varredura sobre os mesmos 104 de
+26/09: **104 / 0 / 0** (antes, 98 / 6 / 0). E conferido por fora, com as impressões digitais medidas antes de
+ele rodar: o resto das 6 linhas, as 26 gerações e as 98 outras linhas saíram **idênticos** — só o tipo mudou.
+
 ## Segurança e navegador
 
 ### 27/09/2026 — 🔒 A regra 7 de Segurança deixa de ser frase: a sonda confere o GitHub
@@ -6276,3 +6302,12 @@ arquivo de trava único da máquina, com projeto, perfil e hora.
 sessão que já estava aberta a carrega sozinha, não está medido:** a documentação fala em um observador de
 configuração, mas eu não provei. Na dúvida, uma sessão aberta antes de 27/09 ~19:10 precisa de `/hooks` uma
 vez, ou de ser reaberta — **inclusive a do outro cliente**.
+
+### 27/09/2026 — O perfil do projeto declarado na trava
+
+**O perfil do Chrome deste projeto é «Jorge Alves - DevIA»** (informado pelo dono). Declarado em
+`CLAUDE_NAVEGADOR_PERFIL`, no `.claude/settings.local.json` — **fora do git**, porque a declaração completa
+traz o e-mail da conta, e o repositório é público. O hook passou a ler a declaração **direto do settings do
+projeto** quando a sessão é anterior a ela e não tem a variável no ambiente — a trava não pode depender de
+reabrir o terminal. **18 cenários da lógica, 0 falhas** (os 15 de antes e três do perfil: do settings, do
+ambiente, e "não declarado"). O hook novo tem md5 `20da8901…`; a cópia está na evidência.
