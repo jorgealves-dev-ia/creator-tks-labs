@@ -3,11 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --port 5599",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --port 5599",
     "lint": "eslint",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "probe:keys": "node --disable-warning=ExperimentalWarning --env-file-if-exists=.env.local scripts/probe-provider-keys.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",

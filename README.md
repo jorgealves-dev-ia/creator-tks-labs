@@ -14,7 +14,8 @@ de Storyboard* —, nunca de implementação.
 
 ```bash
 npm install
-npm run dev            # http://localhost:3000
+npm run dev            # http://localhost:5599 — porta fixa
+npm run probe:keys     # as chaves de cada provedor são aceitas? 0 ⚡, nada impresso
 ```
 
 Precisa de um `.env.local` com as chaves do Supabase e dos provedores de IA. O
