@@ -136,6 +136,20 @@ O primeiro está em `supabase/correcoes/20260829_estorno_incidente_laco_reanimac
 
 ---
 
+## Navegador *(regra do Jorge, 27/09/2026)*
+
+**Nasceu de um incidente:** em 27/09 a aba de `localhost:5599` abriu no **perfil do Chrome de outro cliente**, onde outro Claude Code trabalhava, e caiu na tela de login. O Jorge fechou a aba. Nada foi feito nela além de abrir a página — e é para que o "nada" não dependa de sorte que estas cinco regras existem. → [`docs/decisoes.md`](docs/decisoes.md), 27/09/2026
+
+- **(a) Só o perfil do Chrome do projeto** — o perfil onde a extensão está instalada. **Mais de um navegador conectado: parar e pedir ao Jorge para escolher.** **A conexão caiu: parar e pedir para reconectar** — nunca tentar outro navegador.
+- **(b) Tela de login, outro usuário ou CAPTCHA: parar e perguntar em qual perfil está.** Nunca pedir senha, nunca digitar senha. **Antes de qualquer gesto, confirmar que a aba está logada como o usuário do projeto.**
+- **(c) Painéis da Vercel, do Supabase e do GitHub: liberados para CONSULTA**, preferindo os MCPs quando existirem. **Nunca abrir páginas de variáveis de ambiente, chaves, tokens ou segredos — nem para olhar.** Nenhuma alteração de configuração, billing, domínio, política ou dado por painel.
+- **(d) Só a aba do grupo do Claude.** Nunca fechar nem usar as outras abas do Jorge.
+- **(e) A regra do bastão:** navegador **só com autorização explícita por tarefa**, dizendo **perfil e porta** — e, ao terminar, **"navegador devolvido"**. Autorização de uma tarefa não vale para a seguinte.
+
+**E a trava entre projetos é mecanismo, não frase.** Um hook no nível do usuário (`~/.claude/hooks/trava-navegador.mjs`, registrado em `~/.claude/settings.json`, vale para **todos** os terminais do Jorge) confere, antes de **qualquer** ferramenta do Chrome, um arquivo de trava único da máquina — `~/.claude/trava-navegador.json`, com projeto, perfil e hora. **Trava de outro projeto e fresca: a chamada é bloqueada** com *"navegador em uso pelo projeto X desde HH:MM; pare e avise o Jorge"* — e aí é exatamente isso: **parar e avisar**, nunca contornar. Livre ou deste projeto: passa e renova a hora. **Sem renovação há mais de 10 minutos, a trava está vencida.** O fim da sessão que a segura a apaga. `node ~/.claude/hooks/trava-navegador.mjs status` mostra quem a segura; **liberar à mão é só do Jorge.**
+
+---
+
 ## Glossário do domínio
 
 - **Projeto (aba)**: espaço de trabalho independente com um workflow

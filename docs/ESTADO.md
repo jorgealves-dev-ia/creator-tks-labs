@@ -6,14 +6,18 @@
 > frente está no `plano-*.md` dela; o *como está hoje* está no código — e **o lugar de
 > tudo isso no mapa inteiro está em [`ROADMAP.md`](ROADMAP.md).**
 
-**Última reescrita:** 27/09/2026, ~19:10 — **o navegador está BLOQUEADO até o dono liberar** (a aba abriu
-no perfil do Chrome de outro cliente). **O dev está de pé na 5599** (PID 10528), a pedido do dono. Nenhuma
-chamada paga em curso.
+**Última reescrita:** 27/09/2026, ~19:25 — **o navegador está BLOQUEADO até o dono liberar**, por mensagem,
+dizendo perfil e porta (a regra do bastão). **O dev está de pé na 5599** (PID 10528), a pedido do dono.
+Nenhuma chamada paga em curso.
 
 ## 1 · Feito em 27/09
 
 | o quê | onde |
 |---|---|
+| **A regra «Navegador» no `CLAUDE.md`** — só o perfil do projeto; login, outro usuário ou CAPTCHA = parar e perguntar, nunca senha; painéis só para consulta, nunca página de segredo; só a aba do grupo do Claude; **o bastão**: autorização por tarefa com perfil e porta, e "navegador devolvido" | [`CLAUDE.md`](../CLAUDE.md) |
+| **A trava de navegador entre projetos** — hook de **usuário** (`~/.claude/hooks/trava-navegador.mjs`, md5 `62c3c62f…`): outro projeto com a trava fresca é **bloqueado** com *"navegador em uso pelo projeto X desde HH:MM; pare e avise o Jorge"*. **15 cenários, 0 falhas; e dois terminais reais** — o 2º bloqueado com a frase certa, o 1º liberando ao terminar | `~/.claude/` · `scratchpad\evidencias\trava-navegador\` |
+| **Consulta final de secret scanning:** as duas proteções ligadas, **0 alertas** em qualquer estado | `scratchpad\evidencias\seguranca-regra7\` |
+| commit **`e5103a2`** — docs, sonda e script (abaixo, o que ele trouxe) | `origin/master` |
 | **O contrato de leitura v2 entrou no plano, byte a byte** — copiado por script, md5 do prompt de sistema `99f41400…` igual em evidência, plano e harness | [`plano-produto-diz.md`](plano-produto-diz.md), F0 |
 | **O lado a lado da F0 — medido.** Rodada 5: 3 leituras (a rodada 4 contou como a 1ª do Haiku: conteúdo idêntico, conferido no pedido e nos 2.051 tokens). **7 centavos reais, 0 Spark.** O Google cobra de novo (sem `402`) | plano, F0 · rodada 5 |
 | **A regra 7 de Segurança passou a ser conferida:** o GitHub estava com secret scanning e push protection **desligados** num repositório público; o dono ligou os dois, e `npm run probe:keys` acusa ✗ se qualquer um desligar — vermelho às 15:04, verde às 18:56 | `scripts/probe-provider-keys.mts` |
@@ -31,13 +35,17 @@ fechar. `git status` mostra estes arquivos modificados ou novos, **e eles são a
 `src/components/nodes/reference-picker.tsx`, `src/lib/i18n/pt-BR.ts`.
 
 **A validação ao vivo não começou.** A aba de `localhost:5599` abriu no **perfil do Chrome de outro
-cliente**, caiu na tela de login, e o dono a fechou — nada foi feito nela além de abrir a página e ler a
-origem. **Para retomar:**
+cliente**, caiu na tela de login, e o dono a fechou — nada foi feito nela além de abrir a página, um print
+da tela de login e uma leitura de JS da origem. **Para retomar:**
 
-1. **o dono libera o navegador por mensagem**, dizendo **perfil e porta** (a regra do bastão, em escrita —
-   ver 3);
-2. antes de qualquer gesto: conferir que a aba é a do **grupo do Claude**, no **perfil do projeto**, e está
-   **logada como o usuário do projeto** — tela de login ou outro usuário: parar e perguntar;
+1. **o dono libera o navegador por mensagem**, dizendo **perfil e porta** — a regra do bastão, seção
+   «Navegador» do [`CLAUDE.md`](../CLAUDE.md);
+2. antes de qualquer gesto: conferir que a aba é a do **grupo do Claude**, no **perfil dito**, e está
+   **logada como o usuário do projeto** — tela de login ou outro usuário: parar e perguntar. **E na primeira
+   chamada ao Chrome, rodar `node ~/.claude/hooks/trava-navegador.mjs status`**: tem de mostrar a trava
+   **deste** projeto — é a prova real do matcher `mcp__claude-in-chrome__.*`, que a fase B não pôde fazer (o
+   Claude Code reserva o nome `claude-in-chrome`; ela usou um servidor falso). Trava de outro projeto: parar e
+   avisar;
 3. conferir que a 5599 serve o código novo (`netstat` + `/login` 200);
 4. seguir a lista de 10 itens do fim da seção F1a do [plano](plano-produto-diz.md) — projeto de teste novo
    («Teste F1a — colar e soltar»; **o «Projeto teste Foto da Blusa» não se toca**), botão, soltar, colar
@@ -56,9 +64,10 @@ mecânico no card? **Resumo das leituras:** gabarito 4/4 e 3/3 nas quatro; o el�
 punho, Haiku 1 de 2; o tecido como aparência — Flash 2 de 2, Haiku 0 de 2. **Depois da escolha, a F1**
 (migration no padrão RAISE EXCEPTION, aplicada pelo dono).
 
-**Em andamento nesta sessão, depois deste commit:** a regra «Navegador» no `CLAUDE.md` e a **trava de
-navegador entre projetos** (um hook no nível do usuário), com prova de dois terminais; e a consulta
-final dos alertas de secret scanning.
+**Duas coisas do dono sobre a trava:** **(1)** qual é o **nome do perfil do Chrome** deste projeto — a
+trava registra *"não declarado"* até ele virar `CLAUDE_NAVEGADOR_PERFIL` no `env` do settings do projeto;
+**(2)** sessões do Claude Code **abertas antes de ~19:10 de 27/09** — inclusive a do outro cliente — podem
+não ter carregado a trava (não medido): `/hooks` uma vez, ou reabrir. Toda sessão nova carrega (medido).
 
 ## 3 · O gasto real — 27/09
 
@@ -66,6 +75,7 @@ final dos alertas de secret scanning.
 |---|---|---|
 | F0 rodada 5 — Flash 1, Flash 2, Haiku 2 (3 pedidos HTTP) | **7 centavos** (3 + 2 + 2) | 0 |
 | limites do Flash, sonda de chaves, varreduras, provas da F1a | 0 | 0 |
+| 5 sessões `claude -p` de teste da trava de navegador, em Haiku | US$ 0,13 de uso de Claude | 0 |
 | **total da F0 inteira** | **11 centavos de provedor** | **0 Spark — saldo 3.190 ⚡, conferido no banco: nenhum lançamento, geração ou extração desde 07/09** |
 
 > 🔑 **Chaves e contas:** Anthropic, Google, fal e OpenAI aceitas pela sonda em 27/09; xAI sem chave. O
@@ -99,7 +109,9 @@ barrou é do Google, verbatim** (`google.ts:258`).
 vermelha→verde reexecutável; a fechadura ED25519 do webhook; a trava de vida do endereço de retorno.
 
 **Instrumentos.** `scratchpad\harness\medir-canvas.js` recusa número de canvas não pintado; o dev sobe
-sempre na **5599**; **`npm run probe:keys`** confere as chaves sem gastar **e a regra 7 no GitHub**.
+sempre na **5599**; **`npm run probe:keys`** confere as chaves sem gastar **e a regra 7 no GitHub**; **a
+trava de navegador entre projetos** bloqueia o Chrome de um projeto enquanto outro o segura — provada com dois
+terminais reais.
 
 ---
 

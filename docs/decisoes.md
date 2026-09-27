@@ -6205,3 +6205,74 @@ outro `.env*` em nenhum dos 135 commits** de todas as refs; o `.gitignore` cobre
 `sb_secret_`, chave PEM — em commit nenhum nem na árvore de hoje. Alertas de secret scanning na primeira
 consulta, com as duas proteções ligadas: **0**. A consulta final fica para o fim do lote — a varredura do
 histórico leva alguns minutos.
+
+### 27/09/2026 — 🔒 DECISÃO do Jorge: a regra «Navegador» — nascida da aba no perfil errado
+
+**O incidente:** a validação ao vivo da F1a abriu `localhost:5599` numa aba que estava no **perfil do Chrome
+de outro cliente**, onde outro Claude Code trabalhava. A aba caiu na tela de login; o Jorge a fechou. Nada
+foi feito nela além de abrir a página, tirar um print da tela de login e ler a origem — **e o "nada" foi
+sorte**: a extensão obedece a quem a chama, e nada impedia a sessão de seguir num perfil que não era o do
+projeto.
+
+**A regra, no `CLAUDE.md`, seção «Navegador»:** (a) **só o perfil do Chrome do projeto** — mais de um
+navegador conectado, parar e pedir para escolher; conexão caída, parar e pedir para reconectar, nunca tentar
+outro; (b) **tela de login, outro usuário ou CAPTCHA: parar e perguntar em qual perfil está** — nunca pedir
+nem digitar senha, e confirmar antes de qualquer gesto que a aba está logada como o usuário do projeto; (c)
+**painéis da Vercel, do Supabase e do GitHub só para consulta**, preferindo os MCPs — nunca abrir página de
+variável de ambiente, chave, token ou segredo, nem para olhar, e nenhuma alteração por painel; (d) **só a aba
+do grupo do Claude**; (e) **a regra do bastão**: navegador só com autorização explícita por tarefa, dizendo
+perfil e porta, e *"navegador devolvido"* ao terminar.
+
+📌 **A (e) muda a regra antiga de "anunciar antes".** Até hoje bastava avisar e pedir confirmação; agora a
+autorização é **por tarefa**, com perfil e porta ditos — e ela acaba quando a tarefa acaba. Uma confirmação
+dada para uma validação não vale para a próxima.
+
+### 27/09/2026 — ✅ A trava de navegador entre projetos: um hook de usuário, provado com dois terminais reais
+
+**O pedido do Jorge:** a regra (a) ainda depende de alguém lembrar; ele pediu **mecanismo** — um hook no nível
+do **usuário**, que vale para todos os terminais dele, conferindo antes de qualquer ferramenta do Chrome um
+arquivo de trava único da máquina, com projeto, perfil e hora.
+
+**O que foi feito** — com a mecânica conferida na documentação oficial de hooks e no próprio binário (2.1.283):
+
+- `~/.claude/hooks/trava-navegador.mjs` (md5 `62c3c62f…`; cópia na evidência), registrado em
+  `~/.claude/settings.json` — `PreToolUse` com matcher `mcp__claude-in-chrome__.*` e `SessionEnd`, os dois na
+  forma `args` (sem shell: caminho com espaço não quebra nada). As 12 chaves que o arquivo já tinha ficaram;
+  cópia de antes em `settings.json.bak-2026-09-27-antes-trava`.
+- **A trava** mora em `~/.claude/trava-navegador.json`. **De outro projeto e fresca** (renovada há ≤ 10 min):
+  a chamada é **negada**, com *"navegador em uso pelo projeto X desde HH:MM; pare e avise o Jorge"* — o motivo
+  vai ao Claude e a mesma frase aparece na tela. **Livre, vencida, ilegível ou deste projeto:** passa, **sem
+  decidir nada** (o fluxo normal de permissões continua) e renova a hora. O `SessionEnd` apaga a trava **só se
+  ela for da sessão que termina**. Escrita atômica, conferida depois de escrever (quem perde uma corrida é
+  bloqueado), e **falha fechada**: trava que não pode ser lida ou escrita bloqueia, com a frase do erro.
+- `node ~/.claude/hooks/trava-navegador.mjs status` diz quem segura; `liberar` é **só do Jorge**.
+
+**Provado em duas fases, 0 ⚡:**
+
+1. **A lógica — 15 cenários, 0 falhas**, cada um um processo novo com o JSON do evento no stdin, contra um
+   arquivo de trava de teste: bloqueia com a frase exata; renova mantendo o «desde»; mesmo projeto com outra
+   caixa e barras invertidas passa; o fim de quem não segura não apaga; o de quem segura apaga; **10 min e 1 s
+   sem renovação = vencida, 9 min e 59 s = fresca**; lixo no arquivo é tratado como livre; disco sem acesso
+   bloqueia; e o matcher pega as ferramentas do Chrome e nenhuma outra.
+2. **Dois terminais REAIS do Claude Code**, sem nenhum contato com o navegador: **T1** (`creatortkslabs`)
+   passou e segurou a trava; **T2** (outro projeto) foi **bloqueado com a frase exata**, e a ferramenta dele
+   **nunca rodou**; o fim do T2 não soltou a trava do T1; **o fim do T1 soltou**; **T3** passou com a trava
+   livre e soltou ao terminar. US$ 0,13 de uso de Claude nas cinco sessões de teste, em Haiku.
+
+📌 **Três achados que a prova rendeu:**
+
+- **O Claude Code reserva o nome `claude-in-chrome`.** Um servidor MCP de usuário com esse nome é descartado
+  em silêncio (`mcp_servers: []`); o mesmo servidor chamado `chrome-falso` conecta na hora. Por isso os
+  terminais de teste receberam, pelo `--settings`, **o mesmo script** apontado para o servidor falso — e **o
+  matcher literal ganha a prova real na primeira chamada ao Chrome depois da liberação**: `status` tem de
+  mostrar a trava deste projeto.
+- **O `env` de um `--settings` chega ao processo do hook** — é o que deixou o teste usar um arquivo de trava
+  próprio, sem nunca bloquear uma sessão de verdade de outro projeto no meio do trabalho dela.
+- **O perfil do Chrome não chega a hook nenhum** — a documentação não oferece como saber. A trava registra o
+  perfil que o projeto **declara** (`CLAUDE_NAVEGADOR_PERFIL`, no `env` do settings do projeto); sem
+  declaração, "não declarado".
+
+⚠️ **Toda sessão NOVA carrega a trava — medido** (os terminais de teste nasceram depois dela). **Se uma
+sessão que já estava aberta a carrega sozinha, não está medido:** a documentação fala em um observador de
+configuração, mas eu não provei. Na dúvida, uma sessão aberta antes de 27/09 ~19:10 precisa de `/hooks` uma
+vez, ou de ser reaberta — **inclusive a do outro cliente**.
