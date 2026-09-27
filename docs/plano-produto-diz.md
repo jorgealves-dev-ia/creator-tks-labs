@@ -5,7 +5,9 @@
 > minha recomendação**: a lista de produto tem **padrão próprio**, decidido pela F0, e o Sonnet a
 > 20 ⚡ **nunca** é o padrão dela.
 >
-> **Fase aberta: F0** — autorizada pelo dono em 26/09, com o plano (*"comece a F0"*).
+> **Fase aberta: F0** — autorizada pelo dono em 26/09, com o plano (*"comece a F0"*). **Pausada na
+> noite de 26/09, na metade**: falta o lado a lado Haiku × 3.7 Flash no contrato v2 (o próximo passo
+> exato está em *O que a F0 achou*). **F1a aprovada, não começou.**
 >
 > **Custo:** 0 ⚡ nas partes estruturais. **Pior caso R1 do percurso inteiro, registrado pelo dono
 > em 26/09: 87 ⚡ de preço — 79 ⚡ da carteira** (uma leitura pelo botão + uma imagem, saldo
@@ -253,8 +255,8 @@ falha é a que já existe — `translation_failed`, **antes de qualquer Spark**.
 
 | ordem | fase | entrega | ⚡ | status |
 |---|---|---|---|---|
-| 1ª | **F0** | o que o compilador envia hoje; o que Haiku e Gemini leem da foto da blusa — **e o padrão da lista de produto** | 0 ⚡ + ⚠️ **8 ⚡ fora do produto** | 🔵 **aberta** — (a) ✅ byte a byte; (b) **Haiku ✅ leu** (e inventou *"infantil"*); **3.7 Flash ⛔ `402`** — cobrança do Google (ver *O que a F0 achou*) |
-| — | **F1a** | **proposta de 26/09:** o envio que lê os bytes — e o colar/arrastar imagem no canvas pelo mesmo caminho | 0 ⚡ | 📝 **proposta — a execução é decisão do dono** |
+| 1ª | **F0** | o que o compilador envia hoje; o que Haiku e Gemini leem da foto da blusa — **e o padrão da lista de produto** | 0 ⚡ + ⚠️ **8 ⚡ fora do produto** | 🔵 **aberta** — (a) ✅ byte a byte; (b) **Haiku leu 2×** (v0 inventou *"infantil"*; v2 não); **falta o lado a lado Haiku × 3.7 Flash, 2 leituras por modelo, no v2** — o Google foi liberado em 26/09 (ver *O que a F0 achou*) |
+| — | **F1a** | o envio que lê os bytes — e o colar/arrastar imagem no canvas pelo mesmo caminho | 0 ⚡ | ✅ **aprovada em 26/09**, com regra de nome para a imagem colada — **não começou** |
 | 2ª | **F1** | o card, o botão, o seletor e a leitura gravada — **com migration** | ⚠️ **4 ⚡**, a leitura do dono | ⬜ |
 | 3ª | **F2** | o compilador cola a descrição | 0 ⚡ | ⬜ |
 | 4ª | **F3** | a prova viva: a blusa aparece | ⚠️ **75 ⚡** | ⬜ |
@@ -402,9 +404,29 @@ do 3.7 Flash com o contrato v2 é a própria verificação da cobrança** — nu
 para testar. Aí o lado a lado Haiku × 3.7 Flash, **os dois no contrato v2**, e a escolha do padrão da
 lista de produto (resposta 9.4). Até lá, a F3 está parada.
 
-### F1a · proposta — o envio que lê os bytes, e o colar/arrastar imagem no canvas
+**No fechamento da noite de 26/09, o dono decidiu** ([`decisoes.md`](decisoes.md), 26/09):
 
-> **📝 Proposta de 26/09, pedida pelo dono. A execução é decisão dele.** 0 ⚡.
+- **Google liberado:** saldo pré-pago reposto, **recarga automática desativada**. ⚠️ **A conta de
+  faturamento é compartilhada com outro projeto** — um `402` futuro pode vir sem nenhuma geração nossa.
+- **Punho e tecido aceitos no v2:** *erro de percepção se corrige no campo editável, não com regra nova
+  no contrato.* O contrato v2 fica como está.
+- **O lado a lado que fecha a F0** — o próximo passo exato:
+
+| | |
+|---|---|
+| modelos | Haiku (`claude-haiku-4-5`) × Gemini 3.7 Flash (`gemini-3.7-flash`) |
+| contrato | **v2**, o mesmo arquivo (md5 `a12a8dd4…`) |
+| leituras | **duas por modelo** |
+| critérios | o gabarito fechado **mais dois extras:** **a posição do elástico** (é do **punho**) e **o tratamento do tecido** (aparência — *"aparenta malha"* —, nunca composição) |
+| verificação da cobrança | **a primeira leitura do 3.7 Flash.** Se voltar `402`, parar — e lembrar que a conta é compartilhada |
+| **R1, a escrever de novo antes do clique** | **4 chamadas, no máximo 16 ⚡ de preço de catálogo, 0 Spark da carteira.** *Se a rodada 4 contar como uma das duas do Haiku: 3 chamadas, 12 ⚡ — o dono decide ao retomar* |
+| o que muda no harness antes | hoje o `f0-leituras.ts` faz **uma** leitura por modelo, sem os dois critérios extras: ajustar (0 ⚡) |
+| o que fecha a F0 | **a escolha do dono**, com as quatro leituras ao lado da foto: o padrão da lista de produto (resposta 9.4) |
+
+### F1a · o envio que lê os bytes, e o colar/arrastar imagem no canvas
+
+> **✅ Aprovada pelo dono em 26/09, com uma regra de nome para a imagem colada** (abaixo, em *A regra
+> de nome*). 0 ⚡. **Não começou** — a noite de 26/09 fechou sem código.
 
 **A recomendação: fase própria, antes da F1 — não carona na F1.**
 
@@ -466,10 +488,24 @@ servidor recusa um registro cujo tipo diverge dos bytes; colar e soltar criam o 
 **do store** e do DOM (pelo `medir-canvas.js`); 6 imagens num gesto → recusa com o número e **zero**
 envios; o carregador manda `image/webp` para a foto da blusa.
 
-**Os 6 registros já gravados — decisão do dono, à parte.** A F1a não os altera: com o carregador
-lendo os bytes, o provedor recebe o tipo certo mesmo com o banco errado. Se o dono quiser o banco certo
-também, é um script de correção em `supabase/correcoes/`, **rodado por ele**: os 6 ids da varredura,
-`mime_type` de `image/jpeg` para `image/webp`, idempotente, mostrando antes e depois.
+**A regra de nome da imagem colada — condição da aprovação; o conteúdo, a confirmar com o dono antes
+do código.** A imagem do clipboard chega sem nome útil — o navegador a entrega como `image.png` —, e
+hoje o rótulo é o nome do arquivo sem a extensão (`reference-picker.tsx`, `label: file.name…`): toda
+colagem viraria *"image"* na galeria, e a busca, que acha pelo rótulo, não acharia nada. **A proposta:**
+
+| de onde veio | o rótulo | o caminho no Storage |
+|---|---|---|
+| **colada** (clipboard, sem nome útil) | **`Colada · 27/09 14:32`** — o dia e a hora da colagem | `<dono>/references/<uuid>.<extensão lida nos bytes>` |
+| arrastada ou escolhida no botão | o nome do arquivo, sem a extensão — **como hoje** | o mesmo |
+
+*O caminho nunca usa o nome — usa um uuid e a extensão dos bytes —, então a regra de nome é só do
+rótulo, e nome repetido não colide.*
+
+**Os 6 registros já gravados — decisão do dono, 26/09: corrigidos por um script que ele roda.** A F1a
+não os altera: com o carregador lendo os bytes, o provedor recebe o tipo certo mesmo com o banco
+errado. O script vai em `supabase/correcoes/`, **rodado pelo dono**: **só a coluna de tipo**
+(`assets.mime_type`, de `image/jpeg` para `image/webp`), os 6 ids da varredura, idempotente, mostrando
+antes e depois. **A prova é a varredura rodada de novo: 104 batem / 0 divergem / 0 ilegíveis.**
 
 ### F1 · O card, o botão, o seletor e a leitura gravada
 

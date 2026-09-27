@@ -6065,3 +6065,32 @@ falsa**, nenhum valor impresso. Primeira execução: Anthropic, Google, fal e **
 OpenAI já existe e é aceita, o que interessa à frente 1.5 —, xAI sem chave. **O que ela prova é a
 chave, não o saldo:** o `402` do Google passou por uma consulta assim. A exceção é a fal, que acusa a
 conta travada (`403`) até numa consulta.
+
+### 26/09/2026 — 🔒 DECISÕES do dono, no fechamento da noite: o Google liberado, o lado a lado, a F1a aprovada
+
+**Registradas na pausa até 27/09. Nenhuma foi executada ainda** — o dono pediu que nada novo começasse.
+
+1. **Google liberado.** O saldo pré-pago foi reposto, e **a recarga automática, desativada** — a regra
+   da R3 da fal (*"recarga automática: NUNCA"*) chegando ao Google. ⚠️ **A conta de faturamento é
+   compartilhada com outro projeto:** um `402` futuro pode vir **sem nenhuma geração nossa**. O saldo que
+   a casa vê não é só dela, e um `402` não prova, sozinho, que fomos nós que gastamos.
+2. **O lado a lado que fecha a F0:** Haiku × 3.7 Flash, **contrato v2, duas leituras por modelo**, com
+   dois critérios extras além do gabarito: **a posição do elástico** (é do punho) e **o tratamento do
+   tecido** (aparência, não composição). A primeira leitura do 3.7 Flash é também a verificação da
+   cobrança.
+3. **F1a aprovada** — o envio que lê o tipo nos bytes, e o colar/arrastar imagem no canvas pelo mesmo
+   caminho — **com uma regra de nome para a imagem colada**: a do clipboard chega sem nome útil
+   (`image.png`), e o rótulo é o que a busca da galeria encontra. *O conteúdo da regra é confirmado
+   com o dono antes do código — a proposta está no plano.*
+4. **Os 6 registros com o tipo errado serão corrigidos por um script que o dono roda:** **só a coluna
+   de tipo** (`assets.mime_type`), e a prova é a varredura rodada de novo: **104 batem / 0 divergem / 0
+   ilegíveis**.
+5. **Punho e tecido aceitos no v2.** ***Erro de percepção se corrige no campo editável, não com regra
+   nova no contrato.***
+
+📌 **A 5 traça uma fronteira que vale guardar.** O contrato proíbe **invenção** — o que a foto não
+evidencia, como o *"infantil"* numa foto sem escala: aí cabe regra, porque a leitura afirmou algo sem
+base. O que a foto mostra e o modelo lê errado — o elástico no ombro — é **percepção**: acontece de
+novo com outra foto, de outro jeito, e regra nenhuma no contrato acompanha. **Quem corrige percepção é
+a pessoa, no card** — é para isso que a descrição é editável (a porta 3 da decisão de 21/09). E os
+dois erros de percepção viram **critérios de comparação** no lado a lado (item 2), não regras.
