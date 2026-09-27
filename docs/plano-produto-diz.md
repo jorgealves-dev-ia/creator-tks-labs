@@ -163,8 +163,9 @@ outra resposta para *"quem pode ler isto"*. **A ficha de personagem não muda um
 | Claude Sonnet (`claude-sonnet-5`) | **20** | **✅** | ✅ |
 | Claude Opus (`claude-opus-5`) | 30 | | ✅ |
 | Claude Haiku (`claude-haiku-4-5`) | **4** | | ✅ |
-| Gemini 2.5 Pro (`gemini-2.5-pro`) | 10 | | ❌ → ✅ nesta frente |
-| Gemini 2.5 Flash (`gemini-2.5-flash`) | **4** | | ❌ → ✅ nesta frente |
+| Gemini 2.5 Pro (`gemini-2.5-pro`) | 10 | | ❌ — **sai da lista** até ser medido (dono, 26/09) |
+| Gemini 2.5 Flash (`gemini-2.5-flash`) | **4** | | ❌ — **404 para esta conta** (F0) → **inativa na F1** |
+| Gemini 3.7 Flash (`gemini-3.7-flash`) | hoje só `text_gen` | | ✅ texto → **lê produto nesta frente**, a 4 ⚡ de referência |
 | GPT-5 · GPT-5 mini · Grok 4 | 10 · 4 · 10 | | ❌ — frente 1.5 |
 
 *Lido do catálogo em 26/09.* O seletor abre no padrão (`defaultModelId`, `model-select.tsx:126`) —
@@ -196,6 +197,9 @@ Google no dia**.
 As duas linhas nasceram em 08/08, **apagadas** (`20260808184059_…sql:494-495`), e nenhum adapter as
 serviu desde então. `gemini-2.5-flash` é um identificador de meados de 2025. **A F0 é a primeira
 chamada real a ele** — e é ela que diz se o identificador ainda responde.
+
+**Chamado em 26/09: `404` — *"no longer available to new users"*.** Saiu da lista; entrou o
+`gemini-3.7-flash` (decisão do dono, no mesmo dia).
 
 ### 4.9 · O que já está pronto e não precisa mudar
 
@@ -247,7 +251,7 @@ falha é a que já existe — `translation_failed`, **antes de qualquer Spark**.
 
 | ordem | fase | entrega | ⚡ | status |
 |---|---|---|---|---|
-| 1ª | **F0** | o que o compilador envia hoje; o que Haiku e Gemini leem da foto da blusa — **e o padrão da lista de produto** | 0 ⚡ + ⚠️ **8 ⚡ fora do produto** | 🔵 **aberta** — (a) ✅ byte a byte; (b) ⛔ **parada em duas decisões do dono** (ver *O que a F0 achou*) |
+| 1ª | **F0** | o que o compilador envia hoje; o que Haiku e Gemini leem da foto da blusa — **e o padrão da lista de produto** | 0 ⚡ + ⚠️ **8 ⚡ fora do produto** | 🔵 **aberta** — (a) ✅ byte a byte; (b) **Haiku ✅ leu** (e inventou *"infantil"*); **3.7 Flash ⛔ `402`** — cobrança do Google (ver *O que a F0 achou*) |
 | 2ª | **F1** | o card, o botão, o seletor e a leitura gravada — **com migration** | ⚠️ **4 ⚡**, a leitura do dono | ⬜ |
 | 3ª | **F2** | o compilador cola a descrição | 0 ⚡ | ⬜ |
 | 4ª | **F3** | a prova viva: a blusa aparece | ⚠️ **75 ⚡** | ⬜ |
@@ -298,7 +302,7 @@ latência; custo real em centavos; o tamanho do pt e do en; e o **gabarito pré-
 
 | pergunta | quem |
 |---|---|
-| **o padrão da lista de produto** — o que ler melhor a foto da blusa, entre Haiku e Gemini Flash, os dois a 4 ⚡ (resposta 9.4). É ele que a F1 grava no catálogo e que o dono usa na leitura dele | **dono**, com os dois JSONs ao lado da foto |
+| **o padrão da lista de produto** — o que ler melhor a foto da blusa, entre **Haiku e Gemini 3.7 Flash** (resposta 9.4; o 3.7 Flash entrou no lugar do 2.5 Flash em 26/09), medidos contra os 4 ⚡. É ele que a F1 grava no catálogo e que o dono usa na leitura dele | **dono**, com os dois JSONs ao lado da foto |
 | o contrato muda antes da F1? | Claude propõe, dono aprova |
 | o `gemini-2.5-flash` responde? | fato. Se não: **pergunta de catálogo ao dono** — migration com o identificador vigente e o preço conferido; **nunca código** |
 | o Gemini precisa de teto de pensamento no adapter? | Claude, com o número de tokens na mão |
@@ -332,9 +336,43 @@ de entrada e US$ 3,75 de saída com pensamento, por milhão de tokens, **até 31
 partir de 01/01/2027**. O 2.5 Flash custava US$ 0,30 e 2,50: **os 4 ⚡ do catálogo podem não cobrir a
 leitura** — o número de verdade vem da chamada que passar.
 
-**A F0 retoma com duas decisões do dono** — a chave da Anthropic, e qual Gemini entra no lugar do
-2.5 Flash. O resto do plano não muda: a F0 continua decidindo o padrão da lista de produto, entre o
-Haiku e o Gemini que ficar.
+**As duas decisões do dono, na mesma tarde** ([`decisoes.md`](decisoes.md), 26/09): a chave da
+Anthropic **expirou por prazo programado** (criada em 08/08) e foi trocada por ele; e o Gemini da lista
+de produto é o **`gemini-3.7-flash`** — o 2.5 Pro sai da lista até ser medido, e as duas linhas 2.5 de
+`extraction` ficam inativas na migration da F1.
+
+**Rodada 2 — Haiku e 3.7 Flash, as duas recusadas antes de gerar, custo real 0:**
+
+| leitor | a recusa, verbatim | o que ela quer dizer |
+|---|---|---|
+| Haiku | `400 … The image was specified using the image/jpeg media type, but the image appears to be a image/webp image` | **a chave nova funciona** — e a foto é **WebP registrada como JPEG**: os bytes começam com `RIFF … WEBP`. O envio grava o que o navegador diz (`reference-picker.tsx:271`); a geração manda o que o banco diz (`asset-payloads.ts`). O Google tolerou em 07/09; a Anthropic confere e recusa. **Erro nosso** |
+| 3.7 Flash | `402` — pagamento exigido, corpo vazio | a sonda 0 ⚡ (consulta de metadados, sem geração) voltou **200** para o 3.7 Flash **e para o Nano Banana 2**: a chave e o projeto respondem, **a geração é que está bloqueada — cobrança do lado do Google**. Bloqueia também a imagem, o Roteiro **e a F3** |
+
+**Rodada 3 — só o Haiku, com o tipo lido nos bytes (`image/webp`); mesma foto, mesmo contrato byte a
+byte (md5 `963af2aa…`):**
+
+| | Haiku (`claude-haiku-4-5`) |
+|---|---|
+| latência | 4.394 ms |
+| tokens | 1.965 de entrada · 236 de saída · 0 de pensamento |
+| **custo real** | **2 centavos contra 4 ⚡ = 4 centavos — cabe**, com o dobro de margem, e igual em 2027 |
+| as três partes do contrato | **o que é ✅ · atributos 5/5 ✅ · como se usa ✅** |
+| **o gabarito pré-registrado** | **4/4 obrigatórios · 3/3 desejáveis** — não disse linho, não inventou marca |
+
+> *"A children's short-sleeve blouse in navy blue, made of apparently soft and lightweight fabric.
+> Features a simple round neckline, short puffed sleeves with gathered elastic cuffs creating a ruched
+> effect. The body is straight and loose-fitting with no pattern, ending at waist level. Closes with
+> natural finishing without buttons or zippers. Perfect for casual and comfortable wear."*
+
+> ## ⚠️ E inventou uma coisa que o gabarito não previa: **"infantil"**
+>
+> *"Blusa infantil…"* / *"A children's short-sleeve blouse…"* — numa foto **sem nada que dê escala**.
+> "Para quem é" é **tamanho**, e a regra 2 do contrato proíbe dizer tamanho que não se vê. **E é a
+> frase que a F2 colaria no bloco do produto**: na F3, o texto mandaria a @luna, adulta, vestir *"a
+> children's blouse"*. O gabarito segue fechado; o achado vai ao dono **antes** da escolha do padrão.
+
+**O 3.7 Flash não foi medido** — espera a cobrança do Google. **A escolha do padrão da lista de
+produto (resposta 9.4) espera os dois.**
 
 ### F1 · O card, o botão, o seletor e a leitura gravada
 
@@ -361,6 +399,12 @@ Haiku e o Gemini que ficar.
    Sonnet —, com **no máximo um** modelo marcado e **só** modelo de `extraction`. O valor é o
    vencedor da F0.
 
+   **E a lista de produto nasce com Haiku e 3.7 Flash** (decisão do dono, 26/09): a linha
+   `gemini-3.7-flash` — hoje só `text_gen` — ganha `extraction` e o preço da leitura (**4 ⚡ é a
+   referência do dono**, contra a qual a F0 mede o custo real); as linhas **`gemini-2.5-flash` e
+   `gemini-2.5-pro` de `extraction` ficam inativas** — o Flash voltou 404 para esta conta, e o Pro só
+   volta à lista depois de medido.
+
    **O padrão RAISE EXCEPTION, nas três camadas em que a casa já o usa:**
    - **a função recusa com frase e código** — `raise exception '…' using errcode = 'EX00N'`, como
      `record_extraction` e `record_montage`: cada recusa vira uma frase na tela, e nenhuma vira
@@ -370,8 +414,9 @@ Haiku e o Gemini que ficar.
      de produto um modelo sem `extraction` é recusado pelo banco, não lembrado pelo app;
    - **e a migration confere o que vai instalar e o que instalou:** levanta exceção — e o `db push`
      para ali, dizendo por quê — se o padrão da lista de produto não for **exatamente um** modelo,
-     de `extraction`, a **4 ⚡**, ou **se for o Sonnet**. *"Sonnet nunca é padrão para produto"* deixa
-     de ser frase e vira condição para a migration existir.
+     de `extraction`, a **4 ⚡**, ou **se for o Sonnet**, **ou se alguma das duas linhas 2.5 de
+     `extraction` continuar ativa**. *"Sonnet nunca é padrão para produto"* deixa de ser frase e vira
+     condição para a migration existir.
 
    Depois de aplicada: `database.types.ts` **regerado do banco** (regra 2) e o modelo de dados de
    [`arquitetura.md`](arquitetura.md) §4 atualizado.
@@ -388,12 +433,17 @@ Haiku e o Gemini que ficar.
    mesmo `toProviderError` e **sem retentativa** (`NO_RETRIES`). A forma da chamada vem do probe da
    F0, e não da documentação — o precedente é o do adaptador de texto, *"a que fez as 47 chamadas
    reais da Fase 0"*.
-5. **`pricing.ts`** ganha o Gemini 2.5 Flash e o 2.5 Pro (§4.7).
+5. **`pricing.ts` já tem o 3.7 Flash**, com as duas faixas de tarifa (até 31/12/2026 e depois), em
+   `TEXT_PRICES_USD_PER_MTOK` — a leitura usa essa tarifa, **somando o pensamento à saída**: é como o
+   Google cobra, e o campo vem separado (`total_thought_tokens`). *(A §4.7 previa acrescentar o 2.5
+   Flash e o Pro; os dois saíram da lista.)*
 6. **A ação da leitura.** O navegador **nomeia** projeto, card, foto e modelo; o servidor **decide**
    tudo o que custa: o preço do catálogo, o dono da foto, **o saldo antes da chamada**, a chamada, o
    **Zod na resposta** (`nome` até 120 caracteres, cada descrição até 2.000, nada vazio — o que não
    passa é falha, **e falha é grátis**) e **uma** chamada à função que grava e cobra. Devolve o
-   texto, o id da leitura, o cobrado e o saldo.
+   texto, o id da leitura, o cobrado e o saldo. **E o tipo da foto é lido nos bytes, nunca no
+   banco** — achado da F0: a foto da blusa é WebP registrada como JPEG, e a Anthropic recusa a
+   divergência com 400.
 7. **O card: Nome · Fotos · Descrição · seletor · «Ler a foto · N ⚡».** **A Instrução vira a
    Descrição** (resposta 9.1): um campo só, maior, e os cards antigos mantêm o texto que tinham,
    agora sob o nome novo. A Descrição é caixa grande,
@@ -427,7 +477,7 @@ placar).
 |---|---|---|
 | F1.1 | as travas do banco — **as três camadas do RAISE EXCEPTION**, cada uma recusando o caso errado e aceitando o certo | script de asserções em `BEGIN … ROLLBACK` — **nada fica gravado** —, escrito pelo Claude e rodado pelo Jorge no SQL Editor: leitura de produto com personagem → recusada; padrão de produto num modelo sem `extraction` → recusado; a conferência da migration contra um catálogo com o Sonnet marcado → **exceção**, e contra o certo → passa. Depois, o MCP lê as travas instaladas |
 | F1.2 | **vermelho→verde do registro e do padrão** | hoje o Google é `no_adapter` nos dois seletores; depois, **pronto na leitura de produto e `no_adapter` na de personagem**. E o padrão: a lista de produto abre no **vencedor da F0**; a de personagem continua no **Sonnet** |
-| F1.3 | a ordem da ação | provedor falso, sem rede: saldo antes da chamada; recusa e falha gravadas a 0 ⚡; sucesso = **uma** chamada à função; preço do catálogo **mesmo que o navegador mande outro número**; foto de outro usuário recusada |
+| F1.3 | a ordem da ação | provedor falso, sem rede: saldo antes da chamada; recusa e falha gravadas a 0 ⚡; sucesso = **uma** chamada à função; preço do catálogo **mesmo que o navegador mande outro número**; foto de outro usuário recusada; **foto WebP registrada como JPEG vai com o tipo dos bytes** (a de 07/09 é uma) |
 | F1.4 | um clique, uma chamada | dois cliques seguidos → o contador do provedor falso marca **1** |
 | F1.5 | só no vazio | a tabela acima, linha a linha |
 | F1.6 | a tela | sem foto, campos cheios, o seletor (Google pronto; OpenAI e xAI «(em breve)»), **o botão nascendo em «Ler a foto · 4 ⚡»** e o preço acompanhando o modelo escolhido — lidos do DOM pelo `medir-canvas.js` |
@@ -556,14 +606,15 @@ previsto na F2.7; um lançamento de −75; saldo **3.186 → 3.111**.
 
 | gesto | fase | quem aperta | preço | sai da carteira? |
 |---|---|---|---|---|
-| leitura por Haiku, no harness | F0 | Claude, **depois do ok do dono** | 4 ⚡ | **não** — fora do produto |
-| leitura por Gemini Flash, no harness | F0 | Claude, **depois do ok do dono** | 4 ⚡ | **não** |
+| leitura por Haiku, no harness | F0 | Claude, **depois do ok do dono** | 4 ⚡ | **não** — fora do produto. **Feita na rodada 3: custo real de 2 centavos** (rodadas 1 e 2 recusadas antes de gerar, 0) |
+| leitura por Gemini 3.7 Flash, no harness *(era o 2.5 Flash)* | F0 | Claude, **depois do ok do dono** | 4 ⚡ | **não** — **ainda não feita**: `402` do Google na rodada 2 (0) |
 | leitura pelo botão | F1 | **dono** | 4 ⚡ | **sim** |
 | ↻ da cena 2 | F3 | **dono** | 75 ⚡ | **sim** |
 | **pior caso** | | | **87 ⚡ de preço** | **79 ⚡ da carteira** — saldo **3.190 → 3.111** |
 
-*Conferido no catálogo em 26/09:* `claude-haiku-4-5` e `gemini-2.5-flash` a **4 ⚡** por extração;
-`gemini-3.1-flash-image` a **75 ⚡** em 2K.
+*Conferido no catálogo em 26/09:* `claude-haiku-4-5` a **4 ⚡** por extração; `gemini-3.1-flash-image`
+a **75 ⚡** em 2K. *O `gemini-3.7-flash` entrou no lugar do 2.5 Flash com **4 ⚡ de referência do dono**
+— a linha de `extraction` dele nasce na F1.*
 
 - **R2** — nenhum motorista de lote em nenhum gesto. O botão de leitura herda o espírito das quatro
   travas: **um clique → no máximo uma chamada → no máximo um débito**, e nunca resubmissão
@@ -598,6 +649,14 @@ previsto na F2.7; um lançamento de −75; saldo **3.186 → 3.111**.
 7. **O Nome de hoje tem forma de slug** (*"blusa-azul-de-linho-manga-curta"*). Pela invariante 11, a
    leitura o **preserva**. Pela resposta 9.2 ele só entraria no texto com a Descrição vazia — e na F3
    ela estará cheia, então **o slug não entra**. Num card só com nome, entraria como está escrito.
+8. **O Google recusa gerar (`402`)** — medido na F0, 26/09: a consulta passa, a geração não. É
+   cobrança do lado do Google, e **a mesma chave desenha a imagem e escreve o Roteiro**: enquanto ela
+   estiver assim, **a F3 não acontece**, e talvez a produção também não gere. *A recusa não cobra
+   Spark — mas também não entrega nada.*
+9. **A leitura pode inventar para quem a peça é** — medido na F0: o Haiku passou o gabarito e ainda
+   assim escreveu *"infantil"* numa foto sem escala. Uma palavra de público ou de tamanho (*infantil*,
+   *plus size*, *masculino*) no começo da descrição **muda a peça que o modelo desenha**. A decisão é do
+   dono, antes do padrão.
 
 ---
 
@@ -607,7 +666,7 @@ previsto na F2.7; um lançamento de −75; saldo **3.186 → 3.111**.
 |---|---|---|
 | 9.1 | A Instrução de hoje vira a Descrição? | ✅ **Sim — um campo só.** O card fica **Nome · Fotos · Descrição**; os cards antigos mantêm o texto, sob o nome novo |
 | 9.2 | O Nome entra no texto? | ✅ **Só quando a Descrição estiver vazia** — cobre o card de 07/09, que era exatamente nome cheio e descrição vazia |
-| 9.3 | O Google acende também a leitura de personagem? E o 2.5 Pro? | ✅ **Personagem, não. O Gemini 2.5 Pro entra na lista de produto, sim** |
+| 9.3 | O Google acende também a leitura de personagem? E o 2.5 Pro? | ✅ **Personagem, não. O Gemini 2.5 Pro entra na lista de produto, sim** — 🔁 **revista em 26/09, depois da F0:** o 2.5 Flash voltou 404 e o Pro **sai da lista até ser medido**; a lista nasce com **Haiku e 3.7 Flash** |
 | 9.4 | Em qual modelo o seletor abre? | 🔁 **Decisão do dono, contra a minha recomendação.** Eu recomendei não mexer no padrão do catálogo — ele é um só, compartilhado com a ficha — e deixar a primeira leitura abrir no Sonnet. **O dono não aceitou:** *a lista de produto tem o seu próprio padrão, separado do de personagem, e ele é decidido pela F0 — o que ler melhor a foto da blusa entre Haiku (4 ⚡) e Gemini Flash (4 ⚡). **Sonnet a 20 ⚡ nunca é padrão para produto.** O card lembra o último modelo usado.* → vira a marca própria no catálogo e a conferência da migration, na F1 |
 | 9.5 | Se a F3 passar, onde a 1.5 entra na fila? | ✅ **Depois das cinco frentes, se a F3 passar; a próxima, se a F3 falhar com o texto certo no payload** |
 

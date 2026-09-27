@@ -5972,3 +5972,52 @@ frase e `errcode` (como `record_extraction` e `record_montage`); o que um CHECK 
 trigger que recusa; e a migration confere o que instala — levanta exceção se o padrão da lista de
 produto não for exatamente um modelo de `extraction` a 4 ⚡, ou se for o Sonnet. **O "nunca" do dono
 vira condição para a migration existir, e não frase num documento.**
+
+### 26/09/2026 — 🔒 DECISÃO do dono: o 3.7 Flash lê produto, o 2.5 sai do catálogo — e o preço precisa de vigência
+
+**Nasceu da F0(b).** A primeira rodada voltou com as duas leituras recusadas antes de gerar: a chave
+da Anthropic rejeitada, e o `gemini-2.5-flash` em 404 — *"no longer available to new users"*. As
+decisões do dono, na mesma tarde:
+
+- **O Gemini da lista de produto é o `gemini-3.7-flash`** — o do Roteiro, já no catálogo, que a conta
+  já usa (então a parede de "novos usuários" não o alcança), ao mesmo preço do 3.8 Flash que o Google
+  sugeriu.
+- **O 2.5 Pro sai da lista de produto por enquanto** — revê a resposta 9.3: a lista nasce com **Haiku
+  e 3.7 Flash**, e o Pro só entra depois de medido.
+- **As linhas `gemini-2.5-flash` e `gemini-2.5-pro` de `extraction` viram inativas**, no SQL da
+  migration da F1 — no padrão RAISE EXCEPTION, e aplicada pelo dono.
+- **A chave da Anthropic expirou por prazo programado** — criada em 08/08 com validade, **não
+  revogada**. Trocada pelo dono em 26/09, fora do chat. *A data de vencimento da nova: o dono vai
+  informar — a mensagem de 26/09 trouxe o campo sem preencher.*
+
+📌 **A vigência de preço, nota do dono para o Ciclo 4.** O preço do 3.7 Flash **dobra em 01/01/2027**.
+A metade de **custo real** já sabe disso: `pricing.ts` guarda as duas faixas do 3.7 Flash
+(`TEXT_PRICES_USD_PER_MTOK`), e os trabalhos de texto tiveram o preço em ⚡ semeado sobre a tarifa
+**cheia**, para a virada não obrigar a mexer em preço. **O catálogo em Sparks não tem vigência
+nenhuma** — um preço é um número sem data. Com um fornecedor que anuncia a própria virada, isso deixa
+de ser detalhe.
+
+📌 **Backlog do dono: a sonda de chaves por fornecedor** — 0 ⚡, *"chave válida ✓/✗"* na tela. **O
+porquê:** a chave expirou em silêncio. Nada no produto diria isso antes de um gesto pago falhar — e o
+produto recusa antes de cobrar, então nem o extrato acusaria. **Quem achou foi a F0, por acaso.** Uma
+chave com prazo precisa de um lugar que mostre o prazo antes do clique.
+
+#### Três achados da F0 que mudam a F1 — medidos, 0 ⚡
+
+1. **A foto da blusa é WebP registrada como JPEG.** Os bytes começam com `RIFF … WEBP`; o banco diz
+   `image/jpeg` e o caminho termina em `.jpg`. **O caminho:** o envio grava o que o navegador diz
+   (`reference-picker.tsx:271`, `file.type`, que vem da extensão), e a geração manda ao provedor o que
+   o banco diz (`asset-payloads.ts`, `mimeType: asset.mime_type`). O Google tolerou em 07/09; **a
+   Anthropic confere o conteúdo e recusa com 400**. Foto de marketplace vem assim com frequência —
+   então **a leitura da F1 lê o tipo nos bytes**. *É a mesma família do achado da Fase 0 do vídeo: o
+   banco não sabe o que os arquivos são — lá, largura e altura; aqui, o próprio tipo.*
+2. **O Google recusa GERAR com `402` — e deixa consultar.** Na rodada 2, o 3.7 Flash voltou `402`
+   (pagamento exigido), com o corpo vazio. A sonda 0 ⚡ — uma consulta de metadados, que não gera nada —
+   voltou **200** para o 3.7 Flash **e para o Nano Banana 2**: a chave e o projeto respondem, e o
+   bloqueio está na parte cobrada. **É cobrança do lado do Google, e ela bloqueia também a imagem e o
+   Roteiro — e a F3.**
+3. **A primeira leitura de verdade, pelo Haiku: o gabarito passou 4/4, e ainda assim inventou uma
+   coisa.** As três partes do contrato vieram — o que é, cinco atributos, como se usa —, e o custo real
+   foi **2 centavos contra os 4 ⚡** do catálogo. Mas a leitura diz que a peça é **infantil** —
+   *"A children's short-sleeve blouse"* — numa foto sem nada que dê escala. **O gabarito não previa
+   essa invenção, e ela está na frase que iria para o prompt da @luna.**
