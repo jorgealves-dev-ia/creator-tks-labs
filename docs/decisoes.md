@@ -6021,3 +6021,47 @@ chave com prazo precisa de um lugar que mostre o prazo antes do clique.
    foi **2 centavos contra os 4 ⚡** do catálogo. Mas a leitura diz que a peça é **infantil** —
    *"A children's short-sleeve blouse"* — numa foto sem nada que dê escala. **O gabarito não previa
    essa invenção, e ela está na frase que iria para o prompt da @luna.**
+
+### 26/09/2026 — 🔒 DECISÕES do dono: o princípio de evidência, o 402 é saldo, e o dev ganha porta fixa
+
+**Um lote de seis, na noite de 26/09.** Tudo a 0 ⚡, menos uma leitura do Haiku, com o pior caso
+declarado antes.
+
+**1 · O princípio de evidência entra no contrato de leitura (o v2).** Palavra por palavra, como regra 2:
+*"Descreva apenas o que a foto evidencia. Atributos de quem usa a peça — faixa etária (infantil/adulto),
+gênero, modelagem (plus size) — só entram se houver evidência visível na foto (etiqueta, referência de
+escala, corpo vestindo). Na dúvida, omita."* **Medido na rodada 4:** o *"infantil"* sumiu, o gabarito
+seguiu 4/4 e 3/3, e o custo real foi **2 centavos contra 4 ⚡**. Dois detalhes menores ficaram — o
+elástico foi parar no ombro (é do punho), e *"aparenta ser algodão ou misto"* é composição com ressalva
+—, e **n = 1 por rodada**: a 3 acertou o punho e errou o público; a 4, o contrário.
+
+**2 · O `402` do Google é saldo pré-pago baixo** — causa confirmada pelo dono. Ele repõe e define **o
+gasto máximo mensal no AI Studio**. **A verificação da cobrança é a própria leitura do 3.7 Flash com o
+contrato v2 — nunca uma geração de imagem só para testar.** Até o *"liberado"*: a F3 parada, e a
+produção sem geração.
+
+📌 *É a forma da R3 da fal chegando ao Google — o saldo pré-pago como teto de estrago — com uma
+diferença a favor: o Google oferece teto mensal, e a fal não.*
+
+**3 · A chave nova da Anthropic não vence** — o dono informou *"nunca"*.
+
+**4 · A varredura dos tipos de arquivo — só relatório, nada alterado.** 104 arquivos, 32 bytes de cada:
+**98 batem, 6 divergem**, 0 ilegíveis. **As 6 são envios declarados `image/jpeg` que são WebP** — 6 dos
+14 envios "JPEG". Imagens geradas e vídeos batem todos. Os 6 foram referência em 26 gerações, todas
+pelo Google, que tolerou. **A correção dos registros é decisão do dono, à parte**; o conserto do
+caminho está na proposta F1a.
+
+**5 · Colar e arrastar imagem no canvas — planejado, execução do dono.** A regra dura: **o mesmo
+caminho do botão** — mesmo Storage, mesmo registro, tipo lido nos bytes, nenhum caminho paralelo. A
+proposta está no plano como **F1a, fase própria de 0 ⚡, antes da F1**: carona na F1 poria uma tela de
+0 ⚡ esperando uma prova de dinheiro. Limites: JPEG, PNG e WebP; até 10 MB (o teto do botão); até 5 por
+gesto, recusando o gesto inteiro acima disso.
+
+**6 · O dev ganha porta fixa, e a sonda de chaves vira script.** `npm run dev` sobe na **5599** — a porta
+em que a extensão do Chrome já tinha permissão desde o Ciclo 3, quando a 3000 recusava a execução de
+JS —, e a 3000 fica para os outros projetos da máquina. **`npm run probe:keys`** é a sonda improvisada
+na F0, formalizada: uma pergunta grátis por fornecedor, **cada uma lida contra um controle com chave
+falsa**, nenhum valor impresso. Primeira execução: Anthropic, Google, fal e **OpenAI ✓** — a chave da
+OpenAI já existe e é aceita, o que interessa à frente 1.5 —, xAI sem chave. **O que ela prova é a
+chave, não o saldo:** o `402` do Google passou por uma consulta assim. A exceção é a fal, que acusa a
+conta travada (`403`) até numa consulta.

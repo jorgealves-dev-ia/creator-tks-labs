@@ -24,7 +24,7 @@
 | [`docs/plano-storyboard-c3.md`](docs/plano-storyboard-c3.md) | Ao retomar a **Frente Storyboard · Ciclo 3 (A Máquina)** — a régua de passos (50 → 9, com a Fase 4 valendo −3 **medidos**), o mapa do que a Máquina rege sem tocar, a anatomia do node, as fases e as **sete decisões, todas fechadas em 28/08**. **Ciclo ENCERRADO em 02/09/2026**, com a régua percorrida pelo dono e o veredito registrado — *o fluxo ficou curto, mas para antes do fim*. Segue aberta a pergunta **0.3** (aba escondida). |
 | [`docs/plano-video-final.md`](docs/plano-video-final.md) | Ao retomar o **mini-ciclo «O vídeo final»** — o rabo do Ciclo 3, nascido do veredito do dono em 02/09: a Máquina termina em **UM vídeo montado, sem Spark**. Fases 0 a 7, tudo 0 ⚡. **✅ FECHADO em 06/09/2026** (`d17a2d8`). |
 | [`docs/plano-fix-produto.md`](docs/plano-fix-produto.md) | Ao retomar a **Frente A′ · o `fix:` do produto** — por que *nome não é foto*, o que a investigação de 06/09 achou (o slot da Máquina existe e o fio é **inerte**; o compilador já sabe compilar produto; o campo `produto` do schema não tem descrição; o aviso existe no bloco errado), as cinco fases de 0 ⚡, as duas provas do dono a **90 ⚡** e as cinco perguntas que só ele respondeu. **✅ FECHADA em 07/09/2026** — a foto chega ao provedor; a fidelidade virou a Frente 1. |
-| [`docs/plano-produto-diz.md`](docs/plano-produto-diz.md) | Ao retomar a **Frente 1 · o produto diz o que é** — as decisões do dono de 21/09 (Nome e Descrição no card; «Ler a foto · N ⚡» com seletor de modelo; texto livre em pt e en, sem taxonomia; a chave continua mandando), o que a investigação de 26/09 achou (o adapter é registrado por **fornecedor**; o padrão de extração é o Sonnet a **20 ⚡**; `extractions` só sabe gravar personagem — a F1 tem migration), as fases F0–F3, o pior caso **79 ⚡ da carteira + 8 ⚡ fora do produto** e as cinco respostas do dono — a 9.4 dá à lista de produto **padrão próprio**, decidido pela F0, e o Sonnet a 20 ⚡ **nunca** é ele. **Aprovado em 26/09; F0 aberta.** |
+| [`docs/plano-produto-diz.md`](docs/plano-produto-diz.md) | Ao retomar a **Frente 1 · o produto diz o que é** — as decisões do dono de 21/09 (Nome e Descrição no card; «Ler a foto · N ⚡» com seletor de modelo; texto livre em pt e en, sem taxonomia; a chave continua mandando), o que a investigação de 26/09 achou (o adapter é registrado por **fornecedor**; o padrão de extração é o Sonnet a **20 ⚡**; `extractions` só sabe gravar personagem — a F1 tem migration), as fases F0–F3, o pior caso **79 ⚡ da carteira + 8 ⚡ fora do produto** e as cinco respostas do dono — a 9.4 dá à lista de produto **padrão próprio**, decidido pela F0, e o Sonnet a 20 ⚡ **nunca** é ele. **Aprovado em 26/09; F0 na metade** — o Haiku leu a blusa com o contrato v2 (o princípio de evidência), o 3.7 Flash espera o saldo do Google. **Proposta F1a** (o envio que lê o tipo nos bytes, e o colar/arrastar imagem no canvas) esperando o dono. |
 | [`docs/notas-modo-take.md`](docs/notas-modo-take.md) | Antes de planejar o **Ciclo C (Modo Take)** — a análise do Seedance 2.5: papéis de referência, linha do tempo, preço citado e o que **não** copiar. Só registro. |
 | [`docs/notas-voz.md`](docs/notas-voz.md) | Antes de planejar o **Ciclo D (Voz)** — *voz é identidade*, a identidade de voz na ficha, os dois caminhos para o campo `fala`, e a regra a criar **antes do primeiro `voice_id`**. Só registro. |
 | [`docs/plano-egress.md`](docs/plano-egress.md) | Ao retomar o **Mini-ciclo Faxina de Egress** — miniaturas, URL assinada estável e cache imutável. Os números medidos do acervo e as duas decisões do Jorge, respondidas em 27/08 (o `sharp` declarado; a URL assinada num `Map` em memória). **Fases 0 a 5 em produção**; o §4.5 espera o gráfico de Usage. |
@@ -172,10 +172,11 @@ O primeiro está em `supabase/correcoes/20260829_estorno_incidente_laco_reanimac
 
 ## Comandos
 
-- `npm run dev` — desenvolvimento
+- `npm run dev` — desenvolvimento, **sempre em `localhost:5599`** *(porta fixa desde 26/09/2026: é onde a extensão do Chrome tem permissão, e a 3000 é dos outros projetos da máquina)*
 - `npm run build` — build de produção
 - `npm run lint` — lint
 - `npm run typecheck` — checagem de tipos
+- `npm run probe:keys` — a sonda de chaves por fornecedor, **0 ⚡**: uma pergunta grátis a cada um, lida contra um controle com chave falsa, nenhum valor impresso. **Prova a chave, não o saldo** (a fal é a exceção: acusa a conta travada)
 - `supabase migration new <nome>` — criar migration (livre)
 - **Aplicar migrations — sempre o Jorge, manualmente:**
   ```bash
@@ -208,7 +209,7 @@ As três primeiras são o mesmo desfecho, e a terceira fecha o argumento: **a tr
 
 **Como funciona:** o Next não sobrescreve variável que já está no `process.env`, então a do comando **vence** a do arquivo, se alguma sobrar lá. Mesmo assim, a linha fica comentada no `.env.local` — duas fontes para o mesmo valor é a próxima maneira de errar.
 
-**O que continua sendo do Jorge:** subir o `cloudflared` é do Claude; o `.env.local` é do Jorge, sempre. Quem pega a URL do log do túnel e a põe no comando é quem sobe o dev.
+**O que continua sendo do Jorge:** subir o `cloudflared` é do Claude — apontando para `http://localhost:5599`, a porta fixa do dev —; o `.env.local` é do Jorge, sempre. Quem pega a URL do log do túnel e a põe no comando é quem sobe o dev.
 
 E a **trava de vida** (29/08) cobre o resto: o portão de vídeo faz **uma ida à rede por clique**, aceita só `401`/`405` — as duas respostas do nosso endpoint — e recusa antes do primeiro Spark quando ninguém atende.
 
@@ -235,7 +236,7 @@ E a **trava de vida** (29/08) cobre o resto: o portão de vídeo faz **uma ida �
 
    **Onde há dinheiro** — portões que autorizam gasto, o motorista de lote, cobrança, estorno, qualquer caminho que possa submeter a um provedor pago: a metade do Jorge é **obrigatória**, a etapa fica **aberta e não commitada** até ela chegar, e o pior caso (R1) é escrito antes do clique. **Uma etapa esperando prova e uma etapa fechada não podem ter a mesma aparência no git.**
 
-   **Fora dali** — tela, estado, leitura, compilação, texto, layout, migração sem cobrança: sela com **prova estrutural + validação de tela** feita pelo Claude em `localhost:3000`, com **prova por item colada no resumo**, em número. "Conferi e passou" sem prova continua não valendo. Passando, **vai para produção no mesmo dia** — não espera a próxima sessão do dono.
+   **Fora dali** — tela, estado, leitura, compilação, texto, layout, migração sem cobrança: sela com **prova estrutural + validação de tela** feita pelo Claude em `localhost:5599`, com **prova por item colada no resumo**, em número. "Conferi e passou" sem prova continua não valendo. Passando, **vai para produção no mesmo dia** — não espera a próxima sessão do dono.
 
    **Por que a régua mudou.** A regra antiga mandava a metade do dono para *toda* etapa com geração, e o efeito medido foi fila: trabalho pronto, provado e verde dormindo no disco à espera de um clique que não tinha o que decidir. O risco que justifica esperar é o **irreversível** — Spark que sai, linha que nasce no ledger, requisição que chega ao provedor —, e não o mero fato de a tela mostrar uma imagem. Onde nada sai da carteira, esperar não protege nada e só atrasa. **O critério é "isto pode gastar?", nunca "isto parece importante?".**
 
@@ -263,7 +264,7 @@ E a **trava de vida** (29/08) cobre o resto: o portão de vídeo faz **uma ida �
 
    **Nunca rodar `npm run build` com o `npm run dev` no ar** — os dois escrevem no mesmo `.next/`. Parar o dev, buildar, subir o dev de novo.
 
-   **E antes de toda validação no navegador, conferir que a porta 3000 está servindo o código novo** *(emenda de 13/08/2026, nascida de um achado da Fase 4 do Ciclo Fila)*. Um `next dev` sobrevivente de uma etapa anterior continua ouvindo a 3000; o `npm run dev` novo vê a porta ocupada, sobe na 3001 e **morre** avisando que já existe outro servidor — e o navegador, apontado para a 3000, valida o código antigo com toda a aparência de estar validando o novo. **Um servidor velho valida o que não vai ser commitado.** Matar o sobrevivente (`netstat -ano | grep :3000` → `taskkill //PID <pid> //T //F`) e só então validar.
+   **E antes de toda validação no navegador, conferir que a porta 5599 está servindo o código novo** *(emenda de 13/08/2026, nascida de um achado da Fase 4 do Ciclo Fila; a porta era a 3000 até a porta fixa de 26/09)*. Um `next dev` sobrevivente de uma etapa anterior continua ouvindo a porta; o `npm run dev` novo a vê ocupada e **morre** — e o navegador valida o código antigo com toda a aparência de estar validando o novo. **Um servidor velho valida o que não vai ser commitado.** Matar o sobrevivente (`netstat -ano | grep :5599` → `taskkill //PID <pid> //T //F`) e só então validar.
 
    **E o sobrevivente tem um caminho a mais, que não é o da porta ocupada** *(02/09/2026)*. A tarefa de fundo que segura o `npm run dev` pode ser dada como **encerrada** com o `next dev` **ainda ouvindo** — foi medido: a notificação disse *killed*, e o `netstat` mostrou o processo de pé, com o log agora fora de alcance. É a mesma armadilha chegando pelo lado onde ninguém a procura, porque o sinal que deveria avisar já disse que acabou. **Depois de encerrar um dev, conferir a porta em vez de acreditar no aviso** — e matar pelo PID, que é o que sobra quando o dono do processo já não responde.
 

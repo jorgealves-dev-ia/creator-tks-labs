@@ -9,7 +9,9 @@
 >
 > **Custo:** 0 ⚡ nas partes estruturais. **Pior caso R1 do percurso inteiro, registrado pelo dono
 > em 26/09: 87 ⚡ de preço — 79 ⚡ da carteira** (uma leitura pelo botão + uma imagem, saldo
-> 3.190 → 3.111) **+ 8 ⚡ de leituras fora do produto**, na F0 — somados no §7.
+> 3.190 → 3.111) **+ 8 ⚡ de leituras fora do produto**, na F0 — somados no §7. *Depois, no mesmo dia,
+> o dono pediu uma segunda leitura do Haiku (contrato v2): **+4 ⚡ de preço, fora da carteira** — 91 ⚡
+> de preço; a carteira continua 79.*
 >
 > **Onde fica no mapa:** frente 1 do [`ROADMAP.md`](ROADMAP.md) §4 — a primeira das cinco até
 > o primeiro post publicado pelo sistema.
@@ -252,6 +254,7 @@ falha é a que já existe — `translation_failed`, **antes de qualquer Spark**.
 | ordem | fase | entrega | ⚡ | status |
 |---|---|---|---|---|
 | 1ª | **F0** | o que o compilador envia hoje; o que Haiku e Gemini leem da foto da blusa — **e o padrão da lista de produto** | 0 ⚡ + ⚠️ **8 ⚡ fora do produto** | 🔵 **aberta** — (a) ✅ byte a byte; (b) **Haiku ✅ leu** (e inventou *"infantil"*); **3.7 Flash ⛔ `402`** — cobrança do Google (ver *O que a F0 achou*) |
+| — | **F1a** | **proposta de 26/09:** o envio que lê os bytes — e o colar/arrastar imagem no canvas pelo mesmo caminho | 0 ⚡ | 📝 **proposta — a execução é decisão do dono** |
 | 2ª | **F1** | o card, o botão, o seletor e a leitura gravada — **com migration** | ⚠️ **4 ⚡**, a leitura do dono | ⬜ |
 | 3ª | **F2** | o compilador cola a descrição | 0 ⚡ | ⬜ |
 | 4ª | **F3** | a prova viva: a blusa aparece | ⚠️ **75 ⚡** | ⬜ |
@@ -371,8 +374,102 @@ byte (md5 `963af2aa…`):**
 > frase que a F2 colaria no bloco do produto**: na F3, o texto mandaria a @luna, adulta, vestir *"a
 > children's blouse"*. O gabarito segue fechado; o achado vai ao dono **antes** da escolha do padrão.
 
-**O 3.7 Flash não foi medido** — espera a cobrança do Google. **A escolha do padrão da lista de
-produto (resposta 9.4) espera os dois.**
+**Rodada 4 — o contrato v2, com o princípio de evidência do dono** (26/09, palavra por palavra, como
+regra 2):
+
+> *"Descreva apenas o que a foto evidencia. Atributos de quem usa a peça — faixa etária
+> (infantil/adulto), gênero, modelagem (plus size) — só entram se houver evidência visível na foto
+> (etiqueta, referência de escala, corpo vestindo). Na dúvida, omita."*
+
+| | Haiku, contrato v2 (md5 `a12a8dd4…`) |
+|---|---|
+| **o "infantil" da rodada 3** | ✅ **sumiu** — nenhuma palavra de público, nem faixa etária, nem gênero, nem modelagem |
+| gabarito · três partes | 4/4 e 3/3 · o que é ✅ atributos 5/5 ✅ como se usa ✅ |
+| **custo real** | **2 centavos contra 4 ⚡** (2.051 tokens de entrada, 227 de saída) |
+| a leitura humana | dois detalhes menores: *"aparenta ser algodão ou misto"* (composição com ressalva — zona cinzenta da regra 3) e *"elastic cuffs at the shoulders"* (**o elástico é do punho**, não do ombro; a rodada 3 tinha acertado) |
+
+> *"A navy blue short-sleeve blouse with puffed sleeves. Featuring a round neckline, the fabric
+> appears to be cotton or cotton blend with good structure, loose fit through the torso. The sleeves
+> have pronounced volume with elastic cuffs at the shoulders. Length hits at the waist. Solid color,
+> no pattern. Wear as a casual everyday piece."*
+
+**n = 1 por rodada:** a 3 acertou o punho e inventou o público; a 4 corrigiu o público e errou o
+punho. É a variação de uma leitura de modelo — e é por isso que a descrição é editável no card.
+
+**O que falta para fechar a F0 — decisão do dono, 26/09:** o `402` do Google é **saldo pré-pago
+baixo**; o dono repõe e define o gasto máximo mensal no AI Studio, e avisa *"liberado"*. **A leitura
+do 3.7 Flash com o contrato v2 é a própria verificação da cobrança** — nunca uma geração de imagem só
+para testar. Aí o lado a lado Haiku × 3.7 Flash, **os dois no contrato v2**, e a escolha do padrão da
+lista de produto (resposta 9.4). Até lá, a F3 está parada.
+
+### F1a · proposta — o envio que lê os bytes, e o colar/arrastar imagem no canvas
+
+> **📝 Proposta de 26/09, pedida pelo dono. A execução é decisão dele.** 0 ⚡.
+
+**A recomendação: fase própria, antes da F1 — não carona na F1.**
+
+- **Por que não carona:** a F1 tem dinheiro — um portão novo e um caminho que cobra — e fica
+  **aberta e não commitada** até a leitura do dono. Uma funcionalidade de tela de 0 ⚡ dentro dela
+  esperaria junto, e alargaria a superfície de um commit de dinheiro.
+- **Por que antes:** a F1 lê fotos, e nasce melhor sobre um envio que já grava o tipo certo. **E a F1a
+  pode andar agora**, enquanto a F0 espera o Google: é 0 ⚡ e não depende da cobrança de ninguém.
+- **Pela régua da regra 8**, tela, estado e envio sem cobrança ficam fora da zona de dinheiro: sela com
+  prova estrutural + validação de tela, e vai para produção no mesmo dia.
+
+**O que a varredura mediu — 26/09, 0 ⚡, só leitura** (`scratchpad\harness\f0-varredura-mime.ts`;
+32 bytes de cada arquivo, pedidos com `Range` — honrado nos 104):
+
+| | arquivos |
+|---|---|
+| o tipo do banco **bate** com os bytes | 98 |
+| **diverge** | **6** — todos **envios** declarados `image/jpeg` que são **WebP**: 6 dos 14 envios "JPEG" (43%) |
+| ilegíveis | 0 |
+| imagens geradas (52) e vídeos (37) | **todos batem** |
+
+**Onde os 6 estão:** foram referência em **26 gerações, todas pelo Google**, que tolerou (cada um tem
+geração bem-sucedida); 2 estão em imagens de entidade; 2 aparecem em grafos de hoje (o card da blusa e
+um de pijama). **Nenhum dado foi alterado.**
+
+**O que a F1a entrega — um caminho de envio só:**
+
+1. **O envio lê o tipo nos bytes — no navegador e no servidor.** Hoje o seletor aceita pelo `file.type`
+   (que vem da extensão), tira a extensão do **nome** do arquivo, e o servidor registra o tipo recebido
+   sem conferir (`registerUploadedAsset` só exige `image/…`, `assets/actions.ts:224`). Depois: o
+   navegador lê os primeiros bytes, recusa o que não for JPEG, PNG ou WebP, e usa o tipo verdadeiro no
+   Storage, na extensão do caminho e no registro — **e o servidor confere**: lê os primeiros bytes do
+   arquivo já no Storage (o mesmo `Range` da varredura) e recusa a divergência. *Pode nomear, nunca
+   alargar:* o tipo que o banco grava é o que os bytes dizem.
+2. **Uma função de envio só.** O `handleUpload` do seletor (`reference-picker.tsx:225`) vira a função
+   de envio da casa, usada pelo botão **e** pelo colar/arrastar — o mesmo Storage
+   (`<dono>/references/`), a mesma miniatura, o mesmo registro. **Nenhum caminho paralelo.**
+3. **Colar (Ctrl+V) e soltar arquivo no canvas criam um Input de Imagem com a foto** — solto, onde o
+   gesto aconteceu (colar: sob o ponteiro, ou no centro da vista; soltar: no ponto do soltar), **sem
+   fio**: quem liga é a pessoa, como no menu. O card nasce como o *«Continuar deste vídeo»* já cria o
+   dele (`store.ts:1592`: `{ assetId, kind: null, instrucao: "" }`). O canvas já aceita soltar card da
+   prateleira (`flow-canvas.tsx`, `handleDrop`) — soltar arquivo é o mesmo ponto, com outro conteúdo.
+4. **O carregador que manda imagem ao provedor lê o tipo nos bytes** (`asset-payloads.ts:35`, hoje
+   `mimeType: asset.mime_type`). Cobre os 6 já gravados e qualquer outro, **sem mexer em dado** — e
+   deixa a frente 1.5 (GPT Image 2) a salvo de um provedor menos tolerante que o Google.
+
+**Os limites propostos:**
+
+| | proposta | por quê |
+|---|---|---|
+| formatos | **JPEG, PNG e WebP**, lidos nos bytes | a interseção que os dois fornecedores da casa aceitam; GIF, HEIC e AVIF recusados com a frase dizendo quais entram |
+| tamanho | **até 10 MB** por imagem | o teto do botão (`MAX_BYTES`, `reference-picker.tsx:41`) — um caminho, um limite. ⚠️ A leitura da F1 manda a foto à Anthropic, cujo teto por imagem é menor (**5 MB, a conferir na documentação no dia**): a F1 reduz a foto com o `sharp` antes de mandar, ou recusa dizendo por quê |
+| quantidade por gesto | **até 5** | o número do card de produto; acima disso o gesto inteiro é recusado **com o número** — nunca truncar em silêncio |
+| o que **não** entra | link arrastado de outra aba; imagem colada dentro de um campo de texto | buscar URL de fora seria um segundo caminho, e um servidor buscando endereço de terceiros; colar num campo de texto continua sendo colar texto |
+
+**As provas (0 ⚡):** vermelho→verde do tipo — um WebP chamado `.jpg` hoje vira `image/jpeg`, e depois
+`image/webp`, no Storage e no banco; bytes de GIF com extensão `.png` → recusado **antes** do envio; o
+servidor recusa um registro cujo tipo diverge dos bytes; colar e soltar criam o card com o asset, lidos
+**do store** e do DOM (pelo `medir-canvas.js`); 6 imagens num gesto → recusa com o número e **zero**
+envios; o carregador manda `image/webp` para a foto da blusa.
+
+**Os 6 registros já gravados — decisão do dono, à parte.** A F1a não os altera: com o carregador
+lendo os bytes, o provedor recebe o tipo certo mesmo com o banco errado. Se o dono quiser o banco certo
+também, é um script de correção em `supabase/correcoes/`, **rodado por ele**: os 6 ids da varredura,
+`mime_type` de `image/jpeg` para `image/webp`, idempotente, mostrando antes e depois.
 
 ### F1 · O card, o botão, o seletor e a leitura gravada
 
@@ -606,11 +703,12 @@ previsto na F2.7; um lançamento de −75; saldo **3.186 → 3.111**.
 
 | gesto | fase | quem aperta | preço | sai da carteira? |
 |---|---|---|---|---|
-| leitura por Haiku, no harness | F0 | Claude, **depois do ok do dono** | 4 ⚡ | **não** — fora do produto. **Feita na rodada 3: custo real de 2 centavos** (rodadas 1 e 2 recusadas antes de gerar, 0) |
+| leitura por Haiku, no harness | F0 | Claude, **depois do ok do dono** | 4 ⚡ | **não** — fora do produto. **Feita na rodada 3 (contrato v0): 2 centavos reais** (rodadas 1 e 2 recusadas antes de gerar, 0) |
+| **segunda** leitura por Haiku, contrato v2 — pedida pelo dono em 26/09 | F0 | Claude, com o pior caso declarado antes | 4 ⚡ | **não** — **feita na rodada 4: 2 centavos reais** |
 | leitura por Gemini 3.7 Flash, no harness *(era o 2.5 Flash)* | F0 | Claude, **depois do ok do dono** | 4 ⚡ | **não** — **ainda não feita**: `402` do Google na rodada 2 (0) |
 | leitura pelo botão | F1 | **dono** | 4 ⚡ | **sim** |
 | ↻ da cena 2 | F3 | **dono** | 75 ⚡ | **sim** |
-| **pior caso** | | | **87 ⚡ de preço** | **79 ⚡ da carteira** — saldo **3.190 → 3.111** |
+| **pior caso** | | | **91 ⚡ de preço** *(eram 87; +4 da segunda leitura do Haiku)* | **79 ⚡ da carteira — não mudou** — saldo **3.190 → 3.111** |
 
 *Conferido no catálogo em 26/09:* `claude-haiku-4-5` a **4 ⚡** por extração; `gemini-3.1-flash-image`
 a **75 ⚡** em 2K. *O `gemini-3.7-flash` entrou no lugar do 2.5 Flash com **4 ⚡ de referência do dono**
