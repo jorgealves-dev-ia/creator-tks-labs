@@ -33,9 +33,24 @@
  * Keys come from the environment (`--env-file-if-exists=.env.local`), are sent
  * only in request headers, and are never printed: every line of output passes
  * through `redact`, which would replace a key value that leaked into a message.
+ *
+ * ---------------------------------------------------------------------------
+ * And rule 7 of the security section — checked, not asserted (27/09/2026)
+ * ---------------------------------------------------------------------------
+ *
+ * CLAUDE.md said "GitHub com secret scanning + push protection ativados". On
+ * 27/09 the API said both were OFF — on a PUBLIC repository whose Anthropic key
+ * does not expire. A rule nobody checks is a sentence, the same lesson as the
+ * «SAI ANTES DO COMMIT» mark that became a `git grep`. So the probe asks GitHub
+ * too, through the `gh` CLI (its credential lives in the system credential
+ * manager, never in a file): either protection off is a ✗ and a non-zero exit,
+ * and "could not check" is a ?, never an ✓.
  */
 
+import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 type Verdict = "ok" | "rejected" | "unclear";
 
@@ -165,6 +180,63 @@ async function ask(recipe: Recipe, key: string): Promise<number> {
 
 const SYMBOL: Record<Verdict, string> = { ok: "✓", rejected: "✗", unclear: "?" };
 
+/** The two protections rule 7 promises, as GitHub reports them for this repository. */
+const GITHUB_PROTECTIONS = [
+  { field: "secret_scanning", name: "secret scanning" },
+  { field: "secret_scanning_push_protection", name: "push protection" },
+] as const;
+
+/** What `gh` answers for this repository's `security_and_analysis` — the only I/O of the check. */
+function readGithubSecuritySettings(): string {
+  return execFileSync("gh", ["api", "repos/{owner}/{repo}", "--jq", ".security_and_analysis"], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+    timeout: REQUEST_TIMEOUT_MS,
+  }).trim();
+}
+
+/**
+ * Rule 7, asked of GitHub. `security_and_analysis` only comes back to an admin
+ * of the repository — its absence is "could not check", not "off".
+ *
+ * `read` is injectable so a harness can prove every verdict without touching
+ * GitHub's settings — the red path included.
+ */
+export function checkGithubRule7(read: () => string = readGithubSecuritySettings): { verdict: Verdict; note: string } {
+  let raw: string;
+
+  try {
+    raw = read();
+  } catch {
+    return { verdict: "unclear", note: "não deu para perguntar ao GitHub — o `gh` está instalado e autenticado?" };
+  }
+
+  let parsed: unknown = null;
+
+  try {
+    parsed = raw === "" ? null : JSON.parse(raw);
+  } catch {
+    parsed = null;
+  }
+
+  if (parsed === null || typeof parsed !== "object") {
+    return { verdict: "unclear", note: "o GitHub não mostrou as configurações de segurança — o `gh` precisa ser de um admin do repositório" };
+  }
+
+  const settings = parsed as Record<string, { status?: unknown } | undefined>;
+  const states = GITHUB_PROTECTIONS.map((p) => {
+    const status = settings[p.field]?.status;
+
+    return { ...p, status: typeof status === "string" ? status : "ausente" };
+  });
+  const off = states.filter((s) => s.status !== "enabled");
+  const summary = states.map((s) => `${s.name}: ${s.status}`).join(" · ");
+
+  return off.length === 0
+    ? { verdict: "ok", note: summary }
+    : { verdict: "rejected", note: `${summary} — DESLIGADO: ${off.map((s) => s.name).join(" e ")}. A regra 7 do CLAUDE.md não está valendo` };
+}
+
 async function main() {
   const lines: string[] = [
     "Sonda de chaves por fornecedor — 0 ⚡: cada chamada pergunta, nenhuma gera.",
@@ -200,9 +272,25 @@ async function main() {
     );
   }
 
+  const github = checkGithubRule7();
+
+  if (github.verdict !== "ok") failures += 1;
+
+  lines.push(
+    "",
+    "Regra 7 de Segurança — o repositório é PÚBLICO: o GitHub precisa varrer segredos e barrar o push de um.",
+    `${SYMBOL[github.verdict]}  ${"github".padEnd(9)} ${"".padEnd(4)} ${github.note}  [gh api repos/{owner}/{repo} → security_and_analysis]`,
+  );
+
   for (const line of lines) console.log(redact(line));
 
   process.exitCode = failures === 0 ? 0 : 1;
 }
 
-void main();
+// Run only as the entry point (`npm run probe:keys`), so a harness can import
+// `checkGithubRule7` without the probe calling every provider.
+const isEntryPoint =
+  process.argv[1] !== undefined &&
+  resolve(process.argv[1]).toLowerCase() === fileURLToPath(import.meta.url).toLowerCase();
+
+if (isEntryPoint) void main();

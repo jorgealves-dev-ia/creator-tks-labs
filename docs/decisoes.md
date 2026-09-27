@@ -6094,3 +6094,114 @@ base. O que a foto mostra e o modelo lê errado — o elástico no ombro — é 
 novo com outra foto, de outro jeito, e regra nenhuma no contrato acompanha. **Quem corrige percepção é
 a pessoa, no card** — é para isso que a descrição é editável (a porta 3 da decisão de 21/09). E os
 dois erros de percepção viram **critérios de comparação** no lado a lado (item 2), não regras.
+
+### 27/09/2026 — 🔒 DECISÕES do dono, na retomada: a rodada 4 conta, e a regra de nome da imagem colada
+
+**As duas confirmações que a pausa de 26/09 deixou abertas, dadas antes de qualquer chamada:**
+
+1. **A rodada 4 conta como uma das duas leituras do Haiku** — *desde que a nova mande ao modelo exatamente
+   o mesmo conteúdo: modelo, contrato v2, foto e parâmetros.* Três chamadas, até 12 ⚡ de catálogo, zero
+   Spark; se não desse para garantir, quatro, até 16 ⚡. **Deu para garantir, e a garantia virou medição:**
+   o harness conferiu antes (md5 da foto, md5 do contrato, adapter sem commit desde 09/08, nada pendente no
+   disco, SDKs nas versões de então) e depois — o corpo do pedido gravado como o SDK o serializou, e **2.051
+   tokens de entrada contra os 2.051** da rodada 4. O provedor tokenizou o mesmo pedido.
+2. **A regra de nome da imagem colada:** arquivo com nome próprio — arrastado ou copiado do Explorer —
+   **mantém o nome**; imagem sem nome vira **«Colada · dd/mm hh:mm:ss»**, na **hora local de quem colou**,
+   nunca em UTC do servidor. **E o nome é só rótulo de galeria: nunca entra no prompt nem preenche o campo
+   Nome do produto.** A regra corrige a proposta de 26/09 em dois pontos — os segundos no rótulo, e o
+   arquivo com nome colado do Explorer, que a proposta tratava como "colada".
+
+**E duas conferências pedidas pelo dono, antes de tudo:**
+
+- **O harness e a evidência da F0 sobreviveram à pausa** — o `scratchpad\` mora no disco D:, fora do
+  repositório; tem 2.684 arquivos, o mais velho de 09/08, e os md5 da foto (`2cb6f65a…`) e dos dois
+  contratos (`963af2aa…`, `a12a8dd4…`) batem com o registrado. É durável: não foi preciso mover nada.
+- **O contrato v2 NÃO estava no plano.** Só existia no harness e na evidência — e é o texto que a F1
+  embute no produto. **Entrou no plano em 27/09, copiado por script** do arquivo de evidência (redigitar
+  abriria a porta para um travessão ou uma reticência diferentes), e conferido de volta: o prompt de
+  sistema tem md5 **`99f41400…`** em três fontes independentes — evidência, plano e o próprio harness.
+
+### 27/09/2026 — ✅ O lado a lado que fecha a F0: medido — e a regra 2 falhou em 2 de 4
+
+**Rodada 5:** 3 leituras (Flash, Flash, Haiku), com o R1 escrito antes — **12 ⚡ de catálogo, 0 Spark,
+teto real R$ 3,22**, e o harness recusando rodar sem o arquivo do R1. Um ensaio a 0 ⚡, contra um `fetch`
+falso, rodou antes das chamadas pagas e achou um defeito do próprio harness (o SDK do Google põe o corpo
+dentro de um `Request`). **A cobrança do Google voltou:** nada de `402`.
+
+| | Haiku 1 (r4) | Haiku 2 (r5) | Flash 1 | Flash 2 |
+|---|---|---|---|---|
+| gabarito | 4/4 · 3/3 | 4/4 · 3/3 | 4/4 · 3/3 | 4/4 · 3/3 |
+| o elástico (é da barra da manga) | ❌ no ombro | ✅ no punho | ✅ punho, e o franzido no ombro | ✅ punho, e o franzido no ombro |
+| o tecido (aparência, nunca composição) | ❌ "algodão ou misto" | ❌ "algodão ou mescla" | ✅ "malha aparente lisa" | ✅ "malha lisa aparente" |
+| regra 2 (público sem evidência) | ✅ | ❌ **"infantil"**, até no nome | ❌ **"feminina"** | ✅ |
+| custo real hoje · 2027 (centavos) | 2 · 2 | 2 · 2 | 3 · 5 | 2 · 4 |
+
+📌 **A triagem por regra errou o elástico do Flash, e a leitura humana corrigiu:** as duas leituras dizem
+*"franzido nos ombros e punhos com elástico"* — a descrição **mais fiel** da manga —, e a regra marcou
+"ombro" porque a frase cita o ombro. A foto, olhada de novo, é que desfaz a confusão da rodada 4: **no
+ombro há franzido, e o elástico é da barra.** A regra é triagem; quem decide é a leitura humana, que foi
+para a evidência ao lado.
+
+📌 **O achado que muda a conversa: a regra 2 do v2 reduziu, não eliminou.** A rodada 4 sugeria que o
+princípio de evidência resolvia o *"infantil"*; com n = 2 por modelo, ele voltou no Haiku e o Flash
+inventou *"feminina"*. Pela fronteira que o dono traçou em 26/09, é **invenção**, não percepção — a regra
+já existe e foi quebrada. **Vai ao dono junto com a escolha do padrão**, como pergunta e não como
+recomendação: aceitar, com o campo editável como correção, ou um aviso mecânico no card quando a leitura
+volta com palavra de público.
+
+**Custo real:** 7 centavos na rodada, **11 na F0 inteira**; **0 Spark** — saldo 3.190, conferido no banco.
+
+### 27/09/2026 — F1a escrita e provada estruturalmente — e três achados sobre o tipo dos arquivos
+
+**Escrita no mesmo dia, 0 ⚡, e NÃO commitada** — pedido do dono: sem commit até a prova ao vivo fechar.
+O envio lê o tipo nos bytes no navegador, e o servidor confere os 16 primeiros bytes do objeto já no
+Storage; uma função de envio só para o botão, o colar e o soltar; o colar e o soltar criam um Input de
+Imagem solto, sem fio; o carregador que manda imagem ao provedor lê os bytes. **37 provas estruturais,
+0 falhas**, cada uma vermelho→verde contra o HEAD — o carregador antigo rodando a partir do arquivo
+extraído do git, lado a lado com o novo.
+
+📌 **Três achados medidos:**
+
+1. **O `contentType` que o envio passava era ignorado.** O `@supabase/storage-js` 2.112.2 manda um `Blob`
+   como multipart, e a parte leva o tipo **do próprio Blob** — a opção só vale para corpos que não são
+   Blob. É por isso que os 6 objetos no Storage também dizem `image/jpeg`: o `File` carrega o tipo que o
+   navegador tirou da extensão. A função única reembala os bytes num Blob com o tipo lido.
+2. **A extração de personagem manda à Anthropic o tipo que o navegador declarou** — uma foto WebP chamada
+   `.jpg` volta 400, antes de cobrar. Fora da F1a: é caminho que cobra, e fica para decisão do dono.
+3. **O envio da imagem canônica da ficha grava o tipo do navegador.** Fora da F1a; o carregador que lê os
+   bytes já protege o provedor.
+
+**O script dos 6 registros** foi escrito no molde do estorno de 29/08 — o UPDATE e a trava no mesmo bloco,
+porque o SQL Editor só mostra a última instrução — e conferido por partes, só leitura: casa exatamente 6
+linhas, e a trava prova que **só o tipo** mudou, que as **26 gerações** que citam os 6 ficaram intactas e
+que nenhuma outra linha mudou. A contagem de 26/09 foi conferida em vez de repetida: **26** é quem cita os
+6 em `params` **ou** no texto compilado (22 só por `params`). A varredura "antes", sobre os mesmos 104:
+**98 / 6 / 0**. **Falta o dono rodar.**
+
+**A validação ao vivo parou antes de começar.** A aba de `localhost:5599` abriu no **perfil do Chrome de
+outro cliente**, onde outro Claude Code trabalhava, e caiu na tela de login. O que aconteceu nela, por
+inteiro: uma navegação para `/studio` (que redirecionou para `/login`), um print dessa tela e uma leitura
+de JS da origem e dos nomes de cookie — que a extensão bloqueou. Nenhum clique, nenhuma digitação. O dono
+fechou a aba. **Daí nasceram a regra «Navegador» e a trava entre projetos** — na seção seguinte.
+
+## Segurança e navegador
+
+### 27/09/2026 — 🔒 A regra 7 de Segurança deixa de ser frase: a sonda confere o GitHub
+
+**O que a checagem achou:** o repositório é **público**, e a regra 7 do `CLAUDE.md` dizia *"GitHub com
+secret scanning + push protection ativados"*. A API disse que **as duas estavam desligadas** — e a lista de
+alertas respondia 404, *"Secret scanning is disabled on this repository"*. Uma regra que ninguém confere é
+uma frase: a mesma lição do «SAI ANTES DO COMMIT» de 02/09.
+
+**O dono ligou as duas, e a sonda passou a conferir.** `npm run probe:keys` pergunta ao GitHub pelo `gh` —
+cuja credencial mora no gerenciador de credenciais do sistema, nunca em arquivo —: qualquer das duas
+desligada é ✗ e saída diferente de zero; "não deu para conferir" é ?, nunca ✓. **Vermelho→verde no mundo
+real:** às 15:04 a primeira execução disse *"push protection: disabled"* — a varredura já estava ligada, a
+proteção de push não, no nível do repositório — e saiu com 1; às 18:56, com as duas ligadas, ✓ e saída 0.
+
+**E a checagem de segredos, 0 ⚡, sem imprimir valor nenhum:** só o `.env.example` é rastreado; **nenhum
+outro `.env*` em nenhum dos 135 commits** de todas as refs; o `.gitignore` cobre `.env` e `.env.*`; e
+**nenhum trecho com formato de chave** — Anthropic, OpenAI, Google, xAI, fal, JWT do Supabase,
+`sb_secret_`, chave PEM — em commit nenhum nem na árvore de hoje. Alertas de secret scanning na primeira
+consulta, com as duas proteções ligadas: **0**. A consulta final fica para o fim do lote — a varredura do
+histórico leva alguns minutos.

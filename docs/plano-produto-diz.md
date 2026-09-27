@@ -5,15 +5,21 @@
 > minha recomendação**: a lista de produto tem **padrão próprio**, decidido pela F0, e o Sonnet a
 > 20 ⚡ **nunca** é o padrão dela.
 >
-> **Fase aberta: F0** — autorizada pelo dono em 26/09, com o plano (*"comece a F0"*). **Pausada na
-> noite de 26/09, na metade**: falta o lado a lado Haiku × 3.7 Flash no contrato v2 (o próximo passo
-> exato está em *O que a F0 achou*). **F1a aprovada, não começou.**
+> **Fase aberta: F0** — autorizada pelo dono em 26/09, com o plano (*"comece a F0"*). **O lado a lado
+> Haiku × 3.7 Flash foi medido em 27/09 (rodada 5)**: quatro leituras no contrato v2, duas por modelo
+> (a rodada 4 contou como a 1ª do Haiku — conteúdo idêntico, conferido no pedido). **A F0 fecha com a
+> escolha do dono** — o padrão da lista de produto, com as quatro leituras ao lado da foto (*O que a F0
+> achou*, rodada 5).
+>
+> **F1a — escrita e provada estruturalmente em 27/09 (37 provas, 0 falhas), NÃO commitada:** a
+> validação ao vivo espera o navegador — em 27/09 a aba abriu no perfil do Chrome de outro cliente, e o
+> dono a fechou. O que falta está no fim da seção F1a.
 >
 > **Custo:** 0 ⚡ nas partes estruturais. **Pior caso R1 do percurso inteiro, registrado pelo dono
 > em 26/09: 87 ⚡ de preço — 79 ⚡ da carteira** (uma leitura pelo botão + uma imagem, saldo
-> 3.190 → 3.111) **+ 8 ⚡ de leituras fora do produto**, na F0 — somados no §7. *Depois, no mesmo dia,
-> o dono pediu uma segunda leitura do Haiku (contrato v2): **+4 ⚡ de preço, fora da carteira** — 91 ⚡
-> de preço; a carteira continua 79.*
+> 3.190 → 3.111) **+ 8 ⚡ de leituras fora do produto**, na F0 — somados no §7. *Depois o dono pediu
+> mais três leituras fora da carteira — a 2ª do Haiku na rodada 4 (+4) e as duas a mais do lado a lado
+> (+8): **99 ⚡ de preço; a carteira continua 79.** Custo real da F0 inteira: **11 centavos**, 0 Spark.*
 >
 > **Onde fica no mapa:** frente 1 do [`ROADMAP.md`](ROADMAP.md) §4 — a primeira das cinco até
 > o primeiro post publicado pelo sistema.
@@ -255,8 +261,8 @@ falha é a que já existe — `translation_failed`, **antes de qualquer Spark**.
 
 | ordem | fase | entrega | ⚡ | status |
 |---|---|---|---|---|
-| 1ª | **F0** | o que o compilador envia hoje; o que Haiku e Gemini leem da foto da blusa — **e o padrão da lista de produto** | 0 ⚡ + ⚠️ **8 ⚡ fora do produto** | 🔵 **aberta** — (a) ✅ byte a byte; (b) **Haiku leu 2×** (v0 inventou *"infantil"*; v2 não); **falta o lado a lado Haiku × 3.7 Flash, 2 leituras por modelo, no v2** — o Google foi liberado em 26/09 (ver *O que a F0 achou*) |
-| — | **F1a** | o envio que lê os bytes — e o colar/arrastar imagem no canvas pelo mesmo caminho | 0 ⚡ | ✅ **aprovada em 26/09**, com regra de nome para a imagem colada — **não começou** |
+| 1ª | **F0** | o que o compilador envia hoje; o que Haiku e Gemini leem da foto da blusa — **e o padrão da lista de produto** | 0 ⚡ + ⚠️ **20 ⚡ fora do produto** (5 leituras) | 🔵 **medida — falta a escolha do dono.** (a) ✅ byte a byte; (b) ✅ **lado a lado feito em 27/09**: Haiku 2× e 3.7 Flash 2×, contrato v2, 11 centavos reais no total da F0 (ver *O que a F0 achou*, rodada 5) |
+| — | **F1a** | o envio que lê os bytes — e o colar/arrastar imagem no canvas pelo mesmo caminho | 0 ⚡ | 🟡 **escrita em 27/09, 37 provas estruturais verdes — NÃO commitada**: falta a validação ao vivo, que espera o navegador (fim da seção F1a) |
 | 2ª | **F1** | o card, o botão, o seletor e a leitura gravada — **com migration** | ⚠️ **4 ⚡**, a leitura do dono | ⬜ |
 | 3ª | **F2** | o compilador cola a descrição | 0 ⚡ | ⬜ |
 | 4ª | **F3** | a prova viva: a blusa aparece | ⚠️ **75 ⚡** | ⬜ |
@@ -398,6 +404,83 @@ regra 2):
 **n = 1 por rodada:** a 3 acertou o punho e inventou o público; a 4 corrigiu o público e errou o
 punho. É a variação de uma leitura de modelo — e é por isso que a descrição é editável no card.
 
+#### O contrato de leitura v2 — o texto que a F1 embute, byte a byte
+
+> **Este é o texto que o produto vai mandar**, e ele só existia fora do repositório — no harness e na
+> evidência, no `scratchpad\`. Posto aqui em 27/09, **copiado por script do arquivo de evidência** (e não
+> redigitado), e conferido de volta pelo md5 de cada bloco. **A F1 embute estes três blocos sem mudar um
+> byte**, e prova isso com o md5 do prompt de sistema num teste. Mudar o contrato é decisão do dono, com
+> versão nova (v3) e leitura nova — nunca edição silenciosa.
+
+<!-- CONTRATO-V2:INICIO — gerado por scratchpad/harness/contrato-v2-no-plano.mjs; não editar à mão -->
+
+**Prompt de sistema** — 2020 caracteres · md5 `99f41400f7f0b2d95da4557e7e99558a`:
+
+<!-- contrato-v2:sistema -->
+```text
+Você lê a foto de um PRODUTO e escreve o que ele é, para que um gerador de imagens o reproduza fielmente sem ver a foto.
+
+FORMATO DA RESPOSTA
+
+Sua resposta inteira é um objeto JSON: o primeiro caractere é "{" e o último é "}". Nada antes, nada depois — sem cerca de código, sem frase de introdução ou de fecho. Exatamente três chaves, no primeiro nível:
+
+  {"nome": "...", "descricao_pt": "...", "descricao_en": "..."}
+
+- "nome": curto, em português, como um vendedor chamaria o produto numa etiqueta. No máximo 60 caracteres.
+- "descricao_pt": em português, texto corrido, até 600 caracteres.
+- "descricao_en": a MESMA descrição, em inglês, até 600 caracteres. Começa pelo que o produto é — por exemplo "A short-sleeve blouse in …" —, porque é lida por um gerador de imagens.
+
+O QUE A DESCRIÇÃO DIZ, nesta ordem
+
+1. O que o produto é — o substantivo exato.
+2. Os atributos visíveis que alguém precisaria para desenhá-lo sem ver a foto: cor, material ou textura aparente, forma, corte e caimento, comprimento (numa roupa: até onde ela vai no corpo), manga, gola ou decote, estampa, fechamento, acabamentos e detalhes.
+3. Como se usa ou se veste.
+
+REGRAS INEGOCIÁVEIS
+
+1. Descreva o PRODUTO, nunca uma pessoa. Se alguém o veste ou o segura, ignore a pessoa por completo: nada de corpo, rosto, cabelo, pose ou expressão. Nunca tente identificar, nomear ou reconhecer ninguém.
+2. Descreva apenas o que a foto evidencia. Atributos de quem usa a peça — faixa etária (infantil/adulto), gênero, modelagem (plus size) — só entram se houver evidência visível na foto (etiqueta, referência de escala, corpo vestindo). Na dúvida, omita.
+3. Não invente o que não se vê. Marca, composição do tecido, tamanho, preço: o que a foto não mostra, a descrição não diz. Material que só se vê pela aparência é "aparente" — "aparenta malha", nunca "100% algodão".
+4. Não descreva o fundo, a luz nem o enquadramento da foto — eles não são o produto.
+5. As duas descrições dizem a mesma coisa: o inglês não acrescenta nem tira nada do português.
+```
+
+**Pedido do turno**, com a foto antes dele — md5 `6cd53a1fe702a2efae2a284c9209cbef`. É a frase fixa do adapter da Anthropic (`anthropic.ts:320`), e o harness mandou a mesma ao Gemini:
+
+<!-- contrato-v2:pedido -->
+```text
+Analise a foto acima e preencha o formulário conforme as regras do sistema.
+```
+
+**Schema** — só o Gemini o recebe, pelo `response_format`; o adapter da Anthropic pede a forma pelo prompt · md5 `1d7cc33e69e304cba818a72436931c1b`:
+
+<!-- contrato-v2:schema -->
+```json
+{
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string"
+    },
+    "descricao_pt": {
+      "type": "string"
+    },
+    "descricao_en": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "nome",
+    "descricao_pt",
+    "descricao_en"
+  ]
+}
+```
+
+*O arquivo de evidência inteiro — com o cabeçalho e o gabarito — é o `contrato-leitura-v2.md`, md5 `a12a8dd4eda48f46d55716ab213ffba8`: é o número que as rodadas 4 e 5 citam. O md5 que a F1 confere é o do **prompt de sistema**, acima.*
+
+<!-- CONTRATO-V2:FIM -->
+
 **O que falta para fechar a F0 — decisão do dono, 26/09:** o `402` do Google é **saldo pré-pago
 baixo**; o dono repõe e define o gasto máximo mensal no AI Studio, e avisa *"liberado"*. **A leitura
 do 3.7 Flash com o contrato v2 é a própria verificação da cobrança** — nunca uma geração de imagem só
@@ -423,10 +506,78 @@ lista de produto (resposta 9.4). Até lá, a F3 está parada.
 | o que muda no harness antes | hoje o `f0-leituras.ts` faz **uma** leitura por modelo, sem os dois critérios extras: ajustar (0 ⚡) |
 | o que fecha a F0 | **a escolha do dono**, com as quatro leituras ao lado da foto: o padrão da lista de produto (resposta 9.4) |
 
+**27/09 — as duas confirmações do dono, antes de rodar** ([`decisoes.md`](decisoes.md), 27/09): **a rodada
+4 conta como a 1ª leitura do Haiku**, desde que a nova mande ao modelo exatamente o mesmo conteúdo —
+modelo, contrato v2, foto e parâmetros — (3 chamadas, até 12 ⚡; se não desse para garantir, 4 e 16); e
+**a regra de nome da imagem colada** (na F1a).
+
+#### Rodada 5 — o lado a lado, 27/09/2026
+
+**R1, escrito antes** (`r1-rodada5-lado-a-lado.md` — e o harness se recusa a rodar sem ele): 3 leituras —
+Flash, Flash, Haiku —, **12 ⚡ de preço de catálogo, 0 Spark**, no máximo 4 pedidos HTTP; custo real
+esperado de 6 a 14 centavos, **teto de R$ 3,22** — o Flash vai sem teto de saída, de propósito (a F0 mede
+o pensamento natural), e o teto do modelo, **65.536 tokens**, foi lido do Google. Se a 1ª do Flash
+falhasse, a 2ª não seria feita. **Um ensaio a 0 ⚡, com `fetch` falso, rodou antes** — e achou um defeito
+do harness (o SDK do Google põe o corpo dentro de um `Request`) antes de qualquer centavo.
+
+**A rodada 4 contou — conferido no pedido, não suposto.** O corpo do pedido do Haiku foi gravado como o SDK
+o serializou: o mesmo modelo, o prompt de sistema `99f41400…`, a foto `2cb6f65a…` como `image/webp`, a mesma
+frase de pedido, `max_tokens` 8000, nenhum outro parâmetro, **um** pedido HTTP — e **2.051 tokens de
+entrada contra os 2.051** da rodada 4. O adapter não muda desde 09/08.
+
+**A cobrança do Google voltou:** a 1ª leitura do Flash respondeu, sem `402`.
+
+| | Haiku 1 · rodada 4 | Haiku 2 · rodada 5 | Flash 1 · rodada 5 | Flash 2 · rodada 5 |
+|---|---|---|---|---|
+| **gabarito** (obrigatório · desejável) | 4/4 · 3/3 | 4/4 · 3/3 | 4/4 · 3/3 | 4/4 · 3/3 |
+| **o elástico** — é da barra da manga; no ombro há franzido | ❌ no ombro — *"elastic cuffs at the shoulders"* | ✅ no punho — *"gathered at the cuffs with elastic"* | ✅ no punho, e o franzido no ombro — *"gathered shoulders and elasticated cuffs"* | ✅ no punho, e o franzido no ombro — *"shoulder gathers and elasticated cuffs"* |
+| **o tecido** — aparência, nunca composição | ❌ composição com ressalva — *"aparenta ser algodão ou misto"* | ❌ composição com ressalva — *"aparenta ser algodão ou mescla"* | ✅ aparência — *"malha aparente lisa"* (⚠️ o inglês perdeu a ressalva: *"a smooth … knit"*) | ✅ aparência nas duas línguas — *"malha lisa aparente"* / *"apparent smooth knit fabric"* |
+| **regra 2** — público sem evidência | ✅ nenhum | ❌ **"infantil" / "children's" — no nome também** | ❌ **"feminina" / "women's"** | ✅ nenhum |
+| custo real hoje · em 2027 (centavos) | 2 · 2 | 2 · 2 | 3 · **5** | 2 · 4 |
+| tokens: entrada · saída · pensamento | 2.051 · 227 · 0 | 2.051 · 238 · 0 | 1.662 · 150 · 537 | 1.662 · 143 · 457 |
+| latência | 4,1 s | 4,1 s | 7,9 s | 6,0 s |
+
+**A leitura humana corrigiu a triagem num ponto:** o elástico das duas leituras do Flash saiu "ombro ❌"
+na triagem por regra — a frase cita o ombro — e é ✅: franzido no ombro, elástico no punho, **cada coisa no
+seu lugar**. É a descrição mais fiel da manga das quatro (`leitura-humana-rodada5.md`).
+
+**O que isso diz:**
+
+1. **O gabarito não separa os dois modelos** — quatro de quatro passam tudo.
+2. **Nos dois critérios extras do dono, o Flash leu melhor:** elástico **2 de 2** (o Haiku, 1 de 2); tecido
+   como aparência **2 de 2** (o Haiku, **0 de 2**).
+3. **⚠️ A regra 2 do v2 falhou em 2 de 4 leituras, uma em cada modelo.** O *"infantil"* voltou no Haiku,
+   agora no nome; o Flash escreveu *"feminina"*. Pela fronteira do dono de 26/09 isto é **invenção**, não
+   percepção — o contrato já tem a regra, e os dois modelos a quebraram. **A do Haiku é a que muda a
+   peça**: na F3, a @luna adulta vestiria *"a children's blouse"*.
+4. **Dinheiro:** as quatro cabem nos 4 ⚡ hoje; em 2027 a tarifa do Flash dobra, e a leitura 1 custaria 5
+   centavos. O pensamento é a maior parte da saída do Flash (537 e 457 contra 150 e 143 de texto) — e o
+   adapter de texto de hoje não o conta (gravaria 1 centavo onde o real é 2 e 3): **a F1 soma o pensamento
+   à saída** (item 5).
+
+**Custo real da rodada: 7 centavos** (3 + 2 + 2), 3 pedidos HTTP, **0 Spark — saldo 3.190, conferido no
+banco** (nenhum lançamento, geração ou extração desde 26/09). **Custo real da F0 inteira: 11 centavos.**
+
+**O que fecha a F0 — do dono:**
+
+1. **o padrão da lista de produto** (resposta 9.4): Haiku ou 3.7 Flash;
+2. **a regra 2 falhando em 2 de 4:** aceitar, com o campo editável como correção? Ou um **aviso mecânico**
+   no card — a leitura que volta com palavra de público (*infantil, feminina, masculina, plus size…*) acende
+   uma frase pedindo conferência, 0 ⚡, sem mudar o contrato?
+
+**Evidência** (`scratchpad\evidencias\produto-diz-f0\`): `r1-rodada5-lado-a-lado.md`,
+`numeros-f0-rodada5-lado-a-lado.md` (a triagem), `leitura-humana-rodada5.md` (a leitura que decide),
+`pedidos-rodada5.json` (os corpos dos pedidos, com foto e contrato reduzidos a md5), `leitura-*-rodada5*.json`,
+`limites-gemini-3.7-flash.json`; o harness da rodada 4 ficou guardado em `harness\f0-leituras-ate-rodada4.ts`.
+
 ### F1a · o envio que lê os bytes, e o colar/arrastar imagem no canvas
 
-> **✅ Aprovada pelo dono em 26/09, com uma regra de nome para a imagem colada** (abaixo, em *A regra
-> de nome*). 0 ⚡. **Não começou** — a noite de 26/09 fechou sem código.
+> **✅ Aprovada pelo dono em 26/09, com uma regra de nome para a imagem colada — confirmada por ele em
+> 27/09** (abaixo, em *A regra de nome*). 0 ⚡.
+>
+> **🟡 Escrita em 27/09 e provada estruturalmente — 37 provas, 0 falhas — e NÃO commitada:** a validação
+> ao vivo espera o navegador. O que foi entregue, as provas, três achados e **o que falta para retomar**
+> estão no fim desta seção.
 
 **A recomendação: fase própria, antes da F1 — não carona na F1.**
 
@@ -488,24 +639,115 @@ servidor recusa um registro cujo tipo diverge dos bytes; colar e soltar criam o 
 **do store** e do DOM (pelo `medir-canvas.js`); 6 imagens num gesto → recusa com o número e **zero**
 envios; o carregador manda `image/webp` para a foto da blusa.
 
-**A regra de nome da imagem colada — condição da aprovação; o conteúdo, a confirmar com o dono antes
-do código.** A imagem do clipboard chega sem nome útil — o navegador a entrega como `image.png` —, e
-hoje o rótulo é o nome do arquivo sem a extensão (`reference-picker.tsx`, `label: file.name…`): toda
-colagem viraria *"image"* na galeria, e a busca, que acha pelo rótulo, não acharia nada. **A proposta:**
+**A regra de nome da imagem colada — confirmada pelo dono em 27/09.** A imagem do clipboard chega sem nome
+útil — o navegador a entrega como `image.png` —, e o rótulo era o nome do arquivo sem a extensão: toda
+colagem viraria *"image"* na galeria, e a busca, que acha pelo rótulo, não acharia nada. **A regra:**
 
 | de onde veio | o rótulo | o caminho no Storage |
 |---|---|---|
-| **colada** (clipboard, sem nome útil) | **`Colada · 27/09 14:32`** — o dia e a hora da colagem | `<dono>/references/<uuid>.<extensão lida nos bytes>` |
-| arrastada ou escolhida no botão | o nome do arquivo, sem a extensão — **como hoje** | o mesmo |
+| **com nome próprio** — escolhida no botão, arrastada, ou **copiada do Explorer e colada** | o nome do arquivo, sem a extensão — **como sempre** | `<dono>/references/<uuid>.<extensão lida nos bytes>` |
+| **sem nome** — print, imagem copiada de uma página | **`Colada · dd/mm hh:mm:ss`**, na **hora local de quem colou** — nunca a do servidor, em UTC | o mesmo |
+
+**E o nome é só rótulo de galeria:** nunca entra no prompt e nunca preenche o Nome do produto (dono, 27/09).
 
 *O caminho nunca usa o nome — usa um uuid e a extensão dos bytes —, então a regra de nome é só do
-rótulo, e nome repetido não colide.*
+rótulo, e nome repetido não colide. **"Sem nome"** é o nome que Chrome, Edge e Firefox inventam para a
+imagem da área de transferência — `image.<ext>` —, reconhecido **só no colar**: um arquivo de disco que se
+chama `image.png`, arrastado, fica «image». Limite aceito: o mesmo arquivo, copiado do Explorer e colado,
+vira «Colada · …» — o rótulo é legenda de busca, não identidade.*
 
 **Os 6 registros já gravados — decisão do dono, 26/09: corrigidos por um script que ele roda.** A F1a
 não os altera: com o carregador lendo os bytes, o provedor recebe o tipo certo mesmo com o banco
 errado. O script vai em `supabase/correcoes/`, **rodado pelo dono**: **só a coluna de tipo**
 (`assets.mime_type`, de `image/jpeg` para `image/webp`), os 6 ids da varredura, idempotente, mostrando
 antes e depois. **A prova é a varredura rodada de novo: 104 batem / 0 divergem / 0 ilegíveis.**
+
+> **✅ Escrito em 27/09 — `supabase/correcoes/20260927_tipo_dos_6_envios_webp.sql`. Falta o dono rodar.**
+> No molde do estorno de 29/08: o UPDATE e as conferências moram num bloco que **levanta exceção** se
+> qualquer número divergir — o SQL Editor só mostra a última instrução. Cada id só casa junto com o
+> **caminho e o tamanho** conferidos na varredura; a trava confere que as 6 terminam `image/webp`, que
+> **nada além do tipo** mudou nelas (impressão digital das outras colunas, antes e depois), que **as 26
+> gerações** que citam os 6 (em `params` ou no texto compilado; 13 deram certo, 13 falharam) estão
+> intactas, e que nenhuma outra linha de `assets` mudou. Rodar duas vezes é seguro. `assets` não tem
+> gatilho nem `updated_at`: o UPDATE muda exatamente uma coluna. **As partes de leitura foram validadas
+> pelo MCP, só leitura:** o UPDATE casaria exatamente 6 linhas.
+>
+> *Os metadados dos 6 objetos no Storage também dizem `image/jpeg` — ficam como estão: o dono pediu só a
+> coluna de tipo, e quem manda o tipo ao provedor agora são os bytes.*
+>
+> **A varredura "antes", sobre os mesmos 104 de 26/09** (`harness\varredura-mime-populacao.ts`, que não
+> sobrescreve a evidência de 26/09 e conta à parte os arquivos novos): **98 / 6 / 0** — o vermelho que o
+> script tem de virar **104 / 0 / 0**.
+
+#### O que a F1a entregou — 27/09, na árvore de trabalho, NÃO commitado
+
+| peça | onde | o que faz |
+|---|---|---|
+| o tipo nos bytes | `src/lib/assets/image-bytes.ts` (novo, puro) | lê JPEG, PNG e WebP pelos primeiros bytes; nomeia GIF, HEIC, AVIF, BMP e TIFF para a recusa dizer o que o arquivo é; a extensão sai do tipo, nunca do nome; o veredito do servidor |
+| a regra de nome | `src/lib/assets/upload-label.ts` (novo, puro) | a regra do dono de 27/09, com o instante do gesto recebido de fora — prova-se a qualquer hora, sem esperar o relógio |
+| **o envio único** | `src/lib/assets/upload-client.ts` (novo) | confere o gesto inteiro **antes** do primeiro byte subir (até 5 por gesto, até 10 MB, só os três formatos — tudo ou nada), e envia: Storage, miniatura, registro. Usado pelo botão, pelo colar e pelo soltar |
+| o servidor confere | `src/lib/assets/stored-head.ts` (novo) + `registerUploadedAsset` | lê os **16 primeiros bytes do objeto já no Storage**, com Range; recusa tipo fora dos três, caminho cuja extensão não é a do tipo, e bytes que desmentem o tipo declarado — *pode nomear, nunca alargar* |
+| o carregador ao provedor | `src/lib/generation/asset-payloads.ts` | manda o tipo dos **bytes**; o do banco só quando os bytes não dizem nada conhecido |
+| o card no canvas | `addImageInputs` em `src/lib/canvas/store.ts` | um Input de Imagem por foto, `{ assetId, kind: null, instrucao: "" }` — a forma do «Continuar deste vídeo» —, solto onde o gesto aconteceu, lado a lado, **sem fio**, selecionado |
+| colar e soltar | `src/components/canvas/use-image-gestures.ts` (novo) + `flow-canvas.tsx` | Ctrl+V no canvas (nunca num campo de texto, nunca com um `<dialog>` aberto); soltar arquivo do disco; link de outra aba recusado **em palavras**, em vez de o navegador sair do canvas; arrasto que começou na própria página ignorado; o aviso mora no canvas, porque o gesto não tem bloco por onde falar |
+| o botão | `reference-picker.tsx` | o `handleUpload` virou uma chamada à função única; o diálogo do sistema oferece só os três formatos |
+| as frases | `t.generation.upload` em `pt-BR.ts` | **uma frase por recusa, a mesma nos três gestos**, e toda recusa de gesto termina dizendo que **nada foi enviado** |
+
+**As provas estruturais — 37, 0 falhas** (`scratchpad\harness\prova-f1a.ts`, rodado com `TZ=America/Sao_Paulo`;
+evidência em `evidencias\produto-diz-f1a\numeros-f1a-estrutural.md`). Cada uma vermelho→verde — o **HEAD
+`2cb1656`**, rodado ou copiado verbatim do git, contra a árvore de trabalho:
+
+| | hoje (HEAD) | depois (F1a) |
+|---|---|---|
+| WebP de verdade chamado `blusa-teste.jpg` | caminho `.jpg`, registro `image/jpeg`, Storage `image/jpeg` | `.webp`, `image/webp`, `image/webp` |
+| GIF chamado `falso.png` | passa pela única conferência (`startsWith("image/")`) | recusado **antes do envio**: *«falso.png» é GIF — só entram JPEG, PNG ou WebP. Nada foi enviado.* |
+| HEIC e AVIF com o tipo mentindo `image/jpeg` | — | recusados, e a frase diz o que são |
+| 6 imagens num gesto | — | o gesto inteiro recusado, com o número, e **0 leituras de bytes** |
+| 1 boa + 1 ruim | — | recusado **inteiro**, nomeando a ruim |
+| o nome | `image.png` colada → «image» | «Colada · 26/09 23:30:05» para o instante `02:30:05Z` de 27/09 — **a hora de quem colou**, nunca a do servidor |
+| o card | — | só `{assetId, instrucao, kind}`, **sem fio** (arestas 0 → 0), lado a lado, selecionado, uma revisão |
+| o servidor, contra objetos **reais** do Storage | registrava sem conferir | a blusa declarada `image/jpeg` → **recusada**; como `image/webp` → aceita; 16 bytes de egress; caminho sem arquivo → recusado como erro |
+| o carregador, os 6 + 2 controles | `image/jpeg` para **6 de 6** | `image/webp` para **6 de 6**, sem mexer em linha; os controles iguais nos dois; o base64 idêntico |
+| o rótulo | — | os 12 leitores de `label` em `src/` são todos de exibição — nenhum no compilador, na rota de geração ou nos adapters; o Nome do produto tem **um** escritor, a digitação da pessoa |
+
+*Uma das 37 ficou vermelha na primeira execução — e com razão: o harness achou dois leitores de `label` que
+a lista não conhecia. Lidos antes de entrar na lista: um é o rótulo da **versão** da personagem
+(`entity_versions`, outra tabela), o outro é a tela de linhagem de um filme. Nenhum vai a provedor.*
+
+**Três achados** (medidos em 27/09):
+
+1. **O `contentType` do envio era ignorado.** O `@supabase/storage-js` 2.112.2 manda um `Blob` como
+   multipart, e a parte leva **o tipo do próprio Blob** — a opção `contentType` só vale para corpos que não
+   são Blob. Um `File` tem o tipo que o navegador tirou da extensão. **A função única reembala os bytes num
+   Blob com o tipo lido** — sem isso, o objeto continuaria gravado como `image/jpeg`.
+2. **A extração de personagem tem o mesmo defeito, e com consequência:** ela manda à Anthropic o tipo que o
+   navegador declarou (`extraction/actions.ts:242` e `:269`) — uma foto WebP chamada `.jpg` volta `400`,
+   **antes de cobrar**. **Fora da F1a** (é caminho que cobra); o conserto é ler dos bytes que a ação já
+   baixa (`:261`). Decisão do dono.
+3. **O envio da imagem canônica da ficha também grava o tipo do navegador** (`canonical-images-column.tsx:120`
+   → `entities/image-actions.ts:104`). Fora da F1a. O carregador que lê os bytes já protege o provedor; o
+   registro fica errado até alguém decidir.
+
+**O que falta — a validação ao vivo, que espera o navegador.** Em 27/09 a aba de `localhost:5599` abriu no
+**perfil do Chrome de outro cliente**, onde outro Claude Code trabalhava; o dono a fechou. **Nada foi feito
+no navegador** — nenhum projeto, nenhum envio. Para retomar, **depois da liberação do dono** (regra
+«Navegador» do `CLAUDE.md`), no perfil do projeto e com a aba logada como o usuário do projeto:
+
+1. o dev na 5599 servindo este código (`netstat`), e `/login` respondendo 200;
+2. um projeto novo, **«Teste F1a — colar e soltar»** — o «Projeto teste Foto da Blusa» é o controle da F3 e
+   não se toca;
+3. **o botão**: um WebP chamado `.jpg` → no banco `image/webp`, caminho `.webp`, rótulo = o nome;
+4. **soltar** 1 arquivo → o card no ponto do soltar, lido **do store** e do DOM (`medir-canvas.js`);
+5. **colar** sem nome → «Colada · dd/mm hh:mm:ss» no banco, conferido contra a hora do navegador; colar com
+   nome → o nome;
+6. **6 de uma vez** e **GIF chamado `.png`** → a frase no canvas e **0** assets novos no banco;
+7. colar **num campo de texto** → nenhum card; **link** arrastado → a frase, nenhum envio;
+8. **o Ctrl+V de verdade** — imagem posta na área de transferência do Windows (o dono autorizou) e a tecla
+   no canvas; se a automação não reproduzir, o dono testa esse item à mão;
+9. recarregar → os cards persistem (autosave);
+10. **screenshots com nome** em `evidencias\produto-diz-f1a\`, e os números no resumo.
+
+**Sem commit do código até a prova fechar** (pedido do dono, 27/09).
 
 ### F1 · O card, o botão, o seletor e a leitura gravada
 
@@ -741,10 +983,15 @@ previsto na F2.7; um lançamento de −75; saldo **3.186 → 3.111**.
 |---|---|---|---|---|
 | leitura por Haiku, no harness | F0 | Claude, **depois do ok do dono** | 4 ⚡ | **não** — fora do produto. **Feita na rodada 3 (contrato v0): 2 centavos reais** (rodadas 1 e 2 recusadas antes de gerar, 0) |
 | **segunda** leitura por Haiku, contrato v2 — pedida pelo dono em 26/09 | F0 | Claude, com o pior caso declarado antes | 4 ⚡ | **não** — **feita na rodada 4: 2 centavos reais** |
-| leitura por Gemini 3.7 Flash, no harness *(era o 2.5 Flash)* | F0 | Claude, **depois do ok do dono** | 4 ⚡ | **não** — **ainda não feita**: `402` do Google na rodada 2 (0) |
+| leitura por Gemini 3.7 Flash, no harness *(era o 2.5 Flash)* | F0 | Claude, **depois do ok do dono** | 4 ⚡ | **não** — **feita na rodada 5 (27/09): 3 centavos reais** (a rodada 2 voltou `402`, 0) |
+| **segunda** leitura por 3.7 Flash — o lado a lado, decidido em 26/09 | F0 | Claude, com o R1 escrito antes | 4 ⚡ | **não** — **feita na rodada 5: 2 centavos reais** |
+| **terceira** leitura por Haiku (a 2ª no contrato v2) — o lado a lado | F0 | Claude, com o R1 escrito antes | 4 ⚡ | **não** — **feita na rodada 5: 2 centavos reais** |
 | leitura pelo botão | F1 | **dono** | 4 ⚡ | **sim** |
 | ↻ da cena 2 | F3 | **dono** | 75 ⚡ | **sim** |
-| **pior caso** | | | **91 ⚡ de preço** *(eram 87; +4 da segunda leitura do Haiku)* | **79 ⚡ da carteira — não mudou** — saldo **3.190 → 3.111** |
+| **pior caso** | | | **99 ⚡ de preço** *(eram 87; +4 da 2ª leitura do Haiku na rodada 4, +8 das duas a mais do lado a lado)* | **79 ⚡ da carteira — não mudou** — saldo **3.190 → 3.111** |
+
+*O custo real da F0 inteira, somado: **11 centavos** — 2 + 2 (rodadas 3 e 4) + 3 + 2 + 2 (rodada 5) —, e
+**0 Spark**: saldo 3.190, conferido no banco em 27/09.*
 
 *Conferido no catálogo em 26/09:* `claude-haiku-4-5` a **4 ⚡** por extração; `gemini-3.1-flash-image`
 a **75 ⚡** em 2K. *O `gemini-3.7-flash` entrou no lugar do 2.5 Flash com **4 ⚡ de referência do dono**

@@ -6,72 +6,71 @@
 > frente está no `plano-*.md` dela; o *como está hoje* está no código — e **o lugar de
 > tudo isso no mapa inteiro está em [`ROADMAP.md`](ROADMAP.md).**
 
-**Última reescrita:** 26/09/2026, à noite — **pausa do dono até 27/09. Nada em execução**: nenhum
-servidor na 5599 nem na 3000, nenhum processo `node`, nenhuma chamada paga no meio.
+**Última reescrita:** 27/09/2026, ~19:10 — **o navegador está BLOQUEADO até o dono liberar** (a aba abriu
+no perfil do Chrome de outro cliente). **O dev está de pé na 5599** (PID 10528), a pedido do dono. Nenhuma
+chamada paga em curso.
 
-# ⏸️ RETOMA DO MARCADOR
+## 1 · Feito em 27/09
 
-## 1 · Feito e commitado em 26/09 — tudo no `origin/master`
-
-| commit | o que entrou |
+| o quê | onde |
 |---|---|
-| `33903aa` | o **plano da Frente 1**, aprovado com as cinco respostas do dono; o `produto.md` §7.1 apontando para a fila do ROADMAP; o índice do `CLAUDE.md` com o ROADMAP e três status corrigidos; *"RLS nas 21 tabelas"* |
-| `35ecb08` | **F0(a)**: o texto de 07/09 remontado com o compilador de hoje, **igual byte a byte**; F0(b) rodada 1: as duas leituras recusadas antes de gerar |
-| `cc58a30` | F0 rodadas 2 e 3: **a foto é WebP registrada como JPEG**; o `402` do Google; o Haiku leu — e inventou *"infantil"* |
-| `bb0c2b0` | **o único código do dia, fechado:** a porta fixa **5599** (`package.json`) e a sonda de chaves (`scripts/probe-provider-keys.mts`, `npm run probe:keys`) |
-| `500ac4a` | o **contrato v2** e a rodada 4 — o *"infantil"* sumiu; a **varredura de tipos** (104 arquivos: 98 batem, 6 divergem); a proposta F1a |
-| *este commit* | as decisões do fechamento da noite; este ESTADO |
+| **O contrato de leitura v2 entrou no plano, byte a byte** — copiado por script, md5 do prompt de sistema `99f41400…` igual em evidência, plano e harness | [`plano-produto-diz.md`](plano-produto-diz.md), F0 |
+| **O lado a lado da F0 — medido.** Rodada 5: 3 leituras (a rodada 4 contou como a 1ª do Haiku: conteúdo idêntico, conferido no pedido e nos 2.051 tokens). **7 centavos reais, 0 Spark.** O Google cobra de novo (sem `402`) | plano, F0 · rodada 5 |
+| **A regra 7 de Segurança passou a ser conferida:** o GitHub estava com secret scanning e push protection **desligados** num repositório público; o dono ligou os dois, e `npm run probe:keys` acusa ✗ se qualquer um desligar — vermelho às 15:04, verde às 18:56 | `scripts/probe-provider-keys.mts` |
+| **Checagem de segredos, 0 ⚡:** nenhum `.env*` além do `.env.example` em nenhum dos 135 commits; nenhum formato de chave (8 tipos) no histórico nem na árvore; alertas de secret scanning: **0** na 1ª consulta | `scratchpad\evidencias\seguranca-regra7\` |
+| **O script dos 6 registros** — só `assets.mime_type`, trava por exceção, idempotente; as partes de leitura validadas pelo MCP | `supabase/correcoes/20260927_tipo_dos_6_envios_webp.sql` |
+| **A F1a, escrita e provada estruturalmente — 37 provas, 0 falhas** — e **não commitada** (ver 2) | a árvore de trabalho |
 
-## 2 · Pela metade
+## 2 · Pela metade — e o que falta para retomar
 
-**No repositório: nada.** Depois deste commit, `git status` fica limpo. **Nenhum código de fase
-aberta:** a F1 e a F1a não começaram, e o único código de hoje (`bb0c2b0`) está fechado.
+**A F1a está na árvore de trabalho, NÃO commitada** — pedido do dono: sem commit até a prova ao vivo
+fechar. `git status` mostra estes arquivos modificados ou novos, **e eles são a F1a, não sujeira**:
+`src/lib/assets/{image-bytes,upload-label,upload-client,stored-head}.ts` (novos),
+`src/components/canvas/use-image-gestures.ts` (novo), `src/lib/assets/actions.ts`,
+`src/lib/generation/asset-payloads.ts`, `src/lib/canvas/store.ts`, `src/components/canvas/flow-canvas.tsx`,
+`src/components/nodes/reference-picker.tsx`, `src/lib/i18n/pt-BR.ts`.
 
-**Fora do repositório, por regra** — o `scratchpad\`, que nunca entra em commit:
+**A validação ao vivo não começou.** A aba de `localhost:5599` abriu no **perfil do Chrome de outro
+cliente**, caiu na tela de login, e o dono a fechou — nada foi feito nela além de abrir a página e ler a
+origem. **Para retomar:**
 
-| arquivo | estado |
-|---|---|
-| `harness\f0-leituras.ts` | pronto para o contrato v2, com o tipo da foto lido nos bytes — **mas faz UMA leitura por modelo e não tem os dois critérios extras: ajustar antes do lado a lado** |
-| `harness\f0-texto-de-hoje.ts` · `f0-foto.ts` · `f0-sonda-google.ts` · `f0-varredura-mime.ts` | prontos. **A varredura é a prova do script dos 6 registros:** roda de novo, e tem de dar 104 / 0 / 0 |
-| `evidencias\produto-diz-f0\` | as quatro rodadas, os dois contratos (v0 e v2, md5 `a12a8dd4…`), a foto (md5 `2cb6f65a…`) e a varredura |
+1. **o dono libera o navegador por mensagem**, dizendo **perfil e porta** (a regra do bastão, em escrita —
+   ver 3);
+2. antes de qualquer gesto: conferir que a aba é a do **grupo do Claude**, no **perfil do projeto**, e está
+   **logada como o usuário do projeto** — tela de login ou outro usuário: parar e perguntar;
+3. conferir que a 5599 serve o código novo (`netstat` + `/login` 200);
+4. seguir a lista de 10 itens do fim da seção F1a do [plano](plano-produto-diz.md) — projeto de teste novo
+   («Teste F1a — colar e soltar»; **o «Projeto teste Foto da Blusa» não se toca**), botão, soltar, colar
+   com e sem nome, recusas, campo de texto, link, **o Ctrl+V de verdade** (o dono autorizou usar a área de
+   transferência), recarregar, screenshots com nome;
+5. prova fechada → commit da F1a, com a doc da F1a em `nodes-geracao.md` e `arquitetura.md`.
 
-**A F0 está pela metade:** (a) fechada; (b) o Haiku leu duas vezes; **o 3.7 Flash nunca leu** — e o
-Google foi liberado.
+**O script dos 6 registros espera o dono rodar** no SQL Editor. **Depois, a prova (Claude, 0 ⚡):**
+`npx tsx … harness/varredura-mime-populacao.ts --rodada depois-do-script` → os 104 de 26/09 têm de sair
+**104 / 0 / 0** (a rodada "antes" deu 98 / 6 / 0).
 
-## 3 · O gasto real desta rodada — 26/09
+**A F0 espera a escolha do dono**, com as quatro leituras ao lado da foto (plano, rodada 5): **(1)** o
+padrão da lista de produto — Haiku ou 3.7 Flash; **(2)** a regra 2 do contrato falhou em 2 de 4
+(*"infantil"* no Haiku, até no nome; *"feminina"* no Flash): aceitar com o campo editável, ou um aviso
+mecânico no card? **Resumo das leituras:** gabarito 4/4 e 3/3 nas quatro; o elástico — Flash 2 de 2 no
+punho, Haiku 1 de 2; o tecido como aparência — Flash 2 de 2, Haiku 0 de 2. **Depois da escolha, a F1**
+(migration no padrão RAISE EXCEPTION, aplicada pelo dono).
+
+**Em andamento nesta sessão, depois deste commit:** a regra «Navegador» no `CLAUDE.md` e a **trava de
+navegador entre projetos** (um hook no nível do usuário), com prova de dois terminais; e a consulta
+final dos alertas de secret scanning.
+
+## 3 · O gasto real — 27/09
 
 | o quê | custo real | da carteira |
 |---|---|---|
-| F0 rodadas 1 e 2 — quatro chamadas, **todas recusadas antes de gerar** (`401`, `404`, `400`, `402`) | 0 | 0 |
-| F0 rodada 3 — Haiku, contrato v0 | 2 centavos | 0 |
-| F0 rodada 4 — Haiku, contrato v2 | 2 centavos | 0 |
-| sondas de metadados e de chaves; varredura de tipos (104 × 32 bytes) | 0 | 0 |
-| **total** | **4 centavos de provedor** | **0 Spark — saldo 3.190 ⚡, conferido no banco: nenhum lançamento, nenhuma geração, nenhuma extração em 26/09** |
+| F0 rodada 5 — Flash 1, Flash 2, Haiku 2 (3 pedidos HTTP) | **7 centavos** (3 + 2 + 2) | 0 |
+| limites do Flash, sonda de chaves, varreduras, provas da F1a | 0 | 0 |
+| **total da F0 inteira** | **11 centavos de provedor** | **0 Spark — saldo 3.190 ⚡, conferido no banco: nenhum lançamento, geração ou extração desde 07/09** |
 
-## 4 · O próximo passo exato — o lado a lado que fecha a F0
-
-Decidido pelo dono em 26/09: **Haiku × 3.7 Flash, contrato v2, duas leituras por modelo**, com dois
-critérios extras além do gabarito — **a posição do elástico** (é do punho) e **o tratamento do
-tecido** (aparência, nunca composição).
-
-1. **Ajustar o `f0-leituras.ts`:** duas leituras por modelo e os dois critérios extras (0 ⚡).
-2. **Escrever o R1 antes do clique:** quatro chamadas, **no máximo 16 ⚡ de preço de catálogo, 0 Spark
-   da carteira**. *Se a rodada 4 contar como uma das duas do Haiku: três chamadas, 12 ⚡ — o dono
-   decide ao retomar.*
-3. **Rodar.** **A primeira leitura do 3.7 Flash é a verificação da cobrança** — se voltar `402`,
-   parar. ⚠️ **A conta de faturamento do Google é compartilhada com outro projeto:** um `402` pode vir
-   sem nenhuma geração nossa.
-4. **O dono escolhe o padrão da lista de produto**, com as quatro leituras ao lado da foto → a F1
-   começa (migration no padrão RAISE EXCEPTION, aplicada por ele).
-
-**Aprovado, e pode andar em paralelo, 0 ⚡:** a **F1a** — antes do código, confirmar com o dono **a
-regra de nome da imagem colada** (a proposta está no plano: *"Colada · dd/mm hh:mm"*) —; e **o script
-dos 6 registros** (só `assets.mime_type`; o dono roda; a prova é a varredura: 104 / 0 / 0).
-
-> 🔑 **Chaves:** a da Anthropic foi trocada em 26/09 — a anterior **expirou por prazo programado**
-> (criada em 08/08), e **a nova não vence**. O Google foi **liberado**: saldo pré-pago reposto,
-> **recarga automática desativada**. **Para conferir qualquer chave, sem gastar: `npm run probe:keys`**
-> — prova a chave, não o saldo.
+> 🔑 **Chaves e contas:** Anthropic, Google, fal e OpenAI aceitas pela sonda em 27/09; xAI sem chave. O
+> Google voltou a gerar. **GitHub:** secret scanning e push protection **ligados** desde 27/09 — e
+> conferidos pela sonda, não pela memória.
 
 ---
 
@@ -81,64 +80,26 @@ dos 6 registros** (só `assets.mime_type`; o dono roda; a prova é a varredura: 
 de extração, compilador determinístico, geração de imagem canônica, ledger append-only
 com as travas no banco. RLS em todas as **21** tabelas.
 
-**Frente Storyboard · Ciclo 1 — o elo.** O último quadro de um clipe vira o primeiro do
-seguinte, por asset derivado. ⚠️ *O **veredito humano** do elo continua **NÃO MEDIDO com
-gatilho**.*
+**Frente Storyboard · Ciclos 1 a 3 e o vídeo final.** O elo (⚠️ *veredito humano NÃO MEDIDO, com
+gatilho*); o Roteiro; **a Máquina, encerrada** — 3 cenas, 870 ⚡, zero reconciliação à mão; **um filme**
+montado em JavaScript puro, sem `ffmpeg`, a 0 ⚡.
 
-**Frente Storyboard · Ciclo 2 — o Roteiro.** Uma ideia vira fichas de cena estruturadas
-no banco. Fechado.
+**Frente A′ — ✅ FECHADA em 07/09. A FOTO CHEGA AO PROVEDOR.** A fidelidade não estava provada — saiu um
+vestido onde a foto é uma blusa, porque a palavra «blusa» nunca chegou ao modelo: **é a Frente 1.**
 
-**Frente Storyboard · Ciclo 3 — a Máquina. ✅ ENCERRADO.** A régua percorrida pelo dono:
-3 cenas, 870 ⚡, do zero ao clipe — **3 cobranças de vídeo** numa janela de **643 ms**,
-**zero reconciliação à mão**. Saldo 4.150 → 3.280.
+**Frente 1 · F0.** (a) O compilador de hoje reproduz o texto de 07/09 **byte a byte**. (b) **Cinco leituras
+da foto da blusa**, a última rodada com o pedido gravado como o SDK o serializou: as quatro no contrato v2
+passam o gabarito inteiro; **o contrato v2 está no plano, byte a byte**; **a regra 2 reduz a invenção de
+público, mas não a elimina** (2 de 4).
 
-**Mini-ciclo «O vídeo final» — ✅ FECHADO em 06/09 (`d17a2d8`).** Montagem em JavaScript
-puro (`mediabunny`), sem `ffmpeg`: 122 ms contra 202 ms, **0,63 MB contra 75,0 MB**, arquivo
-idêntico quadro a quadro. De 3 clipes pagos, **um filme** — e o extrato não se moveu.
+**Dois fatos provados ao vivo, de graça:** **recusa de provedor não debita** (`a10f13c0`); e **o filtro que
+barrou é do Google, verbatim** (`google.ts:258`).
 
-**Frente A′ · o `fix:` do produto — ✅ FECHADA em 07/09. A FOTO CHEGA AO PROVEDOR.**
-*Nome não é foto* (03/09). A prova do dono **do banco, não da tela**: 90 ⚡ — o pior caso R1
-exato —, saldo 3.280 → **3.190**. **A fidelidade não estava provada** — saiu um vestido onde a
-foto é uma blusa, porque a palavra «blusa» nunca chegou ao modelo: **é a Frente 1.**
+**Dinheiro, depois do incidente de 29/08.** As quatro travas do motorista, cada uma com simulação
+vermelha→verde reexecutável; a fechadura ED25519 do webhook; a trava de vida do endereço de retorno.
 
-**Frente 1 · F0(a) — 26/09.** O compilador de hoje reproduz o texto de 07/09 **byte a byte**
-(1.557 caracteres): *blouse* 0, *dress* 0, *hem* 1 — a linha de base da F2. **E o princípio de
-evidência funciona:** com ele no contrato, a leitura parou de inventar *"infantil"*.
-
-**Dois fatos provados ao vivo, de graça:** **recusa de provedor não debita** (`a10f13c0`, fora
-do ledger); e **o filtro que barrou é do Google, verbatim** (`google.ts:258`).
-
-**Mini-ciclo Egress.** Fases 0 a 5 fechadas, em produção.
-
-**Dinheiro, depois do incidente de 29/08.** As quatro travas do motorista, cada uma com
-simulação vermelha→verde reexecutável; a fechadura ED25519 do webhook; a trava de vida do
-endereço de retorno.
-
-**O «incidente dos vínculos» — ✅ ENCERRADO em 06/09: era artefato de medição.** A lição virou
-**mecanismo**: `scratchpad\harness\medir-canvas.js` recusa número de canvas não pintado. **Toda
-afirmação sobre o store lê o store.**
-
-**Ferramentas e documentação.** `AGENTS.md` como ponteiro para o `CLAUDE.md`; `README.md` como mapa;
-`.gitattributes` fixando o EOL; o índice do `CLAUDE.md` lista o `ROADMAP.md`. **Desde 26/09:** o dev
-sobe sempre na **5599**, e **`npm run probe:keys`** confere as chaves sem gastar, cada resposta lida
-contra um controle com chave falsa — na primeira execução, Anthropic, Google, fal e OpenAI aceitas, xAI
-sem chave.
-
-**O mapa — 16/09.** [`ROADMAP.md`](ROADMAP.md): o inventário, o esboço item a item, **a arquitetura
-decidida pelo dono** e **a fila até o post publicado**.
-
----
-
-## O que a Fase 0 do vídeo descobriu e ainda não virou código
-
-Três achados medidos — o detalhe no §4.1 do [`plano-video-final.md`](plano-video-final.md):
-
-1. **A ordem das cenas ≠ a ordem de criação das gerações.** Montar por `created_at` entrega
-   o filme fora de ordem, **e o erro só aparece no vídeo**.
-2. **O banco não sabe o que os arquivos são.** `assets.width`/`height` estão vazios em **35 de 35
-   vídeos e em 39 de 48 imagens** *(16/09)* — e, desde a varredura de 26/09, sabe-se que **6 envios
-   têm até o tipo errado**. É a mesma lacuna que a frente 3 do ROADMAP encontra.
-3. **Nenhuma biblioteca recusa clipe incompatível sozinha.** A trava é nossa — e recusar custa zero.
+**Instrumentos.** `scratchpad\harness\medir-canvas.js` recusa número de canvas não pintado; o dev sobe
+sempre na **5599**; **`npm run probe:keys`** confere as chaves sem gastar **e a regra 7 no GitHub**.
 
 ---
 
@@ -146,27 +107,22 @@ Três achados medidos — o detalhe no §4.1 do [`plano-video-final.md`](plano-v
 
 | # | o que falta | quem fecha |
 |---|---|---|
-| 1 | **🎯 Frente 1 — o produto diz o que é** — [`plano-produto-diz.md`](plano-produto-diz.md). Plano **aprovado** em 26/09; **F0 pela metade** (o lado a lado da *Retoma*, bloco 4); **F1a aprovada**, não começou; **F1 e F2** esperam a F0; **F3** — a prova viva, 75 ⚡ — depois delas. A lista de produto nasce com **Haiku e 3.7 Flash**, com **padrão próprio** decidido pela F0 (o Sonnet a 20 ⚡ nunca é ele); as linhas 2.5 de `extraction` ficam inativas na migration da F1, que vem no padrão RAISE EXCEPTION e é aplicada pelo dono. Pior caso R1 registrado: **87 ⚡ de preço, 79 ⚡ da carteira** — saldo 3.190 → 3.111; a rodada 4 somou **+4 ⚡ de preço fora da carteira** (91 de preço; a carteira segue 79). ⚠️ *A linha da frente 1 no ROADMAP §4 ficou velha — diz "um dia" e "estrutural sem dinheiro" —, e se corrige no fechamento.* ⚠️ *O 3.7 Flash custa 2,5× o antigo 2.5 Flash na entrada, e dobra em 2027: os 4 ⚡ podem não cobrir — o lado a lado mede.* | Claude — o lado a lado; **dono** — a escolha do padrão |
-| 2 | **Apagar asset da galeria, com auditoria de referências** — o botão não existe; falta **a tela** e **a auditoria da imagem usada como referência**, que mora no `data` de um node dentro do `graph` e **não tem FK**. **0 ⚡.** → §9 do [`plano-video-final.md`](plano-video-final.md). *Fora do caminho do post.* | Claude |
-| 3 | **O selo «bloqueada pelo filtro do Google» nunca foi visto em tela.** A última geração do banco é `0cf3f069`, de 07/09. **Decisão do dono, 07/09:** *a próxima recusa numa geração que ele faria de qualquer forma fecha esta prova, com 0 ⚡ extra* — **e a F3 da Frente 1 é uma delas.** | oportunidade |
-| 4 | **Egress §4.5** — o egress na fatura, esperando o gráfico de Usage. | o relógio |
-| 5 | **Perguntas com gatilho:** a **0.3** (a aba escondida trava o elo?); **recusa × concorrência** (n ≥ 30); e **a trava de dono da linhagem, provada de um lado só** — o gatilho é **a segunda conta**. | medição |
-| 6 | **Duas perguntas para a frente 5 (Publicação), antes de ela abrir:** publicar **não gasta e não tem volta** — a primeira publicação real é metade do dono?; e **tokens da Meta por conta não cabem em variável de ambiente** — exceção às regras de Segurança, a registrar antes do primeiro token. → [`ROADMAP.md`](ROADMAP.md) §3 e §4 | dono, quando a frente abrir |
-| 7 | **Backlog nomeado:** arquivar/ocultar na galeria; filtros e busca; o glifo ⇥ com contraste fraco; três arestas órfãs; o «Reanimar» é tudo-ou-nada; **montar duas vezes o mesmo roteiro faz DOIS filmes idênticos** (`959dc554…` e `8fa08846…`); **uma leitura de carteira que falha vira «você tem 0 ⚡»** (`src/app/studio/page.tsx`) — **mente sobre dinheiro**; **os outros `<dialog>`** têm **o mesmo buraco do `nowheel`**; re-semear o canvas quando o HMR cria um store vazio; **`edited_at` e `updated_at` usam relógios diferentes** (~2 s); **`nanoid` < 3.3.18** — 1 alta do `npm audit`, transitiva do Next 16.3.0; **a sonda de chaves na TELA** — o script já existe, falta a versão que o dono vê sem terminal; **o cadastro com confirmação por e-mail feito no dev local** precisaria da 5599 na lista de redirecionamentos do Supabase (o login com senha não depende da porta). | plano |
-
-As notas do **Modo Take** e da **Voz** já estão em disco — [`notas-modo-take.md`](notas-modo-take.md)
-e [`notas-voz.md`](notas-voz.md) —, e as duas impõem o mesmo requisito ao **Catálogo aberto**:
-**capacidades como dado**. Na fila de 16/09, as três ficam **depois** do primeiro post.
+| 1 | **🎯 Frente 1 — o produto diz o que é** — [`plano-produto-diz.md`](plano-produto-diz.md). **F0 medida, falta a escolha do dono** (e a pergunta da regra 2); **F1a escrita, não commitada** — a validação ao vivo espera o navegador; **o script dos 6** espera o dono rodar; **F1 e F2** depois da F0; **F3** — a prova viva, 75 ⚡ — depois delas. Pior caso: **99 ⚡ de preço, 79 ⚡ da carteira**. ⚠️ *A linha da frente 1 no ROADMAP §4 está velha — "um dia", "estrutural sem dinheiro" — e se corrige no fechamento.* | **dono** — a escolha, o script, a liberação do navegador; Claude — o resto |
+| 2 | **Três achados sobre o tipo dos arquivos, fora da F1a:** a **extração de personagem** manda à Anthropic o tipo do navegador (WebP chamado `.jpg` → 400, antes de cobrar — caminho que cobra, decisão do dono); o **envio da imagem canônica** grava o tipo do navegador; os **metadados dos 6 objetos no Storage** dizem `image/jpeg` (ficam: o dono pediu só a coluna) | dono |
+| 3 | **Apagar asset da galeria, com auditoria de referências** — o botão não existe. **0 ⚡.** → §9 do [`plano-video-final.md`](plano-video-final.md). *As imagens de teste da F1a vão ficar na galeria até ele existir.* | Claude |
+| 4 | **O selo «bloqueada pelo filtro do Google» nunca foi visto em tela** — a F3 é a oportunidade, a 0 ⚡ extra. | oportunidade |
+| 5 | **Egress §4.5** — o egress na fatura, esperando o gráfico de Usage. | o relógio |
+| 6 | **Perguntas com gatilho:** a **0.3** (a aba escondida trava o elo?); **recusa × concorrência** (n ≥ 30); **a trava de dono da linhagem, provada de um lado só** — o gatilho é a segunda conta. | medição |
+| 7 | **Duas perguntas para a frente 5 (Publicação), antes de ela abrir:** publicar **não gasta e não tem volta**; **tokens da Meta por conta não cabem em variável de ambiente**. → [`ROADMAP.md`](ROADMAP.md) §3 e §4 | dono, quando a frente abrir |
+| 8 | **Backlog nomeado:** arquivar/ocultar na galeria; filtros e busca; o glifo ⇥ com contraste fraco; três arestas órfãs; o «Reanimar» é tudo-ou-nada; **montar duas vezes o mesmo roteiro faz DOIS filmes idênticos**; **uma leitura de carteira que falha vira «você tem 0 ⚡»** — **mente sobre dinheiro**; **os outros `<dialog>`** com o buraco do `nowheel`; re-semear o canvas quando o HMR cria um store vazio; `edited_at` × `updated_at` em relógios diferentes; **`nanoid` < 3.3.18** (1 alta do `npm audit`, transitiva do Next 16.3.0); **a sonda de chaves na TELA**; o cadastro com confirmação por e-mail no dev local precisaria da 5599 nos redirecionamentos do Supabase. | plano |
 
 ---
 
 > **Projeto de prova da frente:** «Projeto teste Foto da Blusa» — o percurso da A′, com a foto
-> `06778db7` (WebP, registrada como JPEG — um dos 6) e a geração `0cf3f069`. **O controle da F3
-> está intacto em 26/09:** a ficha da cena 2 não foi tocada desde 07/09 (e tem `produto: null`), a
-> @luna ativa é a v4, o card tem nome e 1 foto. O **filme duplicado fica** no acervo até o item 2
-> existir.
+> `06778db7` (WebP, registrada como JPEG — um dos 6) e a geração `0cf3f069`. **O controle da F3 está
+> intacto:** a ficha da cena 2 não foi tocada desde 07/09, a @luna ativa é a v4, o card tem nome e 1 foto.
+> **Nenhum teste da F1a acontece nele.**
 
-> **O dev sobe na 5599, fixa desde 26/09** (`npm run dev`) — a porta em que a extensão do Chrome tem
-> permissão; a 3000 é dos outros projetos da máquina. **Para o ambiente de vídeo** *(a Frente 1 não
-> precisa — é só imagem)*: o túnel aponta para `http://localhost:5599` e vive **no comando**, nunca no
-> arquivo — `FAL_WEBHOOK_URL="https://<tunel-de-hoje>.trycloudflare.com/api/webhooks/fal" npm run dev`.
+> **O dev sobe na 5599** (`npm run dev`). **Para o ambiente de vídeo** *(a Frente 1 não precisa)*: o túnel
+> aponta para `http://localhost:5599` e vive **no comando** —
+> `FAL_WEBHOOK_URL="https://<tunel-de-hoje>.trycloudflare.com/api/webhooks/fal" npm run dev`.
