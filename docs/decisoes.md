@@ -6240,7 +6240,28 @@ era a mesma; o `fetch` não era. É o mesmo argumento que fez a prova ao vivo ex
 ela pagou o próprio custo em minutos.
 
 *Sobrou 1 objeto órfão no Storage, da tentativa travada (`…/references/ee8f3d30….png` e a miniatura), sem linha em
-`assets`. Fica para a limpeza que o botão de apagar trouxer.*
+`assets`. ~~Fica para a limpeza que o botão de apagar trouxer.~~ **Revogado pelo dono na mesma noite — a entrada
+seguinte.***
+
+### 27/09/2026 — 🔒 DECISÃO do dono, na pausa: o órfão do envio não espera o botão de apagar
+
+**As três perguntas do dono sobre o envio que travava, e as respostas medidas:**
+
+1. **A causa foi eliminada ou só limitada pelo teto?** **Eliminada.** O que travava era esperar um cancelamento; não
+   sobrou nenhum. Depois do conserto, **8 de 8 envios** levaram **0,7 a 1,7 s** da subida ao registro — medido no
+   banco, `assets` contra `storage.objects`, miniatura inclusa —, e o teto de 10 s nunca disparou.
+2. **O teto cobre a transferência?** **Não** — só a leitura dos 16 bytes que o servidor faz no Storage. A
+   transferência do navegador, até 10 MB, acontece antes e fora dele: não há recusa falsa em conexão lenta. O outro
+   lado fica registrado como ponto a decidir: **a transferência não tem teto nosso**, e uma rede que empaca deixa
+   «Enviando…» até o navegador desistir ou a página recarregar.
+3. **O arquivo que já subiu fica órfão?** **Fica.** O navegador sobe o arquivo e a miniatura antes de pedir o
+   registro, e nenhuma falha do registro os apaga. O de hoje é o único do bucket: **2 objetos de 189**.
+
+**A decisão:** **a limpeza no caminho de falha é a primeira tarefa da retomada, e não pode depender do botão de
+apagar.** 📌 *A frase que eu tinha escrito — «fica para a limpeza que o botão de apagar trouxer» — punha a
+correção de um defeito do envio atrás de uma funcionalidade que nem tem data.* O que a tarefa entrega, a prova, e
+o caso que ela não cobre (a aba fechada entre a subida e o registro, que só uma varredura pega — **o dono decide se
+entra**) estão no plano, fim da seção F1a.
 
 ## Segurança e navegador
 
@@ -6356,3 +6377,30 @@ confirmou estar logada — pelo dado: a única conta do banco, os 4 projetos del
 📌 **A trava registra o perfil DECLARADO, não o conectado.** Nenhum hook sabe a que navegador a extensão está
 ligada. Então as duas camadas fazem coisas diferentes, e as duas são necessárias: **a trava impede dois projetos
 no navegador ao mesmo tempo; a conferência de login pega o perfil errado.** Uma não substitui a outra.
+
+### 27/09/2026 — 🔒 DECISÃO do Jorge: o reforço da regra «Navegador» — o TKS só logado no perfil do projeto, e a conta conferida antes do painel
+
+**O diagnóstico, dele:** *a trava serializa os projetos, mas não confere o perfil conectado, e a tela de login só
+protege enquanto o TKS não estiver logado em outro perfil.* A conclusão da entrada anterior tinha um furo: a
+conferência de login pega o perfil errado **só porque** o TKS não está logado lá — se estivesse, a aba abriria
+logada, e nada distinguiria os dois perfis.
+
+**As duas regras novas, no `CLAUDE.md`, seção «Navegador»** — entraram como **(f)** e **(g)**, continuando a lista
+(a)–(e):
+
+- **(f) Invariante: o TKS — `localhost` e produção — só fica logado no perfil «Jorge Alves - DevIA».** É ela que
+  mantém a (b) valendo.
+- **(g) Antes de consultar qualquer painel, confirmar na tela que a conta ou o time são os do projeto** — GitHub
+  `jorgealves-dev-ia`; Vercel, o time «jorgealvesdevia-3166's projects» e o projeto `creator-tks-labs`; Supabase, o
+  projeto `ogkobcsakbnmvazvvllq`. Se não forem: parar e avisar. *Os identificadores vieram do `git remote`, do
+  `.mcp.json` e do MCP da Vercel, e não de memória.*
+
+**No backlog:** investigar se a trava consegue ler o perfil **realmente conectado** — hoje nenhum hook sabe a que
+navegador a extensão está ligada.
+
+📌 **Dois achados da mesma conferência, em `docs/arquitetura.md` (a tabela de onde as coisas vivem, de 07/08):**
+ela dizia **«repositório privado»**, e o repositório é **público** — a API disse na checagem da regra 7; corrigido.
+E ela traz **o e-mail da conta** desde o primeiro commit de documentação — ou seja, o e-mail está público junto com
+o repositório. **Isso muda o motivo registrado em «O perfil do projeto declarado na trava»:** manter a declaração
+fora do git evita multiplicar o e-mail, mas ele já não é reservado. **Se ele sai da tabela é decisão do dono** — e
+o histórico do git o guarda de qualquer jeito.

@@ -12,7 +12,9 @@
 >
 > **✅ F1a FECHADA em 27/09** — 37 provas estruturais e **a prova ao vivo inteira**, com o **Ctrl+V de
 > verdade**; dois defeitos que só a prova ao vivo achou foram consertados e reprovados no mesmo gesto (fim da
-> seção F1a).
+> seção F1a). **Deixou uma dívida: a limpeza no caminho de falha do envio** — o arquivo que sobe e não é
+> registrado fica órfão no Storage. **É a primeira tarefa da retomada, 0 ⚡**; a F1 espera a revisão do dono da
+> lista de termos do item 9.
 >
 > **Custo:** 0 ⚡ nas partes estruturais. **Pior caso R1 do percurso inteiro, registrado pelo dono
 > em 26/09: 87 ⚡ de preço — 79 ⚡ da carteira** (uma leitura pelo botão + uma imagem, saldo
@@ -261,7 +263,7 @@ falha é a que já existe — `translation_failed`, **antes de qualquer Spark**.
 | ordem | fase | entrega | ⚡ | status |
 |---|---|---|---|---|
 | 1ª | **F0** | o que o compilador envia hoje; o que Haiku e Gemini leem da foto da blusa — **e o padrão da lista de produto** | 0 ⚡ + ⚠️ **20 ⚡ fora do produto** (5 leituras) | ✅ **fechada em 27/09** — (a) byte a byte; (b) o lado a lado, 11 centavos reais na F0 inteira; **o padrão é o 3.7 Flash**, e o aviso de público entra na F1 (decisão do dono) |
-| — | **F1a** | o envio que lê os bytes — e o colar/arrastar imagem no canvas pelo mesmo caminho | 0 ⚡ | ✅ **fechada em 27/09** — 37 provas estruturais + a prova ao vivo, com o Ctrl+V real; dois defeitos achados ao vivo, consertados |
+| — | **F1a** | o envio que lê os bytes — e o colar/arrastar imagem no canvas pelo mesmo caminho | 0 ⚡ | ✅ **fechada em 27/09** — 37 provas estruturais + a prova ao vivo, com o Ctrl+V real; dois defeitos achados ao vivo, consertados · **dívida aberta: a limpeza no caminho de falha** (fim da seção F1a) |
 | 2ª | **F1** | o card, o botão, o seletor e a leitura gravada — **com migration** | ⚠️ **4 ⚡**, a leitura do dono | ⬜ |
 | 3ª | **F2** | o compilador cola a descrição | 0 ⚡ | ⬜ |
 | 4ª | **F3** | a prova viva: a blusa aparece | ⚠️ **75 ⚡** | ⬜ |
@@ -770,6 +772,31 @@ commit), do **DOM** (`medir-canvas.js`) e do **banco** (`evidencias\produto-diz-
 **E o que a prova mostrou da trava de navegador:** a primeira chamada ao Chrome gravou a trava deste projeto — o
 matcher literal provado de verdade. **Mas a aba abriu primeiro num perfil ERRADO**, e quem pegou foi a **tela de
 login** (a regra «Navegador» (b)), não a trava: **a trava registra o perfil DECLARADO, não o conectado.**
+
+#### Dívida aberta — a limpeza no caminho de falha do envio · primeira tarefa da retomada, 0 ⚡
+
+*As três perguntas do dono sobre o envio que travava, na pausa de 27/09:*
+
+- **A causa foi eliminada, não só limitada.** Nenhum `await` de cancelamento sobrou no caminho; depois do conserto,
+  **8 de 8 envios** levaram **0,7 a 1,7 s** da subida ao registro (miniatura inclusa — medido no banco, `assets`
+  contra `storage.objects`), e o teto de 10 s nunca disparou. Ele fica como rede para outras paradas.
+- **O teto cobre só a leitura dos 16 bytes** que o servidor faz no Storage (a conexão e os bytes) — **não a
+  transferência** do navegador ao Storage, até 10 MB, que acontece antes e **não tem teto nosso**. Então não há
+  recusa falsa em conexão lenta. O outro lado, registrado: uma rede que empaca deixa «Enviando…» até o navegador
+  desistir ou a página recarregar, e um novo colar/soltar é recusado com «Ainda enviando…» nesse meio-tempo; o
+  pedido do link assinado, que vem antes da leitura, também fica fora do teto. *Ponto a decidir, não defeito
+  medido.*
+- **O arquivo que já subiu fica órfão — sim.** O navegador sobe o arquivo e a miniatura **antes** de pedir o
+  registro; qualquer recusa ou falha do registro (o teto, `type_mismatch`, `unreadable`, erro do banco) deixa os
+  dois no Storage sem linha em `assets`, **e nada os apaga hoje**. O órfão de 27/09 nasceu assim (da trava, antes
+  do conserto) — e é o único do bucket: **2 objetos de 189**.
+
+**A tarefa:** falhou o registro, os objetos daquele envio saem do Storage **no mesmo gesto** — sem depender do botão
+de apagar, que não existe. A política `assets_objects_delete_own` já deixa o usuário apagar o que está na pasta
+dele. **A prova:** estrutural — cada motivo de recusa forçado deixa **0 objetos** a mais no bucket; ao vivo, 0 ⚡ —
+um envio recusado de propósito, com o bucket contado antes e depois. **O que ela não cobre, e o dono decide se
+entra:** a aba fechada **entre** a subida e o registro — aí nenhum código da página roda, e só uma **varredura**
+(objetos sem linha em `assets`, com idade mínima) pega o órfão.
 
 ### F1 · O card, o botão, o seletor e a leitura gravada
 
