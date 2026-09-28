@@ -90,6 +90,8 @@ Três regras que valem para todo tipo de input:
 
 **O "+" da faixa cria um Input de Imagem conectado**, à esquerda do bloco e com o seletor aberto — não anexa imagem direto. **Toda referência tem node, sem exceção**, e por isso a **faixa é espelho e nunca porta de entrada**: o que ela mostra existe no canvas, sempre.
 
+**Colar e soltar criam Inputs de Imagem** *(27/09/2026, F1a da Frente 1 — [`plano-produto-diz.md`](plano-produto-diz.md))*. **Ctrl+V** no canvas e **soltar arquivo** do disco criam um Input de Imagem por foto — **solto, sem fio** (quem decide o que ele alimenta é a pessoa, como no menu), no ponto do gesto (colar: sob o ponteiro, ou no centro da vista se o ponteiro está fora do canvas), lado a lado e selecionados. O card guarda **só o asset** — `{ assetId, kind: null, instrucao: "" }`, a forma do «Continuar deste vídeo» —, nunca um nome. **Mesmo caminho do botão «Enviar imagem»**: mesma função de envio, mesmo Storage, mesma miniatura, mesmo registro, mesmos limites — **só JPEG, PNG e WebP, lidos nos bytes; até 10 MB; até 5 por gesto**, e o gesto que quebra uma regra é **recusado inteiro**, com a frase dizendo o porquê e que **nada foi enviado**. **O que não entra:** colar **dentro de um campo de texto** continua sendo colar texto, e um `<dialog>` aberto também não recebe; um **link** arrastado de outra aba é recusado em palavras (buscar endereço de terceiros seria um segundo caminho); um arrasto que começou na própria página não é arquivo de fora. **O rótulo na galeria:** o nome do arquivo, sem a extensão; a imagem **sem nome** (o `image.png` que o navegador inventa para um print) vira **«Colada · dd/mm hh:mm:ss»**, na hora local de quem colou. **O rótulo nunca entra no prompt nem preenche o Nome de um produto.** O aviso do gesto mora no próprio canvas, porque o gesto não tem bloco por onde falar.
+
 ## 3.2 A Máquina de Storyboard (anatomia) *(02/09/2026, Frente Storyboard Ciclo 3)*
 
 **Normativa, como a §3.** A Máquina é **maestro, não motor**: ela não tem rota própria,
@@ -157,7 +159,7 @@ individuais**, jamais uma transação: falha de uma cena custa zero e não trava
 ## 4. O seletor de referências (a Galeria)
 
 Modal com duas fontes:
-- **Enviar** — upload direto (mesma escrituração de sempre: Storage → assets).
+- **Enviar** — upload direto (mesma escrituração de sempre: Storage → assets). **Desde 27/09/2026 (F1a), pela função de envio única da casa** — a mesma do colar e do soltar no canvas (§3.1): o tipo é lido nos **bytes**, nunca na extensão do nome, e o diálogo do sistema oferece só JPEG, PNG e WebP.
 - **Minhas imagens** — todo o histórico do usuário na tabela `assets` (geradas + enviadas), mais recentes primeiro, com filtro simples (todas · geradas · enviadas) e busca leve. É a versão v1 da galeria do Magnific — as categorias de biblioteca (Stock, Style, Camera, Effects…) ficam registradas para depois.
 
 Uma imagem usada uma vez fica na galeria para sempre — subir o produto uma vez, usar em cem gerações.

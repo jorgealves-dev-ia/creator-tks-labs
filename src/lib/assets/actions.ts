@@ -5,7 +5,9 @@ import { z } from "zod";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+import { extensionFor, storedTypeVerdict, UPLOAD_IMAGE_TYPES } from "./image-bytes";
 import { signWithThumbnails, type SignedAsset } from "./signing";
+import { readStoredHead } from "./stored-head";
 import { isThumbnailPath } from "./thumbnail-path";
 
 /**
@@ -221,7 +223,9 @@ export async function listGalleryAssets(input: unknown): Promise<GalleryPage> {
 
 const registerSchema = z.object({
   storagePath: z.string().min(1),
-  mimeType: z.string().regex(/^image\//),
+  // The three formats a reference can be, and nothing wider. Until 27/09 this
+  // was "anything starting with image/", taken on the browser's word.
+  mimeType: z.enum(UPLOAD_IMAGE_TYPES),
   byteSize: z.int().positive().nullable(),
   width: z.int().positive().nullable(),
   height: z.int().positive().nullable(),
@@ -230,7 +234,7 @@ const registerSchema = z.object({
 
 export type RegisterAssetResult =
   | { ok: true; item: GalleryItem }
-  | { ok: false; reason: "invalid" | "error" };
+  | { ok: false; reason: "invalid" | "error" | "type_mismatch" };
 
 /**
  * Registers a file the browser has just uploaded to Storage.
@@ -270,6 +274,25 @@ export async function registerUploadedAsset(input: unknown): Promise<RegisterAss
   // vindo do navegador já é conferido.
   if (isThumbnailPath(parsed.data.storagePath)) {
     return { ok: false, reason: "invalid" };
+  }
+
+  // The type, in the path as in the row: `<uuid>.webp` is a WebP. The path is
+  // the one thing the browser fully controls, and a `.jpg` holding a WebP is
+  // exactly the lie this function stopped accepting on 27/09.
+  if (!parsed.data.storagePath.endsWith(`.${extensionFor(parsed.data.mimeType)}`)) {
+    return { ok: false, reason: "invalid" };
+  }
+
+  // And the bytes, which decide. The browser may NAME the type; only the file
+  // already in Storage may make it true — "pode nomear, nunca alargar", the
+  // division of 10/08 applied to a file. Sixteen bytes, read with a Range.
+  const verdict = storedTypeVerdict(
+    parsed.data.mimeType,
+    await readStoredHead(supabase, parsed.data.storagePath),
+  );
+
+  if (!verdict.ok) {
+    return { ok: false, reason: verdict.reason === "type_mismatch" ? "type_mismatch" : "error" };
   }
 
   const { data: asset } = await supabase

@@ -2136,11 +2136,43 @@ export const t = {
       derivedBadge: "quadro de vídeo",
       loadMore: "Carregar mais",
       selected: "selecionadas",
-      notAnImage: "Esse arquivo não é uma imagem.",
-      tooLarge: "Imagem grande demais (máximo 10 MB).",
-      uploadFailed: "Não foi possível enviar a imagem.",
       cancel: "Cancelar",
       confirm: "Adicionar",
+    },
+
+    /**
+     * O envio de imagem — F1a, 27/09/2026. **Um caminho, um limite, uma frase:**
+     * o botão «Enviar imagem», o colar (Ctrl+V) e o soltar arquivo no canvas
+     * recusam com as MESMAS frases, porque passam pela mesma função
+     * (`lib/assets/upload-client.ts`).
+     *
+     * Toda recusa de gesto termina dizendo que **nada foi enviado**: o gesto
+     * inteiro é conferido antes do primeiro byte subir, e quem lê precisa saber
+     * que não sobrou meia remessa na galeria.
+     */
+    upload: {
+      unsupported: (name: string, format: string | null) =>
+        format
+          ? `«${name}» é ${format} — só entram JPEG, PNG ou WebP. Nada foi enviado.`
+          : `«${name}» não é JPEG, PNG nem WebP. Nada foi enviado.`,
+      tooLarge: (name: string, megabytes: string) =>
+        `«${name}» tem ${megabytes} MB — o limite é 10 MB por imagem. Nada foi enviado.`,
+      tooMany: (count: number) =>
+        `${count} imagens de uma vez — o limite é 5 por gesto. Nada foi enviado.`,
+      failed: "Não foi possível enviar a imagem.",
+      notSignedIn: "Sua sessão expirou. Entre de novo para enviar imagens.",
+      /** O servidor leu os bytes e eles desmentiram o tipo — não entra na galeria. */
+      typeMismatch: "O arquivo não é o que diz ser, e não entrou na galeria.",
+      /** Um link arrastado de outra aba: buscar endereço de terceiros seria um segundo caminho. */
+      link: "Isso é um link, não um arquivo. Salve a imagem e solte o arquivo — ou copie a imagem e cole aqui.",
+      sending: (count: number) => (count === 1 ? "Enviando 1 imagem…" : `Enviando ${count} imagens…`),
+      stillSending: "Ainda enviando as imagens anteriores — espere terminar e tente de novo.",
+      done: (count: number) =>
+        count === 1
+          ? "A imagem entrou no canvas como Input de Imagem. Conecte-a a um bloco para usá-la."
+          : `${count} imagens entraram no canvas como Inputs de Imagem. Conecte-as a um bloco para usá-las.`,
+      partial: (sent: number, total: number) =>
+        `${sent} de ${total} imagens entraram no canvas; as outras falharam no envio. Tente de novo com elas.`,
     },
 
     result: {

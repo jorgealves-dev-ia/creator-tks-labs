@@ -16,6 +16,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { HelperLinesOverlay } from "@/components/canvas/helper-lines-overlay";
+import { useImageGestures, type GestureStatus } from "@/components/canvas/use-image-gestures";
 import { CharacterNode } from "@/components/nodes/character-node";
 import { GeneratorNode } from "@/components/nodes/generator-node";
 import { VideoGeneratorNode } from "@/components/nodes/video-generator-node";
@@ -85,6 +86,11 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
   const { getZoom, screenToFlowPosition } = useReactFlow();
   const [helperLines, setHelperLines] = useState<HelperLines>(NO_LINES);
 
+  /** Pasting and dropping image files — F1a. The wrapper is where a paste lands when the pointer is elsewhere. */
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const gestures = useImageGestures(wrapperRef);
+  const { handleFileDrop } = gestures;
+
   /**
    * A type dragged off the Inputs shelf, dropped where the pointer let go.
    *
@@ -92,12 +98,18 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
    * most people take. This one exists because dragging is what the gesture
    * *looks* like it should do, and a shelf that refuses the obvious gesture
    * teaches that the shelf is decoration.
+   *
+   * Anything else dropped here — a file from the disk, a link from another tab
+   * — is the image gestures' to answer (F1a).
    */
   const handleDrop = useCallback(
     (event: React.DragEvent) => {
       const type = event.dataTransfer.getData(NODE_TYPE_MIME);
 
-      if (!type) return;
+      if (!type) {
+        handleFileDrop(event);
+        return;
+      }
 
       event.preventDefault();
 
@@ -113,7 +125,7 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
         },
       ]);
     },
-    [screenToFlowPosition],
+    [screenToFlowPosition, handleFileDrop],
   );
 
   /**
@@ -190,13 +202,19 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
 
   return (
     <div
-      className="size-full"
+      ref={wrapperRef}
+      className="relative size-full"
       onDragOver={(event) => {
         // Without preventDefault the browser refuses the drop entirely — the
-        // default for a dragover is "this is not a drop target".
+        // default for a dragover is "this is not a drop target". And for a file
+        // from the disk the default is worse: the browser opens the file in
+        // this tab, leaving the canvas.
         if (event.dataTransfer.types.includes(NODE_TYPE_MIME)) {
           event.preventDefault();
           event.dataTransfer.dropEffect = "move";
+        } else if (gestures.acceptsDrag(event)) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "copy";
         }
       }}
       onDrop={handleDrop}
@@ -245,6 +263,32 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
       </ReactFlow>
 
       {nodes.length === 0 ? <EmptyCanvasHint /> : null}
+
+      {gestures.status ? <GestureBanner status={gestures.status} /> : null}
+    </div>
+  );
+}
+
+/**
+ * What a paste or a drop is doing, or why it was refused — on the canvas
+ * itself, because the gesture has no block to speak through: the cards it makes
+ * do not exist yet, and a refused gesture makes none.
+ */
+function GestureBanner({ status }: { status: GestureStatus }) {
+  const tone =
+    status.tone === "refused"
+      ? "border-warning/40 bg-surface text-warning"
+      : "border-line bg-surface text-ink-muted";
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      data-gesture-status={status.tone}
+      className={`pointer-events-none absolute left-1/2 top-4 z-10 max-w-md -translate-x-1/2 rounded-lg
+                  border px-4 py-2 text-center text-xs leading-relaxed shadow-lg shadow-black/40 ${tone}`}
+    >
+      {status.text}
     </div>
   );
 }

@@ -4,16 +4,17 @@ import { useEffect, useRef, useState } from "react";
 
 import { useLightbox } from "@/components/nodes/lightbox";
 import { ImageGrid } from "@/components/ui/image-grid";
+import { listGalleryAssets, type GalleryItem } from "@/lib/assets/actions";
+import { UPLOAD_IMAGE_TYPES } from "@/lib/assets/image-bytes";
 import {
-  listGalleryAssets,
-  registerUploadedAsset,
-  type GalleryItem,
-} from "@/lib/assets/actions";
-import { IMMUTABLE_CACHE_CONTROL } from "@/lib/assets/thumbnail-path";
-import { storeThumbnailInBrowser } from "@/lib/assets/thumbnail-client";
+  failureMessage,
+  prepareImages,
+  refusalMessage,
+  uploadPreparedImage,
+} from "@/lib/assets/upload-client";
+import { uploadLabel } from "@/lib/assets/upload-label";
 import { useReferencePicker } from "@/lib/canvas/reference-picker-store";
 import { listProjectGallery } from "@/lib/generation/history";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { t } from "@/lib/i18n/pt-BR";
 
 /**
@@ -36,9 +37,6 @@ import { t } from "@/lib/i18n/pt-BR";
  */
 
 const copy = t.generation.picker;
-
-/** The bucket allows 50 MB; a reference photo has no business being near that. */
-const MAX_BYTES = 10 * 1024 * 1024;
 
 type Filter = "todas" | "geradas" | "enviadas";
 
@@ -222,65 +220,33 @@ function PickerDialog() {
     );
   }
 
+  /**
+   * The button's upload — through the house's one upload function
+   * (`lib/assets/upload-client.ts`), the same one pasting and dropping on the
+   * canvas use. The type is read in the file's first bytes, never in its name;
+   * the label is the name the file already had, as it always was.
+   */
   async function handleUpload(file: File) {
     setMessage(null);
 
-    if (!file.type.startsWith("image/")) {
-      setMessage(copy.notAnImage);
-      return;
-    }
+    const prepared = await prepareImages([file]);
 
-    if (file.size > MAX_BYTES) {
-      setMessage(copy.tooLarge);
+    if (!prepared.ok) {
+      setMessage(refusalMessage(prepared));
       return;
     }
 
     setUploading(true);
 
-    const supabase = createSupabaseBrowserClient();
-    const { data: userData } = await supabase.auth.getUser();
-    const userId = userData.user?.id;
-
-    if (!userId) {
-      setUploading(false);
-      setMessage(copy.uploadFailed);
-      return;
-    }
-
-    // The first folder segment is the owner — the convention the bucket policies
-    // of 20260807140500 rely on.
-    const extension = file.name.split(".").pop()?.toLowerCase() ?? "png";
-    const storagePath = `${userId}/references/${crypto.randomUUID()}.${extension}`;
-
-    const { error } = await supabase.storage
-      .from("assets")
-      .upload(storagePath, file, { contentType: file.type, cacheControl: IMMUTABLE_CACHE_CONTROL });
-
-    if (error) {
-      setUploading(false);
-      setMessage(copy.uploadFailed);
-      return;
-    }
-
-    // A miniatura, do arquivo que já está na mão. Best-effort: se falhar, o
-    // envio segue e a grade cai para o original.
-    const source = await storeThumbnailInBrowser(storagePath, file);
-
-    const result = await registerUploadedAsset({
-      storagePath,
-      mimeType: file.type,
-      byteSize: file.size,
-      width: source?.width ?? null,
-      height: source?.height ?? null,
-      // The name the file already had. Nobody has to think of a caption, and the
-      // search finds it by the word the user themselves put on the disk.
-      label: file.name.replace(/\.[^.]+$/, ""),
-    });
+    const result = await uploadPreparedImage(
+      prepared.images[0],
+      uploadLabel(file, "botao", new Date()),
+    );
 
     setUploading(false);
 
     if (!result.ok) {
-      setMessage(copy.uploadFailed);
+      setMessage(failureMessage(result.reason));
       return;
     }
 
@@ -380,7 +346,9 @@ function PickerDialog() {
           <input
             ref={fileRef}
             type="file"
-            accept="image/*"
+            // The OS dialog offers only what can go in. It is a courtesy, not
+            // the check: the check is the bytes, in `prepareImages`.
+            accept={UPLOAD_IMAGE_TYPES.join(",")}
             className="sr-only"
             onChange={(event) => {
               const file = event.target.files?.[0];

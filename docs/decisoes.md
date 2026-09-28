@@ -6210,6 +6210,38 @@ malha.
 26/09: **104 / 0 / 0** (antes, 98 / 6 / 0). E conferido por fora, com as impressões digitais medidas antes de
 ele rodar: o resto das 6 linhas, as 26 gerações e as 98 outras linhas saíram **idênticos** — só o tipo mudou.
 
+### 27/09/2026 — ✅ F1a FECHADA: a prova ao vivo — e dois defeitos que só ela achou
+
+**A prova ao vivo, 0 ⚡**, no perfil do projeto e num projeto de teste novo, lida do store, do DOM e do banco:
+soltar, colar sem e com nome, o botão com **um WebP de verdade chamado `.jpg`** — que virou **`image/webp` no
+caminho, no registro e no Storage**, o caso que abriu a F1a —, as quatro recusas (**0 assets, 0 objetos no
+Storage**), colar num campo de texto (o canvas não interceptou), recarregar (os cards voltaram), e **o Ctrl+V de
+verdade**, duas vezes: um print na área de transferência do Windows (**«Colada · 27/09 22:48:41»**, na hora do
+navegador — no servidor, em UTC, o mesmo instante já era 28/09) e um arquivo copiado no Explorer (o rótulo é o
+nome do arquivo). Final: 8 cards, **0 arestas**, cada card guardando **só o asset**.
+
+📌 **Dois defeitos que as 37 provas estruturais não pegaram, e a prova ao vivo pegou em minutos:**
+
+1. **O registro travava dentro do Next.** O arquivo e a miniatura subiam ao Storage, e a conferência dos 16
+   primeiros bytes nunca voltava — *«Enviando 1 imagem…»* para sempre, nenhuma linha em `assets`. **No harness
+   (Node puro) a mesma função funcionava.** O mecanismo, **medido**: o corpo de uma resposta duplicada por `tee`
+   — o que o `fetch` do servidor faz para cache e deduplicação — **não termina o `cancel()` enquanto a outra
+   cópia está aberta**; sem `tee`, termina. O `await reader.cancel()` esperava para sempre. Conserto: **abortar**
+   a requisição (nunca esperar um cancelamento), com teto de 10 s — estourou, o registro é **recusado**, nunca
+   aceito às cegas.
+2. **Clicar e colar punha o card no centro.** Clicar no fundo do canvas inicia o arrasto do React Flow, que
+   dispara um "saiu" no wrapper — e a posição do ponteiro era zerada. Medido: só passando o mouse, o card nascia
+   sob o ponteiro; com clique, no centro. Conserto: a posição vem da captura no documento (movimento e clique), e
+   "está no canvas?" é perguntado ao retângulo dele na hora de colar. **Reprovado com o Ctrl+V real:** (711, 630)
+   = o ponto do clique.
+
+📌 **A lição do primeiro:** *um harness fora do ambiente de verdade prova a lógica, não o ambiente.* A função
+era a mesma; o `fetch` não era. É o mesmo argumento que fez a prova ao vivo existir na regra 8 — e desta vez
+ela pagou o próprio custo em minutos.
+
+*Sobrou 1 objeto órfão no Storage, da tentativa travada (`…/references/ee8f3d30….png` e a miniatura), sem linha em
+`assets`. Fica para a limpeza que o botão de apagar trouxer.*
+
 ## Segurança e navegador
 
 ### 27/09/2026 — 🔒 A regra 7 de Segurança deixa de ser frase: a sonda confere o GitHub
@@ -6311,3 +6343,16 @@ traz o e-mail da conta, e o repositório é público. O hook passou a ler a decl
 projeto** quando a sessão é anterior a ela e não tem a variável no ambiente — a trava não pode depender de
 reabrir o terminal. **18 cenários da lógica, 0 falhas** (os 15 de antes e três do perfil: do settings, do
 ambiente, e "não declarado"). O hook novo tem md5 `20da8901…`; a cópia está na evidência.
+
+### 27/09/2026 — O perfil errado foi pego pela tela de login, não pela trava — e a trava provou o matcher
+
+**A primeira chamada real ao Chrome** (`tabs_context_mcp`, depois do "pronto" do dono) **gravou a trava deste projeto**
+— o matcher literal `mcp__claude-in-chrome__.*` provado de verdade, e numa sessão aberta ANTES do hook, que o
+carregou sozinha. **Mas a aba abriu num perfil ERRADO** — o dono viu: a extensão estava ligada a outro navegador, e
+com 3 conectados à conta. **Quem pegou foi a regra (b)**: a aba caiu na tela de login, a sessão parou, sem digitar
+nada; o dono aprovou o perfil certo pelo pedido de conexão da extensão (`switch_browser`), e só então a aba
+confirmou estar logada — pelo dado: a única conta do banco, os 4 projetos dela e o saldo 3.190.
+
+📌 **A trava registra o perfil DECLARADO, não o conectado.** Nenhum hook sabe a que navegador a extensão está
+ligada. Então as duas camadas fazem coisas diferentes, e as duas são necessárias: **a trava impede dois projetos
+no navegador ao mesmo tempo; a conferência de login pega o perfil errado.** Uma não substitui a outra.

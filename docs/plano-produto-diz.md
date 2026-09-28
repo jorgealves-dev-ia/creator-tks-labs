@@ -10,9 +10,9 @@
 > quatro leituras do lado a lado estão em *O que a F0 achou*, rodada 5; a escolha e os motivos, logo
 > depois. **Próxima fase com dinheiro: a F1.**
 >
-> **F1a — escrita e provada estruturalmente em 27/09 (37 provas, 0 falhas), NÃO commitada:** a
-> validação ao vivo espera o navegador — em 27/09 a aba abriu no perfil do Chrome de outro cliente, e o
-> dono a fechou. O que falta está no fim da seção F1a.
+> **✅ F1a FECHADA em 27/09** — 37 provas estruturais e **a prova ao vivo inteira**, com o **Ctrl+V de
+> verdade**; dois defeitos que só a prova ao vivo achou foram consertados e reprovados no mesmo gesto (fim da
+> seção F1a).
 >
 > **Custo:** 0 ⚡ nas partes estruturais. **Pior caso R1 do percurso inteiro, registrado pelo dono
 > em 26/09: 87 ⚡ de preço — 79 ⚡ da carteira** (uma leitura pelo botão + uma imagem, saldo
@@ -261,7 +261,7 @@ falha é a que já existe — `translation_failed`, **antes de qualquer Spark**.
 | ordem | fase | entrega | ⚡ | status |
 |---|---|---|---|---|
 | 1ª | **F0** | o que o compilador envia hoje; o que Haiku e Gemini leem da foto da blusa — **e o padrão da lista de produto** | 0 ⚡ + ⚠️ **20 ⚡ fora do produto** (5 leituras) | ✅ **fechada em 27/09** — (a) byte a byte; (b) o lado a lado, 11 centavos reais na F0 inteira; **o padrão é o 3.7 Flash**, e o aviso de público entra na F1 (decisão do dono) |
-| — | **F1a** | o envio que lê os bytes — e o colar/arrastar imagem no canvas pelo mesmo caminho | 0 ⚡ | 🟡 **escrita em 27/09, 37 provas estruturais verdes — NÃO commitada**: falta a validação ao vivo, que espera o navegador (fim da seção F1a) |
+| — | **F1a** | o envio que lê os bytes — e o colar/arrastar imagem no canvas pelo mesmo caminho | 0 ⚡ | ✅ **fechada em 27/09** — 37 provas estruturais + a prova ao vivo, com o Ctrl+V real; dois defeitos achados ao vivo, consertados |
 | 2ª | **F1** | o card, o botão, o seletor e a leitura gravada — **com migration** | ⚠️ **4 ⚡**, a leitura do dono | ⬜ |
 | 3ª | **F2** | o compilador cola a descrição | 0 ⚡ | ⬜ |
 | 4ª | **F3** | a prova viva: a blusa aparece | ⚠️ **75 ⚡** | ⬜ |
@@ -690,7 +690,7 @@ antes e depois. **A prova é a varredura rodada de novo: 104 batem / 0 divergem 
 > sobrescreve a evidência de 26/09 e conta à parte os arquivos novos): **98 / 6 / 0** — o vermelho que o
 > script tem de virar **104 / 0 / 0**.
 
-#### O que a F1a entregou — 27/09, na árvore de trabalho, NÃO commitado
+#### O que a F1a entregou — 27/09
 
 | peça | onde | o que faz |
 |---|---|---|
@@ -739,26 +739,37 @@ a lista não conhecia. Lidos antes de entrar na lista: um é o rótulo da **vers
    → `entities/image-actions.ts:104`). Fora da F1a. O carregador que lê os bytes já protege o provedor; o
    registro fica errado até alguém decidir.
 
-**O que falta — a validação ao vivo, que espera o navegador.** Em 27/09 a aba de `localhost:5599` abriu no
-**perfil do Chrome de outro cliente**, onde outro Claude Code trabalhava; o dono a fechou. **Nada foi feito
-no navegador** — nenhum projeto, nenhum envio. Para retomar, **depois da liberação do dono** (regra
-«Navegador» do `CLAUDE.md`), no perfil do projeto e com a aba logada como o usuário do projeto:
+#### A prova ao vivo — 27/09/2026, 22:35–22:52, ✅
 
-1. o dev na 5599 servindo este código (`netstat`), e `/login` respondendo 200;
-2. um projeto novo, **«Teste F1a — colar e soltar»** — o «Projeto teste Foto da Blusa» é o controle da F3 e
-   não se toca;
-3. **o botão**: um WebP chamado `.jpg` → no banco `image/webp`, caminho `.webp`, rótulo = o nome;
-4. **soltar** 1 arquivo → o card no ponto do soltar, lido **do store** e do DOM (`medir-canvas.js`);
-5. **colar** sem nome → «Colada · dd/mm hh:mm:ss» no banco, conferido contra a hora do navegador; colar com
-   nome → o nome;
-6. **6 de uma vez** e **GIF chamado `.png`** → a frase no canvas e **0** assets novos no banco;
-7. colar **num campo de texto** → nenhum card; **link** arrastado → a frase, nenhum envio;
-8. **o Ctrl+V de verdade** — imagem posta na área de transferência do Windows (o dono autorizou) e a tecla
-   no canvas; se a automação não reproduzir, o dono testa esse item à mão;
-9. recarregar → os cards persistem (autosave);
-10. **screenshots com nome** em `evidencias\produto-diz-f1a\`, e os números no resumo.
+Navegador liberado pelo dono, perfil «Jorge Alves - DevIA», porta 5599; projeto de teste novo, **«Teste F1a —
+colar e soltar»** — nenhum projeto existente foi tocado. **0 ⚡.** Lido do **store** (sonda temporária, fora do
+commit), do **DOM** (`medir-canvas.js`) e do **banco** (`evidencias\produto-diz-f1a\numeros-f1a-ao-vivo.md`).
 
-**Sem commit do código até a prova fechar** (pedido do dono, 27/09).
+| gesto | resultado |
+|---|---|
+| **soltar** 1 PNG | card em 1,5 s no ponto do soltar, **sem fio**, guardando **só** o asset; rótulo `prova-f1a-soltar` |
+| **colar sem nome** | rótulo **`Colada · 27/09 22:45:56`** — a hora do navegador; no servidor (UTC) o mesmo instante já era **28/09** |
+| **colar com nome** | rótulo = o nome (`prova-f1a-colar-com-nome`) |
+| **o botão, WebP de verdade chamado `.jpg`** (o navegador dizia `image/jpeg`) | **`image/webp` no caminho, no registro e no Storage** — o caso que abriu a F1a |
+| GIF chamado `.png` (no botão e solto) · 6 de uma vez · link arrastado · colar num campo de texto | cada um recusado com a sua frase, ou deixado ao campo; **0 assets e 0 objetos no Storage** |
+| **Ctrl+V REAL — um print** (Bitmap na área de transferência do Windows) | «Colada · 27/09 22:48:41» e, depois do conserto abaixo, **sob o clique**: (711, 630) = (711, 630) |
+| **Ctrl+V REAL — arquivo copiado no Explorer** | rótulo = o nome do arquivo; **sob o clique**: (1266, 378) = (1266, 378) |
+| **recarregar** | os cards voltaram do banco; final: **8 cards, 0 arestas**, 8 miniaturas carregadas |
+
+**Dois defeitos que SÓ a prova ao vivo achou — consertados e reprovados no mesmo gesto:**
+
+1. **O registro travava dentro do Next.** O arquivo subia, e a conferência dos 16 bytes nunca voltava — *«Enviando
+   1 imagem…»* para sempre, nenhuma linha em `assets`. No harness (Node puro) funcionava. **Mecanismo medido:** o
+   corpo de uma resposta duplicada por `tee` — o que o `fetch` do servidor do Next faz — **não termina o `cancel()`
+   enquanto a outra cópia está aberta**. Conserto: **abortar** a requisição, com teto de 10 s (estourou = recusado,
+   nunca aceito às cegas). *Sobrou 1 objeto órfão no Storage, da tentativa travada.*
+2. **Clicar e colar punha o card no centro.** Clicar no fundo do canvas inicia o arrasto do React Flow, que dispara
+   um "saiu" no wrapper, e a posição do ponteiro era zerada. Conserto: a posição vem da captura no documento, e "está
+   no canvas?" é perguntado ao retângulo dele na hora de colar.
+
+**E o que a prova mostrou da trava de navegador:** a primeira chamada ao Chrome gravou a trava deste projeto — o
+matcher literal provado de verdade. **Mas a aba abriu primeiro num perfil ERRADO**, e quem pegou foi a **tela de
+login** (a regra «Navegador» (b)), não a trava: **a trava registra o perfil DECLARADO, não o conectado.**
 
 ### F1 · O card, o botão, o seletor e a leitura gravada
 

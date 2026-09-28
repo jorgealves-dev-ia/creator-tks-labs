@@ -940,6 +940,22 @@ type CanvasState = {
    */
   addInputNode: (input: { id: string; type: string; generatorId: string }) => void;
   /**
+   * Images pasted (Ctrl+V) or dropped on the canvas — F1a.
+   *
+   * One Input de Imagem per image, **loose, where the gesture happened and
+   * without a wire**: whoever pasted decides what it feeds, the same as a card
+   * taken from the shelf. The card is born the way «Continuar deste vídeo»
+   * makes its own — `{ assetId, kind: null, instrucao: "" }` — so there is no
+   * second shape of an image card, and nothing here knows the file's name: the
+   * card holds an asset id, and the name lives only in the gallery.
+   *
+   * Side by side from the point of the gesture, and born selected: a gesture of
+   * three images makes three cards that identify themselves.
+   *
+   * Returns the ids of the new cards, in the order of `assetIds`.
+   */
+  addImageInputs: (input: { assetIds: readonly string[]; position: { x: number; y: number } }) => string[];
+  /**
    * "Continuar deste vídeo": o capítulo seguinte, pronto para dirigir.
    *
    * Põe no canvas **o par** — um Input de Imagem com o último quadro e um Gerar
@@ -1667,6 +1683,38 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         notice: null,
       };
     }),
+
+  addImageInputs: ({ assetIds, position }) => {
+    if (assetIds.length === 0) return [];
+
+    const state = get();
+    const GAP = 24;
+
+    const cards: Node[] = assetIds.map((assetId, index) => ({
+      id: crypto.randomUUID(),
+      type: "input-image",
+      position: freePosition(state.nodes, {
+        x: position.x + index * (INPUT_NODE_WIDTH + GAP),
+        y: position.y,
+      }),
+      data: { assetId, kind: null, instrucao: "" },
+      selected: true,
+    }));
+
+    set({
+      // The new cards are the selection: everything that was selected before
+      // steps back, so the gesture's result is the thing highlighted.
+      nodes: [
+        ...state.nodes.map((node) => (node.selected ? { ...node, selected: false } : node)),
+        ...cards,
+      ],
+      revision: state.revision + 1,
+      saveStatus: "dirty",
+      notice: null,
+    });
+
+    return cards.map((card) => card.id);
+  },
 
   publishScenes: ({ storyboardNodeId, scenes }) =>
     set((state) => {

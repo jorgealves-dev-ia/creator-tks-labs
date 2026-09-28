@@ -1,5 +1,6 @@
 import "server-only";
 
+import { sniffImageType } from "@/lib/assets/image-bytes";
 import type { ImagePayload } from "@/lib/providers/types";
 import type { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -31,9 +32,17 @@ export async function loadImagePayload(
 
   if (!file) return null;
 
+  const bytes = Buffer.from(await file.arrayBuffer());
+
   return {
-    mimeType: asset.mime_type,
-    base64: Buffer.from(await file.arrayBuffer()).toString("base64"),
+    // What the BYTES say, and the row only when they say nothing we know (F1a,
+    // 27/09/2026). The row can be wrong: on 26/09, 6 uploads were WebP recorded
+    // as `image/jpeg` — the blouse of the Frente A′ among them. Google tolerated
+    // the wrong claim; Anthropic refused it with a 400. Reading the bytes here
+    // sends every provider the truth, for those 6 and for any other, without
+    // touching a row.
+    mimeType: sniffImageType(bytes) ?? asset.mime_type,
+    base64: bytes.toString("base64"),
   };
 }
 
