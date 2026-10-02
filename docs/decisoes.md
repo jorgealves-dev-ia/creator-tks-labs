@@ -6380,6 +6380,26 @@ uma regra que diverge; esta decide o que é apagado.*
 
 *Evidência: `scratchpad\evidencias\pausa-0110-varredura-orfaos\`.*
 
+### 01/10/2026 — ✅ Item 3: colar o endereço de uma imagem deixa de ser silêncio
+
+No menu do navegador, «Copiar endereço da imagem» é vizinho de «Copiar imagem». O primeiro põe uma linha de texto
+na área de transferência, o canvas não recebe texto, e esse colar **não fazia nada e não dizia nada** — o arrastar de
+link tinha frase desde a F1a; o colar, não. Agora o canvas responde: ***«Isso é o endereço da imagem, não a imagem.
+No site, use «Copiar imagem» e cole aqui.»*** **E continua sem buscar o endereço** — seria um segundo caminho de
+entrada, e um servidor indo atrás de endereço de terceiros.
+
+**O que conta como endereço** (`lib/canvas/pasted-address.ts`, pura): **um endereço só** — sem espaço nem quebra de
+linha no meio —, de um dos esquemas que aquele item do menu produz: `http(s)://`, `data:image/`, `blob:`, `file://`.
+**Não se pergunta se termina em `.png`:** endereço de foto de marketplace raramente termina. Uma frase, uma frase com
+link dentro, um domínio solto continuam sem resposta — frase para todo colar perdido seria ruído. As duas guardas de
+sempre vêm antes: colar num campo de texto continua sendo colar texto, e um `<dialog>` aberto não recebe.
+
+**Provado:** a tabela-verdade do endereço, **18 de 18**; e o vermelho→verde do colar sem arquivo — no HEAD, uma linha
+(`if (files.length === 0) return;`) e nenhuma frase; depois, o mesmo ramo lê o texto colado, sem `fetch` nenhum.
+
+*Evidência: `scratchpad\evidencias\pausa-0110-colar-endereco\` (12 provas, junto com o item 4). A prova ao vivo está
+na entrada de fechamento.*
+
 ## Segurança e navegador
 
 ### 27/09/2026 — 🔒 A regra 7 de Segurança deixa de ser frase: a sonda confere o GitHub

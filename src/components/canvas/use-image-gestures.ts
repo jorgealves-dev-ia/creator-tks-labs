@@ -11,6 +11,7 @@ import {
   type UploadOutcome,
 } from "@/lib/assets/upload-client";
 import { uploadLabel, type UploadOrigin } from "@/lib/assets/upload-label";
+import { isPastedAddress } from "@/lib/canvas/pasted-address";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { t } from "@/lib/i18n/pt-BR";
 
@@ -33,6 +34,8 @@ import { t } from "@/lib/i18n/pt-BR";
  *   a LINK dragged from another tab — fetching a stranger's address would be a
  *     second road, and a server fetching third-party URLs. It gets a sentence
  *     instead of the browser navigating away from the canvas;
+ *   the ADDRESS of an image, pasted — the same refusal, for the same reason,
+ *     and since 01/10/2026 with its own sentence instead of silence;
  *   a drag that STARTED on this page — an image already in the app is not a
  *     file from outside, and must not become a copy of itself.
  */
@@ -157,7 +160,16 @@ export function useImageGestures(wrapperRef: RefObject<HTMLDivElement | null>) {
 
       const files = Array.from(event.clipboardData?.files ?? []);
 
-      if (files.length === 0) return;
+      if (files.length === 0) {
+        // «Copiar endereço da imagem» instead of «Copiar imagem»: a line of text
+        // where a picture was meant. The canvas does not fetch it — that would
+        // be a second road in — but it no longer answers with silence.
+        if (isPastedAddress(event.clipboardData?.getData("text/plain") ?? "")) {
+          setStatus({ tone: "refused", text: copy.pastedAddress });
+        }
+
+        return;
+      }
 
       event.preventDefault();
 

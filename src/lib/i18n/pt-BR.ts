@@ -2165,6 +2165,8 @@ export const t = {
       typeMismatch: "O arquivo não é o que diz ser, e não entrou na galeria.",
       /** Um link arrastado de outra aba: buscar endereço de terceiros seria um segundo caminho. */
       link: "Isso é um link, não um arquivo. Salve a imagem e solte o arquivo — ou copie a imagem e cole aqui.",
+      /** Colou o ENDEREÇO da imagem: no menu do navegador, é o item vizinho de «Copiar imagem». */
+      pastedAddress: "Isso é o endereço da imagem, não a imagem. No site, use «Copiar imagem» e cole aqui.",
       sending: (count: number) => (count === 1 ? "Enviando 1 imagem…" : `Enviando ${count} imagens…`),
       stillSending: "Ainda enviando as imagens anteriores — espere terminar e tente de novo.",
       done: (count: number) =>
