@@ -6616,6 +6616,28 @@ caminhos na coluna declarada.)»* — 199 objetos · 118 linhas · 0 órfãos ·
 *Evidência: `scratchpad\evidencias\pausa-0110-varredura-orfaos\numeros-guarda-do-invariante-*.md` e
 `relatorio-com-a-guarda-no-banco-de-verdade-2026-10-01.txt`.*
 
+### 01/10/2026 — ✅ O defeito que só a tela mostrou: o aviso do canvas nascia ATRÁS da barra de abas — desde a F1a
+
+**Achado na prova ao vivo.** O aviso do gesto — *«Enviando…»*, cada recusa, *«A imagem entrou no canvas…»* — existia no
+DOM e **não era visto por ninguém**. Medido: o aviso em (466, **16**), com 38 px de altura; a barra de abas do estúdio
+é `absolute top-3 h-14 z-20` — **de 12 a 68 px** —, e o canvas passa por baixo dela. O aviso inteiro ficava atrás.
+
+**É da F1a, de 27/09.** A prova daquele dia leu o aviso **do DOM** e o deu por visto; o print dela
+(`f1a-99-…travou-em-enviando.jpg`) não tem aviso nenhum na tela — estava lá, e ninguém reparou. *O dono colou um
+print em produção e não viu «Enviando…»: não havia como ver.* E as três frases desta pausa — o endereço colado, a
+recusa, o «Tentar de novo» — nasceriam no mesmo lugar: um botão que ninguém alcançaria.
+
+**Conserto:** `top-4` → `top-20`, o mesmo recuo que o trilho da barra lateral usa para sair de baixo da barra de abas.
+Depois: aviso em (466, **80**), abaixo dela — nos três prints da prova.
+
+📌 **A lição, que é a de 06/09 chegando por outra porta:** *o DOM diz o que foi montado; só a tela diz o que foi
+visto.* Uma prova que lê `textContent` passa com o elemento atrás de outro. E o meu primeiro teste de "está visível?"
+também enganava — `elementFromPoint` devolve o que está **por baixo** de um elemento com `pointer-events: none`, e o
+aviso é um. O que decidiu foi a geometria (o retângulo do aviso dentro do retângulo da barra) e **um print**. *É o
+caso em que a regra do print decisivo se paga: a afirmação é visual, e número nenhum de `textContent` a carrega.*
+
+*Evidência: `scratchpad\evidencias\pausa-0110-ao-vivo\` — os três prints e `numeros-ao-vivo.md`.*
+
 ## Segurança e navegador
 
 ### 27/09/2026 — 🔒 A regra 7 de Segurança deixa de ser frase: a sonda confere o GitHub

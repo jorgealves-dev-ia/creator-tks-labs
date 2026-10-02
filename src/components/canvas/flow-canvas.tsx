@@ -280,6 +280,16 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
  * buttons — which only exist when the failure is one a second try can fix
  * (01/10/2026). That message does not clear itself, so it also carries the way
  * to close it.
+ *
+ * `top-20`, and the number is the point. The studio header floats over the top
+ * of the canvas (`absolute top-3 h-14 z-20`: from 12 to 68 px), and the canvas
+ * runs underneath it, so "the top of the canvas" is behind the header. The rail
+ * of the sidebar starts at `top-20` for the same reason. From the F1a (27/09)
+ * until 01/10/2026 this was `top-4`: every message a paste or a drop ever gave —
+ * «Enviando…», each refusal, «A imagem entrou no canvas…» — was in the DOM and
+ * behind the header, where nobody could read it. The proof of 27/09 read the
+ * banner from the DOM and never noticed; the one of 01/10 asked the screen what
+ * was at that point, and the answer was a project tab.
  */
 function GestureBanner({ status, onDismiss }: { status: GestureStatus; onDismiss: () => void }) {
   const tone =
@@ -292,7 +302,7 @@ function GestureBanner({ status, onDismiss }: { status: GestureStatus; onDismiss
       role="status"
       aria-live="polite"
       data-gesture-status={status.tone}
-      className={`pointer-events-none absolute left-1/2 top-4 z-10 flex max-w-lg -translate-x-1/2 items-center
+      className={`pointer-events-none absolute left-1/2 top-20 z-10 flex max-w-lg -translate-x-1/2 items-center
                   gap-3 rounded-lg border px-4 py-2 text-center text-xs leading-relaxed shadow-lg
                   shadow-black/40 ${tone}`}
     >
