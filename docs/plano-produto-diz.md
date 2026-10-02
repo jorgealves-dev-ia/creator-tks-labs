@@ -13,8 +13,8 @@
 > **✅ F1a FECHADA em 27/09** — 37 provas estruturais e **a prova ao vivo inteira**, com o **Ctrl+V de
 > verdade**; dois defeitos que só a prova ao vivo achou foram consertados e reprovados no mesmo gesto (fim da
 > seção F1a). **Deixou uma dívida: a limpeza no caminho de falha do envio** — o arquivo que sobe e não é
-> registrado fica órfão no Storage. **É a primeira tarefa da retomada, 0 ⚡**; a F1 espera a revisão do dono da
-> lista de termos do item 9.
+> registrado fica órfão no Storage. **✅ Paga em 01/10** (fim da seção F1a). **A F1 espera a revisão do dono da
+> lista de termos do item 9.**
 >
 > **Custo:** 0 ⚡ nas partes estruturais. **Pior caso R1 do percurso inteiro, registrado pelo dono
 > em 26/09: 87 ⚡ de preço — 79 ⚡ da carteira** (uma leitura pelo botão + uma imagem, saldo
@@ -263,7 +263,7 @@ falha é a que já existe — `translation_failed`, **antes de qualquer Spark**.
 | ordem | fase | entrega | ⚡ | status |
 |---|---|---|---|---|
 | 1ª | **F0** | o que o compilador envia hoje; o que Haiku e Gemini leem da foto da blusa — **e o padrão da lista de produto** | 0 ⚡ + ⚠️ **20 ⚡ fora do produto** (5 leituras) | ✅ **fechada em 27/09** — (a) byte a byte; (b) o lado a lado, 11 centavos reais na F0 inteira; **o padrão é o 3.7 Flash**, e o aviso de público entra na F1 (decisão do dono) |
-| — | **F1a** | o envio que lê os bytes — e o colar/arrastar imagem no canvas pelo mesmo caminho | 0 ⚡ | ✅ **fechada em 27/09** — 37 provas estruturais + a prova ao vivo, com o Ctrl+V real; dois defeitos achados ao vivo, consertados · **dívida aberta: a limpeza no caminho de falha** (fim da seção F1a) |
+| — | **F1a** | o envio que lê os bytes — e o colar/arrastar imagem no canvas pelo mesmo caminho | 0 ⚡ | ✅ **fechada em 27/09** — 37 provas estruturais + a prova ao vivo, com o Ctrl+V real; dois defeitos achados ao vivo, consertados · **a dívida — a limpeza no caminho de falha — ✅ paga em 01/10** (fim da seção F1a) |
 | 2ª | **F1** | o card, o botão, o seletor e a leitura gravada — **com migration** | ⚠️ **4 ⚡**, a leitura do dono | ⬜ |
 | 3ª | **F2** | o compilador cola a descrição | 0 ⚡ | ⬜ |
 | 4ª | **F3** | a prova viva: a blusa aparece | ⚠️ **75 ⚡** | ⬜ |
@@ -773,7 +773,19 @@ commit), do **DOM** (`medir-canvas.js`) e do **banco** (`evidencias\produto-diz-
 matcher literal provado de verdade. **Mas a aba abriu primeiro num perfil ERRADO**, e quem pegou foi a **tela de
 login** (a regra «Navegador» (b)), não a trava: **a trava registra o perfil DECLARADO, não o conectado.**
 
-#### Dívida aberta — a limpeza no caminho de falha do envio · primeira tarefa da retomada, 0 ⚡
+#### A dívida da F1a — a limpeza no caminho de falha do envio · ✅ paga em 01/10/2026, 0 ⚡
+
+> **✅ Entregue em 01/10** ([`decisoes.md`](decisoes.md), 01/10/2026 — item 1). **«Recusado» passou a querer dizer
+> *nada gravado*:** toda recusa de `registerUploadedAsset` tira do Storage o arquivo e a miniatura **na própria
+> chamada que recusou**; o caminho em que a linha era gravada e o link não assinava devolve a linha; e a
+> transferência que falha pede a limpeza ao servidor. A limpeza (`lib/assets/discard-upload.ts`) só apaga o que
+> **sabe** que não está registrado: a forma exata de um envio (`upload-path.ts`), sem linha em `assets`, na pasta de
+> quem chama. **26 provas estruturais, 0 falhas**, vermelho→verde contra o `f28a0a3` — as 5 recusas deixavam **2
+> órfãos** cada, e deixam **0**.
+>
+> **O que ela não cobre, medido:** a chamada de registro que **nunca responde** (deixa os 2 objetos, de propósito —
+> ninguém do lado do navegador sabe se a linha foi gravada) e a **aba fechada** entre a subida e o registro. **Os
+> dois saem pela varredura de órfãos** — que o dono mandou entrar em 01/10, em modo relatório (item 2).
 
 *As três perguntas do dono sobre o envio que travava, na pausa de 27/09:*
 

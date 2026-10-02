@@ -1,8 +1,12 @@
 "use client";
 
-import { registerUploadedAsset, type GalleryItem } from "@/lib/assets/actions";
 import {
-  extensionFor,
+  discardUpload,
+  registerUploadedAsset,
+  type GalleryItem,
+  type RegisterAssetResult,
+} from "@/lib/assets/actions";
+import {
   sniffImageType,
   SNIFF_BYTES,
   unsupportedImageFormat,
@@ -10,6 +14,7 @@ import {
 } from "@/lib/assets/image-bytes";
 import { IMMUTABLE_CACHE_CONTROL } from "@/lib/assets/thumbnail-path";
 import { storeThumbnailInBrowser } from "@/lib/assets/thumbnail-client";
+import { uploadPath } from "@/lib/assets/upload-path";
 import { t } from "@/lib/i18n/pt-BR";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -94,6 +99,24 @@ export type UploadOutcome =
  *
  * `label` is decided by the caller, from how the file arrived — see
  * `upload-label.ts`. It is the gallery caption and nothing more.
+ *
+ * ---------------------------------------------------------------------------
+ * A failure leaves nothing behind — and this function never throws (01/10/2026)
+ * ---------------------------------------------------------------------------
+ *
+ * The file goes up BEFORE the registration is asked, so every failure after the
+ * first byte has something to clean. Who cleans depends on who knows:
+ *
+ *   the transfer failed     this side asks the server to discard the path. What
+ *                           failed is what the BROWSER saw — a response lost on
+ *                           the way back leaves the object written.
+ *   the server refused      the server already removed the file and the
+ *                           thumbnail, in the call that refused. It is the only
+ *                           one that knows no row was written.
+ *   the call never answered nobody on this side knows whether the row exists,
+ *                           and a row whose file is gone is worse than a file
+ *                           with no row. Nothing is deleted on a guess — the
+ *                           orphan sweep finds what stays.
  */
 export async function uploadPreparedImage(image: PreparedImage, label: string): Promise<UploadOutcome> {
   const supabase = createSupabaseBrowserClient();
@@ -102,11 +125,7 @@ export async function uploadPreparedImage(image: PreparedImage, label: string): 
 
   if (!userId) return { ok: false, reason: "not_signed_in" };
 
-  // The first folder segment is the owner — the convention the bucket policies
-  // of 20260807140500 rely on. The file's own name never enters the path: a
-  // uuid, and the extension the BYTES chose. A WebP called `blusa.jpg` lands as
-  // `<uuid>.webp`, and two files with the same name never collide.
-  const storagePath = `${userId}/references/${crypto.randomUUID()}.${extensionFor(image.mimeType)}`;
+  const storagePath = uploadPath(userId, crypto.randomUUID(), image.mimeType);
 
   // Re-wrapped, and this line is what makes the type in Storage true. The
   // client library sends a Blob as multipart, and the part carries the
@@ -120,26 +139,51 @@ export async function uploadPreparedImage(image: PreparedImage, label: string): 
     .from("assets")
     .upload(storagePath, body, { contentType: image.mimeType, cacheControl: IMMUTABLE_CACHE_CONTROL });
 
-  if (error) return { ok: false, reason: "storage" };
+  if (error) {
+    await discardQuietly(storagePath);
+
+    return { ok: false, reason: "storage" };
+  }
 
   // A miniatura, do arquivo que já está na mão. Best-effort: se falhar, o
   // envio segue e a grade cai para o original.
   const source = await storeThumbnailInBrowser(storagePath, image.file);
 
-  const result = await registerUploadedAsset({
-    storagePath,
-    mimeType: image.mimeType,
-    byteSize: image.file.size,
-    width: source?.width ?? null,
-    height: source?.height ?? null,
-    label,
-  });
+  let result: RegisterAssetResult;
+
+  try {
+    result = await registerUploadedAsset({
+      storagePath,
+      mimeType: image.mimeType,
+      byteSize: image.file.size,
+      width: source?.width ?? null,
+      height: source?.height ?? null,
+      label,
+    });
+  } catch {
+    return { ok: false, reason: "register" };
+  }
 
   if (!result.ok) {
     return { ok: false, reason: result.reason === "type_mismatch" ? "type_mismatch" : "register" };
   }
 
   return { ok: true, item: result.item };
+}
+
+/**
+ * Asks the server to take a failed upload out of Storage.
+ *
+ * Quiet on purpose: a cleanup that throws would turn one failure into two, and
+ * the transfer that just failed often means the network is what is broken. What
+ * it cannot reach stays for the orphan sweep.
+ */
+async function discardQuietly(storagePath: string): Promise<void> {
+  try {
+    await discardUpload({ storagePath });
+  } catch {
+    // Left for the sweep.
+  }
 }
 
 // ---------------------------------------------------------------------------

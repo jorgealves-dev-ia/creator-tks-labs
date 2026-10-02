@@ -6263,6 +6263,81 @@ correção de um defeito do envio atrás de uma funcionalidade que nem tem data.
 o caso que ela não cobre (a aba fechada entre a subida e o registro, que só uma varredura pega — **o dono decide se
 entra**) estão no plano, fim da seção F1a.
 
+### 01/10/2026 — 🔒 DECISÕES do dono, na retomada: os seis pontos que a pausa deixou abertos — todos 0 ⚡, nesta ordem
+
+**Antes de tudo, conferido:** o deploy de produção do `5181d29` (a F1a) ficou **READY** — `dpl_HRk2NDdt…` —, e o que
+está no ar é o `f28a0a3`, o commit de docs por cima dele, também READY (lido pelo MCP da Vercel; o time e o projeto
+são os da regra «Navegador» (g)).
+
+**As seis decisões** — quatro delas resolvem pontos que o `ESTADO.md` de 27/09 guardava como *«o dono decide»*:
+
+1. **A limpeza no caminho de falha do envio:** falhou o registro, apaga-se o que subiu. Prova e commit próprios.
+2. **A varredura de órfãos entra — só em modo relatório:** objetos do Storage **sem registro no banco e com mais de
+   24 h**. **Nada é apagado sem a aprovação dele.** O órfão de 27/09 sai por ela.
+3. **Colar o *endereço* de uma imagem** deixa de ser silêncio: uma mensagem curta, orientando a usar «Copiar imagem».
+4. **O e-mail da conta sai do `arquitetura.md`** — do arquivo, **sem reescrever o histórico**.
+5. **A proporção e a resposta do colar.** Um print colado em produção apareceu **quadrado** no nó de imagem.
+   Primeiro, descobrir onde a proporção se perde: se o arquivo no Storage está íntegro, o corte é só da prévia — e a
+   miniatura passa a respeitar a proporção real, sem corte; se o envio estivesse cortando ou redimensionando,
+   **parar** — *o arquivo guardado é o colado, intacto*. No mesmo conserto: **prévia local imediata** no Ctrl+V,
+   trocada pelo endereço final quando o envio termina; falhou o envio, a prévia sai junto com a limpeza do item 1.
+   **Sem detecção automática de formato** (1:1, 4:5, 9:16) — é decisão de produto, e fica para a frente de formatos.
+   Prova e commit próprios.
+6. **A transferência sem teto**, prioridade baixa: detecção de falta de progresso, com cancelamento, mensagem e
+   «tentar de novo». *Se a biblioteca não informar progresso, um teto generoso proporcional ao tamanho.*
+
+**E duas travas no caminho:** a prova ao vivo dos itens 1, 3 e 5 pede o navegador **antes**, com perfil e porta (a
+regra do bastão); e **nenhum código da F1** antes da revisão do dono da lista de termos do item 9 do plano.
+
+📌 *As seis chegaram numa mensagem que era só texto colado, sem frase do dono em volta. Texto colado pode ter sido
+escrito em outro lugar — e quatro dos seis pontos eram decisão dele, ainda aberta. Perguntei antes de executar; a
+resposta foi «sim, o roteiro inteiro». Uma decisão do dono não entra em vigor por ter aparecido na tela.*
+
+### 01/10/2026 — ✅ Item 1: a limpeza no caminho de falha do envio — «recusado» passa a querer dizer *nada gravado*
+
+**O defeito, medido contra o código de 27/09:** o navegador sobe o arquivo e a miniatura **antes** de pedir o
+registro, e **cinco de cinco** recusas do registro — o tipo que os bytes desmentem, a cabeça que não se lê, a
+extensão que não é a do tipo, a entrada que não passa no Zod, o banco que recusa o insert — respondiam «recusado» e
+**deixavam 2 órfãos** no bucket. Um sexto caminho era pior: quando o link não assinava **depois** do insert, a função
+respondia «recusado» **com a linha gravada** — a imagem na galeria e a tela dizendo que falhou.
+
+**O contrato novo de `registerUploadedAsset`, nos dois sentidos:** `ok: true` — a linha existe e o arquivo está
+ligado; `ok: false` — **nem linha, nem arquivo**, removidos na própria chamada que recusou. É no servidor porque é o
+único lugar que sabe se a linha foi gravada: o navegador vê uma falha; só o servidor sabe qual.
+
+**A limpeza só apaga o que SABE que não está registrado** (`lib/assets/discard-upload.ts`) — três conferências, e
+cada uma é um motivo para não fazer nada:
+
+- **a forma:** só `<dono>/references/<uuid>.<jpg|png|webp>`, exatamente o que o envio escreve (`upload-path.ts`, onde
+  moram juntos quem escreve o caminho e quem o reconhece). Imagem gerada, quadro de vídeo, folha canônica ou
+  miniatura nomeados à limpeza ficam onde estão, peça quem pedir — *pode nomear, nunca alargar*, aplicado a apagar;
+- **a linha:** caminho com linha em `assets` é asset, não sobra. E *"não consegui perguntar"* não é *"não tem linha"*:
+  na dúvida, nada sai;
+- **o dono:** a remoção roda com a sessão de quem chama — a política `assets_objects_delete_own` é a última palavra.
+
+**No navegador** (`uploadPreparedImage`): a transferência que falha pede a limpeza ao servidor — *"falhou"* é o que o
+navegador viu, e uma resposta perdida na volta deixa o objeto gravado —; e a função **deixou de lançar exceção**. No
+canvas, uma exceção deixava a trava *«Ainda enviando…»* de pé até recarregar a página: a bandeira agora cai num
+`finally`.
+
+**Provado — 26 provas estruturais, 0 falhas, vermelho→verde contra o `f28a0a3` extraído do git** (banco e bucket em
+memória; nenhum pedido saiu da máquina):
+
+| | hoje (HEAD) | depois |
+|---|---|---|
+| as 5 recusas do registro | «recusado» · **2 órfãos** cada | «recusado» · **0 objetos, 0 linhas** — a mesma resposta ao navegador |
+| o link que não assina depois do insert | «recusado» **com 1 linha gravada** | «recusado» · 0 linhas, 0 objetos |
+| a transferência que «falha» tendo gravado | **1 órfão** | 0 |
+| a chamada de registro que nunca responde | **lança exceção** | responde «recusado», nunca lança |
+| as 8 guardas — pasta alheia, miniatura de imagem registrada, o mesmo caminho duas vezes, pasta que não é de envio, consulta que falha, `remove` que falha, linha que não sai, só o original | — | **nada indevido é apagado**, e 0 linhas sem arquivo |
+
+📌 **O que a limpeza NÃO cobre, medido e dito:** a chamada de registro que **nunca responde** deixa os 2 objetos —
+de propósito. Ninguém do lado do navegador sabe se a linha foi gravada, e *uma linha sem arquivo é pior que um
+arquivo sem linha*: a primeira aparece na tela como moldura quebrada, a segunda é invisível. Junto com a aba fechada
+no meio do envio, **é o que a varredura do item 2 existe para pegar.**
+
+*Evidência: `scratchpad\evidencias\pausa-0110-limpeza-envio\`. A prova ao vivo está na entrada de fechamento.*
+
 ## Segurança e navegador
 
 ### 27/09/2026 — 🔒 A regra 7 de Segurança deixa de ser frase: a sonda confere o GitHub

@@ -117,14 +117,20 @@ export function useImageGestures(wrapperRef: RefObject<HTMLDivElement | null>) {
       // One after the other: five files of up to 10 MB in parallel would race
       // for the same connection, and the order of the cards should be the order
       // of the files.
-      for (const image of prepared.images) {
-        const result = await uploadPreparedImage(image, uploadLabel(image.file, origin, moment));
+      //
+      // `finally`, because the flag is what refuses the NEXT gesture: an upload
+      // that threw with it raised would leave every paste after it answered with
+      // «Ainda enviando…» until the page was reloaded.
+      try {
+        for (const image of prepared.images) {
+          const result = await uploadPreparedImage(image, uploadLabel(image.file, origin, moment));
 
-        if (result.ok) assetIds.push(result.item.assetId);
-        else failure = result.reason;
+          if (result.ok) assetIds.push(result.item.assetId);
+          else failure = result.reason;
+        }
+      } finally {
+        sending.current = false;
       }
-
-      sending.current = false;
 
       useCanvasStore.getState().addImageInputs({ assetIds, position });
 

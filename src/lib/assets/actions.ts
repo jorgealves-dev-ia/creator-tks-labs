@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+import { discardUnregisteredUpload } from "./discard-upload";
 import { extensionFor, storedTypeVerdict, UPLOAD_IMAGE_TYPES } from "./image-bytes";
 import { signWithThumbnails, type SignedAsset } from "./signing";
 import { readStoredHead } from "./stored-head";
@@ -232,9 +233,14 @@ const registerSchema = z.object({
   label: z.string().max(200),
 });
 
+/** Only the path — what a refusal needs to find the upload it is refusing. */
+const claimedPathSchema = z.object({ storagePath: z.string().min(1) });
+
+type RegisterRefusal = "invalid" | "error" | "type_mismatch";
+
 export type RegisterAssetResult =
   | { ok: true; item: GalleryItem }
-  | { ok: false; reason: "invalid" | "error" | "type_mismatch" };
+  | { ok: false; reason: RegisterRefusal };
 
 /**
  * Registers a file the browser has just uploaded to Storage.
@@ -247,14 +253,23 @@ export type RegisterAssetResult =
  * The path is checked against the caller's own folder here as well as by the
  * Storage policy. The same rule stated twice is cheap, and a path is the one
  * thing a browser fully controls.
+ *
+ * ---------------------------------------------------------------------------
+ * A refusal leaves nothing behind (01/10/2026)
+ * ---------------------------------------------------------------------------
+ *
+ * The file and its thumbnail are already in the bucket when this is called.
+ * Until now a refusal answered `ok: false` and left them there — two objects
+ * with no row, which nothing on any screen could reach or delete. So the
+ * contract is now the whole of it, in both directions:
+ *
+ *   ok: true    the row exists and the file is linked
+ *   ok: false   no row, and no file — removed here, in the call that refused
+ *
+ * It is done HERE because this is the only place that knows whether a row was
+ * written. The browser sees a failure; only the server knows which kind.
  */
 export async function registerUploadedAsset(input: unknown): Promise<RegisterAssetResult> {
-  const parsed = registerSchema.safeParse(input);
-
-  if (!parsed.success) {
-    return { ok: false, reason: "invalid" };
-  }
-
   const supabase = await createSupabaseServerClient();
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims?.sub;
@@ -263,8 +278,29 @@ export async function registerUploadedAsset(input: unknown): Promise<RegisterAss
     redirect("/login");
   }
 
+  // Every refusal below leaves through here, and takes the upload with it. The
+  // discard keeps its own guards — the shape of the path, the absence of a row,
+  // the caller's own folder —, so calling it is safe from any line: a path this
+  // function refuses for not being the caller's is refused there for the same
+  // reason, and a path that IS registered is never touched.
+  const refuse = async (reason: RegisterRefusal): Promise<RegisterAssetResult> => {
+    const claimed = claimedPathSchema.safeParse(input);
+
+    if (claimed.success) {
+      await discardUnregisteredUpload(supabase, userId, claimed.data.storagePath);
+    }
+
+    return { ok: false, reason };
+  };
+
+  const parsed = registerSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return refuse("invalid");
+  }
+
   if (!parsed.data.storagePath.startsWith(`${userId}/`)) {
-    return { ok: false, reason: "invalid" };
+    return refuse("invalid");
   }
 
   // Um original jamais nasce num caminho de derivado. Sem esta linha, um envio
@@ -273,14 +309,14 @@ export async function registerUploadedAsset(input: unknown): Promise<RegisterAss
   // caminho ser violada, e ela é fechada aqui, no mesmo lugar em que o caminho
   // vindo do navegador já é conferido.
   if (isThumbnailPath(parsed.data.storagePath)) {
-    return { ok: false, reason: "invalid" };
+    return refuse("invalid");
   }
 
   // The type, in the path as in the row: `<uuid>.webp` is a WebP. The path is
   // the one thing the browser fully controls, and a `.jpg` holding a WebP is
   // exactly the lie this function stopped accepting on 27/09.
   if (!parsed.data.storagePath.endsWith(`.${extensionFor(parsed.data.mimeType)}`)) {
-    return { ok: false, reason: "invalid" };
+    return refuse("invalid");
   }
 
   // And the bytes, which decide. The browser may NAME the type; only the file
@@ -292,7 +328,7 @@ export async function registerUploadedAsset(input: unknown): Promise<RegisterAss
   );
 
   if (!verdict.ok) {
-    return { ok: false, reason: verdict.reason === "type_mismatch" ? "type_mismatch" : "error" };
+    return refuse(verdict.reason === "type_mismatch" ? "type_mismatch" : "error");
   }
 
   const { data: asset } = await supabase
@@ -312,7 +348,7 @@ export async function registerUploadedAsset(input: unknown): Promise<RegisterAss
     .single();
 
   if (!asset) {
-    return { ok: false, reason: "error" };
+    return refuse("error");
   }
 
   // O que volta daqui vai direto para a grade do seletor, em ~173 px: miniatura.
@@ -320,7 +356,16 @@ export async function registerUploadedAsset(input: unknown): Promise<RegisterAss
   const pair = signed.get(parsed.data.storagePath);
 
   if (!pair) {
-    return { ok: false, reason: "error" };
+    // The row was written and the file will not sign: it is gone, or Storage
+    // does not answer for it. This used to return `ok: false` and LEAVE the row
+    // — the one refusal that said "failed" with an asset in the gallery. A row
+    // whose file is missing is the failure that shows, as a broken frame; so
+    // the row comes back out, and the refusal is whole like the others. Nothing
+    // can cite an asset born a moment ago. If the row cannot be removed, the
+    // discard finds it and keeps the file: no worse than before.
+    await supabase.from("assets").delete().eq("id", asset.id);
+
+    return refuse("error");
   }
 
   return {
@@ -336,6 +381,36 @@ export async function registerUploadedAsset(input: unknown): Promise<RegisterAss
       isVideo: false,
     },
   };
+}
+
+/**
+ * Removes an upload whose TRANSFER failed — before any registration was asked.
+ *
+ * "Failed" is what the browser saw. A response lost on the way back leaves the
+ * object written in the bucket with nobody the wiser, and no registration will
+ * ever come for it. The browser names the path; the checks that decide whether
+ * anything is deleted are the same ones the registration's refusals go through
+ * (`discard-upload.ts`): the exact shape of an upload, no row in `assets`, the
+ * caller's own folder.
+ */
+export async function discardUpload(input: unknown): Promise<{ removed: number }> {
+  const parsed = claimedPathSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return { removed: 0 };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+
+  if (!userId) {
+    redirect("/login");
+  }
+
+  const outcome = await discardUnregisteredUpload(supabase, userId, parsed.data.storagePath);
+
+  return { removed: outcome.discarded ? outcome.removed : 0 };
 }
 
 // ---------------------------------------------------------------------------
