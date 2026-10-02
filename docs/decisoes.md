@@ -6520,6 +6520,102 @@ o transporte de um envio provado ao vivo em 27/09 é decisão dele.
 
 *Evidência: `scratchpad\evidencias\pausa-0110-teto-transferencia\`.*
 
+### 01/10/2026 — 🔒 O dono não aprovou de primeira: três conferências antes de apagar — e os 2 órfãos saem
+
+**O relatório dizia «2 órfãos»; a decisão da pausa falava em «o órfão».** Antes de aprovar, o dono pediu três
+respostas — e a regra dele era a certa: *se alguma não fechar, não apague nada e traga o achado.*
+
+**1 · O segundo é a miniatura do primeiro.** É **um envio, dois objetos**: o navegador sobe o arquivo e a miniatura
+antes de pedir o registro. `…/references/ee8f3d30-….png` (PNG lido nos bytes, 360 × 240, 5.049 bytes, 27/09 22:41:18)
+e `….png.thumb.webp` (WebP, 1.840 bytes, 232 ms depois). **A ação que os criou:** o primeiro gesto da prova ao vivo
+da F1a — soltar `prova-f1a-soltar.png` no canvas —, que travou no registro. **Provado pelo md5:** os dois são byte a
+byte iguais aos dois objetos do asset `1add6dc0`, que é o mesmo arquivo enviado de novo 3 min 52 s depois, já com o
+conserto. *O que saiu tem cópia idêntica, registrada, que continua no bucket.*
+
+**2 · A varredura cruza o bucket com UMA coluna — `assets.storage_path` — e isso cobre tudo, porque é a única coluna
+do banco que guarda caminho de arquivo.** Não era para acreditar: o banco inteiro foi lido linha a linha, cada linha
+convertida em texto — as 21 tabelas de `public`, `auth.users`, `auth.identities` e as do `storage`. Caminho de bucket
+ou nome de arquivo de mídia: **113 de 113 em `assets`, 0 em todas as outras** — `generations` (719 linhas; os 641
+«uuid/» do `params` são endereços da fila da fal), `extractions` (8), `asset_montage_parts` (6, sem coluna de texto).
+As outras tabelas apontam para arquivo **por id de asset**, em 8 colunas com chave estrangeira para `assets(id)`; um
+objeto sem linha não tem id, e nenhuma delas tem como apontar para ele. E a busca direta pelos dois — o uuid do
+caminho e o id de cada objeto — deu **0 em todas as tabelas**.
+
+**3 · O canvas salvo não os conhece.** `workflows.graph`, 6 linhas para 6 projetos: nenhum grafo contém o uuid, e
+**nenhum grafo guarda caminho** — os cards guardam id de asset, e os 25 ids dos seis grafos têm linha em `assets`.
+
+**A remoção, pela lista salva e o código `97b5f050fd57`:**
+
+| | antes | depois |
+|---|---|---|
+| objetos no bucket | 191 | **189** |
+| órfãos | 2 | **0** |
+| linhas sem arquivo | 0 | 0 |
+| bytes no bucket | 235.380.448 | 235.373.559 — **6.889 a menos**, exatos |
+
+Conferido por dois caminhos (o script e o SQL do MCP); o asset `1add6dc0` segue intacto, com os mesmos md5. **Rodada
+de novo, a remoção não apaga nada** (*«2 pulados — já não existe no bucket»*), e **com um código errado, recusa**.
+
+📌 **A lição do item 2 da conferência, que vale para a próxima varredura de qualquer coisa:** *«cruzei com a tabela
+certa»* é uma frase sobre o desenho; *«não está em tabela nenhuma»* é uma medição. A varredura foi desenhada sobre a
+primeira, e só a pergunta do dono fez a segunda existir. Para apagar, a segunda é a que conta.
+
+📌 **E uma regra de trabalho que saiu daqui:** as mensagens do dono chegam **coladas**, porque ele planeja no Claude
+chat e traz a resposta. Parei duas vezes para perguntar se o texto colado era pedido dele; ele respondeu que é. **Texto
+colado do dono é o roteiro do dono** — e a resposta volta em texto que ele possa levar.
+
+*Evidência: `scratchpad\evidencias\pausa-0110-varredura-orfaos\tres-conferencias-e-remocao-2026-10-01.md`.*
+
+### 01/10/2026 — 🔒 INVARIANTE da varredura: `assets.storage_path` é a única coluna do banco que guarda caminho de arquivo do Storage
+
+**Decisão do dono, depois da remoção:** o que as três conferências mostraram à mão vira **regra escrita e mecanismo**.
+
+> ## `assets.storage_path` é a única coluna do banco que guarda caminho de arquivo do Storage.
+>
+> **Qualquer coluna nova que guarde caminho precisa entrar na varredura** — e *entrar* quer dizer uma coisa só: ser
+> declarada em `PATH_COLUMNS`, em `scripts/sweep-storage-orphans.mts`. Todas as outras tabelas chegam a um arquivo
+> por **id de asset** (chave estrangeira para `assets(id)`), nunca por caminho.
+
+**Por que isto é invariante e não detalhe.** A varredura decide que um arquivo "não tem dono" olhando só para as
+colunas que conhece. No dia em que nascer uma coluna com caminho — a foto de um produto, um avatar, uma capa — e
+ninguém avisar, **um arquivo em uso seria listado como órfão, com código de confirmação pronto para apagá-lo.**
+
+**A guarda, no próprio script — antes de listar qualquer coisa e antes de apagar qualquer coisa.** Ela lê **toda outra
+coluna de texto, jsonb ou lista** de `public` procurando caminho do bucket; se achar, **recusa** — diz a tabela, a
+coluna, quantas linhas e um exemplo —, não lista nada e não apaga nada, com saída de erro.
+
+- **O padrão é construído do que o bucket tem:** um dono **e** uma pasta que existe — `<uuid>/(canvas|entities|frames|references|video)/`.
+  O dono casa pela forma (qualquer uuid: não cresce com o número de usuários), a pasta pelo nome. Precisa das duas
+  coisas: `generations.params` está cheio de uuid seguido de barra — os endereços da fila da fal —, e eles não são
+  caminho de nada daqui.
+- **Texto é conferido no banco** (o operador de expressão regular do PostgREST: nenhum dado viaja); **jsonb e listas
+  são lidos e conferidos aqui** — com a contagem de linhas lidas contra a contagem da tabela.
+- **As colunas são descobertas, não listadas à mão:** a descrição que o PostgREST publica do schema `public`. Coluna
+  nova entra na conferência sozinha.
+
+📌 **A guarda que não enxerga RECUSA — nunca passa às cegas.** Antes de procurar nas outras colunas, o padrão é rodado
+na coluna declarada, **onde os caminhos estão**: uma busca que volta vazia ali é uma busca quebrada, e *"não achei"*
+de uma busca quebrada não prova nada. É o mesmo desenho da sonda de chaves, que lê cada resposta contra um controle
+com chave falsa. Tabela lida pela metade e coluna declarada que não existe recusam do mesmo jeito.
+
+**Provado vermelho→verde — 20 provas, 0 falhas, em banco SIMULADO, sem tocar em produção** (tabelas e bucket em
+memória, pela mesma porta por onde entra o Supabase):
+
+| | sem a guarda (o script de hoje cedo) | com a guarda |
+|---|---|---|
+| nasce `produtos.foto_path` com o caminho de uma foto em uso | a foto entra na lista de órfãos, ganha código, **e a remoção a apagaria** | **recusa**, aponta `produtos.foto_path`, não lista, 0 apagados |
+| a remoção, com lista e código válidos de horas antes | — | recusada também: a guarda roda de novo na hora de apagar |
+| o caminho num jsonb (raso ou aninhado), numa lista de texto, em outra coluna da própria `assets`, dentro de um endereço inteiro | — | **5 de 5** achados |
+| o endereço da fila da fal, um uuid com outra pasta, um prompt que fala de pastas | — | **não** é caminho — o banco de hoje passa |
+| a coluna declarada em `PATH_COLUMNS` | — | deixa de recusar, **e a foto deixa de ser órfã** (3 → 2) |
+
+**E no banco de verdade, só leitura, 7 s:** *«caminho do bucket só em assets.storage_path — conferidas **60** outras
+colunas de texto e jsonb, em **18** tabelas de public: **0** com caminho. (controle: o padrão reconheceu **118**
+caminhos na coluna declarada.)»* — 199 objetos · 118 linhas · 0 órfãos · 0 recentes · 0 linhas sem arquivo.
+
+*Evidência: `scratchpad\evidencias\pausa-0110-varredura-orfaos\numeros-guarda-do-invariante-*.md` e
+`relatorio-com-a-guarda-no-banco-de-verdade-2026-10-01.txt`.*
+
 ## Segurança e navegador
 
 ### 27/09/2026 — 🔒 A regra 7 de Segurança deixa de ser frase: a sonda confere o GitHub
