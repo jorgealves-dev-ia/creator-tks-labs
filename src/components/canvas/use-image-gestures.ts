@@ -6,8 +6,9 @@ import { useCallback, useEffect, useRef, useState, type DragEvent, type RefObjec
 import { prepareImages, refusalMessage } from "@/lib/assets/upload-client";
 import type { UploadOrigin } from "@/lib/assets/upload-label";
 import {
-  gestureVerdict,
-  sendImagesToCanvas,
+  oneAtATime,
+  runGesture,
+  type GestureScreen,
   type GestureStatus,
   type UploadPreview,
 } from "@/lib/canvas/image-gesture";
@@ -83,7 +84,9 @@ export function useImageGestures(wrapperRef: RefObject<HTMLDivElement | null>) {
   const internalDrag = useRef(false);
 
   useEffect(() => {
-    if (!status || status.tone === "busy") return;
+    // A message that offers «Tentar de novo» waits for an answer: clearing it
+    // by itself would take the offer away while someone was reading it.
+    if (!status || status.tone === "busy" || status.retry) return;
 
     const timer = setTimeout(() => setStatus(null), MESSAGE_MS);
 
@@ -98,21 +101,12 @@ export function useImageGestures(wrapperRef: RefObject<HTMLDivElement | null>) {
    * move where the cards land. So is the moment that names a pasted image.
    */
   const place = useCallback(
-    async (files: File[], origin: UploadOrigin, screen: { x: number; y: number }) => {
-      if (sending.current) {
-        setStatus({ tone: "refused", text: copy.stillSending });
-        return;
-      }
+    (files: File[], origin: UploadOrigin, at: { x: number; y: number }) => {
+      const screen: GestureScreen = { busy: sending, showStatus: setStatus, showPreviews: setPreviews };
+      const moment = new Date();
+      const position = screenToFlowPosition(at);
 
-      // Raised before the first `await`, so two gestures in the same instant
-      // cannot both pass the check above. And lowered in a `finally`: this flag
-      // is what refuses the NEXT gesture, and one that stayed up after an error
-      // answered every paste with «Ainda enviando…» until the page was reloaded.
-      sending.current = true;
-
-      try {
-        const moment = new Date();
-        const position = screenToFlowPosition(screen);
+      return oneAtATime(screen, async () => {
         const prepared = await prepareImages(files);
 
         if (!prepared.ok) {
@@ -123,17 +117,13 @@ export function useImageGestures(wrapperRef: RefObject<HTMLDivElement | null>) {
           return;
         }
 
-        setStatus({ tone: "busy", text: copy.sending(prepared.images.length) });
-
-        const outcome = await sendImagesToCanvas({ images: prepared.images, origin, moment, position }, setPreviews);
-
-        setStatus(gestureVerdict(prepared.images.length, outcome));
-      } finally {
-        sending.current = false;
-      }
+        await runGesture({ images: prepared.images, origin, moment, position }, screen);
+      });
     },
     [screenToFlowPosition],
   );
+
+  const dismiss = useCallback(() => setStatus(null), []);
 
   // ── Paste ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -230,5 +220,5 @@ export function useImageGestures(wrapperRef: RefObject<HTMLDivElement | null>) {
     [acceptsDrag, place],
   );
 
-  return { status, previews, acceptsDrag, handleFileDrop };
+  return { status, dismiss, previews, acceptsDrag, handleFileDrop };
 }

@@ -1,5 +1,6 @@
 import {
   failureMessage,
+  isRetryable,
   uploadPreparedImage,
   type PreparedImage,
   type UploadOutcome,
@@ -40,7 +41,15 @@ import { t } from "@/lib/i18n/pt-BR";
 
 const copy = t.generation.upload;
 
-export type GestureStatus = { tone: "busy" | "done" | "refused"; text: string };
+export type GestureStatus = {
+  tone: "busy" | "done" | "refused";
+  text: string;
+  /**
+   * Sends again what failed for a reason trying again can fix. When it is
+   * there, the message waits for an answer instead of clearing itself.
+   */
+  retry?: () => void;
+};
 
 /** A picture shown from the person's own machine while its file travels. */
 export type UploadPreview = {
@@ -68,6 +77,24 @@ export type GestureOutcome = {
   /** What did not get in, and why — in the order of the files. */
   failed: { image: PreparedImage; reason: UploadFailure }[];
 };
+
+/**
+ * The same gesture again, with only what a second try can fix — or null when
+ * there is nothing of the kind.
+ *
+ * It starts beside the cards the first try already made, so a retry never lands
+ * on top of them. The moment is the ORIGINAL one: a pasted image is named for
+ * when it was pasted, not for when the network came back.
+ */
+export function retryOf(gesture: ImageGesture, outcome: GestureOutcome): ImageGesture | null {
+  const images = outcome.failed.filter((entry) => isRetryable(entry.reason)).map((entry) => entry.image);
+
+  if (images.length === 0) return null;
+
+  const beside = imageInputSlots([], gesture.position, outcome.placed.length + 1)[outcome.placed.length];
+
+  return { ...gesture, images, position: beside };
+}
 
 /**
  * Shows the previews, sends the files one after the other, and turns each one
@@ -159,4 +186,55 @@ export function gestureVerdict(total: number, outcome: GestureOutcome): GestureS
   const last = outcome.failed.at(-1);
 
   return { tone: "refused", text: last ? failureMessage(last.reason) : copy.failed };
+}
+
+/** Where a gesture speaks: the canvas' message, its previews, and the flag that keeps gestures one at a time. */
+export type GestureScreen = {
+  /** Raised while a gesture is sending. A ref, because it must be read at the instant of the next gesture. */
+  busy: { current: boolean };
+  showStatus: (status: GestureStatus | null) => void;
+  showPreviews: (previews: UploadPreview[]) => void;
+};
+
+/**
+ * One gesture at a time.
+ *
+ * A second one while the first is still sending is refused in words. The flag
+ * goes up before the first `await` of `work`, so two gestures in the same
+ * instant cannot both get through; and it comes down in a `finally` — a flag
+ * left up after an error answered every paste with «Ainda enviando…» until the
+ * page was reloaded.
+ */
+export async function oneAtATime(screen: GestureScreen, work: () => Promise<void>): Promise<void> {
+  if (screen.busy.current) {
+    screen.showStatus({ tone: "refused", text: copy.stillSending });
+    return;
+  }
+
+  screen.busy.current = true;
+
+  try {
+    await work();
+  } finally {
+    screen.busy.current = false;
+  }
+}
+
+/**
+ * Sends a gesture and says how it ended — with a «Tentar de novo» when what
+ * failed is something a second try can fix.
+ *
+ * The retry is the same gesture with only the images that failed, and it goes
+ * through `oneAtATime` like any other: it is a click, never an effect.
+ */
+export async function runGesture(gesture: ImageGesture, screen: GestureScreen): Promise<void> {
+  screen.showStatus({ tone: "busy", text: copy.sending(gesture.images.length) });
+
+  const outcome = await sendImagesToCanvas(gesture, screen.showPreviews);
+  const verdict = gestureVerdict(gesture.images.length, outcome);
+  const again = retryOf(gesture, outcome);
+
+  screen.showStatus(
+    again ? { ...verdict, retry: () => void oneAtATime(screen, () => runGesture(again, screen)) } : verdict,
+  );
 }

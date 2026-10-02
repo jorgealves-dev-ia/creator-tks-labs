@@ -786,6 +786,10 @@ login** (a regra «Navegador» (b)), não a trava: **a trava registra o perfil D
 > **O que ela não cobre, medido:** a chamada de registro que **nunca responde** (deixa os 2 objetos, de propósito —
 > ninguém do lado do navegador sabe se a linha foi gravada) e a **aba fechada** entre a subida e o registro. **Os
 > dois saem pela varredura de órfãos** — que o dono mandou entrar em 01/10, em modo relatório (item 2).
+>
+> **E o «ponto a decidir» da segunda resposta abaixo — a transferência sem teto nosso — foi decidido e entregue no
+> mesmo dia** (item 6): todo passo do envio que espera a rede tem teto, o da transferência generoso e proporcional
+> ao tamanho, e a falha de rede ganha «Tentar de novo».
 
 *As três perguntas do dono sobre o envio que travava, na pausa de 27/09:*
 

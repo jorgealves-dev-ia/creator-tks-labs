@@ -14,6 +14,14 @@ import {
 } from "@/lib/assets/image-bytes";
 import { IMMUTABLE_CACHE_CONTROL } from "@/lib/assets/thumbnail-path";
 import { storeThumbnailInBrowser } from "@/lib/assets/thumbnail-client";
+import {
+  REGISTER_CEILING_MS,
+  SESSION_CEILING_MS,
+  THUMBNAIL_CEILING_MS,
+  transferCeilingMs,
+  within,
+  type Bounded,
+} from "@/lib/assets/upload-ceilings";
 import { uploadPath } from "@/lib/assets/upload-path";
 import { t } from "@/lib/i18n/pt-BR";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -92,7 +100,7 @@ export async function prepareImages(files: readonly File[]): Promise<PreparedGes
 
 export type UploadOutcome =
   | { ok: true; item: GalleryItem }
-  | { ok: false; reason: "not_signed_in" | "storage" | "register" | "type_mismatch" };
+  | { ok: false; reason: "not_signed_in" | "storage" | "register" | "type_mismatch" | "stalled" };
 
 /**
  * Sends one prepared image: Storage, thumbnail, registration.
@@ -117,11 +125,24 @@ export type UploadOutcome =
  *                           and a row whose file is gone is worse than a file
  *                           with no row. Nothing is deleted on a guess — the
  *                           orphan sweep finds what stays.
+ *
+ * ---------------------------------------------------------------------------
+ * And it always ends (01/10/2026)
+ * ---------------------------------------------------------------------------
+ *
+ * Every step that waits on the network has a ceiling (`upload-ceilings.ts`), and
+ * a step that passes it answers `stalled` — which the screen turns into a
+ * sentence and a «Tentar de novo». The library gives no way to stop a request,
+ * so a step that was given up on is still out there: what it may leave is
+ * removed when it finally ends.
  */
 export async function uploadPreparedImage(image: PreparedImage, label: string): Promise<UploadOutcome> {
   const supabase = createSupabaseBrowserClient();
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData.user?.id;
+  const session = await within(supabase.auth.getUser(), SESSION_CEILING_MS);
+
+  if (session.timedOut) return { ok: false, reason: "stalled" };
+
+  const userId = session.value.data.user?.id;
 
   if (!userId) return { ok: false, reason: "not_signed_in" };
 
@@ -135,40 +156,68 @@ export async function uploadPreparedImage(image: PreparedImage, label: string): 
   // object would still be stored as `image/jpeg`.
   const body = new Blob([image.file], { type: image.mimeType });
 
-  const { error } = await supabase.storage
+  const transfer = supabase.storage
     .from("assets")
     .upload(storagePath, body, { contentType: image.mimeType, cacheControl: IMMUTABLE_CACHE_CONTROL });
 
-  if (error) {
+  const sent = await within(transfer, transferCeilingMs(image.file.size));
+
+  if (sent.timedOut) {
+    // No registration will ever be asked for this path. Whatever is there now
+    // goes, and whatever the abandoned request writes later goes when it ends.
+    void discardQuietly(storagePath);
+    void settled(transfer).then(() => discardQuietly(storagePath));
+
+    return { ok: false, reason: "stalled" };
+  }
+
+  if (sent.value.error) {
     await discardQuietly(storagePath);
 
     return { ok: false, reason: "storage" };
   }
 
-  // A miniatura, do arquivo que já está na mão. Best-effort: se falhar, o
-  // envio segue e a grade cai para o original.
-  const source = await storeThumbnailInBrowser(storagePath, image.file);
+  // A miniatura, do arquivo que já está na mão. Best-effort: se falhar — ou não
+  // terminar a tempo —, o envio segue e a grade cai para o original.
+  const thumbnail = storeThumbnailInBrowser(storagePath, image.file);
+  const made = await within(thumbnail, THUMBNAIL_CEILING_MS);
+  const source = made.timedOut ? null : made.value;
 
-  let result: RegisterAssetResult;
+  const registration = registerUploadedAsset({
+    storagePath,
+    mimeType: image.mimeType,
+    byteSize: image.file.size,
+    width: source?.width ?? null,
+    height: source?.height ?? null,
+    label,
+  });
+
+  if (made.timedOut) {
+    // The thumbnail that was given up on may still land. If the registration
+    // succeeds, it is that asset's thumbnail and it stays — the discard finds
+    // the row and does nothing. If it does not, it would be an orphan. Asked
+    // only once BOTH have ended: a discard in between would find no row yet and
+    // take the original from under the registration.
+    void Promise.all([settled(thumbnail), settled(registration)]).then(() => discardQuietly(storagePath));
+  }
+
+  let registered: Bounded<RegisterAssetResult>;
 
   try {
-    result = await registerUploadedAsset({
-      storagePath,
-      mimeType: image.mimeType,
-      byteSize: image.file.size,
-      width: source?.width ?? null,
-      height: source?.height ?? null,
-      label,
-    });
+    registered = await within(registration, REGISTER_CEILING_MS);
   } catch {
     return { ok: false, reason: "register" };
   }
 
-  if (!result.ok) {
-    return { ok: false, reason: result.reason === "type_mismatch" ? "type_mismatch" : "register" };
+  // Gave up waiting — and, as with a call that failed, without knowing whether
+  // the row was written. Nothing is deleted on a guess.
+  if (registered.timedOut) return { ok: false, reason: "stalled" };
+
+  if (!registered.value.ok) {
+    return { ok: false, reason: registered.value.reason === "type_mismatch" ? "type_mismatch" : "register" };
   }
 
-  return { ok: true, item: result.item };
+  return { ok: true, item: registered.value.item };
 }
 
 /**
@@ -184,6 +233,24 @@ async function discardQuietly(storagePath: string): Promise<void> {
   } catch {
     // Left for the sweep.
   }
+}
+
+/** Resolves when `work` ends, however it ends. */
+function settled(work: PromiseLike<unknown>): Promise<void> {
+  return Promise.resolve(work).then(
+    () => undefined,
+    () => undefined,
+  );
+}
+
+/**
+ * Whether trying again can help: the network failed, not the file.
+ *
+ * A file whose bytes contradict its type fails the same way every time, and a
+ * session that expired needs a login, not a retry.
+ */
+export function isRetryable(reason: Extract<UploadOutcome, { ok: false }>["reason"]): boolean {
+  return reason === "stalled" || reason === "storage" || reason === "register";
 }
 
 // ---------------------------------------------------------------------------
@@ -216,5 +283,7 @@ export function failureMessage(reason: Extract<UploadOutcome, { ok: false }>["re
     case "storage":
     case "register":
       return copy.failed;
+    case "stalled":
+      return copy.stalled;
   }
 }

@@ -2160,6 +2160,12 @@ export const t = {
       tooMany: (count: number) =>
         `${count} imagens de uma vez — o limite é 5 por gesto. Nada foi enviado.`,
       failed: "Não foi possível enviar a imagem.",
+      /** Um passo do envio passou do teto: a tela desistiu de esperar, e o que subiu é apagado. */
+      stalled: "O envio não terminou a tempo e foi cancelado.",
+      /** O botão ao lado de uma falha que tentar de novo pode resolver (a rede, não o arquivo). */
+      retry: "Tentar de novo",
+      /** Fecha o aviso que não some sozinho — o que oferece «Tentar de novo». */
+      dismiss: "Fechar",
       notSignedIn: "Sua sessão expirou. Entre de novo para enviar imagens.",
       /** O servidor leu os bytes e eles desmentiram o tipo — não entra na galeria. */
       typeMismatch: "O arquivo não é o que diz ser, e não entrou na galeria.",

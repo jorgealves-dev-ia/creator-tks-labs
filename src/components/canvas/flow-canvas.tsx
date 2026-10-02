@@ -266,7 +266,7 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
 
       {nodes.length === 0 ? <EmptyCanvasHint /> : null}
 
-      {gestures.status ? <GestureBanner status={gestures.status} /> : null}
+      {gestures.status ? <GestureBanner status={gestures.status} onDismiss={gestures.dismiss} /> : null}
     </div>
   );
 }
@@ -275,8 +275,13 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
  * What a paste or a drop is doing, or why it was refused — on the canvas
  * itself, because the gesture has no block to speak through: the cards it makes
  * do not exist yet, and a refused gesture makes none.
+ *
+ * It lets clicks through to the canvas beneath it, except on its own two
+ * buttons — which only exist when the failure is one a second try can fix
+ * (01/10/2026). That message does not clear itself, so it also carries the way
+ * to close it.
  */
-function GestureBanner({ status }: { status: GestureStatus }) {
+function GestureBanner({ status, onDismiss }: { status: GestureStatus; onDismiss: () => void }) {
   const tone =
     status.tone === "refused"
       ? "border-warning/40 bg-surface text-warning"
@@ -287,10 +292,33 @@ function GestureBanner({ status }: { status: GestureStatus }) {
       role="status"
       aria-live="polite"
       data-gesture-status={status.tone}
-      className={`pointer-events-none absolute left-1/2 top-4 z-10 max-w-md -translate-x-1/2 rounded-lg
-                  border px-4 py-2 text-center text-xs leading-relaxed shadow-lg shadow-black/40 ${tone}`}
+      className={`pointer-events-none absolute left-1/2 top-4 z-10 flex max-w-lg -translate-x-1/2 items-center
+                  gap-3 rounded-lg border px-4 py-2 text-center text-xs leading-relaxed shadow-lg
+                  shadow-black/40 ${tone}`}
     >
-      {status.text}
+      <span>{status.text}</span>
+
+      {status.retry ? (
+        <span className="pointer-events-auto flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={status.retry}
+            className="rounded-md border border-line px-2 py-0.5 text-[11px] text-ink transition-colors
+                       hover:border-line-strong hover:bg-surface-hover"
+          >
+            {t.generation.upload.retry}
+          </button>
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label={t.generation.upload.dismiss}
+            title={t.generation.upload.dismiss}
+            className="rounded px-1.5 py-0.5 text-ink-faint transition-colors hover:bg-surface-hover hover:text-ink"
+          >
+            ✕
+          </button>
+        </span>
+      ) : null}
     </div>
   );
 }

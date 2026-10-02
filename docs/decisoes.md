@@ -6471,6 +6471,55 @@ arquivo inteiro.
 
 *Evidência: `scratchpad\evidencias\pausa-0110-proporcao-e-previa\`. A prova ao vivo está na entrada de fechamento.*
 
+### 01/10/2026 — ✅ Item 6: todo passo do envio tem teto — e a falha de rede ganha «Tentar de novo»
+
+**O que estava aberto.** O único teto do envio eram os 10 s do servidor para ler dezesseis bytes. Tudo o que o
+**navegador** espera não tinha nenhum: uma rede que empacasse no meio deixava «Enviando…» até o navegador desistir
+ou a página recarregar — e, no canvas, todo colar nesse meio-tempo era recusado com «Ainda enviando…». Medido contra
+o código de 27/09, com o relógio avançado **24 horas**: o envio continua pendente.
+
+**O teto é por tamanho, porque a biblioteca não informa progresso.** A decisão pediu detecção de falta de progresso
+e nomeou o próprio plano B. Lido na fonte do `@supabase/storage-js` 2.112.2: o `upload` é um `fetch` puro — **sem
+evento de progresso e sem como passar um sinal de interrupção**. Vale o teto.
+
+| o passo que espera a rede | o teto | passou do teto |
+|---|---|---|
+| «quem está logado?» | 20 s | `stalled` — nada subiu |
+| **a transferência do arquivo** | **60 s + o tempo do arquivo a 32 kB/s** — 64 s para o print de 30/09, 92 s para 1 MB, **380 s para 10 MB** | `stalled`, e a limpeza é pedida na hora |
+| a transferência da miniatura | 30 s | **o envio segue sem ela** — miniatura é best-effort, e a grade cai para o original |
+| o registro | 75 s — acima dos 60 s do `maxDuration` da página | `stalled`; nada é apagado (ninguém sabe se a linha foi gravada) |
+
+📌 **«Generoso» é o desenho inteiro.** O único desfecho pior que esperar demais é cancelar um envio que ainda andava
+— a *recusa falsa em conexão lenta*, que o dono perguntou em 27/09. Uma linha de 32 kB/s (≈ 256 kbit/s) termina
+**qualquer** arquivo dentro do teto, com 60 s de folga; o teto só alcança uma linha mais lenta que isso.
+
+📌 **«Cancelado» aqui quer dizer *desistir, e limpar depois* — e isso precisa ficar dito.** Sem sinal de interrupção,
+o pedido abandonado continua lá fora. A tela para de esperar; o que ele deixar é apagado **quando ele terminar**
+(provado: o arquivo que termina de subir depois da desistência sai, 0 objetos). A miniatura abandonada só é limpa
+depois que o registro também acabou — uma limpeza no meio não acharia a linha e tiraria o original de debaixo do
+registro.
+
+**«Tentar de novo».** Passou do teto, ou a rede falhou: *«O envio não terminou a tempo e foi cancelado.»*, com o
+botão. No canvas, o aviso que oferece o botão **não some sozinho** (tem um ✕) e o clique reenvia **só o que falhou**,
+sem colar de novo — com o rótulo do instante em que foi colado, e o card nascendo **ao lado** dos que já entraram. No
+seletor, o botão reenvia o arquivo sem escolhê-lo no disco outra vez. **O botão só existe para o que uma segunda
+tentativa resolve** — a rede; um arquivo que não é o que diz ser falha igual toda vez, e sessão expirada pede login.
+E o clique passa pela mesma porta de «um gesto por vez»: **é um clique, nunca um efeito.**
+
+**Provado — 34 provas estruturais, 0 falhas**, com o relógio de mentira do Node (nenhum segundo esperado, nenhum
+pedido saindo): 1 ms antes de cada teto o envio ainda espera, no teto responde; o controle, quando tudo responde,
+não toca em teto nenhum. *Duas das 34 ficaram vermelhas na primeira execução, e o erro era do harness, não do código
+— uma lia a linha do banco depois de o cenário seguinte zerá-lo; a outra esperava «Colada · …» de um arquivo que
+tinha nome. Corrigidas no harness e ditas aqui.*
+
+📌 **O limite deste desenho, para o dono decidir se vale mais:** um teto por tamanho demora a perceber uma linha
+morta — **seis minutos** numa foto de 10 MB. Detecção de progresso de verdade perceberia em segundos, em qualquer
+tamanho, e interromperia o pedido de fato; para isso a transferência teria de **deixar de passar pela biblioteca**
+(um pedido nosso, direto ao mesmo endereço do Storage). Não fiz: a instrução nomeava o teto para este caso, e trocar
+o transporte de um envio provado ao vivo em 27/09 é decisão dele.
+
+*Evidência: `scratchpad\evidencias\pausa-0110-teto-transferencia\`.*
+
 ## Segurança e navegador
 
 ### 27/09/2026 — 🔒 A regra 7 de Segurança deixa de ser frase: a sonda confere o GitHub

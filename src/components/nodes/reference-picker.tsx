@@ -8,6 +8,7 @@ import { listGalleryAssets, type GalleryItem } from "@/lib/assets/actions";
 import { UPLOAD_IMAGE_TYPES } from "@/lib/assets/image-bytes";
 import {
   failureMessage,
+  isRetryable,
   prepareImages,
   refusalMessage,
   uploadPreparedImage,
@@ -78,6 +79,8 @@ function PickerDialog() {
   const [selected, setSelected] = useState<GalleryItem[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  /** The file of an upload that failed for a reason a second try can fix — what «Tentar de novo» sends. */
+  const [retryFile, setRetryFile] = useState<File | null>(null);
 
   /**
    * The page, remembered together with the request that produced it.
@@ -228,6 +231,7 @@ function PickerDialog() {
    */
   async function handleUpload(file: File) {
     setMessage(null);
+    setRetryFile(null);
 
     const prepared = await prepareImages([file]);
 
@@ -247,6 +251,11 @@ function PickerDialog() {
 
     if (!result.ok) {
       setMessage(failureMessage(result.reason));
+
+      // The file is still in hand: when what failed was the network, sending
+      // it again is one click instead of finding it on the disk a second time.
+      if (isRetryable(result.reason)) setRetryFile(file);
+
       return;
     }
 
@@ -431,6 +440,17 @@ function PickerDialog() {
             {browsing
               ? `${items.length} ${items.length === 1 ? galleryCopy.countOne : galleryCopy.countSuffix}`
               : (message ?? `${selected.length} ${copy.selected}`)}
+
+            {!browsing && retryFile && !uploading ? (
+              <button
+                type="button"
+                onClick={() => void handleUpload(retryFile)}
+                className="ml-2 rounded-md border border-line px-2 py-0.5 text-[11px] text-ink transition-colors
+                           hover:border-line-strong hover:bg-surface-hover"
+              >
+                {t.generation.upload.retry}
+              </button>
+            ) : null}
           </p>
 
           <div className="flex gap-2">
