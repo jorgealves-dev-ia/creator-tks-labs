@@ -57,6 +57,27 @@ const REQUEST_TIMEOUT_MS = 50_000;
 const NO_RETRIES = { attempts: 1 };
 
 /**
+ * "One attempt", in the only place the Interactions API listens to it.
+ *
+ * `NO_RETRIES` above configures the SDK's classic HTTP path — and
+ * `ai.interactions.create`, which every adapter in this file uses, does not go
+ * through it. The SDK builds a second client for that API, hands it the timeout
+ * **and nothing else**, and every operation of that client carries its own
+ * policy: up to FOUR more attempts, on 408, 409, 429, any 5xx and a dropped
+ * connection, with waits of 0.5 s to 8 s. So until 02/10/2026 the sentence
+ * above — "one attempt, no retries" — was true of the comment and false of the
+ * calls: one click could be five requests to Google.
+ *
+ * The only door is the option PER CALL. Measured, not read (02/10/2026,
+ * `@google/genai` 2.16.0, the real SDK against a fake `fetch`): HTTP 500, 503,
+ * 429 and a dropped connection each made FIVE requests for one call; with this
+ * option, ONE. 400, 403 and success make one request either way, and a success
+ * answers the same with or without it. Every `interactions.create` in this file
+ * passes it.
+ */
+const NO_INTERACTION_RETRIES = { maxRetries: 0 };
+
+/**
  * Words that mean "I will not draw this". Google reports a policy refusal as a
  * perfectly normal error whose message is the only thing that distinguishes it
  * from a bad request — so the message is what gets read.
@@ -110,15 +131,18 @@ export const googleImageProvider: ImageGenerationProvider = {
     let interaction;
 
     try {
-      interaction = await ai.interactions.create({
-        model: model.slug,
-        input: contents,
-        response_format: {
-          type: "image",
-          aspect_ratio: input.aspectRatio,
-          image_size: input.imageSize,
+      interaction = await ai.interactions.create(
+        {
+          model: model.slug,
+          input: contents,
+          response_format: {
+            type: "image",
+            aspect_ratio: input.aspectRatio,
+            image_size: input.imageSize,
+          },
         },
-      });
+        NO_INTERACTION_RETRIES,
+      );
     } catch (error) {
       throw toProviderError(error);
     }
@@ -186,19 +210,22 @@ export const googleTextProvider: TextGenerationProvider = {
     let interaction;
 
     try {
-      interaction = await ai.interactions.create({
-        model: model.slug,
-        system_instruction: input.systemPrompt,
-        input: [{ type: "text" as const, text: input.userPrompt }],
-        // `type: "text"` com mime_type JSON é o structured output desta API —
-        // não é o mesmo campo que o gerador de imagem usa para `aspect_ratio`,
-        // e é a combinação que o probe da Fase 0 exercitou 47 vezes.
-        response_format: {
-          type: "text" as const,
-          mime_type: "application/json",
-          schema: input.schema,
+      interaction = await ai.interactions.create(
+        {
+          model: model.slug,
+          system_instruction: input.systemPrompt,
+          input: [{ type: "text" as const, text: input.userPrompt }],
+          // `type: "text"` com mime_type JSON é o structured output desta API —
+          // não é o mesmo campo que o gerador de imagem usa para `aspect_ratio`,
+          // e é a combinação que o probe da Fase 0 exercitou 47 vezes.
+          response_format: {
+            type: "text" as const,
+            mime_type: "application/json",
+            schema: input.schema,
+          },
         },
-      });
+        NO_INTERACTION_RETRIES,
+      );
     } catch (error) {
       throw toProviderError(error);
     }
