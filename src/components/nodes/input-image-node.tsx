@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { NodeHeader } from "@/components/nodes/node-header";
 import { NodeIcon } from "@/components/nodes/node-icons";
 import { signAssets } from "@/lib/assets/sign-batch";
+import { useLocalPreviews } from "@/lib/canvas/local-previews";
 import { useReferencePicker } from "@/lib/canvas/reference-picker-store";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { REFERENCE_KINDS, type ReferenceKind } from "@/lib/generation/references";
@@ -62,6 +63,17 @@ export function InputImageNode({ id, data, selected }: NodeProps<InputImageNodeT
   const [signed, setSigned] = useState<{ assetId: string; url: string } | null>(null);
   const url = assetId && signed?.assetId === assetId ? signed.url : null;
 
+  /**
+   * The picture from the person's own machine, when this card was born of a
+   * paste or a drop a moment ago (`local-previews.ts`).
+   *
+   * The gesture was already showing it; the card goes on showing it instead of
+   * falling back to «Carregando…» while the signed link is made. It is an object
+   * URL in this tab's memory — never in `data`, never saved.
+   */
+  const preview = useLocalPreviews((state) => (assetId ? (state.byAsset[assetId] ?? null) : null));
+  const shown = preview ?? url;
+
   useEffect(() => {
     if (!assetId) return;
 
@@ -78,6 +90,25 @@ export function InputImageNode({ id, data, selected }: NodeProps<InputImageNodeT
       cancelled = true;
     };
   }, [assetId]);
+
+  // The local preview steps down only when the real picture is ready to take its
+  // place: loaded off-screen first, so the frame never goes blank between the
+  // two. If it never loads, the preview stays until the store's own timer.
+  useEffect(() => {
+    if (!assetId || !preview || !url) return;
+
+    const real = new Image();
+    let cancelled = false;
+
+    real.onload = () => {
+      if (!cancelled) useLocalPreviews.getState().release(assetId);
+    };
+    real.src = url;
+
+    return () => {
+      cancelled = true;
+    };
+  }, [assetId, preview, url]);
 
   function choose() {
     useReferencePicker.getState().open({
@@ -111,10 +142,18 @@ export function InputImageNode({ id, data, selected }: NodeProps<InputImageNodeT
                      rounded-lg border border-dashed border-line bg-canvas text-[11px]
                      text-ink-faint transition-colors hover:border-line-strong hover:text-ink"
         >
-          {url ? (
-            /* Short-lived signed URLs for a private bucket. */
+          {shown ? (
+            /* Short-lived signed URLs for a private bucket — or, for a moment
+               after a paste, the file itself.
+
+               `contain`, never `cover` (01/10/2026). The frame is a square that
+               does not change size, and the picture fits INSIDE it whole: a
+               portrait print pasted in production showed as a square, its top
+               and bottom cut off, and the card looked like the file had been
+               cropped. It had not — the stored file was intact; only this
+               frame was cutting. The same rule the result frame follows. */
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={url} alt="" className="size-full object-cover" />
+            <img src={shown} alt="" className="size-full object-contain" />
           ) : (
             <span className="flex flex-col items-center gap-1.5 px-3 text-center leading-relaxed">
               <NodeIcon kind="input-image" className="size-5" />

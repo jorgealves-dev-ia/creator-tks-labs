@@ -383,6 +383,31 @@ const INPUT_SOURCES = new Set(["input-image", "input-product", "input-pose", "in
 /** Matches `w-56` on the input cards — used only to place one beside a block. */
 const INPUT_NODE_WIDTH = 224;
 
+/** The space between the cards one paste or drop makes. */
+const IMAGE_INPUT_GAP = 24;
+
+/**
+ * Where the cards of one paste or drop go: side by side from the point of the
+ * gesture, each stepping aside from whatever already sits there.
+ *
+ * Exported because, since 01/10/2026, the picture is on screen BEFORE its card
+ * exists — a local preview, shown while the file travels — and the preview has
+ * to stand exactly where the card will be born. One function for both, so the
+ * two cannot disagree.
+ */
+export function imageInputSlots(
+  nodes: readonly Node[],
+  position: { x: number; y: number },
+  count: number,
+): { x: number; y: number }[] {
+  return Array.from({ length: count }, (_, index) =>
+    freePosition(nodes, {
+      x: position.x + index * (INPUT_NODE_WIDTH + IMAGE_INPUT_GAP),
+      y: position.y,
+    }),
+  );
+}
+
 /** Matches `w-[42rem]` on the video block — used only to place a card beside it. */
 const VIDEO_NODE_WIDTH = 672;
 
@@ -1688,15 +1713,12 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     if (assetIds.length === 0) return [];
 
     const state = get();
-    const GAP = 24;
+    const slots = imageInputSlots(state.nodes, position, assetIds.length);
 
     const cards: Node[] = assetIds.map((assetId, index) => ({
       id: crypto.randomUUID(),
       type: "input-image",
-      position: freePosition(state.nodes, {
-        x: position.x + index * (INPUT_NODE_WIDTH + GAP),
-        y: position.y,
-      }),
+      position: slots[index],
       data: { assetId, kind: null, instrucao: "" },
       selected: true,
     }));

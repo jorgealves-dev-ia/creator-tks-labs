@@ -6413,6 +6413,64 @@ e-mail do login (`pt-BR.ts`) e dois comentários do `config.toml` do Supabase.
 
 *Evidência: `scratchpad\evidencias\pausa-0110-colar-endereco\`.*
 
+### 01/10/2026 — ✅ Item 5: a proporção se perdia na PRÉVIA, e só nela — e a foto colada passa a aparecer na hora
+
+**Primeiro, onde a proporção se perde — medido antes de mexer em qualquer coisa.** O print que o dono colou em
+produção é o asset `480d9973` («Colada · 30/09 17:08:12»), o único envio depois de 27/09:
+
+| | largura × altura | bytes |
+|---|---|---|
+| a linha em `assets` — o que o navegador mediu ao colar | 227 × 332 | 137.237 |
+| **o arquivo no Storage** — cabeçalho do PNG lido dos bytes, e o `sharp` | **227 × 332** | **137.237** |
+| **a miniatura no Storage** | **227 × 332** | 9.750 |
+
+**O arquivo guardado é o colado, intacto** — mesmas dimensões, mesmo número de bytes; o envio não reencoda nem
+redimensiona. **Nenhum arquivo quadrado existe.** Quem cortava era a moldura do card: um quadrado com `object-cover`
+mostrava **68,4%** da altura do print e escondia **31,6%** (45 px em cima, 45 embaixo, numa moldura de 196 px —
+medida ao vivo). Como o Storage estava íntegro, o conserto seguiu — pela regra do dono, um envio que cortasse seria
+motivo para **parar**.
+
+⚠️ **O print não é 9:16.** Tem 227 × 332 — proporção 0,68, perto de 2:3; um 9:16 dessa altura teria 187 px de
+largura. Como os bytes guardados são os bytes colados, **essa é a medida do recorte que chegou à área de
+transferência**: nada no caminho alargou nem cortou.
+
+**O conserto da moldura:** `cover` → `contain`. A moldura continua um quadrado que **não muda de tamanho**, e a foto
+cabe inteira dentro dele — a regra que a moldura de resultado já seguia (*«a moldura nunca muda de tamanho»*). **Sem
+detecção de formato,** como o dono mandou: o card não calcula proporção e não nomeia 1:1, 4:5 ou 9:16.
+
+**A resposta do colar: a foto na hora.** Até aqui o canvas respondia a um Ctrl+V com uma frase, e o card aparecia
+quando tudo tinha terminado — a subida, a miniatura, o registro, o link assinado e o download da miniatura —, com o
+arquivo na mão do navegador o tempo todo. Agora uma **prévia local** vai para a tela antes do primeiro byte sair,
+no ponto em que o card vai nascer.
+
+📌 **A prévia não é um node — e essa é a decisão que vale guardar.** O caminho curto era criar o card vazio e
+preenchê-lo depois; ele poria no grafo, e no autosave, um card sem asset — que ficaria salvo se a aba fechasse no
+meio. A prévia é desenhada pelo canvas (`ViewportPortal`), fora do store: **um card existe quando o asset existe**,
+e um gesto que falha deixa o grafo como estava. Quando o envio termina, o card nasce no mesmo ponto e recebe
+emprestado o mesmo endereço de memória (`local-previews.ts`, por id de asset, fora do `data`), até a imagem de
+verdade carregar. O `blob:` vive só na aba — **nunca no grafo** (decisão 3).
+
+**Para provar sem navegador, o gesto saiu do hook:** `lib/canvas/image-gesture.ts` faz o que o gesto faz depois que
+os arquivos foram conferidos, e `use-image-gestures.ts` ficou com o que é escutar — área de transferência, ponteiro,
+arrasto.
+
+**Provado — 36 provas estruturais, 0 falhas:** as medidas do Storage acima; `cover` → `contain` contra o HEAD; a
+prévia aparece com **0 envios começados**; o card nasce **no mesmo ponto** da prévia e guarda só
+`{ assetId, kind, instrucao }`, sem `blob:` no grafo; falhou o envio → a prévia sai, **0 objetos no bucket**, o
+grafo intocado (revisão 0); três fotos com a do meio falhando → as prévias vão **3 → 2 → 0**, 2 cards, 0 órfãos; e
+o empréstimo — solto quando a imagem de verdade carrega, ou sozinho aos 120 s se ninguém vier buscar.
+
+📌 **Um achado no caminho, consertado:** trocar de projeto no meio do envio punha o card **no projeto errado** — o
+store do canvas é um só, e quando o envio terminava ele já guardava o grafo do outro projeto. Agora a foto fica na
+galeria e o card não nasce num canvas que não é o do gesto.
+
+📌 **E um ponto para o dono decidir, que eu não toquei:** os outros três cards de Input — **Pose/Ângulo**,
+**Character Sheet** e as fotos do **Produto** — cortam do mesmo jeito (`cover` num quadrado). O pedido foi o nó de
+imagem. No de Pose o corte pesa mais, porque a pose é o corpo inteiro; em todos, é só a prévia — o provedor recebe o
+arquivo inteiro.
+
+*Evidência: `scratchpad\evidencias\pausa-0110-proporcao-e-previa\`. A prova ao vivo está na entrada de fechamento.*
+
 ## Segurança e navegador
 
 ### 27/09/2026 — 🔒 A regra 7 de Segurança deixa de ser frase: a sonda confere o GitHub

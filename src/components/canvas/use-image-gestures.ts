@@ -3,17 +3,18 @@
 import { useReactFlow } from "@xyflow/react";
 import { useCallback, useEffect, useRef, useState, type DragEvent, type RefObject } from "react";
 
+import { prepareImages, refusalMessage } from "@/lib/assets/upload-client";
+import type { UploadOrigin } from "@/lib/assets/upload-label";
 import {
-  failureMessage,
-  prepareImages,
-  refusalMessage,
-  uploadPreparedImage,
-  type UploadOutcome,
-} from "@/lib/assets/upload-client";
-import { uploadLabel, type UploadOrigin } from "@/lib/assets/upload-label";
+  gestureVerdict,
+  sendImagesToCanvas,
+  type GestureStatus,
+  type UploadPreview,
+} from "@/lib/canvas/image-gesture";
 import { isPastedAddress } from "@/lib/canvas/pasted-address";
-import { useCanvasStore } from "@/lib/canvas/store";
 import { t } from "@/lib/i18n/pt-BR";
+
+export type { GestureStatus, UploadPreview };
 
 /**
  * Pasting (Ctrl+V) and dropping image files on the canvas — F1a,
@@ -24,6 +25,10 @@ import { t } from "@/lib/i18n/pt-BR";
  * the SAME road as the «Enviar imagem» button: the same function, the same
  * Storage folder, the same thumbnail, the same registration, the same limits.
  * There is no second way in.
+ *
+ * This file LISTENS — clipboard, pointer, drag. What the gesture does once the
+ * files are checked lives in `lib/canvas/image-gesture.ts`, where it can be
+ * proved without a browser.
  *
  * ---------------------------------------------------------------------------
  * What is NOT taken, on purpose
@@ -42,8 +47,6 @@ import { t } from "@/lib/i18n/pt-BR";
 
 const copy = t.generation.upload;
 
-export type GestureStatus = { tone: "busy" | "done" | "refused"; text: string };
-
 /** How long a finished message stays on screen before it clears itself. */
 const MESSAGE_MS = 8000;
 
@@ -59,6 +62,8 @@ function isEditable(target: EventTarget | null): boolean {
 export function useImageGestures(wrapperRef: RefObject<HTMLDivElement | null>) {
   const { screenToFlowPosition } = useReactFlow();
   const [status, setStatus] = useState<GestureStatus | null>(null);
+  /** The pictures on screen while their files travel — drawn by the canvas, never part of the graph. */
+  const [previews, setPreviews] = useState<UploadPreview[]>([]);
 
   /**
    * The last pointer position on the page, in screen coordinates — where a paste
@@ -86,7 +91,7 @@ export function useImageGestures(wrapperRef: RefObject<HTMLDivElement | null>) {
   }, [status]);
 
   /**
-   * The gesture itself: check everything, then send, then place.
+   * The gesture itself: check everything, then show, send and place.
    *
    * The point on the canvas is fixed at the moment of the gesture — converted
    * to canvas coordinates BEFORE the upload, so panning while it sends does not
@@ -99,51 +104,32 @@ export function useImageGestures(wrapperRef: RefObject<HTMLDivElement | null>) {
         return;
       }
 
-      const moment = new Date();
-      const position = screenToFlowPosition(screen);
-      const prepared = await prepareImages(files);
-
-      if (!prepared.ok) {
-        const text = refusalMessage(prepared);
-
-        if (text) setStatus({ tone: "refused", text });
-
-        return;
-      }
-
+      // Raised before the first `await`, so two gestures in the same instant
+      // cannot both pass the check above. And lowered in a `finally`: this flag
+      // is what refuses the NEXT gesture, and one that stayed up after an error
+      // answered every paste with «Ainda enviando…» until the page was reloaded.
       sending.current = true;
-      setStatus({ tone: "busy", text: copy.sending(prepared.images.length) });
 
-      const assetIds: string[] = [];
-      let failure: Extract<UploadOutcome, { ok: false }>["reason"] | null = null;
-
-      // One after the other: five files of up to 10 MB in parallel would race
-      // for the same connection, and the order of the cards should be the order
-      // of the files.
-      //
-      // `finally`, because the flag is what refuses the NEXT gesture: an upload
-      // that threw with it raised would leave every paste after it answered with
-      // «Ainda enviando…» until the page was reloaded.
       try {
-        for (const image of prepared.images) {
-          const result = await uploadPreparedImage(image, uploadLabel(image.file, origin, moment));
+        const moment = new Date();
+        const position = screenToFlowPosition(screen);
+        const prepared = await prepareImages(files);
 
-          if (result.ok) assetIds.push(result.item.assetId);
-          else failure = result.reason;
+        if (!prepared.ok) {
+          const text = refusalMessage(prepared);
+
+          if (text) setStatus({ tone: "refused", text });
+
+          return;
         }
+
+        setStatus({ tone: "busy", text: copy.sending(prepared.images.length) });
+
+        const outcome = await sendImagesToCanvas({ images: prepared.images, origin, moment, position }, setPreviews);
+
+        setStatus(gestureVerdict(prepared.images.length, outcome));
       } finally {
         sending.current = false;
-      }
-
-      useCanvasStore.getState().addImageInputs({ assetIds, position });
-
-      if (assetIds.length === prepared.images.length) {
-        setStatus({ tone: "done", text: copy.done(assetIds.length) });
-      } else if (assetIds.length > 0) {
-        // Never truncated in silence: what went in, and that the rest did not.
-        setStatus({ tone: "refused", text: copy.partial(assetIds.length, prepared.images.length) });
-      } else {
-        setStatus({ tone: "refused", text: failure ? failureMessage(failure) : copy.failed });
       }
     },
     [screenToFlowPosition],
@@ -244,5 +230,5 @@ export function useImageGestures(wrapperRef: RefObject<HTMLDivElement | null>) {
     [acceptsDrag, place],
   );
 
-  return { status, acceptsDrag, handleFileDrop };
+  return { status, previews, acceptsDrag, handleFileDrop };
 }

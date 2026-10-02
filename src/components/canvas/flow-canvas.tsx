@@ -16,6 +16,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { HelperLinesOverlay } from "@/components/canvas/helper-lines-overlay";
+import { UploadPreviews } from "@/components/canvas/upload-preview";
 import { useImageGestures, type GestureStatus } from "@/components/canvas/use-image-gestures";
 import { CharacterNode } from "@/components/nodes/character-node";
 import { GeneratorNode } from "@/components/nodes/generator-node";
@@ -245,6 +246,7 @@ export function FlowCanvas({ projectId, graph, version }: FlowCanvasProps) {
           color="#26262f"
         />
         <HelperLinesOverlay lines={helperLines} />
+        <UploadPreviews previews={gestures.previews} />
         <Controls
           position="bottom-right"
           showInteractive={false}

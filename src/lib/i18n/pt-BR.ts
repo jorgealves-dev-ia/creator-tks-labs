@@ -2168,6 +2168,8 @@ export const t = {
       /** Colou o ENDEREÇO da imagem: no menu do navegador, é o item vizinho de «Copiar imagem». */
       pastedAddress: "Isso é o endereço da imagem, não a imagem. No site, use «Copiar imagem» e cole aqui.",
       sending: (count: number) => (count === 1 ? "Enviando 1 imagem…" : `Enviando ${count} imagens…`),
+      /** No cabeçalho da prévia: a foto já está na tela, e o arquivo ainda está a caminho. */
+      previewSending: "Enviando…",
       stillSending: "Ainda enviando as imagens anteriores — espere terminar e tente de novo.",
       done: (count: number) =>
         count === 1
