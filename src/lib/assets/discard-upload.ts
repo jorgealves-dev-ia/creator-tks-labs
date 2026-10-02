@@ -45,7 +45,7 @@ export type DiscardOutcome =
  * The opposite failure — a row whose file is gone — is the one that shows on
  * screen as a broken picture, so every doubt resolves towards keeping the file.
  * What that leaves behind (a tab closed between the upload and the registration,
- * a call that never answered) is the orphan sweep's job.
+ * a call that never answered) is the orphan sweep's job: `npm run sweep:orphans`.
  */
 export async function discardUnregisteredUpload(
   supabase: SupabaseServerClient,

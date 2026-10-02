@@ -6338,6 +6338,48 @@ no meio do envio, **é o que a varredura do item 2 existe para pegar.**
 
 *Evidência: `scratchpad\evidencias\pausa-0110-limpeza-envio\`. A prova ao vivo está na entrada de fechamento.*
 
+### 01/10/2026 — ✅ Item 2: a varredura de órfãos — só relatório, e apagar é um segundo ato
+
+**O que é:** `npm run sweep:orphans` (`scripts/sweep-storage-orphans.mts`). Lê o bucket `assets` inteiro pela API do
+Storage e a tabela `assets`, e mostra o que não tem dono no banco. **O rodar padrão só lê e imprime.**
+
+**O que é órfão.** Um objeto tem dono quando uma linha de `assets` aponta para ele, **ou** quando ele é a miniatura
+(`<caminho>.thumb.webp`) de um que tem — a miniatura não tem linha própria. Do que sobra, **só o que tem mais de 24 h
+é órfão**: mais novo que isso pode ser um envio a caminho da própria linha, e o relatório o lista à parte, nunca
+como coisa a apagar. Um objeto **sem data** não é julgado.
+
+**E o relatório conta o inverso** — linhas de `assets` cujo arquivo não está no bucket. Não é órfão, e a varredura
+não toca nele; mas é a falha que aparece na tela como moldura quebrada, e uma varredura que só olhasse para um lado
+nunca a diria. *(Também é a contraprova do item 1: se a limpeza apagasse o arquivo de uma linha registrada, é aqui
+que apareceria.)*
+
+**Apagar é um segundo ato, separado, e é do dono.** O comando de remoção exige a **lista que um relatório salvou**
+(`--saida`) e o **código de confirmação** que ele imprimiu — o que sai é o que alguém olhou, nunca o que o bucket
+tiver na hora do comando. E cada caminho é conferido de novo antes de sair: ainda existe, ainda sem linha, ainda com
+mais de 24 h, **o mesmo objeto** (mesma data, mesmo tamanho). O que não confere é pulado, com o motivo. Rodar duas
+vezes não apaga nada na segunda.
+
+**Provado:**
+
+- **a lógica — 14 provas, 0 falhas**, com bucket e tabela inventados (o julgamento e o plano de remoção são funções
+  puras): a miniatura de uma imagem registrada nunca é órfã; 23,99 h é recente e 24 h em ponto é órfão; um caminho
+  que ganhou linha depois do relatório é pulado, um objeto substituído é pulado, um que já saiu é pulado; o código
+  de confirmação muda se a lista muda;
+- **o bucket de verdade, por dois caminhos independentes** — o script (API do Storage) e um SQL direto em
+  `storage.objects` × `assets`, pelo MCP: **191 objetos · 113 linhas · 2 órfãos · 0 recentes · 0 linhas sem arquivo**,
+  nos dois.
+
+**Os 2 órfãos são o par de 27/09, e mais nenhum:** `…/references/ee8f3d30-….png` (5.049 bytes) e a miniatura dele
+(1.840) — **6.889 bytes**, de 28/09 01:41 UTC, o envio que travou na prova ao vivo da F1a. **Nada foi apagado:** a
+lista está salva na evidência, com o código `97b5f050fd57`, **à espera da aprovação do dono**.
+
+📌 **A regra do caminho da miniatura mora em dois lugares, e por isso tem trava.** Um script rodado pelo Node puro
+não importa os módulos do produto; ele repete o sufixo `.thumb.webp` — e, antes de qualquer leitura, abre
+`src/lib/assets/thumbnail-path.ts` e **se recusa a rodar** se a regra de lá tiver mudado. *Uma regra em dois lugares é
+uma regra que diverge; esta decide o que é apagado.*
+
+*Evidência: `scratchpad\evidencias\pausa-0110-varredura-orfaos\`.*
+
 ## Segurança e navegador
 
 ### 27/09/2026 — 🔒 A regra 7 de Segurança deixa de ser frase: a sonda confere o GitHub
