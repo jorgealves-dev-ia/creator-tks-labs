@@ -6638,6 +6638,40 @@ caso em que a regra do print decisivo se paga: a afirmação é visual, e númer
 
 *Evidência: `scratchpad\evidencias\pausa-0110-ao-vivo\` — os três prints e `numeros-ao-vivo.md`.*
 
+### 01/10/2026 — ✅ A prova ao vivo dos itens 1, 3, 5 e 6 — e o fechamento da pausa
+
+**Navegador liberado pelo dono** — perfil «Jorge Alves - DevIA», porta 5599, projeto «Teste F1a — colar e soltar»;
+escolhido por ele entre três conectados, pelo pedido de conexão do Chrome. Logado como a conta do projeto (os 6
+projetos e 3.190 ⚡). **0 ⚡:** nenhum gesto chegou a provedor — saldo 3.190 antes e depois, 0 lançamentos, 0 gerações.
+
+| item | o que a tela e o banco mostraram |
+|---|---|
+| **5 · o print 9:16, com Ctrl+V de verdade** | bitmap 360 × 640 na área de transferência do Windows (`isTrusted`). **O card mostra a foto inteira:** proporção 0,5625, `contain`, 110 × 196 numa caixa de 196 × 196, **0 px cortados** (um print). **O arquivo guardado é o colado:** 16.573 bytes e o **mesmo SHA-256** no navegador e no Storage, cabeçalho PNG 360 × 640 |
+| **5 · a resposta do colar** | prévia na tela aos **19 ms**; card aos ~2 s; **0 amostras sem foto**; durante o envio o store não muda (8 nodes, revisão 0); o card nasce no mesmo ponto, sem `blob:` no grafo |
+| **1 · a recusa forçada do registro** | varredura antes e depois: **193 objetos, 0 órfãos, 0 recentes** nos dois. Os logs do Supabase mostram o arquivo e a miniatura **subindo** (`POST 200`) e, 1,15 s depois, **saindo** (`DELETE 200`) — na chamada que recusou. Na tela: *«O arquivo não é o que diz ser, e não entrou na galeria.»*, sem botão; o gesto seguinte funciona |
+| **3 · o endereço colado** | a frase, no colar sintético e no **Ctrl+V de verdade**; frase com link dentro → silêncio; dentro de um campo de texto → silêncio, o foco fica no campo |
+| **6 · o teto e o botão** | no teto: *«O envio não terminou a tempo e foi cancelado.»* com **«Tentar de novo»** e ✕; 14 s depois o aviso continua lá; o clique reenvia e o card nasce — com o rótulo **«Colada · 01/10 21:06:45»**, o instante em que foi colada, não o do clique (21:07:10). O ✕ fecha. No seletor, o mesmo botão reenvia o arquivo (24 → 25 itens) |
+
+**Os 5 assets de teste criados** (0 ⚡; esperam o botão de apagar, como os de 27/09): `3d55698e` (o colar sintético
+9:16) · `ca61c3aa` (**o Ctrl+V de verdade, 9:16**) · `bb6f5eaa` (o envio travado, reenviado) · `dcc5bb54` (o «Tentar de
+novo» do seletor — só na galeria) · `52464228` (o arquivo solto). Ids inteiros em `numeros-ao-vivo.md`.
+
+**O banco no fim:** 118 linhas, **199 objetos**, **0 sem linha de qualquer idade**, 0 linhas sem arquivo; 0 objetos nos
+4 caminhos que as sondas usaram. O canvas de teste: 12 nodes, 0 arestas. **O projeto do dono «Teste de copiar imagens
+por print» não foi aberto nem tocado.**
+
+**Sondas temporárias** (`SAI ANTES DO COMMIT`, em dois arquivos — para forçar a recusa e o envio travado, e ler o
+store): fora. `git grep` vazio; os dois arquivos voltaram por cópia do retrato tirado antes delas, conferidos por md5.
+
+📌 **Um engano do instrumento, dito:** para abrir o seletor por JS, o meu seletor de botão pegou «Duplicar» e criou
+um segundo card do mesmo asset. Removido em seguida pela chamada que a lixeira do card faz; nenhum asset foi criado
+nem apagado por isso. Não é defeito do produto.
+
+**Os commits — um por item**, sobre o `f28a0a3`: itens 1 a 6, o invariante da varredura, o conserto do aviso, e este
+fechamento. Depois dele, a lista de termos do item 9 do plano vai ao dono, para a revisão que destrava a F1.
+
+*Evidência: `scratchpad\evidencias\pausa-0110-ao-vivo\numeros-ao-vivo.md`, quatro prints e as duas varreduras.*
+
 ## Segurança e navegador
 
 ### 27/09/2026 — 🔒 A regra 7 de Segurança deixa de ser frase: a sonda confere o GitHub
