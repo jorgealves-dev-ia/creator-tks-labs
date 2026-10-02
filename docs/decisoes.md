@@ -6672,6 +6672,515 @@ fechamento. Depois dele, a lista de termos do item 9 do plano vai ao dono, para 
 
 *Evidência: `scratchpad\evidencias\pausa-0110-ao-vivo\numeros-ao-vivo.md`, quatro prints e as duas varreduras.*
 
+### 02/10/2026 — 🔒 DECISÕES do dono, na retomada: os três pontos de 01/10, a lista v2 do aviso de público e o lote da F1
+
+**Conferido antes de tudo:** `git status` limpo sobre o `deeac04`; saldo **3.190 ⚡** = a soma do ledger (110
+lançamentos, o último de 07/09); 8 extrações, a última de 09/08; nenhuma geração desde 07/09.
+
+**Os três pontos que o `ESTADO.md` de 01/10 guardava como «o dono decide»:**
+
+1. **Os cards de Pose, Character Sheet e Produto ganham o conserto do Input de Imagem** — a foto inteira, na
+   proporção real, e a prévia local. **É o item 0 deste lote: 0 ⚡, antes da F1**, *porque o card de Produto é
+   onde a F1 mora*. Prova ao vivo e commit próprio.
+2. **O teto por tamanho fica aceito.** O que 01/10 deixou como limite — seis minutos para perceber uma linha
+   morta numa foto de 10 MB — vira **backlog com gatilho**: ***«transporte do envio com progresso real»***,
+   **quando envios acima de 5 MB virarem rotina** (vídeo, Take Mode). *Até lá, o teto generoso serve: uma
+   referência é uma foto, e foto de produto raramente passa de 5 MB.*
+3. **Os 13 envios de teste ficam onde estão.** Serão **o primeiro caso do botão de apagar com auditoria de
+   referências** (§9 do [`plano-video-final.md`](plano-video-final.md)). **Nada de apagar por SQL.**
+
+**A lista do aviso de público — v2, revisada pelo dono.** Está no item 9 da F1 do
+[`plano-produto-diz.md`](plano-produto-diz.md), com a tabela do que entrou e do que saiu. O que a revisão
+ensina, além dos termos:
+
+- **Uma lista de palavras precisa de uma lista de EXCEÇÕES.** «baby» é faixa etária e «baby doll» é uma
+  modelagem; «bebê» é faixa etária e «rosa bebê» é uma cor. A proposta de 27/09 acenderia o primeiro produto
+  do catálogo do dono — o Pijama Baby Doll. As exceções casam **antes** dos termos, **como frase**.
+- **«petite» saiu** porque o catálogo decide: em semijoia é o tamanho do pingente, não o de quem usa.
+- **O tamanho ganhou gramática:** mais gatilhos («tam», «veste», «manequim», «numeração», «sizes», «fits»),
+  os sinais que podem ficar entre o gatilho e o valor («Tam: M», «Size - L»), e a **sequência inteira** como
+  um destaque só («veste 38 a 44») — e a remoção tira a sequência inteira.
+- **A prova da função vem antes de qualquer tela,** com os casos que ele escolheu: dez que não podem acender
+  e sete que acendem, cada um com a entrada, o destaque e o resultado da remoção.
+
+**O lote da F1:** a F1 do plano **por inteiro, a 0 ⚡, com provedor simulado** — os campos, o botão com portão
+e preço do catálogo, o seletor, a gravação em `extractions`, o aviso com a lista v2 —, com **prova
+vermelho→verde do portão e do «não cobra em falha» antes de chamá-lo**. A migration, quem aplica é ele, pelo
+Session pooler. **Fora do lote, com todas as letras:** nenhum código do Modo Rápido nem de formatos.
+
+**O pior caso da metade dele, declarado antes de qualquer clique (R1):** 3 fotos do catálogo — o Pijama Baby
+Doll, uma peça com evidência visível de público, uma semijoia sem evidência —, **3 leituras no Gemini 3.7
+Flash a 4 ⚡ e 1 releitura pelo Haiku**, pelo seletor: **16 ⚡ previstos; 32 ⚡ com uma repetição por clique;
+teto da prova, 40 ⚡.** Sonnet fora. O saldo, 3.190 ⚡, é o teto absoluto. Os cliques pagos são dele, no
+navegador dele, e só depois do teto provado e do «pode».
+
+📌 **Uma frase do roteiro que eu li pelo plano, e digo que li:** o roteiro diz *«`record_generation` é o único
+débito»*. No plano aprovado, a porta da leitura é **`record_product_reading`** — `record_generation` grava em
+`generations`, e a leitura é gravada em `extractions`, como a mesma frase do roteiro pede duas linhas antes.
+Executei pelo plano: **a função do banco é o único débito**, e leitura recusada ou com falha não cobra. Se a
+intenção era outra, é uma linha para o dono corrigir antes da migration ser aplicada.
+
+📌 **E a metade nova não lê a blusa.** A de 26/09 era uma leitura do card `63989469`, que a F3 usa; a de 02/10
+são três fotos do catálogo. A F3 continua pedindo aquele card com descrição — uma leitura própria (+4 ⚡) ou um
+texto colado. Registrado no plano como ponto aberto.
+
+### 02/10/2026 — Item 0: Pose, Character Sheet e Produto ganham o conserto do Input de Imagem
+
+**0 ⚡.** O dono mandou dar aos outros três cards de Input *o mesmo conserto* de 01/10 — «foto inteira na proporção
+real, prévia local no colar» —, antes da F1, porque o card de Produto é onde a F1 mora.
+
+**A foto inteira.** As três molduras cortavam para preencher (`cover` num quadrado), como a do Input de Imagem
+cortava. De uma foto 9:16, cada uma escondia **43,8% da altura** — 76 px em cima e 76 embaixo nas molduras de
+Pose e de Character Sheet (196 px), 18 e 18 em cada foto do Produto (46 px). Agora a foto cabe inteira
+(`contain`), no mesmo quadrado, que não muda de tamanho. **Sem detecção de formato**, como em 01/10.
+
+**A prévia local — e o que «no colar» quer dizer nestes três cards.** Colar e soltar no canvas criam **sempre um
+Input de Imagem** (decisão da F1a); nenhum gesto cola dentro de um card de Pose, de Character Sheet ou de
+Produto. Neles a foto entra **pelo seletor**. Então a prévia local foi posta onde a foto entra: o botão
+**«Enviar imagem»** do seletor passa a deixar o arquivo emprestado ao asset que ele virou, e o card que recebe
+esse asset o desenha na hora — sem «Carregando…» (nem o quadrado vazio do Produto) enquanto o link é assinado.
+É o mesmo mecanismo de 01/10 (`local-previews.ts`), com uma segunda origem.
+
+📌 **O que NÃO fiz, e digo para o dono decidir se quer:** não inventei um gesto novo. *Colar com um card de
+Produto selecionado para a foto entrar nele* seria funcionalidade — e mudaria a regra da F1a, de que colar cria
+um Input de Imagem. Uma foto **escolhida da galeria** também segue como era: o arquivo não está na aba.
+
+**Um gancho só.** O Input de Imagem tinha a lógica da foto escrita dentro dele; copiá-la em mais três arquivos
+seria quatro cópias de uma regra. Ela foi para `use-input-picture.ts`, e os quatro cards a usam. Os dois
+efeitos do gancho são, **caractere por caractere**, os que o card de Imagem tinha no `deeac04` — o código que
+a prova ao vivo de 01/10 exercitou mudou de arquivo, não de conteúdo. No Produto, cada foto pede a sua (e uma
+foto acrescentada assina sozinha, onde a lista inteira era assinada de novo a cada mudança).
+
+**O envio do seletor saiu do componente** (`lib/canvas/picker-upload.ts`), pela razão que tirou o gesto do hook
+em 01/10: para ser provado sem navegador.
+
+**Provado — 31 provas estruturais, 0 falhas**, vermelho→verde contra o `deeac04` (banco e bucket em memória;
+nenhum pedido saiu da máquina): as três molduras, antes e depois; o gancho único; e o envio do seletor rodado
+de verdade — a foto fica emprestada ao asset (1 endereço de memória, 0 `blob:` no banco); arquivo recusado →
+nenhum envio, nenhuma prévia; envio que falha → nada emprestado e 0 objetos no bucket; ninguém veio buscar →
+solta sozinha aos 120 s; duas fotos seguidas no mesmo produto → duas prévias, uma por asset.
+
+**O que as provas estruturais NÃO alcançam, e fica para a prova ao vivo:** o gancho é código de React — o que
+ele faz dentro dos três cards (a foto na hora, a troca pela miniatura sem piscar, 0 px cortados medidos na
+tela) só o navegador mostra.
+
+*Evidência: `scratchpad\evidencias\produto-diz-item0\`.*
+
+**Estado, no fim de 02/10:** escrito e provado estruturalmente; **não commitado** — espera a prova ao vivo, que
+espera o bastão do navegador. Com a F1 por cima, as mesmas 31 provas seguem verdes
+(`numeros-item0-estrutural-0210-com-a-f1-3.md`); uma delas foi refinada no caminho — pedia *«nenhum
+`useEffect`»* nos quatro cards, e o de Produto ganhou um legítimo, o que busca a leitura guardada. O que ela
+quer dizer é *«nenhuma cópia da lógica da foto»*, e é isso que ela confere agora. A rodada que acusou fica
+arquivada ao lado (`…-0210-com-a-f1.md`).
+
+### 02/10/2026 — O aviso de público: a função com a lista v2, provada antes de qualquer tela
+
+**0 ⚡.** `lib/product-reading/audience-terms.ts` — duas funções puras: uma **acha** (devolve posições, nunca
+texto) e uma **remove** (um achado por vez). Sem rede, sem relógio. O card só as desenha.
+
+**Provado — 16 provas de resumo sobre 104 casos, 0 falhas** (`aviso-de-publico-0210.md`):
+
+| | |
+|---|---|
+| os 17 casos do dono | **10 de 10** que não podem acender não acendem; **7 de 7** que acendem, acendem — com a entrada, o destaque e o resultado da remoção de cada um |
+| vermelho → verde | a proposta de 27/09 (a do plano no `deeac04`) erra **7 dos 17** — acende o Pijama Baby Doll, a Baby Look, a Rosa Bebê e o Pingente Petite, e deixa passar «Fem», «Veste 38 a 44» e «Size: M». A v2 erra **0** |
+| as leituras reais da F0 (F1.7) | **5 de 5, exatas:** «infantil» / «children's» nas duas do Haiku que inventaram público — até no nome —, «feminina» / «women's» na do Flash, e **zero** nas duas limpas |
+| como casa | **33 de 33** regras, cada uma com a sua entrada |
+| como remove | **18 de 18** costuras — os espaços, a vírgula que sobra, o ponto de uma frase que saiu inteira, o parêntese vazio, o hífen de um nome em forma de slug |
+
+**Três leituras que eu fiz da lista, e digo que fiz** — nenhuma muda os 17 casos; mudam os vizinhos:
+
+1. **O possessivo acompanha o termo mesmo onde a lista não escreve `('s)`.** «A woman's blouse» destaca
+   «woman's», e a remoção leva o `'s` junto. Tirar «woman» e deixar «A 's blouse» seria pior que não tirar.
+2. **O hífen é fronteira de palavra.** É o que faz «infanto-juvenil» e «baby-doll» casarem — e é o que faz
+   «man-made» acender «man».
+3. **Um termo e um gatilho que se tocam viram um destaque só.** «Plus Size G» é um achado, não dois
+   sobrepostos: um clique, uma remoção.
+
+📌 **Os vizinhos — o que a v2 pega a mais e o que deixa passar. É a função fazendo o que a lista manda; a
+decisão é do dono, numa v3 se ele quiser.** Catorze casos medidos, na seção F da evidência:
+
+- **acende, e talvez não devesse:** «Couro *man*-made» · «Estampa do *Homem*-Aranha» · «Tecido *baby*-soft» ·
+  «Vestido lilás *bebê*» (as exceções de cor são rosa, azul, amarelo e verde) · «Capa: *fits 15* inch» ·
+  «Conector *female* USB»;
+- **não acende, ou acende só um pedaço:** «Veste **do** 38 ao 44» («do» fica entre o gatilho e o valor) ·
+  «Tamanho**s**: P, M, G» (o gatilho é singular) · «Tamanho P, M **e G**» («e» não é separador) · «sizes S **to
+  XL**» · «Tamanho P **M G GG**» (só espaço não é separador) · «Roupas **infantis**» (a lista tem «infantil») ·
+  «Tamanho **G1**» · «Conjunto Tamanho **(M)**».
+
+### 02/10/2026 — F1 escrita e provada estruturalmente — aberta, à espera da migration, da tela e da metade do dono
+
+**0 ⚡ — nenhum pedido saiu desta máquina, e nenhuma chave foi lida.** Saldo **3.190 ⚡**, igual ao da manhã.
+A F1 do [`plano-produto-diz.md`](plano-produto-diz.md) está escrita por inteiro e **não está commitada**: tem
+portão que autoriza gasto e caminho que cobra, e fica aberta até a metade do dono (regra 8).
+
+**O que existe na árvore de trabalho:**
+
+| | onde |
+|---|---|
+| a migration — `extractions` aprende produto; o padrão da lista de produto; `record_product_reading` | `supabase/migrations/20261002121933_product_readings.sql` |
+| o script de travas para o SQL Editor (`BEGIN … ROLLBACK`, 23 casos) | `supabase/travas/f1-leitura-de-produto.sql` |
+| o contrato v2, byte a byte; os tetos; o «só no vazio»; o portão; a foto; a ação; o gesto do clique; o catálogo; o aviso | `src/lib/product-reading/` — 10 arquivos |
+| o adaptador de leitura do Google; o registro de leitura de produto; o custo real; o catálogo da lista | `lib/providers/google.ts` · `registry.ts` · `types.ts` · `lib/ai/pricing.ts` · `catalog.ts` |
+| o card — Nome · Fotos · Descrição · seletor · «Ler a foto · N ⚡» · o aviso de público | `components/nodes/input-product-node.tsx` · `use-product-reading-catalog.ts` · `lib/i18n/pt-BR.ts` |
+| o teto da descrição na rota de geração (400 → 2.000, a mesma constante do card) | `lib/generation/canvas-generate.ts` |
+
+**O banco de ensaio — por que a migration não é uma aposta.** A migration é a única peça do lote que eu não
+rodo: quem aplica é o dono, e a função que ela cria é a que cobra. Então ela rodou — num **Postgres de
+verdade, em memória** (PGlite, instalado só no scratchpad), com um preparo que imita o que o Supabase traz
+(papéis, `auth.users`, `auth.uid()` com a definição deles) e **as 39 migrations de produção por baixo**,
+cortadas e aplicadas pelo separador do **próprio Supabase CLI 2.112.0**, a versão do projeto.
+
+- **O chão é o mesmo:** seis impressões digitais — as 14 linhas do catálogo, as 64 colunas de seis tabelas,
+  as 28 travas de quatro, o corpo de `record_extraction`, os gatilhos e as políticas — **iguais** nos dois
+  lados, a de produção lida pelo MCP, só leitura.
+- **Tudo ou nada, lido na fonte do CLI:** um arquivo sem `CREATE INDEX CONCURRENTLY`, `VACUUM` e parentes é
+  **um** `BEGIN … COMMIT`, com a linha do histórico dentro. O arquivo tem 31 instruções e nenhuma delas quebra
+  o lote. Uma variante com o Sonnet marcado como padrão **recusa na última linha e não deixa nada**.
+- **`record_extraction` não muda:** o corpo, byte a byte, antes e depois.
+- **As três camadas do RAISE EXCEPTION,** cada recusa com a sua frase e o seu código: **50 provas, 0 falhas**
+  (`f1-1-travas-do-banco-0210.md`). E o script que o dono roda foi ensaiado inteiro: **23 de 23**, mais os
+  testes de sabotagem do próprio script (`f1-1-script-de-travas-0210.md`).
+
+📌 **Um desvio do texto do plano, dito:** o plano pedia *«o que um CHECK não alcança vira trigger»* para o
+padrão da lista de produto. Um CHECK alcança — *marcado ⇒ ligado e de extração* —, e *«no máximo um»* é um
+índice único parcial. Ficou assim: duas travas declarativas em vez de um gatilho. O gatilho que existe é o da
+**posse** (a foto e o projeto de uma leitura de produto são de quem a gravou), que um CHECK de fato não alcança.
+
+**A leitura, de ponta a ponta, sem rede — 87 provas, 0 falhas** (`f1-leitura-0210-7.md`). O que roda é o
+código do repositório: o clique, o portão, a ação, **os dois adaptadores com os SDKs deles**, e a função do
+banco que cobra. Simuladas, só as duas pontas que sairiam da máquina — o provedor (um `fetch` falso) e o
+PostgREST (um tradutor que roda cada pedido **como** o usuário, com o RLS valendo).
+
+| | |
+|---|---|
+| **F1.2** — registro e padrão | vermelho (`deeac04`): não existe leitura de produto, e o Google é `no_adapter`. Verde: o Google **lê produto e não lê personagem**; a lista abre no **3.7 Flash a 4 ⚡**; o Haiku fica selecionável. **Sem a chave do Google não há padrão** — a regra dos outros seletores cairia no Sonnet a 20 ⚡; a do produto fica sem modelo e desliga o botão |
+| **o portão** | 14 de 14 linhas da tabela-verdade — sem foto · campos cheios · lendo · sem modelo · sem saldo (dizendo quanto falta) |
+| **F1.3** — a ordem da ação | **14 recusas antes da chamada**, e nenhuma deixa nada: 0 pedidos, 0 linhas, 0 lançamentos. **9 falhas depois da chamada**, cada uma com **uma linha `failed` a 0 ⚡** e nenhum lançamento. O sucesso é **1** pedido, **1** gravação, **1** linha a 4 ⚡, **1** lançamento de −4 com `extraction_id` |
+| **o contrato** | o pedido que sai para o Google e para a Anthropic é **igual, campo a campo, ao que a F0 mandou** (`pedidos-rodada5.json`): sistema `99f41400…`, frase `6cd53a1f…`, schema `1d7cc33e…`, a foto `2cb6f65a…`, `image/webp` |
+| **F1.4** | dois cliques seguidos → o contador do provedor marca **1** |
+| **F1.5** — só no vazio | as quatro linhas, no card; e um Nome digitado **com a leitura no ar** é preservado |
+| **F1.8** — o rótulo | o card recebe a foto *«blusa-azul-de-linho-manga-curta»* e o Nome continua vazio; nos pedidos, **0** ocorrências de «linho»; **3** escritores do Nome em todo o código, nenhum lê `assets.label` |
+| **a foto** | o tipo vai pelos bytes (a linha diz JPEG, os dois pedidos saem WebP); uma foto de 18,6 MB é reduzida a 2.576 px antes de ir |
+| **o build** | `lint`, `typecheck` e `build` passam; o contrato de leitura está em **0** arquivos do pacote do navegador |
+
+**Vermelho → verde do portão — sete mutantes, um por trava.** Cada mutante é o arquivo do repositório com
+**uma** troca de texto, gravado fora do repositório e rodado no mesmo cenário:
+
+| a trava | código de verdade | sem a trava |
+|---|---|---|
+| um clique, uma chamada (a marca «lendo») | 1 chamada · 4 ⚡ | **2 chamadas · 8 ⚡** |
+| R1 — o preço que o botão mostrava | recusado, 0 ⚡ | o botão dizia 4, **a carteira perdeu 6** |
+| saldo antes da chamada | 0 pedidos ao provedor | **1 pedido** — pagaríamos o provedor por quem não tem saldo |
+| só no vazio, no servidor | recusado, 0 ⚡ | **4 ⚡ por uma leitura que não escreve nada** |
+| o saldo na tela só desce | fica em 10 | **sobe para 3.124** |
+| a resposta perdida trava o botão | 1 débito | **2 débitos pela mesma foto** |
+| sem retentativa por baixo do SDK | 1 pedido | **5 pedidos** — o achado da entrada seguinte |
+
+**Vermelho → verde do «não cobra em falha» — três travas.** Quem decide o que uma falha custa é a função do
+banco; atrás dela, o CHECK `extractions_failed_is_free`; na frente, a ação, que só chama `succeeded` depois de
+validar a resposta. Num banco de ensaio à parte: **sem a função e sem o CHECK, a mesma falha lança −4**; sem
+uma só das duas, a outra segura; e sem a validação da ação, a função **recusa com nome** e nada é cobrado.
+
+**Seis coisas que o plano não pedia e que o dinheiro pediu:**
+
+1. **O preço que o botão mostrava viaja no pedido — e só consegue recusar.** É o R1 como mecanismo: a página
+   aberta com o catálogo velho não cobra outro número; o clique é recusado, e o card recarrega o catálogo.
+2. **Cada clique tem um id** (`tentativa`), gravado com a leitura. É por ele — e não por *«uma leitura deste
+   card no último minuto»* — que um card pergunta pela leitura **daquele** clique.
+3. **A resposta perdida.** Quando a chamada não volta, a leitura pode ter sido feita e cobrada. O card **não
+   diz «nada foi cobrado»** — ele não sabe —, **desliga o botão**, e pergunta ao servidor, de graça. Só passados
+   **120 s** do clique (o teto da função é 60), com o servidor respondendo que a leitura não existe, ele diz
+   *«nenhuma leitura deste clique foi gravada, e nada foi cobrado»*.
+4. **O silêncio do banco não é recusa.** Uma recusa da função tem código; uma chamada que não volta, não. A
+   ação devolve `unconfirmed`, e o card confere em vez de afirmar.
+5. **O saldo na tela só desce por uma resposta de leitura.** Duas leituras ao mesmo tempo podem voltar
+   trocadas, e a atrasada traria o saldo de antes da outra. *(E é por atribuição, não por subtração: o aviso
+   da carteira já entrega a figura, e subtrair por cima dela tiraria os 4 ⚡ duas vezes.)*
+6. **Uma carteira que não pôde ser lida não é uma carteira vazia.** A consulta do saldo falha → a leitura
+   para com «falhou», sem chamar o provedor — e sem a frase *«a carteira tem 0 ⚡»*, que o `ESTADO` já lista
+   como a mentira sobre dinheiro que a casa deve.
+
+**Duas correções ao que o plano dizia, medidas no dia:**
+
+- **O limite de foto da Anthropic é 10 MB em base64, não 5** (a documentação, lida em 02/10; 5 MB vale para
+  Bedrock e Google Cloud). A foto vai como está guardada; só é reduzida acima de 7 MB ou de 8.000 px.
+- **`NO_RETRIES` não desliga a retentativa da API de Interactions** — a entrada seguinte.
+
+📌 **O que as provas estruturais NÃO alcançam — e fica aberto:**
+
+- **F1.6, a tela:** depende da migration aplicada e do navegador. Sem a migration, a lista de produto vem
+  vazia e o botão nasce desligado — **provado**: código novo sobre o banco de hoje não cobra e não derruba os
+  outros seletores.
+- **F1.1 em produção:** o script de travas, rodado pelo dono no SQL Editor.
+- **Os provedores de verdade:** a metade do dono, até 40 ⚡.
+
+📌 **Pontos para o dono, antes da F2:**
+
+- **O buraco da F2.** O card mostra o Nome e a Descrição em português. **O inglês da leitura fica no
+  servidor, e o card nunca o mostra** — então um «women's» inventado no inglês não acende aviso nenhum. A
+  linha gravada guarda o que a função acha nas três frases (`summary.publico`), e a regra proposta para a F2 é:
+  *usar o inglês da leitura só se o português for idêntico **e** a função não achar nada no inglês*; senão,
+  traduzir o que está no campo.
+- **Entre a F1 e a F2, a Descrição viaja pelo caminho da antiga Instrução:** traduzida no lote da cena e
+  colada como *«Use the product shown in reference image N, {descrição}»*. É o que a chave `instrucao` sempre
+  fez; a forma nova é a F2.
+- **`record_extraction` passa a aceitar o `gemini-3.7-flash`** no banco (ele ganhou `extraction`). Quem impede
+  o Gemini de ler personagem é o registro do app, como sempre foi para OpenAI e xAI — não o banco.
+- **O resto da resposta perdida:** se a página for recarregada com o card nesse estado, o pedido de
+  conferência se perde. A leitura, se foi feita, está gravada e cobrada em `extractions`; o card não a recebe.
+  Guardar o id do clique no próprio card resolveria, ao custo de pôr no documento uma coisa que não é do
+  documento — não fiz.
+
+*O andaime:* `database.types.ts` leva **9 blocos marcados `SAI ANTES DO COMMIT`** — as colunas e a função que a
+migration vai criar, para o `typecheck` rodar antes de ela ser aplicada. O arquivo é **regerado do banco**
+depois (regra 2), e a trava do `git grep` do fechamento acusa a marca enquanto ela existir.
+
+*Duas coisas que fiz mal com a evidência, ditas:* **(1)** apaguei os arquivos das três primeiras rodadas de
+ensaio da prova da leitura — inclusive a primeira, que foi onde os cinco pedidos apareceram. O achado está
+reproduzido, melhor, na prova final e na medida da entrada seguinte; o arquivo do primeiro avistamento não
+existe mais. **(2)** Ao pôr nos harnesses novos a recusa de sobrescrever, testei a recusa **antes** de consertar
+o tratador de queda — e o tratador gravou uma nota de erro por cima de `f1-leitura-0210-3.md`. O arquivo foi
+**restaurado da saída padrão daquela mesma rodada**, que estava guardada (o harness imprime cada linha que
+grava), e diz isso no topo; as rodadas `0210-4` e `0210-7` (a última, depois da v3 e do conserto do Google, e a citada nas
+provas acima) **são a mesma prova gravada pelo próprio harness, sem restauração**. Os dois harnesses agora recusam sobrescrever, e a recusa foi conferida: o arquivo fica intacto.
+
+*Evidência: `scratchpad\evidencias\produto-diz-f1\`.*
+
+### 02/10/2026 — 📌 ACHADO: a API de Interactions do Google repete o pedido sozinha — e o «uma tentativa só» dos adaptadores não chega nela
+
+**Como apareceu.** Na primeira rodada da prova da F1, o provedor simulado respondeu HTTP 500 à leitura de
+produto — e o contador marcou **cinco pedidos para um clique**. O adaptador pedia uma tentativa só
+(`retryOptions: NO_RETRIES`), como os outros dois do mesmo arquivo.
+
+**A causa, lida na fonte do SDK instalado** (`@google/genai` 2.16.0): `interactions.create` não passa pelo
+cliente HTTP clássico. O SDK monta um segundo cliente para ela e lhe entrega **só o tempo-limite**; cada
+operação desse cliente traz a própria política — **até 4 repetições**, em 408, 409, 429, qualquer 5xx **e queda
+de conexão**, com esperas de 0,5 s a 8 s. A única porta é a opção **por chamada**: `{ maxRetries: 0 }`.
+
+**Medido, com o SDK de verdade contra um `fetch` falso** (`retentativa-google-0210.md`) — pedidos HTTP por
+**uma** chamada do nosso código:
+
+| o provedor responde | leitura de produto (F1) | geração de IMAGEM | geração de TEXTO (Roteiro) |
+|---|---|---|---|
+| HTTP 500 · 503 · 429 · a conexão cai | **1** | **5** | **5** |
+| HTTP 400 · 403 · tudo certo | 1 | 1 | 1 |
+
+**O que eu fiz:** a leitura de produto, que é código deste lote, passa a opção por chamada — 1 pedido, com
+prova vermelho→verde (5 → 1).
+
+**~~O que eu NÃO fiz, e é decisão do dono~~ — ✅ RESOLVIDO no retorno do dono, no mesmo dia:** o conserto nos dois
+adaptadores em produção (a mesma opção, duas linhas) foi decidido por ele e **entrou no `19dc765`**, com prova
+HEAD × conserto — entrada «O conserto do Google no ar», logo abaixo. O que o texto original dizia: não mexi na hora
+porque é o caminho que submete geração paga (regra 8) e não era o pedido do lote.
+
+**O que significa, sem aumentar:**
+
+- **Para o Spark do usuário, nada.** Ele sai uma vez, pela função do banco, depois que a chamada volta.
+- **Para a conta do Google, é o caso que o comentário do adaptador diz impedir** — *«A retried image generation
+  is a second image billed by Google»*. Um 5xx puro em geral não é cobrado; **a conexão que cai depois de o
+  Google gerar** é o caso que pode ser, e é reenviada até 4 vezes.
+- **Para a R2.3** — *nunca resubmissão automática: o que refaz é o clique, nunca o efeito* —: o motorista de
+  lote a cumpre; o SDK, por baixo dele, não.
+- **Não há registro de que tenha acontecido.** É uma propriedade do código, não um incidente: nada no banco
+  mostra geração duplicada, e eu não procurei na fatura do Google — que só o dono vê.
+
+**Um vizinho, só registrado:** um **403** da API de Interactions é classificado como `provider`, não como
+`not_configured` — o erro dela é de outra classe (`APIError`), e o `instanceof ApiError` do adaptador nunca é
+verdade para ele. É a explicação do comentário de 09/08 no próprio arquivo (*«the SDK had thrown something
+that was not an ApiError»*). Só muda a frase na tela.
+
+### 02/10/2026 — 🔒 DECISÕES do dono, no retorno da pausa: o Google entra já, a v3 do aviso, a prova de tela sem chaves
+
+O dono leu o relatório de 02/10 e respondeu. **Nada de migration ainda.** As seis decisões:
+
+1. **Commit de documentação aprovado** — `CLAUDE.md`, `docs/ESTADO.md`, `docs/decisoes.md`,
+   `docs/plano-produto-diz.md`, por caminho explícito. **Não mexer em `database.types.ts`** (nada de tirar e repor
+   o andaime); antes de qualquer commit de **código**, `grep -r "SAI ANTES DO COMMIT"` tem de dar 0. E
+   registrar *«quem cobra a leitura de produto»* como **PENDENTE de decisão dele** — a entrada logo abaixo.
+2. **Antes de aplicar a migration, três respostas:** (a) como a leitura de personagem cobra hoje; (b) o código
+   no ar contra o banco com a migration; (c) os 14 vizinhos, com entrada e resultado. → entradas abaixo.
+3. **O achado do Google entra já**, commit próprio, 0 ⚡, antes de a F1 ir ao ar — as duas linhas no gerador de
+   imagem e no de texto. **Prova ao vivo na primeira imagem paga da F3.** → `19dc765`, entrada abaixo.
+4. **A lista v3** do aviso, com prova vermelho→verde. → entrada abaixo.
+5. **Prova de tela com o servidor da 5599 subindo com as chaves da Google e da Anthropic em branco.** E a
+   **condição da F2:** *o texto que chega ao prompt é exatamente o que o card mostra e o aviso varre.* → no plano.
+6. **A F3 usa um card já lido na F1 ou um texto colado; o teto de 40 ⚡ não muda.** → no plano; a leitura extra
+   da blusa (+4 ⚡) sai das contas.
+
+📌 **Uma conferência do gate que fiz, e digo como:** o dono exige `grep -r "SAI ANTES DO COMMIT"` = 0 antes de
+commit de código, e a árvore de trabalho tem o andaime de tipos (9 blocos) — que ele mandou não mexer. Fiz a
+conferência no **índice**, que é o que o commit leva (`git grep --cached`): **0**. Na árvore de trabalho, os 9
+blocos continuam só em `database.types.ts`, que não entrou no commit. Se a leitura dele era a literal (0 na
+árvore inteira), o commit do Google não podia sair — e a decisão 3 pedia que saísse. Digo qual leitura segui.
+
+### 02/10/2026 — ✅ O conserto do Google no ar (`19dc765`): o «uma tentativa só» dos adaptadores não valia para o SDK do Google
+
+**0 ⚡.** O comentário de `google.ts` dizia *«One attempt, no retries»*, e `NO_RETRIES` está lá, passado ao
+construtor. **Mas valia para o comentário, não para as chamadas:** `ai.interactions.create`, que os três
+adaptadores do Google usam, não passa pelo caminho HTTP que `NO_RETRIES` configura. O SDK monta um segundo
+cliente para essa API, entrega a ele só o tempo-limite, e cada operação traz a política dela — até 4
+repetições em 408, 409, 429, 5xx e queda de conexão. **A única porta é a opção por chamada:**
+`{ maxRetries: 0 }`.
+
+**O que foi commitado:** `src/lib/providers/google.ts`, **só ele** — o HEAD mais a constante `NO_INTERACTION_RETRIES`
+(com o comentário que diz tudo isto) e a opção nas duas chamadas que já existiam. O adaptador de leitura, que é
+da F1 e não está commitado, **ficou de fora**: o arquivo foi montado do HEAD e posto no índice por hash
+(`git update-index --cacheinfo`), sem tocar na árvore de trabalho. Conferido: o conteúdo do índice tem o mesmo
+md5 do arquivo testado (`280d0d82…`), o commit tem 1 arquivo, e o que a árvore de trabalho ainda difere do novo
+HEAD em `google.ts` é só o adaptador de leitura.
+
+**Provado — 9 de 9, HEAD × conserto, o SDK de verdade contra um `fetch` falso** (`google-retentativa-conserto/conserto-vs-head-0210.md`):
+
+| o Google responde | imagem · HEAD | imagem · conserto | texto · HEAD | texto · conserto |
+|---|---|---|---|---|
+| 408 · 409 · 429 · 500 · 503 · a conexão cai | **5** | **1** | **5** | **1** |
+| 400 · 403 | 1 | 1 | 1 | 1 |
+| 200 | 1 pedido | 1 pedido | 1 pedido | 1 pedido |
+
+No 200, além do número: **o corpo do pedido é igual, caractere por caractere, e a resposta do adaptador é
+idêntica** (a imagem — os mesmos bytes em base64 e o mesmo tipo —, o texto e os tokens). E: o sinal de
+tempo-limite continua no pedido; tirada a constante e a opção, o arquivo é o HEAD **letra por letra** (comparado
+sem espaços); nenhum vestígio do adaptador de leitura.
+
+**O que o conserto NÃO muda, e vale dizer:** a classificação do 403 (continua `provider`, não `not_configured` —
+o erro da API de Interactions é de outra classe; só muda a frase na tela) e o tempo-limite (50 s, uma tentativa).
+**O que muda para quem usa:** uma geração cujo Google responde 5xx agora falha na primeira, em vez de esperar até
+~8 s a mais por tentativas que o usuário não pediu — e o clique de novo é do usuário (R2.3).
+
+**Por que commitou sem a metade do dono, contra a regra 8:** a regra manda esperar a prova ao vivo quando o
+caminho pode submeter a um provedor pago. O dono decidiu, expressamente, que entra já — **a mudança só pode
+reduzir pedidos** (nunca cria um) — e que a prova ao vivo é a **primeira imagem paga da F3**. Fica registrada
+como pendente lá: na F3, o painel do Google tem de mostrar **um** pedido por imagem.
+
+Esta entrada **substitui** o parágrafo *«O que eu NÃO fiz, e é decisão do dono»* da entrada de achado logo acima.
+
+### 02/10/2026 — ✅ A lista v3 do aviso de público — feita e provada vermelho → verde
+
+**0 ⚡, e não commitada** (é código da F1). As cinco mudanças que o dono mandou, depois de ler os 14 vizinhos:
+«tamanhos» como gatilho · «infantis» · as exceções de cor «lilás / lavanda / salmão / menta bebê» · o conector
+«do» antes do número («Veste do 38 ao 44») · **termo ligado por hífen a outra palavra não conta, exceto
+«plus-size»**. *O resto da v2 fica.*
+
+**Provado — 14 provas, 0 falhas** (`aviso-de-publico-v3-0210.md`; vermelho = a v2, arquivada byte a byte em
+`harness/_v2/`):
+
+- **O resto da v2 fica:** os 17 casos do dono, as 33 regras de casamento e as 18 costuras respondem **igual** na
+  v3 — com **uma exceção, consequência direta da regra do hífen** (abaixo).
+- **Os 14 vizinhos:** 7 mudam, 7 ficam — a tabela está na entrada seguinte.
+- **Cada item com positivos e negativos:** «Tamanhos disponíveis» e «Todos os tamanhos» não acendem (gatilho sem
+  valor); «Infantilizado» não acende (palavra inteira); «Macacão para bebê» e «Vestido laranja bebê» continuam
+  acendendo «bebê» (a exceção é só das quatro cores); «Veste do tronco aos quadris», «Veste do M», «Camiseta do 38»
+  e «Veste de 38 a 44» não acendem (o conector é só «do», só antes de número, e exige o gatilho); «Plus-size» e
+  «Vestido-plus-size-azul» acendem; «Blusa - Infantil - Azul» acende «Infantil» (hífen com espaços é travessão).
+- **As leituras reais da F0: 5 de 5, exatas**, na v3 também.
+
+📌 **O que a regra do hífen custa, e é do dono decidir:** num nome em forma de **slug** — *«blusa-infantil-azul»*,
+*«vestido-feminino-floral»*, *«camiseta-masculina-basica»* — o termo está sempre ligado por hífen e **não acende
+mais** (acendia). São as únicas duas costuras das 68 entradas do "resto da v2" que mudam. O Nome que a leitura
+escreve tem espaços; o risco é o nome **digitado ou colado** em slug — e o catálogo dele usa slugs (o rótulo da
+foto da F0 é um). Duas saídas: aceitar o custo, ou tratar um texto **sem nenhum espaço** como slug e deixar a
+regra de fora dele. Não decidi.
+
+📌 **Duas leituras minhas da regra, ditas:** (1) *«infanto-juvenil»* segue acendendo — é a grafia antiga do próprio
+termo da lista («infantojuvenil»), não um termo ligado a *outra* palavra (a leitura literal o apagaria); (2) a
+regra vale para os **termos de palavra** (faixa etária, gênero, frases de tamanho), **não** para a sequência de
+tamanho, cuja gramática o dono já escreveu aceitando o hífen («Size-L», «sizes 6-12»). Qualquer das duas se
+inverte numa linha.
+
+### 02/10/2026 — Os 14 vizinhos da v2, com entrada e resultado
+
+(Resposta 2c. A coluna «v3» é a lista nova.)
+
+| entrada | v2 destaca | v3 destaca | remoção (v3) |
+|---|---|---|---|
+| «Couro man-made» | «man» | nenhum | — |
+| «Estampa do Homem-Aranha» | «Homem» | nenhum | — |
+| «Tecido baby-soft» | «baby» | nenhum | — |
+| «Vestido lilás bebê» | «bebê» | nenhum | — |
+| «Capa: fits 15 inch» | «fits 15» | «fits 15» | «Capa: inch» |
+| «Conector female USB» | «female» | «female» | «Conector USB» |
+| «Veste do 38 ao 44» | nenhum | «Veste do 38 ao 44» | *(vazio)* |
+| «Tamanhos: P, M, G» | nenhum | «Tamanhos: P, M, G» | *(vazio)* |
+| «Tamanho P, M e G» | «Tamanho P, M» | «Tamanho P, M» | «e G» |
+| «sizes S to XL» | «sizes S» | «sizes S» | «to XL» |
+| «Tamanho P M G GG» | «Tamanho P» | «Tamanho P» | «M G GG» |
+| «Roupas infantis» | nenhum | «infantis» | «Roupas» |
+| «Tamanho G1» | nenhum | nenhum | — |
+| «Conjunto Tamanho (M)» | nenhum | nenhum | — |
+
+### 02/10/2026 — ⏳ PENDENTE de decisão do dono: quem cobra a leitura de produto
+
+**Registrado como o dono mandou. Nada foi mudado na migration.** A pergunta nasceu de uma frase do roteiro de
+02/10 (*«`record_generation` é o único débito»*) que eu li pelo plano (`record_product_reading`) e disse que li.
+
+**A. Como a leitura de personagem cobra hoje** (resposta 2a). Por **função própria**, não por `record_generation`:
+`public.record_extraction` (migration `20260808184059`), chamada por `runExtraction`
+(`lib/extraction/actions.ts:308` e `:329`). Ela: exige sessão; confere que a personagem é do usuário (`EX002`);
+**lê o preço de `ai_models.extraction_sparks`**, nunca do chamador (`EX003` se o modelo não é de extração
+ligado); falha custa 0; confere o saldo com a carteira travada (`for update`) antes de debitar (`EX001`); grava a
+linha em `extractions` e **um lançamento `debit`** em `ledger_transactions` com `extraction_id`,
+`cost_real_cents` e `cost_charged_cents` — o gatilho do ledger projeta o saldo. `record_generation` é outra
+coisa: grava em `generations` (a história da mídia gerada) e cobra pelo preço da imagem/vídeo/texto.
+
+**B. `record_product_reading` cobra pelo mesmo caminho append-only?** Sim — é a irmã, escrita sobre a mesma
+estrutura: mesma coluna de preço (`extraction_sparks`), mesma regra de falha grátis, mesma trava de carteira, o
+mesmo `insert into ledger_transactions` com `extraction_id` (`-(v_charged * cents_per_spark())`), e o ledger
+continua recusando UPDATE/DELETE. **Diferenças, todas deliberadas:** o descritivo do extrato (*«Leitura de produto
+· {nome}»*); as recusas `EX004` (projeto) e `EX005` (foto), porque a função é `security definer` e o RLS não
+confere por ela; e a linha de `extractions` nasce com `subject = 'product'`. `record_extraction` ficou
+**byte a byte igual** (impressão digital conferida contra a produção).
+
+**As três saídas, e o que cada uma custa:**
+
+| | o que é | a favor | contra |
+|---|---|---|---|
+| **A** *(o que está construído e provado)* | `record_product_reading`, função nova, irmã | o caminho que cobra a personagem **não é tocado** — provado igual antes e depois; leitura de produto e de personagem não podem se quebrar uma à outra | ~60 linhas da lógica de cobrança existem em dois lugares; uma regra nova de cobrança precisa entrar nos dois |
+| **B** | `record_extraction` aprende `subject` (uma função para as duas) | um caminho de cobrança só | **mexe na função que cobra em produção hoje**; a prova de que a personagem não mudou deixa de ser "o arquivo é o mesmo" e vira "o comportamento é o mesmo" |
+| **C** | `record_generation` (a frase do roteiro) | seria o mesmo caminho de toda geração | a leitura passaria a morar em `generations`, a história de **mídia gerada**, e `extractions` — que já responde *«o que a IA leu e o que escreveu»* — ficaria sem a leitura de produto. Pede também um preço por tipo de trabalho. **Não investiguei as travas de `generations`** (resultado obrigatório etc.) a fundo: se o dono quiser C, é a primeira coisa a ler |
+
+**Minha recomendação, sem decidir por ele: A** — é o que está provado, e a duplicação é pequena e conferida por
+um script de travas de 23 casos. **Se o dono escolher B ou C, a migration muda e as provas desta F1 refazem-se.**
+**Até lá, a migration não deve ser aplicada.**
+
+### 02/10/2026 — O código que está no ar contra o banco com a migration (resposta 2b)
+
+**0 ⚡.** O código é o `19dc765` (o `deeac04` + o conserto do Google, que não toca nenhum fluxo abaixo), extraído do
+git para `scratchpad/head-no-ar/` — **nenhum arquivo da F1**. O banco é o de ensaio nas 39 migrations de produção,
+e **os mesmos fluxos rodam antes e depois de a migration ser aplicada sobre o mesmo banco**, com linhas antigas
+já dentro (`hoje-contra-a-migration-0210.md`). **9 de 9 provas.**
+
+- **A migration aplica sobre linhas antigas:** 3 extrações de personagem gravadas pelo `record_extraction` de hoje
+  sobrevivem **iguais, coluna por coluna**, e ganham `subject = 'character'` pelo padrão; a carteira não se mexe.
+- **Nenhuma coluna `NOT NULL` sem padrão.** As colunas tocadas são 6. As duas `NOT NULL` têm padrão:
+  `extractions.subject` (`'character'`) e `ai_models.is_product_reading_default` (`false`). `entity_id` passou
+  a **aceitar** nulo (mais frouxa). `project_id`, `node_id` e `reading` nascem nulas. As travas novas
+  (`subject_shape`, `node_id_not_blank`, `reading_shape`, `reading_matches_outcome`, a do padrão de produto) só
+  recusam o que o código antigo nunca grava: uma linha de personagem tem `entity_id`, sem projeto/card/leitura —
+  e o gatilho novo só dispara com `subject = 'product'`.
+- **Os fluxos de hoje, antes e depois — 10 de 12 idênticos:** extração **por foto** (Sonnet, 20 ⚡) e **por texto**
+  (Haiku, 4 ⚡) — a ação de verdade, de ponta a ponta, uma linha e um lançamento cada; a **falha do provedor**
+  (HTTP 400, grátis, uma linha `failed`); o **saldo curto**; a **personagem alheia**; o saldo que a tela lê;
+  `record_generation` da **imagem do canvas** e da **imagem canônica** (75 ⚡ cada, 2K) e a **falha grátis** dela;
+  o `INSERT` direto em `extractions` com as colunas de ontem.
+  **As duas que mudam, e por quê:** (1) o 3.7 Flash na ficha de personagem era `invalid` (o modelo não tinha
+  `extraction`) e passa a `not_configured` (tem, e o **registro do app** — só a Anthropic lê personagem — é quem
+  recusa): 0 pedidos, 0 linhas, 0 ⚡; (2) o `INSERT` de uma extração **sem personagem**, que já era recusado,
+  continua recusado — muda quem recusa (`23502` NOT NULL → `23514` a trava `extractions_subject_shape`).
+- **Os catálogos:** imagem, vídeo e texto — os que geram e cobram — **idênticos**, preço por tamanho incluído. O de
+  extração: saem as duas linhas `gemini-2.5-*`, entra o `gemini-3.7-flash` a 4 ⚡ **como `no_adapter`** (aparece
+  apagado, «(em breve)»). O padrão da ficha de personagem continua o Sonnet.
+
+📌 **O que NÃO foi rodado de ponta a ponta, dito:** as duas `record_generation` foram chamadas **com os argumentos
+exatos que `canvas-generate.ts` e `generation/actions.ts` mandam** — a função do banco, que é o que a migration
+poderia afetar —, **não** pelas ações inteiras (que precisam de armazenamento, miniaturas e o gerador de imagem).
+A migration não toca `record_generation` (impressão digital igual), então a prova mira onde o risco está.
+
+📌 **Uma nuance que a prova trouxe:** o `gemini-3.7-flash` carrega `is_default = true` (é o padrão do **Roteiro**,
+texto). Na lista de extração ele passa a aparecer com essa marca — mas a regra da casa para escolher o padrão só olha
+fornecedores **prontos**, e o Google é `no_adapter` ali: o padrão da ficha continua o Sonnet. Se um dia o Google
+ganhar adaptador de personagem (resposta 9.3, hoje "não"), essa marca passa a importar.
+
 ## Segurança e navegador
 
 ### 27/09/2026 — 🔒 A regra 7 de Segurança deixa de ser frase: a sonda confere o GitHub

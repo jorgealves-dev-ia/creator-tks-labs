@@ -13,14 +13,23 @@
 > **✅ F1a FECHADA em 27/09** — 37 provas estruturais e **a prova ao vivo inteira**, com o **Ctrl+V de
 > verdade**; dois defeitos que só a prova ao vivo achou foram consertados e reprovados no mesmo gesto (fim da
 > seção F1a). **Deixou uma dívida: a limpeza no caminho de falha do envio** — o arquivo que sobe e não é
-> registrado fica órfão no Storage. **✅ Paga em 01/10** (fim da seção F1a). **A F1 espera a revisão do dono da
-> lista de termos do item 9.**
+> registrado fica órfão no Storage. **✅ Paga em 01/10** (fim da seção F1a).
+>
+> **🟡 F1 ABERTA desde 02/10** — a lista do aviso foi revisada pelo dono (**v2**, no item 9), e a F1 está
+> **escrita por inteiro e provada estruturalmente, a 0 ⚡** (*O que a F1 tem — 02/10*, no fim da seção F1).
+> **Não está commitada**, de propósito: espera **(1)** o dono aplicar a migration, **(2)** a prova de tela, com o
+> navegador, e **(3)** a metade paga dele — **até 40 ⚡**, com o R1 escrito antes. **Dois pontos nasceram do retorno
+> do dono de 02/10:** a lista do aviso virou **v3** (feita e provada), e **o conserto do Google entrou em produção
+> à parte** (`19dc765`). **⏳ Pendente de decisão do dono, antes de a migration ser aplicada: quem cobra a
+> leitura de produto** — [`decisoes.md`](decisoes.md), 02/10.
 >
 > **Custo:** 0 ⚡ nas partes estruturais. **Pior caso R1 do percurso inteiro, registrado pelo dono
 > em 26/09: 87 ⚡ de preço — 79 ⚡ da carteira** (uma leitura pelo botão + uma imagem, saldo
 > 3.190 → 3.111) **+ 8 ⚡ de leituras fora do produto**, na F0 — somados no §7. *Depois o dono pediu
 > mais três leituras fora da carteira — a 2ª do Haiku na rodada 4 (+4) e as duas a mais do lado a lado
 > (+8): **99 ⚡ de preço; a carteira continua 79.** Custo real da F0 inteira: **11 centavos**, 0 Spark.*
+> **Em 02/10 o dono trocou a metade da F1** — de uma leitura (4 ⚡) para uma prova de **até 40 ⚡**: o pior caso
+> da carteira passa a **115 ⚡** (40 + 75), saldo **3.190 → 3.075** no teto — no §7.
 >
 > **Onde fica no mapa:** frente 1 do [`ROADMAP.md`](ROADMAP.md) §4 — a primeira das cinco até
 > o primeiro post publicado pelo sistema.
@@ -237,6 +246,10 @@ o mesmo do prompt do bloco —, e no pior caso os dois juntos dão da ordem de 1
 inglês *(estimativa, a ~4 caracteres por token)*: cabe na saída do tradutor. Se um dia não couber, a
 falha é a que já existe — `translation_failed`, **antes de qualquer Spark**.
 
+*(Feito na F1, 02/10: o card e a rota leem a mesma constante — `PRODUCT_DESCRIPTION_MAX = 2000`, em
+`lib/product-reading/limits.ts`. E colar além do teto **diz** quantos caracteres ficaram de fora: o campo corta,
+mas não em silêncio.)*
+
 ---
 
 ## 5. O que esta frente NÃO faz
@@ -264,7 +277,8 @@ falha é a que já existe — `translation_failed`, **antes de qualquer Spark**.
 |---|---|---|---|---|
 | 1ª | **F0** | o que o compilador envia hoje; o que Haiku e Gemini leem da foto da blusa — **e o padrão da lista de produto** | 0 ⚡ + ⚠️ **20 ⚡ fora do produto** (5 leituras) | ✅ **fechada em 27/09** — (a) byte a byte; (b) o lado a lado, 11 centavos reais na F0 inteira; **o padrão é o 3.7 Flash**, e o aviso de público entra na F1 (decisão do dono) |
 | — | **F1a** | o envio que lê os bytes — e o colar/arrastar imagem no canvas pelo mesmo caminho | 0 ⚡ | ✅ **fechada em 27/09** — 37 provas estruturais + a prova ao vivo, com o Ctrl+V real; dois defeitos achados ao vivo, consertados · **a dívida — a limpeza no caminho de falha — ✅ paga em 01/10** (fim da seção F1a) |
-| 2ª | **F1** | o card, o botão, o seletor e a leitura gravada — **com migration** | ⚠️ **4 ⚡**, a leitura do dono | ⬜ |
+| — | **item 0** *(lote de 02/10)* | Pose, Character Sheet e Produto ganham o conserto do Input de Imagem: a foto inteira, e a prévia local pelo seletor | 0 ⚡ | 🟡 **escrito e provado** (31 estruturais) · **espera a prova ao vivo** — e commit próprio. → [`decisoes.md`](decisoes.md), 02/10 |
+| 2ª | **F1** | o card, o botão, o seletor e a leitura gravada — **com migration** | ⚠️ **até 40 ⚡**, a metade do dono (era 4 ⚡ até 02/10) | 🟡 **aberta desde 02/10** — escrita por inteiro e provada a 0 ⚡ (87 + 50 + 23 + 16 provas); **não commitada**: espera a migration aplicada, a prova de tela e a metade do dono |
 | 3ª | **F2** | o compilador cola a descrição | 0 ⚡ | ⬜ |
 | 4ª | **F3** | a prova viva: a blusa aparece | ⚠️ **75 ⚡** | ⬜ |
 
@@ -637,7 +651,7 @@ um de pijama). **Nenhum dado foi alterado.**
 | | proposta | por quê |
 |---|---|---|
 | formatos | **JPEG, PNG e WebP**, lidos nos bytes | a interseção que os dois fornecedores da casa aceitam; GIF, HEIC e AVIF recusados com a frase dizendo quais entram |
-| tamanho | **até 10 MB** por imagem | o teto do botão (`MAX_BYTES`, `reference-picker.tsx:41`) — um caminho, um limite. ⚠️ A leitura da F1 manda a foto à Anthropic, cujo teto por imagem é menor (**5 MB, a conferir na documentação no dia**): a F1 reduz a foto com o `sharp` antes de mandar, ou recusa dizendo por quê |
+| tamanho | **até 10 MB** por imagem | o teto do botão (`MAX_BYTES`, `reference-picker.tsx:41`) — um caminho, um limite. ⚠️ A leitura da F1 manda a foto à Anthropic, cujo teto por imagem é menor (**5 MB, a conferir na documentação no dia**): a F1 reduz a foto com o `sharp` antes de mandar, ou recusa dizendo por quê. ***Conferido no dia, 02/10:** o teto da API da Anthropic é **10 MB em base64** (5 MB vale para Bedrock e Google Cloud) e **8.000 px** de lado. Base64 cresce um terço — então a F1 manda a foto como está guardada até **7 MB**, e só acima disso (ou de 8.000 px) a reduz a 2.576 px, em WebP* |
 | quantidade por gesto | **até 5** | o número do card de produto; acima disso o gesto inteiro é recusado **com o número** — nunca truncar em silêncio |
 | o que **não** entra | link arrastado de outra aba; imagem colada dentro de um campo de texto | buscar URL de fora seria um segundo caminho, e um servidor buscando endereço de terceiros; colar num campo de texto continua sendo colar texto |
 
@@ -914,17 +928,88 @@ entra:** a aba fechada **entre** a subida e o registro — aí nenhum código da
    foi colado ou digitado — a lista não pergunta de onde o texto veio. **A regra 2 fica no contrato:** o
    aviso é a segunda rede, não a troca da primeira.
 
-   **A lista proposta — o dono confere antes do código da F1:**
+   **A lista — v3, decidida pelo dono em 02/10/2026.** A v2 (a revisão dele da proposta de 27/09) é a base;
+   a v3 é a v2 mais cinco mudanças, decididas no mesmo dia depois que ele leu os 14 vizinhos (o que mudou
+   está logo abaixo; a proposta antiga fica no histórico do arquivo, `deeac04`). **O resto da v2 fica.**
 
    | grupo | português | inglês |
    |---|---|---|
-   | faixa etária | infantil · criança(s) · bebê(s) · menina(s) · menino(s) · juvenil · adolescente(s) · adulto(a)(s) | child · children('s) · kid(s)('s) · baby · babies · toddler(s) · girl(s)('s) · boy(s)('s) · teen(s) · teenager(s) · junior · adult(s) |
-   | gênero | feminino(a)(s) · masculino(a)(s) · unissex · mulher(es) · homem · homens | women('s) · woman · female · ladies('s) · men('s) · man · male · unisex |
-   | tamanho e modelagem | plus size · tamanho grande · tamanho único · gestante · maternidade · «tamanho» seguido de PP, P, M, G, GG, XG ou de um número | plus-size · plus size · petite · maternity · one size · «size» seguido de XS, S, M, L, XL, XXL ou de um número |
+   | faixa etária | infantil · **infantis** · infantojuvenil · criança(s) · bebê(s) · menina(s) · menino(s) · garota(s) · garoto(s) · juvenil · adolescente(s) · adulto(a)(s) · idoso(a)(s) | child · children('s) · kid(s)('s) · baby · babies · toddler(s) · girl(s)('s) · boy(s)('s) · teen(s) · teenager(s) · junior · adult(s) · senior · elderly |
+   | gênero | feminino(a)(s) · masculino(a)(s) · fem · masc · unissex · mulher(es) · homem · homens | women('s) · woman · female · lady · ladies('s) · men('s) · man · male · unisex |
+   | tamanho e modelagem | plus size · tamanho grande · tamanho único · gestante · maternidade · «tamanho», **«tamanhos»**, «tam», «tam.», «veste», «manequim» ou «numeração» seguidos de PP, P, M, G, GG, XG, XGG, EG ou de um número | plus-size · plus size · maternity · one size · «size», «sizes» ou «fits» seguidos de XS, S, M, L, XL, XXL, XXXL ou de um número |
 
-   **Como casa:** palavra inteira, sem diferença de maiúscula nem de acento (`bebe` acha `bebê`); a letra
-   solta de tamanho só conta depois de «tamanho» ou «size» — um «M» sozinho não é tamanho. **Como remove:**
-   tira a ocorrência e fecha os espaços (*"A children's short-sleeve blouse"* → *"A short-sleeve blouse"*).
+   **«petite» saiu da lista:** no catálogo de semijoias é o tamanho do pingente.
+
+   **As exceções — casadas ANTES dos termos, como frase, e nunca destacadas:**
+
+   | de quê | as frases |
+   |---|---|
+   | modelagem | baby doll · babydoll · baby look · babylook · baby tee · boy short(s) · boyshort(s) |
+   | cor | rosa bebê · azul bebê · amarelo bebê · verde bebê · **lilás bebê · lavanda bebê · salmão bebê · menta bebê** · baby blue · baby pink · baby yellow |
+
+   *É o que faz «Pijama Baby Doll» não acender: «baby» está na lista de faixa etária, e a frase inteira é o
+   nome de uma modelagem.*
+
+   **Como casa:**
+
+   - **palavra inteira**, sem diferença de maiúscula nem de acento (`bebe` acha `bebê`);
+   - **apóstrofo reto e curvo são iguais** (`children's` = `children’s`);
+   - **a letra de tamanho sem gatilho nunca conta** — um «M» sozinho não é tamanho —, **e o gatilho sozinho
+     também não** («Tamanho», sem valor depois, não acende);
+   - **entre o gatilho de tamanho e o valor** pode haver «:», «-», «.» ou espaços — «Tam: M», «Size - L»;
+   - **o casamento cobre a sequência INTEIRA de tamanhos**, com os separadores «/», «,», «a», «ao», «até» e
+     «-» — «veste 38 a 44» é um destaque só, e «S/M/L» depois de «size» também;
+   - **v3 · o conector «do» entre o gatilho e um NÚMERO** — «Veste do 38 ao 44» é um destaque só. Só «do», só
+     antes de número: «Veste do tronco», «Veste do M» e «Veste de 38 a 44» não acendem;
+   - **v3 · termo ligado por hífen a outra palavra não conta, exceto «plus-size»** — «man-made»,
+     «Homem-Aranha», «baby-soft», «kid-friendly» não acendem; «Plus-size» e «Vestido-plus-size-azul» acendem.
+     Um hífen **com espaços** é travessão de título, não liga: «Blusa - Infantil - Azul» acende «Infantil». *A
+     regra vale para os termos de palavra (faixa etária, gênero, frases de tamanho). Não vale para a sequência
+     de tamanho, cuja gramática já aceita o hífen («Size-L», «sizes 6-12»).*
+   - **v3 · o preço da regra do hífen, dito:** num nome em forma de **slug** — *«blusa-infantil-azul»*,
+     *«camiseta-masculina-basica»* — o termo está sempre ligado, então **não acende mais** (acendia na v2).
+     O Nome que a leitura escreve tem espaços; o risco é o nome **digitado ou colado** em forma de slug.
+     *Ponto aberto para o dono, não resolvido:* aceitar o custo, ou tratar o texto inteiro sem espaços como
+     slug e deixar a regra de fora dele.
+   - *«infanto-juvenil», a grafia antiga de «infantojuvenil», segue acendendo: é o próprio termo, não um termo
+     ligado a outra palavra (leitura minha — a regra literal o apagaria).*
+
+   **Como remove:** tira a **sequência inteira** e fecha os espaços (*"A children's short-sleeve blouse"* →
+   *"A short-sleeve blouse"*). **O campo segue editável** para o ajuste fino.
+
+   **A prova da função — 0 ⚡, antes de qualquer tela** (pedido do dono, 02/10): para cada linha, a entrada,
+   o destaque e o resultado da remoção.
+
+   | não podem acender | acendem |
+   |---|---|
+   | «Pijama Baby Doll» · «Blusa Baby Look» · «Calça Mom Jeans» · «Jaqueta Boyfriend» · «Camiseta Oversized» · «Blusa Rosa Bebê» · «Manga Longa» · «Pingente Petite» · «Tamanho» sozinho · «M» sozinho | «Camiseta Fem Básica» · «Vestido infantil floral» · «Veste 38 a 44» · «Size: M» · «A children's blouse» · «Conjunto para bebês» · «Plus Size» |
+
+   **O que mudou da proposta de 27/09 para a v2:**
+
+   | | entrou | saiu |
+   |---|---|---|
+   | faixa etária | infantojuvenil · garota(s) · garoto(s) · idoso(a)(s) · senior · elderly | — |
+   | gênero | fem · masc · lady | — |
+   | tamanho — termos | — | **petite** |
+   | tamanho — gatilhos | «tam», «tam.», «veste», «manequim», «numeração» · «sizes», «fits» | — |
+   | tamanho — valores | XGG · EG · XXXL | — |
+   | exceções | as duas listas inteiras (modelagem e cor) — a proposta não tinha nenhuma | — |
+   | como casa | os sinais entre gatilho e valor; a sequência inteira com separadores; os dois apóstrofos; o gatilho sozinho não conta | — |
+   | como remove | a sequência inteira, não só a ocorrência | — |
+
+   **O que mudou da v2 para a v3 (02/10/2026, depois dos 14 vizinhos):**
+
+   | | entrou | efeito, medido nos vizinhos |
+   |---|---|---|
+   | gatilho de tamanho | «tamanhos» | «Tamanhos: P, M, G» acende inteiro |
+   | faixa etária | «infantis» | «Roupas infantis» acende «infantis» |
+   | exceções de cor | «lilás bebê» · «lavanda bebê» · «salmão bebê» · «menta bebê» | «Vestido lilás bebê» deixa de acender |
+   | conector | «do» antes de número | «Veste do 38 ao 44» acende inteiro |
+   | hífen | termo ligado por hífen a outra palavra não conta, exceto «plus-size» | «man-made», «Homem-Aranha», «baby-soft» deixam de acender — e os slugs, ver acima |
+
+   **Dos 14 vizinhos da v2, 7 mudam e 7 ficam** (o dono mandou: o resto da v2 fica) — fits 15 · female · «e G» ·
+   «to XL» · «P M G GG» · G1 · «(M)». A prova está em `aviso-de-publico-v3-0210.md`: o resto da v2 (os 17 casos
+   do dono, as 33 regras de casamento, as 18 costuras) responde **igual**, exceto os dois slugs das costuras.
 10. **A invariante do rótulo** (dono, 27/09): **o rótulo ou o nome de arquivo do asset nunca preenche o
     Nome do produto nem entra no prompt.** Quem escreve o Nome é a pessoa ou a leitura — nunca o arquivo. **O
     próprio asset da F0 prova o porquê:** o rótulo da foto `06778db7` é *"blusa-azul-de-linho-manga-curta"*,
@@ -948,21 +1033,88 @@ placar).
 | F1.3 | a ordem da ação | provedor falso, sem rede: saldo antes da chamada; recusa e falha gravadas a 0 ⚡; sucesso = **uma** chamada à função; preço do catálogo **mesmo que o navegador mande outro número**; foto de outro usuário recusada; **foto WebP registrada como JPEG vai com o tipo dos bytes** (a de 07/09 é uma) |
 | F1.4 | um clique, uma chamada | dois cliques seguidos → o contador do provedor falso marca **1** |
 | F1.5 | só no vazio | a tabela acima, linha a linha |
-| F1.6 | a tela | sem foto, campos cheios, o seletor (Google pronto; OpenAI e xAI «(em breve)»), **o botão nascendo em «Ler a foto · 4 ⚡»** e o preço acompanhando o modelo escolhido — lidos do DOM pelo `medir-canvas.js` |
+| F1.6 | a tela | sem foto, campos cheios, o seletor (OpenAI e xAI «(em breve)»), **o botão nascendo em «Ler a foto · 4 ⚡»** e o preço acompanhando o modelo escolhido — lidos do DOM pelo `medir-canvas.js`. **E o servidor da 5599 sobe com as chaves da Google e da Anthropic EM BRANCO** *(decisão do dono, 02/10)*: `GEMINI_API_KEY= ANTHROPIC_API_KEY= npm run dev`. Sem chave, os dois fornecedores aparecem `missing_key`, o seletor fica sem modelo e o botão **não pode ser clicado para gastar** — nem por engano, nem pelo Claude. O estado «com chave» (o botão em «Ler a foto · 4 ⚡») é o da metade do dono, no navegador dele, e a leitura do preço acompanhando o modelo sai do **portão puro** (provado: tabela-verdade de 14 linhas) |
 | F1.7 | **o aviso de público, contra as leituras REAIS da F0** | a função acha **exatamente** os termos inventados — *"infantil"* e *"children's"* (Haiku, rodadas 3 e 5, e o nome *"Blusa Infantil com Manga Bufante"*), *"feminina"* e *"women's"* (Flash 1) — e **zero** nas leituras limpas (Haiku 1, Flash 2): nada de falso positivo em *manga*, *decote*, *cintura*, *punho*. A remoção em um clique devolve o texto certo; **sem clique, o texto não muda** |
 | F1.8 | **a invariante do rótulo** | um card vazio recebe a foto cujo rótulo é *"blusa-azul-de-linho-manga-curta"* → o Nome **continua vazio**; e o texto compilado não contém o rótulo. Os escritores do campo Nome, lidos do código: a digitação e a leitura — nenhum lê `assets.label` |
 
-**A metade do dono — ⚠️ 4 ⚡:** **uma** leitura pelo botão, no card da blusa, com o padrão da lista
-de produto — **o 3.7 Flash**.
+**A metade do dono — ⚠️ até 40 ⚡, declarada por ele em 02/10/2026** (substitui a de 26/09, que era **uma**
+leitura da blusa, 4 ⚡):
 
-> **R1:** *uma leitura custa no máximo **4 ⚡**. Se o botão não disser «Ler a foto · 4 ⚡», o clique
-> não acontece.*
+| | |
+|---|---|
+| as fotos | **3, do catálogo dele:** o **Pijama Baby Doll**, uma peça **com evidência visível de público**, uma **semijoia sem evidência** |
+| as leituras | **3** no padrão — **Gemini 3.7 Flash, 4 ⚡** cada — **e 1 releitura pelo Haiku**, escolhido no seletor (4 ⚡) |
+| previsto | 4 leituras × 4 ⚡ = **16 ⚡** |
+| com uma repetição por clique | **32 ⚡** |
+| **teto desta prova** | **40 ⚡** |
+| fora | **o Sonnet** (20 ⚡) — e o Opus (30 ⚡), pelo mesmo motivo |
+| teto absoluto | o saldo: **3.190 ⚡** |
+| quem clica | **o dono, no navegador dele** — e só depois do teto provado e do «pode» dele |
 
-**Conferido pelo banco, não pela tela:** uma linha em `extractions` (`subject = product`, o modelo
-`gemini-3.7-flash`, `succeeded`, `sparks_charged = 4`, `reference_asset_id = 06778db7…`, `node_id = 63989469…`);
-**um** lançamento de −4 com `extraction_id`; saldo **3.190 → 3.186**; e o card com a **Descrição
-preenchida** e o **Nome preservado** — ele já diz *"blusa-azul-de-linho-manga-curta"*. Os estados
-*lendo* e *depois* se veem aqui, na tela do dono.
+> **R1, por clique:** *uma leitura custa no máximo o preço que o botão diz — **4 ⚡** nos dois modelos desta
+> prova. **Se o botão não disser «Ler a foto · 4 ⚡», o clique não acontece.** Um clique faz no máximo uma
+> chamada e no máximo um débito; leitura recusada ou com falha não cobra.*
+
+**A releitura precisa de um campo em branco:** a leitura só preenche o vazio, e com Nome e Descrição cheios
+o botão fica desligado — de propósito. Para reler pelo Haiku, o dono apaga o campo que quer ver reescrito.
+
+**Conferido pelo banco, não pela tela:** uma linha em `extractions` por leitura (`subject = product`, o
+modelo, `succeeded`, `sparks_charged = 4`, a foto em `reference_asset_id`, o card em `node_id`, o texto em
+`reading`); **um** lançamento de −4 por leitura, com `extraction_id`; saldo **3.190 − 4 × (leituras que deram
+certo)** — **3.174** se forem as quatro e nenhuma repetir; e nenhum lançamento para as que falharem. Os
+estados *lendo* e *depois* se veem aqui, na tela do dono.
+
+> ✅ **A blusa — decidido pelo dono em 02/10:** a metade nova não a lê, e **a F3 usa um card já lido na F1 ou
+> um texto colado**. **Nenhuma leitura extra para a blusa; o teto de 40 ⚡ não muda.** *(Quem escolhe qual
+> card já lido serve, ou o texto, é o dono, antes da F3 — a conferência 3 da F3 continua exigindo a descrição
+> no card `63989469`, venha ela de onde vier.)*
+
+#### O que a F1 tem — 02/10/2026 · 🟡 aberta, nada commitado
+
+**Escrita por inteiro e provada a 0 ⚡** — nenhum pedido saiu da máquina, nenhuma chave foi lida. O que cada
+escolha quer dizer, e por quê, está em [`decisoes.md`](decisoes.md), 02/10/2026 (três entradas: o aviso, a F1, e o
+achado da retentativa do Google).
+
+| # | o que prova | estado | evidência (`scratchpad\evidencias\produto-diz-f1\`) |
+|---|---|---|---|
+| F1.1 | as travas do banco, as três camadas | 🟡 **ensaiada** num Postgres de verdade, sobre as 39 migrations de produção: **50 de 50**; o script do dono: **23 de 23** · **falta rodar em produção** — o dono, no SQL Editor | `f1-1-travas-do-banco-0210.md` · `f1-1-script-de-travas-0210.md` |
+| F1.2 | o registro e o padrão, vermelho → verde | ✅ | `f1-leitura-0210-7.md`, seção B |
+| F1.3 | a ordem da ação | ✅ 14 recusas antes da chamada, 9 falhas grátis, o sucesso em 1 + 1 + 1 + 1 | idem, seções D e E |
+| F1.4 | um clique, uma chamada | ✅ | idem, seção F |
+| F1.5 | só no vazio | ✅ | idem, seção G |
+| F1.6 | a tela | ⬜ **espera a migration aplicada e o navegador** | — |
+| F1.7 | o aviso contra as leituras reais da F0 | ✅ 5 de 5, exatas — **na v2 e na v3** | `aviso-de-publico-0210.md` (v2), seção C · `aviso-de-publico-v3-0210.md`, seção E |
+| F1.8 | a invariante do rótulo | ✅ | `f1-leitura-0210-7.md`, seção K |
+| — | **vermelho → verde do portão** — sete mutantes, um por trava | ✅ | idem, seção I |
+| — | **vermelho → verde do «não cobra em falha»** — a função, o CHECK e a validação da ação | ✅ | idem, seção J |
+
+**O que falta, na ordem:**
+
+1. **Dono:** aplicar a migration `20261002121933_product_readings.sql` pelo Session pooler; e rodar
+   `supabase/travas/f1-leitura-de-produto.sql` no SQL Editor — a última linha esperada é
+   `TOTAL 23 · OK 23 · FALHA 0 · nao exercitado 0`.
+2. **Claude:** regerar `database.types.ts` do banco (**saem os 9 blocos `SAI ANTES DO COMMIT`**), atualizar o
+   modelo de dados do [`arquitetura.md`](arquitetura.md) §4, e `lint` / `typecheck` / `build` de novo.
+3. **Claude, com o bastão do navegador** (perfil «Jorge Alves - DevIA», porta 5599): a prova ao vivo do **item 0**
+   (commit próprio) e a **F1.6** — a tela, a 0 ⚡, **com o servidor subindo com as chaves da Google e da
+   Anthropic em branco**: nenhum clique em «Ler a foto» é possível.
+4. **Dono:** a metade paga, **até 40 ⚡**, com o R1 da seção acima — *se o botão não disser «Ler a foto · 4 ⚡», o
+   clique não acontece*.
+5. **Claude:** a leitura do banco (linha por leitura, lançamento por leitura, saldo), e o fechamento — **com as
+   especificações no mesmo commit do código** (regra 6), porque só então elas descrevem o que está em produção:
+   [`nodes-geracao.md`](nodes-geracao.md) §3.1 (a anatomia do card de Produto: Nome · Fotos · Descrição · seletor
+   · «Ler a foto» · o aviso), [`motor-extracao.md`](motor-extracao.md) (a leitura de produto como segundo
+   consumidor: registro e padrão próprios), [`arquitetura.md`](arquitetura.md) §4 (as colunas de `extractions`,
+   a marca em `ai_models`, `record_product_reading`), o glossário do [`CLAUDE.md`](../CLAUDE.md) (o Produto
+   deixa de ter «uma instrução» e passa a ter «uma descrição») e a linha da frente 1 no
+   [`ROADMAP.md`](ROADMAP.md) §4.
+
+**Pontos que a F1 deixa para o dono decidir** — todos no diário de 02/10, com a medida de cada um: os
+**vizinhos** da lista v2 — **✅ decididos: a v3 está feita e provada** (item 9); **o preço da regra do hífen
+nos nomes em forma de slug**, ponto aberto; **quem cobra a leitura de produto** — **⏳ PENDENTE de decisão do dono**
+([`decisoes.md`](decisoes.md), 02/10); **o inglês da leitura**, que o card nunca mostra (condição da F2,
+abaixo); e **a retentativa escondida da API de Interactions do Google** — **✅ consertada nos três adaptadores,
+commit `19dc765`**, com a prova ao vivo na primeira imagem paga da F3.
 
 ### F2 · O compilador cola a descrição
 
@@ -989,6 +1141,25 @@ mesmo dia**.
    divisão de 10/08 — *pode nomear, nunca alargar* —, e é o que faz *"o que está nos campos na hora
    de gerar é o que entra"* continuar verdade depois de uma edição. Leitura de outro usuário, ou
    falhada, é ignorada — e o texto é traduzido.
+
+   > 📌 **Pendência que a F1 deixou — proposta de 02/10, para o dono aprovar antes da F2.** O card mostra a
+   > Descrição **em português**; o inglês da leitura fica na linha, e o aviso de público nunca o vê. Na F0, o
+   > Flash escreveu *«feminina»* **e** *«women's»*: a pessoa tira «feminina» do card, o português deixa de ser
+   > idêntico, e o inglês da leitura já não é usado — certo. Mas se o modelo inventar público **só no inglês**,
+   > nada acende. **A regra proposta para a primeira linha da tabela:** *usar o inglês da leitura só se o
+   > português for idêntico **e** `findAudienceTerms(descricao_en)` não achar nada*; senão, traduzir o que está
+   > no campo. A F1 já grava o que a função acha nas três frases de cada leitura (`summary.publico`) — é a
+   > medida de quantas vezes isso acontece.
+   >
+   > ⚖️ **A condição da F2 — decisão do dono, 02/10/2026:** ***o texto que chega ao prompt é exatamente o que o
+   > card mostra e o aviso varre.*** Em palavras: nenhuma palavra entra no prompt sem ter passado pelo olho da
+   > pessoa e pela função do aviso. O inglês da leitura só pode entrar se for a **tradução fiel de um português
+   > idêntico ao do campo** **e** a função não achar nada nele — senão a rota **traduz o que está no campo**. A
+   > F2 prova isso com um caso em que o modelo inventa público só no inglês: o texto que chega ao compilador
+   > **não** o tem.
+   >
+   > **E o card já guarda o `readingId`** da leitura que escreveu a Descrição (só dela — uma descrição colada
+   > não tem leitura). É o id que o item 1 manda viajar.
 3. **O compilador cola — e continua puro: recebe texto.** A descrição entra **só na primeira foto**
    do produto (*um produto fala uma vez*, §6 regra 6 de [`nodes-geracao.md`](nodes-geracao.md)), e é
    gravada **por campo** (invariante 13): `descricao_pt`, `descricao_en`, `descricao_origem`. A forma
@@ -1081,9 +1252,10 @@ previsto na F2.7; um lançamento de −75; saldo **3.186 → 3.111**.
 | leitura por Gemini 3.7 Flash, no harness *(era o 2.5 Flash)* | F0 | Claude, **depois do ok do dono** | 4 ⚡ | **não** — **feita na rodada 5 (27/09): 3 centavos reais** (a rodada 2 voltou `402`, 0) |
 | **segunda** leitura por 3.7 Flash — o lado a lado, decidido em 26/09 | F0 | Claude, com o R1 escrito antes | 4 ⚡ | **não** — **feita na rodada 5: 2 centavos reais** |
 | **terceira** leitura por Haiku (a 2ª no contrato v2) — o lado a lado | F0 | Claude, com o R1 escrito antes | 4 ⚡ | **não** — **feita na rodada 5: 2 centavos reais** |
-| leitura pelo botão — **o 3.7 Flash**, o padrão | F1 | **dono** | 4 ⚡ | **sim** |
+| ~~leitura pelo botão — o 3.7 Flash, o padrão~~ *(a metade de 26/09; trocada pelo dono em 02/10)* | F1 | ~~dono~~ | ~~4 ⚡~~ | — |
+| **a prova do dono, pelo botão** — 3 leituras no 3.7 Flash + 1 releitura pelo Haiku: **16 ⚡ previstos · 32 ⚡ com uma repetição por clique · teto 40 ⚡** *(02/10)* | F1 | **dono** | **até 40 ⚡** | **sim** |
 | ↻ da cena 2 | F3 | **dono** | 75 ⚡ | **sim** |
-| **pior caso** | | | **99 ⚡ de preço** *(eram 87; +4 da 2ª leitura do Haiku na rodada 4, +8 das duas a mais do lado a lado)* | **79 ⚡ da carteira — não mudou** — saldo **3.190 → 3.111** |
+| **pior caso** | | | **135 ⚡ de preço** *(20 da F0 + 40 + 75; eram 99 com a metade de 4 ⚡)* | **115 ⚡ da carteira** — saldo **3.190 → 3.075** no teto. *A F3 usa um card já lido na F1 ou um texto colado (dono, 02/10): nenhuma leitura extra.* |
 
 *O custo real da F0 inteira, somado: **11 centavos** — 2 + 2 (rodadas 3 e 4) + 3 + 2 + 2 (rodada 5) —, e
 **0 Spark**: saldo 3.190, conferido no banco em 27/09.*
@@ -1096,7 +1268,12 @@ a **75 ⚡** em 2K. *O `gemini-3.7-flash` entrou no lugar do 2.5 Flash com **4 �
   travas: **um clique → no máximo uma chamada → no máximo um débito**, e nunca resubmissão
   automática. A retentativa do SDK da Anthropic (`MAX_RETRIES = 1`) repete uma chamada **que
   falhou** — e mesmo aí o Spark sai uma vez só, porque quem cobra é a função do banco, chamada uma
-  vez por clique.
+  vez por clique. **E o SDK do Google tinha uma que este plano não conhecia** *(achado de 02/10)*: a API de
+  Interactions repete sozinha até 4 vezes, e o `NO_RETRIES` do adaptador não chega nela — o «uma tentativa
+  só» valia para o comentário, não para as chamadas. **Desligada nos três adaptadores** (a leitura de produto,
+  o gerador de imagem e o de texto): a opção vai na própria chamada, com prova 5 → 1 e resposta 200 idêntica.
+  **No ar desde o commit `19dc765`**, por decisão do dono (02/10), com **a prova ao vivo na primeira imagem
+  paga da F3** ([`decisoes.md`](decisoes.md), 02/10).
 - **R3** — a fal não está em nenhum gesto desta frente.
 - **R4** — nenhum estorno previsto. Se algum for preciso: só com autorização do Jorge, um por leitura.
 
