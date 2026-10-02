@@ -6400,6 +6400,19 @@ sempre vêm antes: colar num campo de texto continua sendo colar texto, e um `<d
 *Evidência: `scratchpad\evidencias\pausa-0110-colar-endereco\` (12 provas, junto com o item 4). A prova ao vivo está
 na entrada de fechamento.*
 
+### 01/10/2026 — ✅ Item 4: o e-mail da conta sai do `arquitetura.md` — do arquivo, não do histórico
+
+A linha «Conta» da tabela de infraestrutura do `arquitetura.md` trazia o e-mail da conta desde o primeiro commit de
+documentação, público junto com o repositório. **Saiu do arquivo; o histórico não foi reescrito** — é o que o dono
+decidiu, sabendo que o commit `b8ac866` continua guardando o endereço. A linha segue dizendo o que importa: uma conta
+só nos três serviços.
+
+**Provado:** `docs/arquitetura.md` com **1** linha em forma de e-mail no HEAD e **0** depois; nenhum outro arquivo
+muda; e o que sobra nos arquivos rastreados são **exemplos**, não endereços de ninguém — o texto de ajuda do campo de
+e-mail do login (`pt-BR.ts`) e dois comentários do `config.toml` do Supabase.
+
+*Evidência: `scratchpad\evidencias\pausa-0110-colar-endereco\`.*
+
 ## Segurança e navegador
 
 ### 27/09/2026 — 🔒 A regra 7 de Segurança deixa de ser frase: a sonda confere o GitHub

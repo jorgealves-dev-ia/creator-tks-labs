@@ -13,7 +13,7 @@
 | **GitHub** | `jorgealves-dev-ia/creator-tks-labs` (repositório **público** — conferido pela API em 27/09/2026; até então esta linha dizia «privado»), branch `master` |
 | **Supabase** | projeto `ogkobcsakbnmvazvvllq` (plano Free) — por enquanto é o único ambiente, ou seja, **produção** |
 | **Vercel** | projeto `creator-tks-labs`, no time «jorgealvesdevia-3166's projects» — importado do GitHub, deploy automático a partir da branch `master` |
-| **Conta** | única nos três serviços: jorgealvesdevia@gmail.com |
+| **Conta** | única nos três serviços — a do dono. *O endereço não fica neste arquivo: o repositório é público (01/10/2026).* |
 
 Não existe ambiente de staging. Toda migration aplicada vai direto para o banco que a aplicação usa — daí a regra de que schema só muda por arquivo de migration versionado, nunca pelo painel.
 
