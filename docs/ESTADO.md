@@ -6,82 +6,139 @@
 > frente está no `plano-*.md` dela; o *como está hoje* está no código — e **o lugar de
 > tudo isso no mapa inteiro está em [`ROADMAP.md`](ROADMAP.md).**
 
-**Última reescrita:** 02/10/2026, ~14:28 — **pausa para o dono, depois do retorno dele.** Nenhum dev no ar (a
-5599 conferida no `netstat`: ninguém ouvindo). **O navegador não foi usado hoje** — o bastão ainda não foi
-pedido. Nenhuma chamada paga em curso — **e nenhuma aconteceu hoje.** `origin/master` = `19dc765` (o conserto do
-Google, o único código que foi para produção hoje).
+**Última reescrita:** 03/10/2026, ~22h30 — **fechamento da sessão.** Nenhum dev no ar. **O navegador não foi
+usado** — o bastão não foi pedido. **Nenhuma chamada paga, hoje nem ontem.** Migration **não aplicada**.
 
-## 1 · Retoma daqui
+## 1 · Retoma daqui — leia antes de qualquer comando
 
-> ### ⚠️ A árvore de trabalho NÃO está limpa — de propósito
->
-> Sobre o `19dc765` há **dois trabalhos escritos e provados, nenhum commitado**:
->
-> | | o que é | por que não está commitado |
-> |---|---|---|
-> | **item 0** | Pose, Character Sheet e Produto com a foto inteira e a prévia local pelo seletor | espera a **prova ao vivo** (navegador) — e tem **commit próprio** |
-> | **F1** | a leitura de produto inteira: migration, ação, card, botão, seletor, aviso de público | **tem dinheiro:** fica aberta até a **metade do dono** (regra 8) |
->
-> Os dois mexem nos mesmos arquivos (`input-product-node.tsx`, `decisoes.md`, o plano). **As fronteiras de
-> commit estão guardadas em retratos**, em `scratchpad\commits\`: `0210-1-item0-tres-cards` (o item 0 sozinho,
-> 10 arquivos) e `0210-4-fim-do-retorno` (tudo, como ficou no fim de 02/10). Commitar o item 0 é restaurar o primeiro,
-> commitar, e restaurar o segundo por cima (`node harness/retrato.mjs restaurar <rótulo>`). **Uma armadilha:** o
-> retrato do item 0 traz `decisoes.md` e o plano **como estavam de manhã** — no commit do item 0 esses dois não
-> entram; valem os desta pausa.
->
-> **`src/lib/supabase/database.types.ts` leva um andaime marcado** — 9 blocos `SAI ANTES DO COMMIT`, as colunas e
-> a função que a migration vai criar, para o `typecheck` rodar antes de ela existir no banco. **A trava do
-> `git grep` do fechamento acusa, e é para acusar.** Ele sai quando o arquivo for regerado do banco. **Decisão do
-> dono (02/10): esse arquivo não se mexe** — nada de tirar e repor o andaime. Commits saem **por caminho
-> explícito**, e a conferência do gate, antes de commit de código, é no **índice** (`git grep --cached`): foi o que
-> o commit do Google levou (0). Se o dono quiser o literal — 0 na árvore inteira —, só depois de regerar os tipos.
+### Onde estamos
 
-**Os próximos gestos, na ordem — os cinco primeiros são do dono:**
+**F1 e item 0 prontos e provados sem rede, NÃO commitados de propósito.**
 
-0. **⏳ Decidir quem cobra a leitura de produto** — A (a função irmã `record_product_reading`, o que está
-   construído e provado), B (generalizar `record_extraction`) ou C (`record_generation`). Está em
-   [`decisoes.md`](decisoes.md), 02/10, com o que cada uma custa. **Minha recomendação: A.** *A migration não deve
-   ser aplicada antes disso:* se for B ou C, ela muda e as provas refazem-se.
-1. **Aplicar a migration** `supabase/migrations/20261002121933_product_readings.sql`, pelo Session pooler —
-   `npx supabase db push --db-url "<Session pooler>"`. Ela é **tudo ou nada** (um `BEGIN … COMMIT`, conferido na
-   fonte do CLI 2.112.0) e **confere o que instalou**: se o padrão da lista de produto não for exatamente o
-   `gemini-3.7-flash` a 4 ⚡, ela levanta exceção e não deixa nada.
-2. **Rodar** `supabase/travas/f1-leitura-de-produto.sql` no SQL Editor (`BEGIN … ROLLBACK` — nada fica
-   gravado). A última linha esperada: `TOTAL 23 · OK 23 · FALHA 0 · nao exercitado 0`.
-3. **Dar o bastão do navegador** — perfil **«Jorge Alves - DevIA»**, porta **5599** — para a prova ao vivo do
-   item 0 e a prova de tela da F1 (F1.6), **a 0 ⚡, com o servidor subindo com as chaves da Google e da Anthropic
-   em branco** (`GEMINI_API_KEY= ANTHROPIC_API_KEY= npm run dev`): nenhum clique em «Ler a foto» é possível.
-4. **A metade paga, até 40 ⚡** — os cliques são dele, no navegador dele, e só depois do «pode». R1: *se o
-   botão não disser «Ler a foto · 4 ⚡», o clique não acontece.*
-5. **Claude, depois de cada um:** regerar `database.types.ts` do banco; a prova ao vivo; a leitura do banco; e
-   o fechamento com as especificações — a lista está no fim da seção F1 do
-   [`plano-produto-diz.md`](plano-produto-diz.md).
-
-> 🔎 **Código novo sobre o banco de hoje é seguro — provado:** sem a migration, a lista de produto vem vazia, o
-> botão nasce desligado e nada cobra; os outros seletores continuam de pé.
-
-### Pendências — decisões do dono
-
-| | o quê | estado |
+| | o que é | por que não está commitado |
 |---|---|---|
-| a | **⏳ Quem cobra a leitura de produto** (A / B / C) | **a decidir — bloqueia a migration.** → [`decisoes.md`](decisoes.md), 02/10 |
-| b | **O preço da regra do hífen na v3 do aviso:** nomes em forma de **slug** (*«blusa-infantil-azul»*, *«camiseta-masculina-basica»*) deixam de acender — e o catálogo dele usa slugs | aceitar o custo, ou tratar texto **sem espaço nenhum** como slug e deixar a regra de fora. Não decidi |
-| c | **Duas leituras minhas da regra do hífen**, para ele confirmar: «infanto-juvenil» segue acendendo; a sequência de tamanho («Size-L») fica fora da regra | cada uma se inverte numa linha |
-| d | **A condição da F2** (dono, 02/10): *o texto que chega ao prompt é exatamente o que o card mostra e o aviso varre* — o inglês da leitura só entra se o português for idêntico **e** a função não achar nada nele | registrada no plano; a F2 prova com um caso de público inventado só no inglês |
-| e | **A prova ao vivo do conserto do Google** (`19dc765`) — na **primeira imagem paga da F3**: o painel do Google tem de mostrar **um** pedido por imagem | registrada; é o que fecha o commit que saiu sem a metade dele |
-| f | **«Colar com um card de Produto selecionado, para a foto entrar nele»** | não fiz: seria funcionalidade, e mudaria a regra da F1a (colar cria um Input de Imagem). Nos três cards a prévia local entrou pelo seletor |
-| g | **3 navegadores com a extensão conectados à conta**, com nomes que não dizem o perfil | o dono escolhe a cada sessão, pelo pedido de conexão dentro do Chrome — regra «Navegador» (a) |
+| **item 0** | Pose, Character Sheet e Produto com a foto inteira e a prévia local pelo seletor | espera a **prova ao vivo** (navegador) — e tem **commit próprio** |
+| **F1** | a leitura de produto inteira: migration, ação, card, botão, seletor, aviso de público (**lista v5**) | **tem dinheiro:** espera a **metade paga do dono** (regra 8) |
 
-**Decididas no retorno de 02/10 (já feitas):** o conserto do Google (`19dc765`); a lista v3; a blusa — **a F3 usa um
-card já lido na F1 ou um texto colado, e o teto de 40 ⚡ não muda**; o servidor da prova de tela sem chaves.
+**A árvore está suja, e é para estar:**
+
+- o **item 0**;
+- a **F1 inteira**, com a lista **v5** (`src/lib/product-reading/audience-terms.ts`, md5 `ef530423e67fa5d7332c52a56e63131f`);
+- `supabase/migrations/20261002121933_product_readings.sql` — md5 **`9fc5df36f8146f382a05570b01258e9a`**, **não aplicada**;
+- `supabase/travas/f1-leitura-de-produto.sql`;
+- o **andaime** de `src/lib/supabase/database.types.ts` — **9 blocos `SAI ANTES DO COMMIT`**. **Esse arquivo não
+  se mexe** (decisão do dono, 02/10): sai quando os tipos forem regerados do banco, depois da migration. Até lá o
+  `git grep` do fechamento acusa **na árvore** (9) e dá **0 no índice** (`git grep --cached`) — commits saem
+  **por caminho explícito**.
+
+### ⛔ Aviso de proteção
+
+**NÃO rodar `git clean`, `git checkout .`, `git restore .` nem `git stash`.** A árvore tem trabalho que **só
+existe em disco** — 14 arquivos modificados e 14 não rastreados.
+
+**O retrato da árvore**, se o pior acontecer: `D:\Z - Meus Projetos DevIA\Creator TKS Labs\scratchpad\commits\0310-3-fechamento\`
+
+- `arvore.patch` — o `git diff HEAD --binary` dos 14 modificados — md5 **`596eb8e5c17a67567c3d366ec2f6a12e`**;
+- `arquivos\` — a cópia inteira dos 28 arquivos;
+- `MANIFESTO.md` — um md5 por arquivo — md5 **`7f2befd265982e3ebc5f1c88c1eb0cec`**.
+
+Restaurar é copiar `arquivos\` por cima do repositório. *O retrato é da árvore que sobra depois do commit de
+documentação de 03/10 — os cinco arquivos daquele commit não estão nele, estão no git.* O retrato do **item 0
+sozinho** (a fronteira do commit dele) continua em `scratchpad\commits\0210-1-item0-tres-cards` — **uma
+armadilha:** ele traz `decisoes.md` e o plano como estavam em 02/10 de manhã; no commit do item 0 esses dois não
+entram.
+
+### Os números de produção ANTES da migration — para a conferência depois
+
+Lidos em produção, só por leitura (MCP), em 03/10 às 22h16:
+
+| o quê | antes da migration |
+|---|---|
+| saldo da carteira | **3.190 ⚡** (= a soma do ledger) |
+| linhas de `extractions` | **8** |
+| linhas de `ledger_transactions` | **110** |
+| linhas de `generations` | **719** |
+| migrations aplicadas | **39** |
+
+A migration não grava em nenhuma das três tabelas nem na carteira: **depois dela, os quatro números têm de ser os
+mesmos**, e as migrations, 40.
+
+### Próximos passos, nesta ordem
+
+1. **Jorge aplica a migration** pelo Session pooler —
+   `npx supabase db push --db-url "<connection string do Session pooler>"`. Ela é tudo ou nada e confere o que
+   instalou.
+2. **Jorge roda, no SQL Editor:** `supabase/travas/f1-leitura-de-produto.sql` — esperado
+   **`TOTAL 23 · OK 23 · FALHA 0 · nao exercitado 0`** — e depois `supabase/travas/escritores-do-ledger.sql` —
+   esperado **`TOTAL 12 · OK 12 · FALHA 0`**, com a migration aplicada. *(Os dois relatórios chegam como "erro":
+   é o formato da casa. Nenhum grava nada.)*
+3. **Conferir saldo e contagens** contra a tabela acima.
+4. **Code regera os tipos** (`database.types.ts`, do banco) **e tira o andaime** — com o `git grep` dando **0
+   também na árvore**.
+5. **Bastão do navegador** — perfil **«Jorge Alves - DevIA»**, porta **5599**, servidor subindo com
+   `GEMINI_API_KEY= ANTHROPIC_API_KEY= npm run dev` — para a **prova ao vivo do item 0** e a **prova de tela da
+   F1** (conferir a **altura do card em canvas antigo**). Depois, **commit do item 0**.
+6. **Metade paga do Jorge, até 40 ⚡** (previsto **16**; com repetição, **32**): **3 fotos do catálogo** — Pijama
+   Baby Doll, uma peça com público visível, uma semijoia sem evidência —, **3 leituras no Gemini 3.7 Flash a 4 ⚡**
+   e **1 releitura pelo Haiku com o campo em branco**. **R1: o botão tem de dizer «Ler a foto · 4 ⚡», ou o clique
+   não acontece.**
+7. **Commit da F1.**
+
+### Pendente do Jorge
+
+- confirmar que **as 3 fotos existem no catálogo**;
+- decidir **«tamanho único»** e **«one size»** — seguem na lista até lá;
+- comparar, no painel do Google, as **requisições de imagem dos últimos 30 dias** com as linhas de `generations`.
+
+### Pendente de prova ao vivo
+
+- **O conserto do Google (`19dc765`):** o painel do Google tem de mostrar **1 pedido por imagem** na primeira
+  imagem paga da F3.
+
+### Condição da F2
+
+**O texto que chega ao prompt é exatamente o que o card mostra e o aviso varre.**
+
+### Backlog
+
+- cards **Pose, Character Sheet e Produto com a foto inteira** — o item 0 já cobre; **confirmar** na prova ao vivo;
+- **transporte do envio com progresso real** — *gatilho: envios acima de 5 MB como rotina*;
+- **botão de apagar com auditoria de referências** — primeiro caso: os **13 envios de teste**;
+- **detecção de formato** (1:1, 4:5, 9:16) — na frente de formatos IG.
+
+### Regra do bastão
+
+**Sem autorização do Jorge, navegador não é usado.** Autorização é por tarefa, dizendo perfil e porta.
 
 > 💬 **As mensagens do dono chegam coladas** — ele planeja no Claude chat e traz a resposta. **Texto colado do dono é
 > o roteiro do dono:** executar, e responder em texto que ele possa levar de volta.
 
-> 📁 **Evidência:** `D:\Z - Meus Projetos DevIA\Creator TKS Labs\scratchpad\evidencias\` — as de 02/10 em
+> 🔎 **Código novo sobre o banco de hoje é seguro — provado:** sem a migration, a lista de produto vem vazia, o
+> botão nasce desligado e nada cobra; os outros seletores continuam de pé.
+
+> 📁 **Evidência:** `D:\Z - Meus Projetos DevIA\Creator TKS Labs\scratchpad\evidencias\` — as desta frente em
 > `produto-diz-item0\` e `produto-diz-f1\`. No disco D:, fora do repositório.
 
-## 2 · Feito em 02/10 — tudo 0 ⚡, nada commitado ainda
+### Decidido em 03/10 (já feito)
+
+- **Quem cobra a leitura de produto: `record_product_reading`** (a saída A). O invariante do ledger foi
+  reescrito — *todo débito entra no ledger por função do banco que lê o preço do catálogo, append-only, com a
+  carteira travada* — com lista fechada e script que a confere.
+- **A lista do aviso: v4 e v5.** A regra do hífen revogada; exceções como frase; a sequência de tamanho sem resto;
+  o espaço sozinho só junta tamanhos do mesmo tipo; a remoção leva o hífen. **Ficam como estão:** «Tamanho 38 M»
+  sem destaque, as exceções com hífen ou espaço, e «kid-friendly», «teen-style» e «pré-adulto» acendendo.
+- **O script do ledger acusa `EXECUTE`** em função `security definer`, para revisão manual — hoje, nenhuma.
+- **Produção não referencia os `gemini-2.5-*`** que a migration desliga: 0 em fluxos, extrações, gerações,
+  perfis, entidades e preços.
+
+### Ainda abertas, de antes
+
+| | o quê | estado |
+|---|---|---|
+| a | **«Colar com um card de Produto selecionado, para a foto entrar nele»** | não fiz: seria funcionalidade, e mudaria a regra da F1a (colar cria um Input de Imagem) |
+| b | **3 navegadores com a extensão conectados à conta**, com nomes que não dizem o perfil | o dono escolhe a cada sessão, pelo pedido de conexão dentro do Chrome — regra «Navegador» (a) |
+
+## 2 · Feito em 02/10 e 03/10 — tudo 0 ⚡
 
 | o quê | onde |
 |---|---|
@@ -92,6 +149,10 @@ card já lido na F1 ou um texto colado, e o teto de 40 ⚡ não muda**; o servid
 | **A leitura** — o contrato v2 byte a byte, a ação, o adaptador do Google, o registro e o catálogo próprios | `lib/product-reading/` · `lib/providers/google.ts` · `registry.ts` · `lib/ai/catalog.ts` |
 | **O card** — Nome · Fotos · Descrição (2.000, com contador) · seletor · «Ler a foto · N ⚡» · o aviso | `input-product-node.tsx` · `lib/i18n/pt-BR.ts` |
 | **✅ O conserto do Google, em produção (`19dc765`)** — o `NO_RETRIES` não chegava à API de Interactions; erro 408/409/429/500/503/queda faziam **5 pedidos** por chamada nos geradores de imagem e de texto; agora **1**. 9 provas HEAD × conserto; resposta 200 idêntica. Commit de 1 arquivo, montado por hash, **sem o adaptador de leitura** | `lib/providers/google.ts` · [`decisoes.md`](decisoes.md), 02/10 |
+| **✅ 03/10 · O invariante do ledger, com lista fechada** — *todo débito entra por função do banco que lê o preço do catálogo, append-only, com a carteira travada*. **3 funções hoje** (`record_generation`, `record_extraction`, `complete_video_generation`) — **as mesmas em produção, lidas pelo MCP** — e 4 com a F1. Script só-leitura que fica vermelho com função nova fora da lista: 7 de 7 sabotagens acusadas | `supabase/travas/escritores-do-ledger.sql` · `escritores-do-ledger-0310.md` |
+| **✅ 03/10 · A lista v4 do aviso** — a regra do hífen revogada (exceções como frase no lugar); conectores e espaço na sequência; G1–G4, EG1–EG4, XG1–XG4, o valor entre parênteses; número com unidade não é tamanho. 10 provas; 14 das 121 entradas antigas mudam, as previstas | `lib/product-reading/audience-terms.ts` · `aviso-de-publico-v4-0310.md` |
+| **✅ 03/10 · A lista v5 do aviso** — o espaço sozinho só junta tamanhos do mesmo tipo («Tamanho M 2 peças» acende só «Tamanho M»); a remoção leva o hífen («Blusa infantil-azul» → «Blusa azul»). 7 provas, 42 casos; 4 das 170 entradas antigas mudam, as previstas; F0 5 de 5; leitura 87 de 87 | `lib/product-reading/audience-terms.ts` · `aviso-de-publico-v5-0310.md` · `f1-leitura-0310-2.md` |
+| **✅ 03/10 · O script do ledger acusa `EXECUTE`** em função `security definer` de `public`, para revisão manual — o `INSERT` montado em tempo de execução passava (FALHA 0) e agora é acusado (FALHA 1); controles calados; total sem sabotagem igual (10 hoje, 12 com a F1); produção: 0 funções | `supabase/travas/escritores-do-ledger.sql` · `escritores-do-ledger-execute-0310.md` |
 | **✅ A lista v3 do aviso de público** — «tamanhos», «infantis», 4 cores bebê, o «do» antes do número, e o hífen; 14 provas vermelho→verde | `lib/product-reading/audience-terms.ts` · `aviso-de-publico-v3-0210.md` |
 | **✅ O código no ar × a migration** — os fluxos de hoje (extração por foto e por texto, falha grátis, saldo curto, `record_generation` ×3, `INSERT` antigo) rodados antes e depois, sobre linhas antigas: **10 de 12 idênticos**, as 2 diferenças esperadas e sem gasto; nenhuma coluna `NOT NULL` sem padrão | `hoje-contra-a-migration-0210.md` |
 
@@ -100,11 +161,11 @@ card já lido na F1 ou um texto colado, e o teto de 40 ⚡ não muda**; o servid
 **31**; a retentativa, **5**; o conserto do Google, **9**; o código no ar × a migration, **9**. `lint`, `typecheck` e `build` passam; o contrato de leitura está em **0** arquivos do pacote do
 navegador.
 
-## 3 · O gasto real — 02/10
+## 3 · O gasto real — 02/10 e 03/10
 
 **0 ⚡ e 0 centavos de provedor.** Nenhuma chamada a provedor de IA: o provedor das provas é um `fetch` falso, e as
-chaves valem `chave-falsa-do-ensaio`. Saldo **3.190 ⚡** = a soma do ledger, conferido no banco no começo da sessão
-e às 10h50: 110 lançamentos, o último de 07/09; 8 extrações; 719 gerações; 39 migrations — **a da F1 não está
+chaves valem `chave-falsa-do-ensaio`. Saldo **3.190 ⚡** = a soma do ledger, conferido no banco em 02/10 e de novo
+em 03/10 às 22h16: 110 lançamentos; 8 extrações; 719 gerações; 39 migrations — **a da F1 não está
 aplicada.** O que houve foi leitura pelo MCP.
 
 > 🔑 **Chaves e contas:** como em 27/09 — Anthropic, Google, fal e OpenAI aceitas pela sonda; xAI sem chave. **GitHub:**
@@ -154,7 +215,7 @@ isso se confere lá, pelo MCP.*
 | # | o que falta | quem fecha |
 |---|---|---|
 | 1 | **🎯 Frente 1 — o produto diz o que é** — [`plano-produto-diz.md`](plano-produto-diz.md). **F0 ✅ · F1a ✅ · item 0 🟡 · F1 🟡** → **F2** → **F3**, a prova viva, 75 ⚡. Pior caso da carteira: **115 ⚡** (40 + 75), saldo 3.190 → 3.075 no teto — sem leitura extra da blusa. ⚠️ *A linha da frente 1 no ROADMAP §4 está velha e se corrige no fechamento da frente.* | **dono** — a migration, o bastão, a metade paga; Claude — o resto |
-| 2 | **Um vizinho do conserto do Google:** um 403 da API de Interactions é lido como erro genérico (`provider`), não como chave recusada (`not_configured`) — só muda a frase na tela. A retentativa em si está consertada (`19dc765`); falta a prova ao vivo (pendência e) | dono |
+| 2 | **Um vizinho do conserto do Google:** um 403 da API de Interactions é lido como erro genérico (`provider`), não como chave recusada (`not_configured`) — só muda a frase na tela. A retentativa em si está consertada (`19dc765`); falta a prova ao vivo (ver o topo) | dono |
 | 3 | **Três achados sobre o tipo dos arquivos, fora da F1a:** a **extração de personagem** manda à Anthropic o tipo do navegador (WebP chamado `.jpg` → 400, antes de cobrar — caminho que cobra, decisão do dono); o **envio da imagem canônica** grava o tipo do navegador; os **metadados dos 6 objetos antigos no Storage** dizem `image/jpeg` | dono |
 | 4 | **Apagar asset da galeria, com auditoria de referências** — o botão não existe. **0 ⚡.** → §9 do [`plano-video-final.md`](plano-video-final.md). **Os 13 envios de teste e o projeto «Teste F1a — colar e soltar» são o primeiro caso dele — decisão do dono, 02/10: ficam onde estão, e nada de apagar por SQL** | Claude |
 | 5 | **Coladas seguidas no mesmo ponto se sobrepõem** — a posição livre da casa desce só 64 px, e os cards têm mais de 300. Visual, 0 ⚡. | plano |

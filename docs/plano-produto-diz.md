@@ -20,8 +20,9 @@
 > **Não está commitada**, de propósito: espera **(1)** o dono aplicar a migration, **(2)** a prova de tela, com o
 > navegador, e **(3)** a metade paga dele — **até 40 ⚡**, com o R1 escrito antes. **Dois pontos nasceram do retorno
 > do dono de 02/10:** a lista do aviso virou **v3** (feita e provada), e **o conserto do Google entrou em produção
-> à parte** (`19dc765`). **⏳ Pendente de decisão do dono, antes de a migration ser aplicada: quem cobra a
-> leitura de produto** — [`decisoes.md`](decisoes.md), 02/10.
+> à parte** (`19dc765`). **✅ Decidido em 03/10: quem cobra a leitura de produto é
+> `record_product_reading`** (a saída A) — a migration segue intacta, e o invariante do ledger ganhou lista fechada e
+> prova ([`decisoes.md`](decisoes.md), 03/10). **A lista do aviso é a v5.**
 >
 > **Custo:** 0 ⚡ nas partes estruturais. **Pior caso R1 do percurso inteiro, registrado pelo dono
 > em 26/09: 87 ⚡ de preço — 79 ⚡ da carteira** (uma leitura pelo botão + uma imagem, saldo
@@ -928,15 +929,17 @@ entra:** a aba fechada **entre** a subida e o registro — aí nenhum código da
    foi colado ou digitado — a lista não pergunta de onde o texto veio. **A regra 2 fica no contrato:** o
    aviso é a segunda rede, não a troca da primeira.
 
-   **A lista — v3, decidida pelo dono em 02/10/2026.** A v2 (a revisão dele da proposta de 27/09) é a base;
-   a v3 é a v2 mais cinco mudanças, decididas no mesmo dia depois que ele leu os 14 vizinhos (o que mudou
-   está logo abaixo; a proposta antiga fica no histórico do arquivo, `deeac04`). **O resto da v2 fica.**
+   **A lista — v5, decidida pelo dono em 03/10/2026.** A v2 (a revisão dele da proposta de 27/09) é a base; a
+   v3 (02/10) acrescentou cinco mudanças depois dos 14 vizinhos; a v4 (03/10) revogou uma delas — a regra do
+   hífen — e acrescentou quatro; **a v5 (03/10, no mesmo dia) ajusta duas coisas da v4: o espaço sozinho só
+   junta tamanhos do mesmo tipo, e a remoção leva o hífen que ligava o termo a outra palavra** (o que mudou em
+   cada passo está logo abaixo; a proposta antiga fica no histórico do arquivo, `deeac04`).
 
    | grupo | português | inglês |
    |---|---|---|
    | faixa etária | infantil · **infantis** · infantojuvenil · criança(s) · bebê(s) · menina(s) · menino(s) · garota(s) · garoto(s) · juvenil · adolescente(s) · adulto(a)(s) · idoso(a)(s) | child · children('s) · kid(s)('s) · baby · babies · toddler(s) · girl(s)('s) · boy(s)('s) · teen(s) · teenager(s) · junior · adult(s) · senior · elderly |
    | gênero | feminino(a)(s) · masculino(a)(s) · fem · masc · unissex · mulher(es) · homem · homens | women('s) · woman · female · lady · ladies('s) · men('s) · man · male · unisex |
-   | tamanho e modelagem | plus size · tamanho grande · tamanho único · gestante · maternidade · «tamanho», **«tamanhos»**, «tam», «tam.», «veste», «manequim» ou «numeração» seguidos de PP, P, M, G, GG, XG, XGG, EG ou de um número | plus-size · plus size · maternity · one size · «size», «sizes» ou «fits» seguidos de XS, S, M, L, XL, XXL, XXXL ou de um número |
+   | tamanho e modelagem | plus size · tamanho grande · tamanho único · gestante · maternidade · «tamanho», **«tamanhos»**, «tam», «tam.», «veste», «manequim» ou «numeração» seguidos de PP, P, M, G, GG, XG, XGG, EG, **G1–G4, EG1–EG4, XG1–XG4** ou de um número | plus-size · plus size · maternity · one size · «size», «sizes» ou «fits» seguidos de XS, S, M, L, XL, XXL, XXXL ou de um número |
 
    **«petite» saiu da lista:** no catálogo de semijoias é o tamanho do pingente.
 
@@ -946,6 +949,7 @@ entra:** a aba fechada **entre** a subida e o registro — aí nenhum código da
    |---|---|
    | modelagem | baby doll · babydoll · baby look · babylook · baby tee · boy short(s) · boyshort(s) |
    | cor | rosa bebê · azul bebê · amarelo bebê · verde bebê · **lilás bebê · lavanda bebê · salmão bebê · menta bebê** · baby blue · baby pink · baby yellow |
+   | **o que não é público, apesar da palavra** *(v4)* | man-made · man made · baby-soft · baby soft · homem-aranha · homem aranha · homem-formiga · homem de ferro · super-homem · mulher-maravilha · mulher-gato |
 
    *É o que faz «Pijama Baby Doll» não acender: «baby» está na lista de faixa etária, e a frase inteira é o
    nome de uma modelagem.*
@@ -961,21 +965,33 @@ entra:** a aba fechada **entre** a subida e o registro — aí nenhum código da
      «-» — «veste 38 a 44» é um destaque só, e «S/M/L» depois de «size» também;
    - **v3 · o conector «do» entre o gatilho e um NÚMERO** — «Veste do 38 ao 44» é um destaque só. Só «do», só
      antes de número: «Veste do tronco», «Veste do M» e «Veste de 38 a 44» não acendem;
-   - **v3 · termo ligado por hífen a outra palavra não conta, exceto «plus-size»** — «man-made»,
-     «Homem-Aranha», «baby-soft», «kid-friendly» não acendem; «Plus-size» e «Vestido-plus-size-azul» acendem.
-     Um hífen **com espaços** é travessão de título, não liga: «Blusa - Infantil - Azul» acende «Infantil». *A
-     regra vale para os termos de palavra (faixa etária, gênero, frases de tamanho). Não vale para a sequência
-     de tamanho, cuja gramática já aceita o hífen («Size-L», «sizes 6-12»).*
-   - **v3 · o preço da regra do hífen, dito:** num nome em forma de **slug** — *«blusa-infantil-azul»*,
-     *«camiseta-masculina-basica»* — o termo está sempre ligado, então **não acende mais** (acendia na v2).
-     O Nome que a leitura escreve tem espaços; o risco é o nome **digitado ou colado** em forma de slug.
-     *Ponto aberto para o dono, não resolvido:* aceitar o custo, ou tratar o texto inteiro sem espaços como
-     slug e deixar a regra de fora dele.
-   - *«infanto-juvenil», a grafia antiga de «infantojuvenil», segue acendendo: é o próprio termo, não um termo
-     ligado a outra palavra (leitura minha — a regra literal o apagaria).*
+   - ~~**v3 · termo ligado por hífen a outra palavra não conta, exceto «plus-size»**~~ — **REVOGADA na v4
+     (03/10).** O hífen volta a ser fronteira de palavra e **não impede o casamento**: *«blusa-infantil-azul»*,
+     *«camiseta-masculina-basica»* e *«infanto-juvenil»* acendem. O que a regra calava — «man-made»,
+     «Homem-Aranha», «baby-soft» — passa a ser calado por **exceções como frase** (a tabela acima), com hífen ou
+     com espaço. *O preço, medido:* um termo ligado por hífen que **não** está nas exceções acende —
+     «kid-friendly», «teen-style», «pré-adulto».
+   - **v4 · remoção sem resto.** Depois do gatilho, a sequência engole também os conectores **«e», «ou»,
+     «and», «or», «to», «through», «thru»** e o **espaço simples** entre valores — «Tamanho P, M e G», «sizes S
+     to XL» e «Tamanho P M G GG» acendem e saem inteiros. **O conector só continua se for seguido de um valor de
+     tamanho válido:** «Tamanho M e azul» acende só «Tamanho M».
+   - **v5 · com o espaço como ÚNICO separador, o valor seguinte só continua a sequência se for do mesmo tipo do
+     anterior** — letra depois de letra, número depois de número. «Tamanho P M G GG» e «Tamanho 38 40 42» seguem
+     inteiros; **«Tamanho M 2 peças» acende só «Tamanho M»** e sai deixando «2 peças». Com separador **escrito**
+     («,», «/», «e», «ou»…) os tipos continuam podendo se misturar: «Tamanho M ou 40» é um destaque só.
+   - **v4 · o valor entre parênteses** — «Tamanho (M)», «Tamanho (P, M e G)» — acende com os parênteses, e sai
+     com eles.
+   - **v4 · número seguido de unidade não é tamanho de pessoa:** **cm, mm, m, in, inch, polegada(s), pol** —
+     colada ao número ou a um espaço — não acendem: «Tamanho 45 cm», «fits 15 inch», «size 20mm». «Anel Tamanho
+     16» continua acendendo. *Um efeito medido:* «Tamanho 38 M» não acende — o «M» depois do
+     número é lido como metro. **Fica assim — decisão do dono, 03/10 (v5).**
+   - **a sequência de tamanho continua aceitando o hífen** — «Size-L», «sizes 6-12», «veste 38–44».
 
    **Como remove:** tira a **sequência inteira** e fecha os espaços (*"A children's short-sleeve blouse"* →
-   *"A short-sleeve blouse"*). **O campo segue editável** para o ajuste fino.
+   *"A short-sleeve blouse"*). **v5 · quando o termo removido está ligado por hífen a UMA palavra, a remoção
+   leva o hífen junto:** «Blusa infantil-azul» → «Blusa azul»; «Tênis kid-friendly» → «Tênis friendly»; «Top
+   pré-adulto azul» → «Top pré azul». Com hífen dos **dois** lados (um slug) fica como era: «blusa-infantil-azul»
+   → «blusa-azul». **O campo segue editável** para o ajuste fino.
 
    **A prova da função — 0 ⚡, antes de qualquer tela** (pedido do dono, 02/10): para cada linha, a entrada,
    o destaque e o resultado da remoção.
@@ -1006,6 +1022,33 @@ entra:** a aba fechada **entre** a subida e o registro — aí nenhum código da
    | exceções de cor | «lilás bebê» · «lavanda bebê» · «salmão bebê» · «menta bebê» | «Vestido lilás bebê» deixa de acender |
    | conector | «do» antes de número | «Veste do 38 ao 44» acende inteiro |
    | hífen | termo ligado por hífen a outra palavra não conta, exceto «plus-size» | «man-made», «Homem-Aranha», «baby-soft» deixam de acender — e os slugs, ver acima |
+
+   **O que mudou da v3 para a v4 (03/10/2026):**
+
+   | | a v4 | efeito, medido |
+   |---|---|---|
+   | hífen | **a regra foi revogada**; no lugar, 8 exceções como frase | os slugs voltam a acender; «man-made», «Homem-Aranha» e «baby-soft» continuam calados |
+   | conectores | «e», «ou», «and», «or», «to», «through», «thru» e o espaço simples — só antes de um valor válido | «Tamanho P, M e G» sai inteiro (deixava «e G») |
+   | valores | G1–G4 · EG1–EG4 · XG1–XG4 · o valor entre parênteses | «Tamanho G1» e «Tamanho (M)» acendem |
+   | unidade | número + cm, mm, m, in, inch, polegada(s), pol não é tamanho | «fits 15 inch» deixa de acender |
+
+   **Das 121 entradas do corpus da v3, 14 mudam — exatamente as previstas** — e 107 respondem igual, os 17 casos
+   do dono entre elas; as leituras reais da F0 seguem 5 de 5 (`aviso-de-publico-v4-0310.md`).
+
+   **O que mudou da v4 para a v5 (03/10/2026, no mesmo dia):**
+
+   | | a v5 | efeito, medido |
+   |---|---|---|
+   | espaço sozinho | só junta valores do mesmo tipo (letra–letra, número–número) | «Tamanho M 2 peças» acende só «Tamanho M» (acendia «Tamanho M 2») |
+   | remoção | leva o hífen que ligava o termo a uma palavra | «Blusa infantil-azul» → «Blusa azul» (ficava «Blusa -azul») |
+   | **fica como está** | «Tamanho 38 M» sem destaque · exceções com hífen **ou** espaço · «kid-friendly», «teen-style» e «pré-adulto» acendem, sem exceção nova | — |
+
+   **Das 170 entradas do corpus da v4, 4 mudam — exatamente as previstas** («Tamanho M 2 peças», «Blusa
+   infantil-azul», «Tênis kid-friendly», «Mini-saia teen-style») — e 166 respondem igual, os 17 casos do dono
+   entre elas; as leituras reais da F0 seguem 5 de 5 e a prova da leitura inteira, 87 de 87
+   (`aviso-de-publico-v5-0310.md`, `f1-leitura-0310-2.md`).
+
+   **Ainda do dono, sem pressa:** «tamanho único» e «one size» **seguem na lista** até ele decidir.
 
    **Dos 14 vizinhos da v2, 7 mudam e 7 ficam** (o dono mandou: o resto da v2 fica) — fits 15 · female · «e G» ·
    «to XL» · «P M G GG» · G1 · «(M)». A prova está em `aviso-de-publico-v3-0210.md`: o resto da v2 (os 17 casos
@@ -1111,8 +1154,8 @@ achado da retentativa do Google).
 
 **Pontos que a F1 deixa para o dono decidir** — todos no diário de 02/10, com a medida de cada um: os
 **vizinhos** da lista v2 — **✅ decididos: a v3 está feita e provada** (item 9); **o preço da regra do hífen
-nos nomes em forma de slug**, ponto aberto; **quem cobra a leitura de produto** — **⏳ PENDENTE de decisão do dono**
-([`decisoes.md`](decisoes.md), 02/10); **o inglês da leitura**, que o card nunca mostra (condição da F2,
+nos nomes em forma de slug**, ponto aberto; **quem cobra a leitura de produto** — **✅ decidido em 03/10: `record_product_reading`**
+([`decisoes.md`](decisoes.md), 03/10); **a regra do hífen — ✅ revogada na v4**; **o inglês da leitura**, que o card nunca mostra (condição da F2,
 abaixo); e **a retentativa escondida da API de Interactions do Google** — **✅ consertada nos três adaptadores,
 commit `19dc765`**, com a prova ao vivo na primeira imagem paga da F3.
 

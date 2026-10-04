@@ -7111,6 +7111,9 @@ inverte numa linha.
 
 ### 02/10/2026 — ⏳ PENDENTE de decisão do dono: quem cobra a leitura de produto
 
+> **✅ Decidido em 03/10/2026: a saída A, `record_product_reading`.** A entrada de 03/10, mais abaixo, tem a
+> decisão e o invariante que nasceu dela. O texto a seguir fica como foi escrito.
+
 **Registrado como o dono mandou. Nada foi mudado na migration.** A pergunta nasceu de uma frase do roteiro de
 02/10 (*«`record_generation` é o único débito»*) que eu li pelo plano (`record_product_reading`) e disse que li.
 
@@ -7141,7 +7144,7 @@ confere por ela; e a linha de `extractions` nasce com `subject = 'product'`. `re
 
 **Minha recomendação, sem decidir por ele: A** — é o que está provado, e a duplicação é pequena e conferida por
 um script de travas de 23 casos. **Se o dono escolher B ou C, a migration muda e as provas desta F1 refazem-se.**
-**Até lá, a migration não deve ser aplicada.**
+**Até lá, a migration não deve ser aplicada.** *(Decidido em 03/10: A. A migration não mudou.)*
 
 ### 02/10/2026 — O código que está no ar contra o banco com a migration (resposta 2b)
 
@@ -7180,6 +7183,212 @@ A migration não toca `record_generation` (impressão digital igual), então a p
 texto). Na lista de extração ele passa a aparecer com essa marca — mas a regra da casa para escolher o padrão só olha
 fornecedores **prontos**, e o Google é `no_adapter` ali: o padrão da ficha continua o Sonnet. Se um dia o Google
 ganhar adaptador de personagem (resposta 9.3, hoje "não"), essa marca passa a importar.
+
+### 03/10/2026 — Quem cobra a leitura de produto: A — e o invariante do ledger ganha lista fechada
+
+**Decisão do dono:** a leitura de produto é cobrada por **`record_product_reading`**, a função irmã (a saída A
+da entrada de 02/10). **A migration `20261002121933_product_readings.sql` segue intacta** — md5
+`9fc5df36f8146f382a05570b01258e9a`, o mesmo de 02/10 — e continua sem ser aplicada: quem aplica é ele.
+
+**O invariante, reescrito como ele mandou** (está também no item 5 das invariantes do `CLAUDE.md`):
+
+> **Todo débito entra no ledger por função do banco que lê o preço do catálogo, append-only, com a carteira
+> travada.**
+
+A frase antiga do roteiro — *«`record_generation` é o único débito»* — nunca foi verdade no banco: a extração
+de personagem cobra por `record_extraction` desde 08/08, e o vídeo por `complete_video_generation`. O que
+sempre foi verdade, e é o que protege o dinheiro, é a **forma** do débito. O invariante passa a dizer a forma, e
+a lista de quem pode é **fechada**:
+
+| função | o que cobra | existe em produção hoje |
+|---|---|---|
+| `record_generation` | imagem e texto (Roteiro): grava e cobra | sim |
+| `record_extraction` | extração de personagem | sim |
+| `complete_video_generation` | vídeo: cobra quando o provedor entrega | sim |
+| `record_product_reading` | leitura de produto (F1) | **não — nasce com a migration da F1** |
+
+**De onde a lista veio:** do `pg_proc`, não da memória. No banco de ensaio, toda função de `public` cujo corpo
+tem `insert into [public.]ledger_transactions`: **3** nas 39 migrations de hoje, **4** com a da F1. **E a mesma
+pergunta feita à produção, em leitura pelo MCP, devolveu as mesmas 3** — as três `security definer`, as três
+travando a carteira (`for update`), as três lendo o preço de `public.ai_model…`, nenhuma recebendo preço por
+argumento.
+
+**A prova que falha se aparecer função nova: `supabase/travas/escritores-do-ledger.sql`.** Só lê; o "erro" do
+fim é o relatório (a doutrina de 07/08). Fica vermelho se: uma função fora da lista grava no ledger; uma da lista
+deixa de ser `security definer`, de travar a carteira, de ler o catálogo, ou passa a receber preço por argumento;
+o ledger ganha política de escrita para o usuário ou perde o RLS; um dos três gatilhos (`reject_update`,
+`reject_delete`, `apply_to_wallet`) some ou é desligado. **Função nova que precise cobrar entra na lista no
+mesmo commit da migration que a cria** — e o invariante ganha o nome dela.
+
+**Provado, 0 ⚡** (`escritores-do-ledger-0310.md`, 4 de 4): hoje **TOTAL 10 · OK 10 · FALHA 0**; com a migration
+da F1 **TOTAL 12 · OK 12 · FALHA 0**; **7 de 7 sabotagens acusadas**, cada uma com a linha que diz o quê — função
+nova fora da lista (com e sem `public.`, com espaços a mais), `record_extraction` sem o `for update`, função
+com argumento de preço, política de `INSERT` para o usuário, o gatilho de UPDATE desligado, o gatilho da
+carteira removido —; e cada sabotagem desfeita por `ROLLBACK`, com o script de volta ao verde.
+
+📌 **O que o script NÃO pega, dito:** ele lê o **texto** das funções. Uma função que montasse o `INSERT` por
+`EXECUTE` com o nome da tabela concatenado passaria — ninguém escreve assim nesta casa, mas a trava é de
+descuido, não de má-fé. E ele não enxerga código de app: quem impede o app de inserir é o RLS sem política de
+escrita, que o script confere.
+
+### 03/10/2026 — A lista v4 do aviso de público: a regra do hífen revogada
+
+**Decisão do dono, depois de ler o preço da v3** (os slugs do catálogo dele deixavam de acender). `0 ⚡` — a
+função é pura. O arquivo é `src/lib/product-reading/audience-terms.ts`; o vermelho é a cópia da v3
+(`harness/_v3/`). Evidência: `aviso-de-publico-v4-0310.md`, **10 provas, 0 falhas**.
+
+1. **A regra do hífen está revogada.** O hífen volta a ser fronteira de palavra: *«blusa-infantil-azul»*,
+   *«camiseta-masculina-basica»* e *«infanto-juvenil»* acendem.
+2. **No lugar dela, exceções como frase, nunca destacadas:** man-made · man made · baby-soft · baby soft ·
+   homem-aranha · homem aranha · homem-formiga · homem de ferro · super-homem · mulher-maravilha · mulher-gato.
+   *Uma generalização minha, dita:* a função aceita **hífen ou espaço** em todas — «super homem» e «mulher gato»
+   também calam, embora a lista dele traga só a forma com hífen. Tira-se em uma linha se ele não quiser.
+3. **Remoção sem resto.** Depois do gatilho, a sequência engole «e», «ou», «and», «or», «to», «through», «thru»
+   e o espaço simples entre valores — **só se o que vem depois é um valor de tamanho válido**.
+4. **Tamanhos que escapavam:** G1–G4, EG1–EG4, XG1–XG4, e o valor entre parênteses.
+5. **Número seguido de unidade não é tamanho de pessoa:** cm, mm, m, in, inch, polegada(s), pol.
+6. **Mantido:** a sequência de tamanho aceita hífen («Size-L», «sizes 6-12»).
+
+**Os casos que ele nomeou — entrada, destaque, o que sobra depois de remover:**
+
+| a entrada | a v3 destacava | a v4 destaca | depois de remover |
+|---|---|---|---|
+| «blusa-infantil-azul» | nenhum | «infantil» | «blusa-azul» |
+| «camiseta-masculina-basica» | nenhum | «masculina» | «camiseta-basica» |
+| «Linha infanto-juvenil» | «infanto-juvenil» | «infanto-juvenil» | «Linha» |
+| «Couro man made» | «man» | nenhum | — |
+| «Tecido baby soft» | «baby» | nenhum | — |
+| «Caneca Homem de Ferro» | «Homem» | nenhum | — |
+| «Tamanho P, M e G» | «Tamanho P, M» | «Tamanho P, M e G» | *(vazio)* |
+| «sizes S to XL» | «sizes S» | «sizes S to XL» | *(vazio)* |
+| «Tamanho P M G GG» | «Tamanho P» | «Tamanho P M G GG» | *(vazio)* |
+| «Tamanho M e azul» | «Tamanho M» | «Tamanho M» | «e azul» |
+| «Tamanho G1» | nenhum | «Tamanho G1» | *(vazio)* |
+| «Conjunto Tamanho (M)» | nenhum | «Tamanho (M)» | «Conjunto» |
+| «Tamanho 45 cm» | «Tamanho 45» | nenhum | — |
+| «fits 15 inch» | «fits 15» | nenhum | — |
+| «size 20mm» | nenhum | nenhum | — |
+| «Anel Tamanho 16» | «Tamanho 16» | «Tamanho 16» | «Anel» |
+
+(Os 60 casos novos, todos com as três colunas, estão na evidência.)
+
+**Os casos antigos que mudam de resultado — 14 das 121 entradas do corpus da v3, e são as previstas:**
+
+| o que muda | as entradas |
+|---|---|
+| **voltam a acender** (o esperado) | «blusa-infantil-azul» · «camiseta-masculina-basica» · «vestido-floral-infantil» · «vestido-feminino-floral» · «Blusa infantil-azul» |
+| **deixa de acender** (unidade) | «Capa: fits 15 inch» |
+| **acendem inteiros** (antes, em parte ou nada) | «Tamanho P, M e G» · «sizes S to XL» · «Tamanho P M G GG» · «Tamanho G1» · «Conjunto Tamanho (M)» |
+| **voltam a acender — o preço da revogação** | «Tênis kid-friendly» → «kid» · «Mini-saia teen-style» → «teen» · «Top pré-adulto» → «adulto» |
+
+As outras **107 respondem igual**, destaque e remoção — os 17 casos do dono entre elas. **As leituras reais da F0:
+5 de 5 exatas**, zero nas duas limpas. A prova da leitura inteira (`f1-leitura-0310.md`) segue **87 de 87** com a
+v4; `typecheck` e `lint` limpos.
+
+📌 **Os vizinhos da v4, medidos, para o dono saber — a função faz o que a lista manda:**
+
+| a entrada | o que a v4 faz | por quê |
+|---|---|---|
+| «Tamanho 38 M» | **nada acende** | o «M» depois do número é lido como **metro** (decisão 5); «Tamanho 38» sozinho acende |
+| «Tênis kid-friendly» | acende «kid»; remover deixa «Tênis -friendly» | sem a regra do hífen, só as exceções calam — e esta não está nelas |
+| «Tamanho M 2 peças» | acende «Tamanho M 2» | o espaço simples é separador, e «2» é um valor de tamanho |
+| «Tamanho M e azul» | acende «Tamanho M»; remover deixa «e azul» | como ele mandou — o «e» fica, porque «azul» não é tamanho |
+| «Blusa infantil-azul» | acende «infantil»; remover deixa «Blusa -azul» | a remoção tira o termo, não o hífen solto |
+
+### 03/10/2026 — Três perguntas do dono, respondidas com prova (0 ⚡, só leitura)
+
+**a) O deploy do `2ad1bb3` chegou a READY?** Sim — lido pelo MCP da Vercel, projeto `creator-tks-labs`, alvo
+produção. O do `19dc765` (o conserto do Google) também.
+
+**b) Alguma linha de produção referencia um dos `gemini-2.5-*` que a migration tira do catálogo de
+extração?** **Não — zero em tudo.** Leitura pelo MCP do Supabase:
+
+| onde | quantas referências |
+|---|---|
+| `workflows.graph` (6 fluxos) citando `gemini-2.5` | **0** |
+| `extractions` com um dos dois modelos | **0** |
+| `generations` com um dos dois modelos | **0** |
+| `profiles` · `entities` | **0 · 0** |
+| linhas de preço (imagem, texto, vídeo) dos dois modelos | **0** |
+
+Os dois modelos existem hoje como duas linhas de `ai_models` (`gemini-2.5-pro`, `gemini-2.5-flash`), ligadas,
+com a capacidade `extraction` e nenhuma outra. As únicas chaves estrangeiras para `ai_models` são as três
+tabelas de preço e `extractions` / `generations` — todas com zero linhas apontando para eles.
+**E a migration não apaga as linhas: só as desliga** (`enabled = false`) — mesmo que houvesse referência, nada
+ficaria órfão.
+
+**c) A migration segue intacta.** md5 `9fc5df36f8146f382a05570b01258e9a`, o mesmo de 02/10. Os tipos
+(`database.types.ts`) **não foram tocados**: são regerados do banco, e o andaime sai, **só depois que o dono
+aplicar**.
+
+### 03/10/2026 — A lista v5 do aviso, e o script do ledger passa a acusar o `EXECUTE`
+
+**Terceiro retorno do dono no dia: aprovado, com dois ajustes.** Tudo `0 ⚡`, nada de migration, navegador ou
+provedor.
+
+**1 · A lista v5** — dois ajustes sobre a v4, e três coisas que **ficam como estão**. Evidência:
+`aviso-de-publico-v5-0310.md`, **7 provas, 0 falhas**; o vermelho é a cópia da v4 (`harness/_v4/`).
+
+- **a) O espaço sozinho só junta tamanhos do mesmo tipo** — letra depois de letra, número depois de número. Com
+  separador escrito («,», «/», «e», «ou»…) nada muda.
+- **b) A remoção leva o hífen que ligava o termo a UMA palavra.** Com hífen dos dois lados (slug) fica como era.
+- **c) Fica:** «Tamanho 38 M» sem destaque; as exceções com hífen ou espaço; «kid-friendly», «teen-style» e
+  «pré-adulto» acendendo, sem exceção nova.
+
+| a entrada | a v4 destacava | a v4 removia para | a v5 destaca | a v5 remove para |
+|---|---|---|---|---|
+| «Tamanho M 2 peças» | «Tamanho M 2» | «peças» | «Tamanho M» | «2 peças» |
+| «Tamanho P M G GG» | o mesmo | *(vazio)* | «Tamanho P M G GG» | *(vazio)* |
+| «Tamanho 38 40 42» | o mesmo | *(vazio)* | «Tamanho 38 40 42» | *(vazio)* |
+| «Tamanho G 3 unidades» | «Tamanho G 3» | «unidades» | «Tamanho G» | «3 unidades» |
+| «Tamanho 38 G azul» | «Tamanho 38 G» | «azul» | «Tamanho 38» | «G azul» |
+| «Tamanho G1 2 peças» | «Tamanho G1 2» | «peças» | «Tamanho G1» | «2 peças» |
+| «Size S M L 3 pack» | «Size S M L 3» | «pack» | «Size S M L» | «3 pack» |
+| «Tamanho M ou 40» | o mesmo | *(vazio)* | «Tamanho M ou 40» | *(vazio)* |
+| «Blusa infantil-azul» | «infantil» | «Blusa -azul» | «infantil» | «Blusa azul» |
+| «Tênis kid-friendly» | «kid» | «Tênis -friendly» | «kid» | «Tênis friendly» |
+| «Mini-saia teen-style» | «teen» | «Mini-saia -style» | «teen» | «Mini-saia style» |
+| «Top pré-adulto azul» | «adulto» | «Top pré- azul» | «adulto» | «Top pré azul» |
+| «blusa-infantil-azul» | «infantil» | «blusa-azul» | «infantil» | «blusa-azul» |
+| «Tamanho 38 M» | nenhum | — | nenhum | — |
+
+(Os 42 casos, com as colunas todas, estão na evidência.)
+
+**O resto da v4 segue verde:** das **170** entradas do corpus da v4 (as 121 da v3, os 60 casos novos da v4, os 7
+vizinhos), **4 mudam — as que ele mandou mudar** — e 166 respondem igual, os 17 casos dele entre elas. **Leituras
+reais da F0: 5 de 5. A prova da leitura inteira: 87 de 87** (`f1-leitura-0310-2.md`). `typecheck` e `lint`
+limpos.
+
+📌 **Duas extensões da regra (a), ditas:** ela vale também dentro dos parênteses e depois do «do» («Veste do 38 G»
+acende só «Veste do 38»); e «G1» conta como **letra** («Tamanho G1 G2 G3» inteiro; «Tamanho G1 38» só «Tamanho G1»).
+
+**2 · `escritores-do-ledger.sql` acusa o `EXECUTE`.** O limite dito na entrada acima — um `INSERT` montado por
+`EXECUTE` escapava da leitura do texto — vira checagem: **toda função `security definer` de `public` que usa
+`EXECUTE` é acusada, para revisão manual**, uma linha de FALHA por função. Nenhuma: uma linha informativa, **fora
+da conta** — o total esperado não muda (**10** hoje, **12** com a migration da F1). **O limite do script passa a
+ser só esse:** uma função acusada precisa ser lida por gente; se for legítima, reescreve-se sem `EXECUTE` — nunca
+uma lista de exceções no script.
+
+**Provado, vermelho → verde** (`escritores-do-ledger-execute-0310.md`, 5 de 5): a função que monta o `INSERT`
+no ledger por `EXECUTE` com o nome da tabela concatenado **passava** no script de antes (12 · 12 · **0**) e é
+**acusada** pelo de agora (13 · 12 · **1**), nas duas grafias (`execute '…' || '…'` e `EXECUTE format(…)`); os
+dois controles não acendem (`EXECUTE` em função que não é `security definer`; a palavra dentro de
+`executed_at`). As 7 sabotagens de antes continuam acusadas pelo script novo (`escritores-do-ledger-0310-2.md`,
+4 de 4). **Em produção, lido pelo MCP: 0 funções `security definer` com `EXECUTE`.**
+
+**3 · Os números de produção antes da migration** (leitura pelo MCP, 03/10, 22h16 de Brasília) — para a
+conferência depois que o dono aplicar:
+
+| o quê | hoje |
+|---|---|
+| saldo da carteira (1 carteira) | **3.190 ⚡** = a soma do ledger |
+| linhas de `extractions` | **8** |
+| linhas de `ledger_transactions` | **110** |
+| linhas de `generations` | **719** |
+| migrations aplicadas | **39** (a última, `20260904210000`) |
+
+A migration não grava em nenhuma das três tabelas nem na carteira: **os quatro números têm de ser os mesmos
+depois dela**, e as migrations, 40.
 
 ## Segurança e navegador
 
