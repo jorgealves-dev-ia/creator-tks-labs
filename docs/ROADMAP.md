@@ -262,8 +262,8 @@ implementação.
 ## 4 · A fila — o caminho mais curto até um post publicado
 
 **Decidida pelo dono em 16/09/2026. Substitui a ordem de 02/09** — A vídeo final → B Catálogo
-aberto → C Modo Take → D Voz → E UI/UX → F Publicação —, que ainda está escrita em
-[`produto.md`](produto.md) §7.1.
+aberto → C Modo Take → D Voz → E UI/UX → F Publicação. *(O [`produto.md`](produto.md) §7.1 mostrou a ordem
+velha até 26/09; hoje ele aponta para cá e conta o que cada letra virou — conferido em 21/11.)*
 
 A marca ⚠️ quer dizer **dinheiro de provedor**: ali a metade do dono é obrigatória, e o pior
 caso (R1) é escrito antes do clique — regra 8 do [`CLAUDE.md`](../CLAUDE.md). Sem a marca, a

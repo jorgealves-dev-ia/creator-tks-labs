@@ -5908,6 +5908,88 @@ a defender uma regra certa pela razão errada.
 o índice do `CLAUDE.md` não lista o `ROADMAP.md`. Não foram tocados — o escopo declarado era
 ROADMAP, diário e ESTADO — e ficam no ESTADO como abertos.
 
+### 21/11/2026 — A retomada no Claude Code desktop, e a intenção do dono: três sistemas num só
+
+**Sessão só de conferência, depois de 49 dias parado. 0 ⚡, nenhum navegador, nenhuma migration, nenhuma linha
+de código.** O que mudou no repositório: o ESTADO, esta entrada e uma frase do ROADMAP §4.
+
+#### 1 · O que a conferência achou: nada mudou
+
+| o quê | resultado |
+|---|---|
+| git × GitHub × Vercel | os três em `2486a68`, de 03/10; produção `READY`; nenhum commit, branch, PR ou deploy depois |
+| a árvore suja (item 0 + F1) | md5 **28 de 28** contra o retrato de 03/10 — antes e depois do build |
+| `typecheck` · `lint` · `build` | passam |
+| as provas sem rede | leitura **87 de 87** · item 0 **31 de 31** · aviso v5 **7 de 7** — rótulo `2111-retomada` |
+| chaves e regra 7 | as quatro aceitas (xAI sem chave); secret scanning e push protection ligados |
+| a produção, pelo MCP | 3.190 ⚡ = a soma do ledger · 8 extrações · 110 lançamentos · 719 gerações · 39 migrations — **os números de 03/10**; última geração em 07/09 |
+
+**Dois achados de operação, os dois já no ESTADO:** a sessão aberta na **pasta-mãe** não carrega o `CLAUDE.md`
+nem os MCPs (a pasta-mãe não é repositório); e o banco, parado havia semanas, deu **quatro timeouts** antes de
+responder — o que **não** é projeto pausado *(a causa, banco frio, é hipótese)*.
+
+#### 2 · O modo de trabalho muda
+
+**O dono passa a trabalhar direto no Claude Code desktop.** Até 03/10 ele planejava no Claude chat e trazia a
+resposta colada; a nota do ESTADO que dizia isso saiu. **O que se perde é a revisão que acontecia no chat** — e
+por isso fica dito: as regras de dinheiro não dependiam dela (estão no `CLAUDE.md`), e o plano continua vindo
+antes do código (regra 9).
+
+#### 3 · 🔒 A intenção do dono, nas palavras dele — registrada, não decidida
+
+1. **Unificar os três sistemas** que ele vinha construindo em separado — **o Máquina de Conteúdo, o Creator TKS
+   Labs e a Máquina de Edição** — num só. O nome do produto unificado não está decidido.
+2. **Vender como produto**, a outros usuários — prestadores de serviço, agências.
+3. **Duas interfaces:** uma **amigável, conduzida por chat** (a referência dele é a Higgsfield), e um **modo
+   avançado em canvas**, para quem prefere — ele prefere.
+4. **O que o TKS traz para dentro:** criar personagem e avatar, pôr referências nele, fazê-lo provar uma roupa,
+   segurar um produto, apresentar um estabelecimento — TikTok Shop, Shopee e influencer de IA para empresas.
+5. **Sincronização labial, voz, narração e Motion Control continuam no radar** — «o TKS vai ter isso também», sem
+   data. *Já estavam escritos:* [`ROADMAP.md`](ROADMAP.md) §2, itens 5 e 6 (os dois **NÃO**), §4, frentes 7 e 9;
+   [`produto.md`](produto.md), Fase 3; [`notas-voz.md`](notas-voz.md) e [`notas-modo-take.md`](notas-modo-take.md).
+   Nenhum existe no código.
+
+**Como isto encaixa no que já estava decidido.** O item 3 é a arquitetura de 16/09 — *um núcleo, três
+superfícies* — com outros nomes: o **Estúdio** é o modo avançado; o **Modo Rápido** é a porta amigável, que agora
+o dono descreve como chat em vez de formulário.
+
+**O que foi lido do Máquina de Conteúdo, só leitura** (`D:\Z - Meus Projetos DevIA\maquina-de-conteudo`):
+JavaScript puro, sem framework e sem build — é regra de lá —; Painel local de um usuário só, sem login; dados em
+arquivos na pasta de cada cliente; o Supabase só como fila de publicação; nenhum crédito nem ledger. **Já publica
+no Instagram e no Facebook, com agenda e aprovação.** O roteiro de lá tem o TKS «só no radar» desde 18/11
+(`docs/roteiro.md:79`).
+
+**Três pontos abertos, para o dono:**
+
+- **O roteiro do Máquina de Conteúdo diz «Sem assinatura (SaaS)»** (`docs/roteiro.md:13`) — e vender o sistema a
+  agências contradiz a frase. Uma das duas muda.
+- **Qual das duas fundações carrega o produto unificado.** Produto para terceiros pede login, dado isolado por
+  usuário e cobrança — o que o TKS tem (Auth, RLS nas 21 tabelas, ledger) e o Máquina de Conteúdo não tem.
+  *Leitura do Claude, não decisão:* a base natural é a do TKS, e o motor do Máquina de Conteúdo (render,
+  publicação, agenda, modelos) entra como módulo.
+- **As frentes 3, 4 e 5 da fila deste projeto** — formatos do Instagram, carrossel por template HTML e Publicação
+  — **já existem do lado de lá.** Construí-las aqui seria fazer duas vezes; a fila do ROADMAP §4 precisa ser
+  revista quando a junção for decidida. **Não foi tocada hoje.**
+
+**A Máquina de Edição não foi lida:** a pasta dela não foi localizada.
+
+#### 4 · A migration: o dono quer delegar a aplicação — e hoje o Code não tem como
+
+O dono disse que quer **autonomia total do Code sobre o projeto**, guardando para si só o que é segredo
+(variáveis de ambiente, tokens), e perguntou se o Code aplica a migration da F1.
+
+**Hoje não aplica, por dois fatos:** o MCP do Supabase é só leitura por desenho (`read_only=true` no
+`.mcp.json`), e o `supabase db push` pede a connection string do Session pooler — que carrega a senha do banco.
+
+**E o MCP em modo de escrita não é o caminho, mesmo se fosse liberado:** a ferramenta de migration dele grava a
+versão com o carimbo da hora em que roda, e não com o do arquivo (`20261002121933`). O histórico do banco
+divergiria do `supabase/migrations/`, e o próximo `db push` tentaria aplicar a F1 de novo. **O caminho é o CLI**,
+como nas 39 anteriores.
+
+**Proposto, esperando a resposta do dono:** um comando da casa que roda o `db push` lendo a connection string de
+onde o Code não a vê — ou digitada pelo dono no terminal a cada migration, com a entrada escondida, ou guardada
+uma vez no `.env.local`. **Até lá a regra do `CLAUDE.md` vale como está.**
+
 ---
 
 ## Frente 1 — o produto diz o que é

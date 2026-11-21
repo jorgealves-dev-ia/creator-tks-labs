@@ -6,10 +6,38 @@
 > frente está no `plano-*.md` dela; o *como está hoje* está no código — e **o lugar de
 > tudo isso no mapa inteiro está em [`ROADMAP.md`](ROADMAP.md).**
 
-**Última reescrita:** 03/10/2026, ~22h30 — **fechamento da sessão.** Nenhum dev no ar. **O navegador não foi
-usado** — o bastão não foi pedido. **Nenhuma chamada paga, hoje nem ontem.** Migration **não aplicada**.
+**Última reescrita:** 21/11/2026, ~18h40 — **retomada depois de 49 dias, agora direto no Claude Code desktop.**
+Sessão só de conferência: nenhum dev no ar, **o navegador não foi usado**, **nenhuma chamada paga**, migration
+**não aplicada**, nenhum código novo. **O código é o de 03/10, byte a byte** — o que mudou hoje foi só este
+arquivo, o diário e uma frase do ROADMAP.
 
 ## 1 · Retoma daqui — leia antes de qualquer comando
+
+### Conferido em 21/11 — tudo 0 ⚡
+
+| o quê | como | resultado |
+|---|---|---|
+| a sessão | `git worktree list` | a pasta principal do repositório, `master`, sem worktree |
+| git × GitHub × produção | `git rev-parse`, `gh api`, MCP da Vercel | os três em **`2486a68`**; produção `READY`; nenhum commit, branch, PR ou deploy depois de 03/10 |
+| **a árvore suja** | md5 contra o `MANIFESTO.md` do retrato de 03/10 | **28 de 28** — 14 modificados, 14 não rastreados; conferido de novo **depois** do build |
+| o andaime | `git grep` | **9** na árvore, **0** no índice — como em 03/10 |
+| `typecheck` · `lint` · `build` | os três | passam *(o build compilou em 3,8 min, com o cache frio; em 02/10, 4,6 s)* |
+| as provas sem rede | os harnesses, rótulo `2111-retomada` | leitura **87 de 87** · item 0 **31 de 31** · aviso v5 **7 de 7** (F0 **5 de 5**) · 0 pedidos saíram da máquina |
+| as chaves e a regra 7 | `npm run probe:keys` | Anthropic, Google, fal e OpenAI aceitas; xAI sem chave; secret scanning e push protection ligados |
+| **a produção** | MCP do Supabase, só leitura, às 18h32 | **idêntica a 03/10** — a tabela abaixo; a última geração e o último lançamento são de **07/09** |
+| a trava do navegador | `trava-navegador.mjs status` | instalada, **livre**; não foi exercitada |
+
+**Evidência:** `scratchpad\evidencias\produto-diz-f1\f1-leitura-2111-retomada.md` e
+`aviso-de-publico-v5-2111-retomada.md` · `produto-diz-item0\numeros-item0-estrutural-2111-retomada.md` · os logs
+`scratchpad\retomada-2111-*.log`.
+
+> ⚠️ **Abrir a sessão na pasta `creatortkslabs`, não na pasta-mãe.** A pasta-mãe não é repositório: uma sessão
+> aberta nela não carrega o `CLAUDE.md` nem os MCPs do `.mcp.json` — foi o que aconteceu no começo de 21/11, e a
+> produção só pôde ser relida depois da mudança de pasta.
+
+> ⚠️ **O banco demora a responder depois de semanas parado.** As quatro primeiras leituras de 21/11 deram
+> *connection timeout*; a quinta, cerca de um minuto depois, respondeu. **Timeout na primeira leitura não é
+> projeto pausado** — tentar de novo antes de concluir. *(A causa é hipótese: banco frio. Não foi investigada.)*
 
 ### Onde estamos
 
@@ -50,7 +78,7 @@ entram.
 
 ### Os números de produção ANTES da migration — para a conferência depois
 
-Lidos em produção, só por leitura (MCP), em 03/10 às 22h16:
+Lidos em produção, só por leitura (MCP), em 03/10 às 22h16 — **e relidos em 21/11 às 18h32: os mesmos.**
 
 | o quê | antes da migration |
 |---|---|
@@ -58,13 +86,21 @@ Lidos em produção, só por leitura (MCP), em 03/10 às 22h16:
 | linhas de `extractions` | **8** |
 | linhas de `ledger_transactions` | **110** |
 | linhas de `generations` | **719** |
-| migrations aplicadas | **39** |
+| migrations aplicadas | **39** — a última é `20260904210000`; a da F1 **não está**, e `record_product_reading` **não existe** |
+
+*Em 21/11 o catálogo segue como a migration espera encontrar: 14 modelos, o Sonnet como padrão de extração a
+20 ⚡, o Gemini 3.7 Flash só com `text_gen`, os dois `gemini-2.5-*` ainda ligados.*
 
 A migration não grava em nenhuma das três tabelas nem na carteira: **depois dela, os quatro números têm de ser os
 mesmos**, e as migrations, 40.
 
 ### Próximos passos, nesta ordem
 
+0. **Decidir quem aplica a migration** *(novo, 21/11)*. O dono disse que quer **delegar a aplicação ao Code** —
+   tudo o que não for segredo. **Hoje o Code não consegue:** o MCP do Supabase é só leitura por desenho, e o
+   `db push` pede a connection string, que traz a senha do banco. **Até a decisão sair, vale o passo 1 como está**
+   — e a regra do `CLAUDE.md` («o Claude Code nunca aplica migrations») só muda com a decisão registrada. →
+   [`decisoes.md`](decisoes.md), 21/11/2026
 1. **Jorge aplica a migration** pelo Session pooler —
    `npx supabase db push --db-url "<connection string do Session pooler>"`. Ela é tudo ou nada e confere o que
    instalou.
@@ -110,8 +146,10 @@ mesmos**, e as migrations, 40.
 
 **Sem autorização do Jorge, navegador não é usado.** Autorização é por tarefa, dizendo perfil e porta.
 
-> 💬 **As mensagens do dono chegam coladas** — ele planeja no Claude chat e traz a resposta. **Texto colado do dono é
-> o roteiro do dono:** executar, e responder em texto que ele possa levar de volta.
+> 💬 **Desde 21/11 o dono trabalha direto no Claude Code desktop** — o planejamento não chega mais colado do Claude
+> chat, e a revisão que acontecia lá deixou de existir. **O que segura o dinheiro continua escrito no `CLAUDE.md`**
+> (pior caso declarado, clique pago do dono) — **e o plano continua vindo antes do código** em toda fase com
+> dinheiro (regra 9). Dúvida se pergunta aqui mesmo.
 
 > 🔎 **Código novo sobre o banco de hoje é seguro — provado:** sem a migration, a lista de produto vem vazia, o
 > botão nasce desligado e nada cobra; os outros seletores continuam de pé.
@@ -137,6 +175,15 @@ mesmos**, e as migrations, 40.
 |---|---|---|
 | a | **«Colar com um card de Produto selecionado, para a foto entrar nele»** | não fiz: seria funcionalidade, e mudaria a regra da F1a (colar cria um Input de Imagem) |
 | b | **3 navegadores com a extensão conectados à conta**, com nomes que não dizem o perfil | o dono escolhe a cada sessão, pelo pedido de conexão dentro do Chrome — regra «Navegador» (a) |
+
+### Abertas em 21/11
+
+| | o quê | estado |
+|---|---|---|
+| c | **O navegador embutido do aplicativo desktop** | a trava só vigia as ferramentas da extensão do Chrome (`mcp__claude-in-chrome__*`); o painel de navegador do desktop **não passa por ela**. Até o dono decidir, vale a regra do bastão para os dois, por frase |
+| d | **A junção dos três sistemas** — TKS, Máquina de Conteúdo e Máquina de Edição num produto só, à venda, com modo amigável (por chat) e modo avançado (canvas) | **intenção declarada pelo dono; estratégia não decidida, plano não escrito.** Nada no código muda. → [`decisoes.md`](decisoes.md), 21/11/2026 |
+| e | **O trabalho da F1 mora num disco só** | a árvore e o retrato de 03/10 estão no mesmo HD (D:). O retrato tem 688 KB — vale uma cópia fora do D: até o commit da F1 |
+| f | **Três dívidas de documentação** | o `.env.example` lista `GOOGLE_AI_API_KEY` e `FAL_WEBHOOK_SECRET` (o código lê `GEMINI_API_KEY`, e o segredo não existe) e não lista `XAI_API_KEY` nem `FAL_WEBHOOK_URL`; o `arquitetura.md` §4 fala em 15 e 16 tabelas (são **21**) e a árvore de pastas do §5 ainda traz `config/models.json`; o inventário do `ROADMAP.md` é de 16/09 |
 
 ## 2 · Feito em 02/10 e 03/10 — tudo 0 ⚡
 
