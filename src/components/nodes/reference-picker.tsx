@@ -6,14 +6,7 @@ import { useLightbox } from "@/components/nodes/lightbox";
 import { ImageGrid } from "@/components/ui/image-grid";
 import { listGalleryAssets, type GalleryItem } from "@/lib/assets/actions";
 import { UPLOAD_IMAGE_TYPES } from "@/lib/assets/image-bytes";
-import {
-  failureMessage,
-  isRetryable,
-  prepareImages,
-  refusalMessage,
-  uploadPreparedImage,
-} from "@/lib/assets/upload-client";
-import { uploadLabel } from "@/lib/assets/upload-label";
+import { sendFromPicker } from "@/lib/canvas/picker-upload";
 import { useReferencePicker } from "@/lib/canvas/reference-picker-store";
 import { listProjectGallery } from "@/lib/generation/history";
 import { t } from "@/lib/i18n/pt-BR";
@@ -226,35 +219,24 @@ function PickerDialog() {
   /**
    * The button's upload — through the house's one upload function
    * (`lib/assets/upload-client.ts`), the same one pasting and dropping on the
-   * canvas use. The type is read in the file's first bytes, never in its name;
-   * the label is the name the file already had, as it always was.
+   * canvas use. What it does with the file lives in `lib/canvas/picker-upload.ts`,
+   * where it can be proved without a browser; what is left here is the modal's
+   * own state.
    */
   async function handleUpload(file: File) {
     setMessage(null);
     setRetryFile(null);
 
-    const prepared = await prepareImages([file]);
-
-    if (!prepared.ok) {
-      setMessage(refusalMessage(prepared));
-      return;
-    }
-
-    setUploading(true);
-
-    const result = await uploadPreparedImage(
-      prepared.images[0],
-      uploadLabel(file, "botao", new Date()),
-    );
+    const result = await sendFromPicker(file, () => setUploading(true));
 
     setUploading(false);
 
     if (!result.ok) {
-      setMessage(failureMessage(result.reason));
+      setMessage(result.message);
 
       // The file is still in hand: when what failed was the network, sending
       // it again is one click instead of finding it on the disk a second time.
-      if (isRetryable(result.reason)) setRetryFile(file);
+      if (result.retryable) setRetryFile(file);
 
       return;
     }

@@ -6,10 +6,13 @@
 > frente está no `plano-*.md` dela; o *como está hoje* está no código — e **o lugar de
 > tudo isso no mapa inteiro está em [`ROADMAP.md`](ROADMAP.md).**
 
-**Última reescrita:** 21/11/2026, ~18h40 — **retomada depois de 49 dias, agora direto no Claude Code desktop.**
-Sessão só de conferência: nenhum dev no ar, **o navegador não foi usado**, **nenhuma chamada paga**, migration
-**não aplicada**, nenhum código novo. **O código é o de 03/10, byte a byte** — o que mudou hoje foi só este
-arquivo, o diário e uma frase do ROADMAP.
+**Última reescrita:** 21/11/2026, ~21h20 — **a migration da F1 está APLICADA e travada em produção** (ledger 12 de
+12, `f1-leitura-de-produto.sql` 23 de 23), **o item 0 passou na prova ao vivo** e **a F1.6 (a tela) passou**, tudo
+a 0 ⚡, com o navegador do perfil «Jorge Alves - DevIA» e o servidor sem chaves. **O item 0 foi commitado à parte, com o ok
+do dono. Falta a metade paga da F1.** O MCP do Supabase passou a escrever (decisão do dono).
+
+*Mais cedo, no mesmo dia: a retomada depois de 49 dias, agora direto no Claude Code desktop — a conferência logo
+abaixo.*
 
 ## 1 · Retoma daqui — leia antes de qualquer comando
 
@@ -52,12 +55,14 @@ arquivo, o diário e uma frase do ROADMAP.
 
 - o **item 0**;
 - a **F1 inteira**, com a lista **v5** (`src/lib/product-reading/audience-terms.ts`, md5 `ef530423e67fa5d7332c52a56e63131f`);
-- `supabase/migrations/20261002121933_product_readings.sql` — md5 **`9fc5df36f8146f382a05570b01258e9a`**, **não aplicada**;
+- `supabase/migrations/20261002121933_product_readings.sql` — md5 **`9fc5df36f8146f382a05570b01258e9a`**,
+  **aplicada em 21/11** — o arquivo não está no git, mas a versão está no banco: **ele tem de entrar no próximo
+  commit que tocar a F1**, ou a pasta de migrations diverge do banco;
 - `supabase/travas/f1-leitura-de-produto.sql`;
-- o **andaime** de `src/lib/supabase/database.types.ts` — **9 blocos `SAI ANTES DO COMMIT`**. **Esse arquivo não
-  se mexe** (decisão do dono, 02/10): sai quando os tipos forem regerados do banco, depois da migration. Até lá o
-  `git grep` do fechamento acusa **na árvore** (9) e dá **0 no índice** (`git grep --cached`) — commits saem
-  **por caminho explícito**.
+- `src/lib/supabase/database.types.ts` — **regerado do banco em 21/11** (md5 `21ed10fb5d525e3c8a22e34bb6411fc3`);
+  o andaime saiu e o `git grep "SAI ANTES DO COMMIT" -- src/ supabase/` dá **0 na árvore**;
+- *(de 21/11)* `scripts/db-push.mts`, a linha `db:push` do `package.json` e as regras novas de migration no
+  `CLAUDE.md`, `AGENTS.md` e `README.md` — **o dono pediu para não commitar ainda**.
 
 ### ⛔ Aviso de proteção
 
@@ -76,44 +81,61 @@ sozinho** (a fronteira do commit dele) continua em `scratchpad\commits\0210-1-it
 armadilha:** ele traz `decisoes.md` e o plano como estavam em 02/10 de manhã; no commit do item 0 esses dois não
 entram.
 
-### Os números de produção ANTES da migration — para a conferência depois
+### A migration — antes e depois, em produção (MCP, só leitura, 21/11)
 
-Lidos em produção, só por leitura (MCP), em 03/10 às 22h16 — **e relidos em 21/11 às 18h32: os mesmos.**
+| o quê | antes | depois |
+|---|---|---|
+| saldo da carteira | **3.190 ⚡** (= a soma do ledger) | **3.190 ⚡** (= a soma do ledger) |
+| linhas de `extractions` | **8** | **8** — as 8 marcadas `subject = 'character'` |
+| linhas de `ledger_transactions` | **110** | **110** |
+| linhas de `generations` | **719** | **719** |
+| `assets` · tabelas | 118 · 21 | 118 · 21 |
+| migrations | **39** | **40** — a última é `20261002121933` |
+| `record_product_reading` | não existe | **existe** |
 
-| o quê | antes da migration |
-|---|---|
-| saldo da carteira | **3.190 ⚡** (= a soma do ledger) |
-| linhas de `extractions` | **8** |
-| linhas de `ledger_transactions` | **110** |
-| linhas de `generations` | **719** |
-| migrations aplicadas | **39** — a última é `20260904210000`; a da F1 **não está**, e `record_product_reading` **não existe** |
+**O catálogo depois:** o Gemini 3.7 Flash com `text_gen` **e** `extraction`, a **4 ⚡**, e o único marcado como
+padrão da leitura de produto; os dois `gemini-2.5-*` **desligados**; o Sonnet segue o padrão da ficha, a 20 ⚡.
 
-*Em 21/11 o catálogo segue como a migration espera encontrar: 14 modelos, o Sonnet como padrão de extração a
-20 ⚡, o Gemini 3.7 Flash só com `text_gen`, os dois `gemini-2.5-*` ainda ligados.*
+**Como foi:** `npm run db:push` (o ensaio listou só `20261002121933`) → o ok do dono para as 3 linhas reescritas
+do catálogo → `npm run db:push -- --aplicar 20261002121933`. A senha não apareceu em nenhuma linha. O CLI avisou
+que não achou o Docker para um cache local — não toca o banco.
 
-A migration não grava em nenhuma das três tabelas nem na carteira: **depois dela, os quatro números têm de ser os
-mesmos**, e as migrations, 40.
+**Conferido depois:** `escritores-do-ledger.sql` pelo MCP — **`TOTAL 12 · OK 12 · FALHA 0`**, com
+`record_product_reading` na lista, travando a carteira e lendo o preço do catálogo. Advisors de segurança: a função
+nova é executável por usuário logado (não por anônimo), o mesmo desenho de `record_extraction`; os outros avisos
+já existiam. Tipos regerados pelo MCP; typecheck e lint verdes.
+
+**Evidência:** `scratchpad\evidencias\produto-diz-f1\migration-numeros-antes-2111.md` e
+`migration-numeros-depois-2111.md`.
 
 ### Próximos passos, nesta ordem
 
-0. **Decidir quem aplica a migration** *(novo, 21/11)*. O dono disse que quer **delegar a aplicação ao Code** —
-   tudo o que não for segredo. **Hoje o Code não consegue:** o MCP do Supabase é só leitura por desenho, e o
-   `db push` pede a connection string, que traz a senha do banco. **Até a decisão sair, vale o passo 1 como está**
-   — e a regra do `CLAUDE.md` («o Claude Code nunca aplica migrations») só muda com a decisão registrada. →
-   [`decisoes.md`](decisoes.md), 21/11/2026
-1. **Jorge aplica a migration** pelo Session pooler —
-   `npx supabase db push --db-url "<connection string do Session pooler>"`. Ela é tudo ou nada e confere o que
-   instalou.
-2. **Jorge roda, no SQL Editor:** `supabase/travas/f1-leitura-de-produto.sql` — esperado
-   **`TOTAL 23 · OK 23 · FALHA 0 · nao exercitado 0`** — e depois `supabase/travas/escritores-do-ledger.sql` —
-   esperado **`TOTAL 12 · OK 12 · FALHA 0`**, com a migration aplicada. *(Os dois relatórios chegam como "erro":
-   é o formato da casa. Nenhum grava nada.)*
-3. **Conferir saldo e contagens** contra a tabela acima.
-4. **Code regera os tipos** (`database.types.ts`, do banco) **e tira o andaime** — com o `git grep` dando **0
-   também na árvore**.
-5. **Bastão do navegador** — perfil **«Jorge Alves - DevIA»**, porta **5599**, servidor subindo com
-   `GEMINI_API_KEY= ANTHROPIC_API_KEY= npm run dev` — para a **prova ao vivo do item 0** e a **prova de tela da
-   F1** (conferir a **altura do card em canvas antigo**). Depois, **commit do item 0**.
+*(Os passos 0, 1, 3 e 4 de antes — a string, a migration, a conferência e os tipos — estão feitos.)*
+
+*(O passo 2 também: `f1-leitura-de-produto.sql` rodou em produção em 21/11, à noite — **`TOTAL 23 · OK 23 ·
+FALHA 0 · nao exercitado 0`** —, e depois dela saldo 3.190 ⚡ = ledger, 110 lançamentos, 8 extrações, 0 leituras de
+produto, 6 projetos: **nada ficou**. Foi pelo `scratchpad\harness\rodar-trava-producao.mjs`, que manda o arquivo
+como está (md5 `ff111e3d8f25b97e29d09710008951d6`); o `db query` do CLI recusou antes de executar. Evidência:
+`scratchpad\evidencias\produto-diz-f1\trava-f1-leitura-producao-2111-b.log` — a `…-2111.log` é a rodada recusada.)*
+
+**O MCP do Supabase escreve desde 21/11** (decisão do dono — [`decisoes.md`](decisoes.md)): reconectado, entra como
+`postgres`, escopado a `ogkobcsakbnmvazvvllq`.
+5. ✅ **Feito em 21/11, 0 ⚡** — servidor com as **cinco** chaves de IA em branco, Chrome «Navegador Jorge DevIA»
+   (perfil «Jorge Alves - DevIA», escolhido pelo dono: havia 2 navegadores conectados), projeto de teste novo
+   «Projeto sem título 1». **Item 0:** nos três cards a foto entra na hora pela prévia (`blob:`), troca para o
+   Storage em 112 / 483 / 130 ms sem «Carregando…» e sem piscar, e **0 px cortados** (`contain`, 100% da altura).
+   **F1.6:** a anatomia, o seletor com tudo desligado («(sem chave)» / «(em breve)»), o botão desligado com e sem
+   foto, o rótulo do arquivo **não** virou Nome, e o card antigo do «Projeto teste Foto da Blusa» abre com 539 de
+   altura sem sobrepor nada — **e o fluxo salvo dele não mudou** (md5 igual). Dinheiro intacto; 3 fotos de teste
+   novas na galeria. Evidência: `scratchpad\evidencias\item0-f1-tela-2111\numeros-prova-de-tela-2111.md`.
+   ⚠️ *O card antigo guarda o Nome «blusa-azul-de-linho-manga-curta» — o rótulo do arquivo, gravado antes da F1. A
+   invariante do rótulo vale para o que entra daqui em diante; esse valor velho fica até alguém o apagar.*
+5b. ✅ **Commit do item 0, 21/11, com o ok do dono** — próprio, sem a F1: os seis arquivos de código idênticos ao
+   retrato `scratchpad\commits\0210-1-item0-tres-cards`, e o `input-product-node.tsx` **na versão do retrato**
+   (a da árvore tem a F1 por cima e continua no disco, sem commit), mais `nodes-geracao.md`, o plano e este
+   arquivo. Montado pelo índice (`git update-index`), sem mexer na árvore; conferido num worktree limpo antes do
+   push. **Depois dele, a árvore suja é só a F1 e o trabalho de 21/11** — o `git status` mostra o
+   `input-product-node.tsx` como modificado de novo, e é isso: a diferença é a F1.
 6. **Metade paga do Jorge, até 40 ⚡** (previsto **16**; com repetição, **32**): **3 fotos do catálogo** — Pijama
    Baby Doll, uma peça com público visível, uma semijoia sem evidência —, **3 leituras no Gemini 3.7 Flash a 4 ⚡**
    e **1 releitura pelo Haiku com o campo em branco**. **R1: o botão tem de dizer «Ler a foto · 4 ⚡», ou o clique
@@ -183,6 +205,7 @@ mesmos**, e as migrations, 40.
 | c | **O navegador embutido do aplicativo desktop** | a trava só vigia as ferramentas da extensão do Chrome (`mcp__claude-in-chrome__*`); o painel de navegador do desktop **não passa por ela**. Até o dono decidir, vale a regra do bastão para os dois, por frase |
 | d | **A junção dos três sistemas** — TKS, Máquina de Conteúdo e Máquina de Edição num produto só, à venda, com modo amigável (por chat) e modo avançado (canvas) | **intenção declarada pelo dono; estratégia não decidida, plano não escrito.** Nada no código muda. → [`decisoes.md`](decisoes.md), 21/11/2026 |
 | e | **O trabalho da F1 mora num disco só** | a árvore e o retrato de 03/10 estão no mesmo HD (D:). O retrato tem 688 KB — vale uma cópia fora do D: até o commit da F1 |
+| g | **O painel de modelos** — o dono quer escolher, numa tela, o fornecedor e o modelo de cada tarefa (Roteiro, leitura de produto, imagem…), inclusive OpenAI, sem nada «da casa» preso a um fornecedor | **pedido do dono, 21/11; frente própria, sem plano.** Hoje: a escolha já mora no catálogo do banco (o padrão é uma marca numa linha), mas **não há tela** — muda por migration —, **fornecedor novo precisa de adaptador** (o catálogo já tem `gpt-5`, `gpt-5-mini` e `grok-4` sem adaptador), e a **tarifa real do texto está no código** (`src/lib/ai/pricing.ts`, só o 3.7 Flash). → [`ROADMAP.md`](ROADMAP.md) §4 · [`decisoes.md`](decisoes.md), 21/11/2026 |
 | f | **Três dívidas de documentação** | o `.env.example` lista `GOOGLE_AI_API_KEY` e `FAL_WEBHOOK_SECRET` (o código lê `GEMINI_API_KEY`, e o segredo não existe) e não lista `XAI_API_KEY` nem `FAL_WEBHOOK_URL`; o `arquitetura.md` §4 fala em 15 e 16 tabelas (são **21**) e a árvore de pastas do §5 ainda traz `config/models.json`; o inventário do `ROADMAP.md` é de 16/09 |
 
 ## 2 · Feito em 02/10 e 03/10 — tudo 0 ⚡

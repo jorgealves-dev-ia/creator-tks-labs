@@ -278,7 +278,7 @@ mas não em silêncio.)*
 |---|---|---|---|---|
 | 1ª | **F0** | o que o compilador envia hoje; o que Haiku e Gemini leem da foto da blusa — **e o padrão da lista de produto** | 0 ⚡ + ⚠️ **20 ⚡ fora do produto** (5 leituras) | ✅ **fechada em 27/09** — (a) byte a byte; (b) o lado a lado, 11 centavos reais na F0 inteira; **o padrão é o 3.7 Flash**, e o aviso de público entra na F1 (decisão do dono) |
 | — | **F1a** | o envio que lê os bytes — e o colar/arrastar imagem no canvas pelo mesmo caminho | 0 ⚡ | ✅ **fechada em 27/09** — 37 provas estruturais + a prova ao vivo, com o Ctrl+V real; dois defeitos achados ao vivo, consertados · **a dívida — a limpeza no caminho de falha — ✅ paga em 01/10** (fim da seção F1a) |
-| — | **item 0** *(lote de 02/10)* | Pose, Character Sheet e Produto ganham o conserto do Input de Imagem: a foto inteira, e a prévia local pelo seletor | 0 ⚡ | 🟡 **escrito e provado** (31 estruturais) · **espera a prova ao vivo** — e commit próprio. → [`decisoes.md`](decisoes.md), 02/10 |
+| — | **item 0** *(lote de 02/10)* | Pose, Character Sheet e Produto ganham o conserto do Input de Imagem: a foto inteira, e a prévia local pelo seletor | 0 ⚡ | ✅ **provado ao vivo em 21/11** — nos três cards a foto entra na hora (`blob:`), troca para o Storage sem piscar e tem 0 px cortados — e **commitado à parte**, sem a F1 (o card de Produto vai na versão de 02/10). → [`decisoes.md`](decisoes.md), 02/10 · evidência `item0-f1-tela-2111\numeros-prova-de-tela-2111.md` |
 | 2ª | **F1** | o card, o botão, o seletor e a leitura gravada — **com migration** | ⚠️ **até 40 ⚡**, a metade do dono (era 4 ⚡ até 02/10) | 🟡 **aberta desde 02/10** — escrita por inteiro e provada a 0 ⚡ (87 + 50 + 23 + 16 provas); **não commitada**: espera a migration aplicada, a prova de tela e a metade do dono |
 | 3ª | **F2** | o compilador cola a descrição | 0 ⚡ | ⬜ |
 | 4ª | **F3** | a prova viva: a blusa aparece | ⚠️ **75 ⚡** | ⬜ |
@@ -1120,12 +1120,12 @@ achado da retentativa do Google).
 
 | # | o que prova | estado | evidência (`scratchpad\evidencias\produto-diz-f1\`) |
 |---|---|---|---|
-| F1.1 | as travas do banco, as três camadas | 🟡 **ensaiada** num Postgres de verdade, sobre as 39 migrations de produção: **50 de 50**; o script do dono: **23 de 23** · **falta rodar em produção** — o dono, no SQL Editor | `f1-1-travas-do-banco-0210.md` · `f1-1-script-de-travas-0210.md` |
+| F1.1 | as travas do banco, as três camadas | 🟡 **ensaiada** num Postgres de verdade, sobre as 39 migrations de produção: **50 de 50**; o script do dono: **23 de 23** · ✅ **em produção, 21/11: 23 de 23**, nada ficou (rodado pelo Code, arquivo inteiro, depois de a migration ser aplicada pelo `npm run db:push`) | `f1-1-travas-do-banco-0210.md` · `f1-1-script-de-travas-0210.md` |
 | F1.2 | o registro e o padrão, vermelho → verde | ✅ | `f1-leitura-0210-7.md`, seção B |
 | F1.3 | a ordem da ação | ✅ 14 recusas antes da chamada, 9 falhas grátis, o sucesso em 1 + 1 + 1 + 1 | idem, seções D e E |
 | F1.4 | um clique, uma chamada | ✅ | idem, seção F |
 | F1.5 | só no vazio | ✅ | idem, seção G |
-| F1.6 | a tela | ⬜ **espera a migration aplicada e o navegador** | — |
+| F1.6 | a tela | ✅ **21/11**, servidor sem chaves, perfil «Jorge Alves - DevIA»: anatomia, seletor todo desligado («(sem chave)» / «(em breve)»), botão desligado com e sem foto, rótulo não vira Nome, card antigo a 539 sem sobrepor e fluxo salvo intacto | `..\item0-f1-tela-2111\numeros-prova-de-tela-2111.md` |
 | F1.7 | o aviso contra as leituras reais da F0 | ✅ 5 de 5, exatas — **na v2 e na v3** | `aviso-de-publico-0210.md` (v2), seção C · `aviso-de-publico-v3-0210.md`, seção E |
 | F1.8 | a invariante do rótulo | ✅ | `f1-leitura-0210-7.md`, seção K |
 | — | **vermelho → verde do portão** — sete mutantes, um por trava | ✅ | idem, seção I |

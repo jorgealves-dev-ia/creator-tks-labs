@@ -1,11 +1,10 @@
 "use client";
 
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
-import { useEffect, useState } from "react";
 
 import { NodeHeader } from "@/components/nodes/node-header";
 import { NodeIcon } from "@/components/nodes/node-icons";
-import { signAssets } from "@/lib/assets/sign-batch";
+import { useInputPicture } from "@/components/nodes/use-input-picture";
 import { useReferencePicker } from "@/lib/canvas/reference-picker-store";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { t } from "@/lib/i18n/pt-BR";
@@ -48,34 +47,9 @@ export function InputPoseNode({ id, data, selected }: NodeProps<InputPoseNodeTyp
   const assetId = data.assetId ?? null;
   const instrucao = data.instrucao ?? "";
 
-  /**
-   * The signed link, remembered next to the asset it belongs to.
-   *
-   * Keeping the pair rather than a lone string is what makes the frame go blank
-   * the instant the card points somewhere else, instead of showing the previous
-   * picture until a request comes back — and it derives the answer rather than
-   * clearing it in an effect, which would be a second render telling the truth
-   * after a first one told a lie.
-   */
-  const [signed, setSigned] = useState<{ assetId: string; url: string } | null>(null);
-  const url = assetId && signed?.assetId === assetId ? signed.url : null;
-
-  useEffect(() => {
-    if (!assetId) return;
-
-    let cancelled = false;
-
-    void signAssets([assetId]).then((urls) => {
-      // O card desenha pequeno: miniatura. Ampliar é o Lightbox, que reassina.
-      const link = urls[assetId]?.thumb;
-
-      if (!cancelled && link) setSigned({ assetId, url: link });
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [assetId]);
+  // The signed thumbnail — or, for a moment after the file was sent from this
+  // browser, the file itself. One hook for the four input cards.
+  const shown = useInputPicture(assetId);
 
   function choose() {
     useReferencePicker.getState().open({
@@ -109,10 +83,18 @@ export function InputPoseNode({ id, data, selected }: NodeProps<InputPoseNodeTyp
                      rounded-lg border border-dashed border-line bg-canvas text-[11px]
                      text-ink-faint transition-colors hover:border-line-strong hover:text-ink"
         >
-          {url ? (
-            /* Short-lived signed URLs for a private bucket. */
+          {shown ? (
+            /* Short-lived signed URLs for a private bucket — or, for a moment
+               after it was sent, the file itself.
+
+               `contain`, never `cover` (02/10/2026 — the fix the Input de Imagem
+               got on 01/10). Here the cut cost the most: a pose is the WHOLE
+               body, and a square frame cutting a standing figure showed a torso
+               — head and feet, the two things a pose is read by, were outside.
+               The provider always received the whole file; only this frame was
+               cutting. The frame stays a square that does not change size. */
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={url} alt="" className="size-full object-cover" />
+            <img src={shown} alt="" className="size-full object-contain" />
           ) : (
             <span className="flex flex-col items-center gap-1.5 px-3 text-center leading-relaxed">
               <NodeIcon kind="input-pose" className="size-5" />

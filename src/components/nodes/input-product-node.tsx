@@ -1,11 +1,10 @@
 "use client";
 
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
-import { useEffect, useState } from "react";
 
 import { NodeHeader } from "@/components/nodes/node-header";
 import { NodeIcon } from "@/components/nodes/node-icons";
-import { signAssets } from "@/lib/assets/sign-batch";
+import { useInputPicture } from "@/components/nodes/use-input-picture";
 import { useReferencePicker } from "@/lib/canvas/reference-picker-store";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { t } from "@/lib/i18n/pt-BR";
@@ -55,33 +54,6 @@ export function InputProductNode({ id, data, selected }: NodeProps<InputProductN
   const nome = data.nome ?? "";
   const assetIds = data.assetIds ?? [];
   const instrucao = data.instrucao ?? "";
-
-  const [urls, setUrls] = useState<Record<string, string>>({});
-  const key = assetIds.join(",");
-
-  useEffect(() => {
-    const ids = key === "" ? [] : key.split(",");
-
-    if (ids.length === 0) return;
-
-    let cancelled = false;
-
-    void signAssets(ids).then((signed) => {
-      if (cancelled) return;
-
-      const thumbs = Object.fromEntries(
-        Object.entries(signed).map(([id, pair]) => [id, pair.thumb]),
-      );
-
-      setUrls((current) => ({ ...current, ...thumbs }));
-    });
-
-    return () => {
-      cancelled = true;
-    };
-    // Keyed by the ids themselves: depending on the array would re-sign on every
-    // keystroke in the name field above.
-  }, [key]);
 
   /**
    * The guard, at the source.
@@ -169,15 +141,7 @@ export function InputProductNode({ id, data, selected }: NodeProps<InputProductN
         <div className="flex flex-wrap gap-1.5">
           {assetIds.map((assetId) => (
             <div key={assetId} className="group/photo relative">
-              <span className="block size-12 overflow-hidden rounded-md border border-line">
-                {urls[assetId] ? (
-                  /* Short-lived signed URLs for a private bucket. */
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={urls[assetId]} alt="" className="size-full object-cover" />
-                ) : (
-                  <span className="block size-full bg-canvas" />
-                )}
-              </span>
+              <ProductPhoto assetId={assetId} />
 
               <button
                 type="button"
@@ -256,6 +220,37 @@ export function InputProductNode({ id, data, selected }: NodeProps<InputProductN
         className="!size-2.5 !border-2 !border-canvas !bg-accent"
       />
     </div>
+  );
+}
+
+/**
+ * One photo of the product, in its tile.
+ *
+ * A component of its own so each photo asks for its own picture through the
+ * hook the other input cards use (`use-input-picture.ts`) — the signed
+ * thumbnail, or the file itself for a moment after it was sent from this
+ * browser. Five tiles mounting together still make one trip: `signAssets`
+ * gathers every request of the same tick. And a photo added later signs alone,
+ * where the list used to be signed whole again on every change.
+ *
+ * `contain`, never `cover` (02/10/2026 — the fix the Input de Imagem got on
+ * 01/10). A product photo is the thing the whole card exists to carry: cut to a
+ * square, a dress showed its waist and a necklace its pendant. The provider
+ * always received the whole file; only this tile was cutting. The tile stays a
+ * square that does not change size, on the same dark ground the other cards'
+ * frames use.
+ */
+function ProductPhoto({ assetId }: { assetId: string }) {
+  const shown = useInputPicture(assetId);
+
+  return (
+    <span className="block size-12 overflow-hidden rounded-md border border-line bg-canvas">
+      {shown ? (
+        /* Short-lived signed URLs for a private bucket — or the file itself. */
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={shown} alt="" className="size-full object-contain" />
+      ) : null}
+    </span>
   );
 }
 

@@ -1,12 +1,10 @@
 "use client";
 
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
-import { useEffect, useState } from "react";
 
 import { NodeHeader } from "@/components/nodes/node-header";
 import { NodeIcon } from "@/components/nodes/node-icons";
-import { signAssets } from "@/lib/assets/sign-batch";
-import { useLocalPreviews } from "@/lib/canvas/local-previews";
+import { useInputPicture } from "@/components/nodes/use-input-picture";
 import { useReferencePicker } from "@/lib/canvas/reference-picker-store";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { REFERENCE_KINDS, type ReferenceKind } from "@/lib/generation/references";
@@ -51,64 +49,10 @@ export function InputImageNode({ id, data, selected }: NodeProps<InputImageNodeT
   const kind = data.kind ?? null;
   const instrucao = data.instrucao ?? "";
 
-  /**
-   * The signed link, remembered next to the asset it belongs to.
-   *
-   * Keeping the pair rather than a lone string is what makes the frame go blank
-   * the instant the card points somewhere else, instead of showing the previous
-   * picture until a request comes back — and it derives the answer rather than
-   * clearing it in an effect, which would be a second render telling the truth
-   * after a first one told a lie.
-   */
-  const [signed, setSigned] = useState<{ assetId: string; url: string } | null>(null);
-  const url = assetId && signed?.assetId === assetId ? signed.url : null;
-
-  /**
-   * The picture from the person's own machine, when this card was born of a
-   * paste or a drop a moment ago (`local-previews.ts`).
-   *
-   * The gesture was already showing it; the card goes on showing it instead of
-   * falling back to «Carregando…» while the signed link is made. It is an object
-   * URL in this tab's memory — never in `data`, never saved.
-   */
-  const preview = useLocalPreviews((state) => (assetId ? (state.byAsset[assetId] ?? null) : null));
-  const shown = preview ?? url;
-
-  useEffect(() => {
-    if (!assetId) return;
-
-    let cancelled = false;
-
-    void signAssets([assetId]).then((urls) => {
-      // O card desenha pequeno: miniatura. Ampliar é o Lightbox, que reassina.
-      const link = urls[assetId]?.thumb;
-
-      if (!cancelled && link) setSigned({ assetId, url: link });
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [assetId]);
-
-  // The local preview steps down only when the real picture is ready to take its
-  // place: loaded off-screen first, so the frame never goes blank between the
-  // two. If it never loads, the preview stays until the store's own timer.
-  useEffect(() => {
-    if (!assetId || !preview || !url) return;
-
-    const real = new Image();
-    let cancelled = false;
-
-    real.onload = () => {
-      if (!cancelled) useLocalPreviews.getState().release(assetId);
-    };
-    real.src = url;
-
-    return () => {
-      cancelled = true;
-    };
-  }, [assetId, preview, url]);
+  // The signed thumbnail — or, when this card was born of a paste or a drop a
+  // moment ago, the picture from the person's own machine. One hook for the four
+  // input cards: see `use-input-picture.ts`.
+  const shown = useInputPicture(assetId);
 
   function choose() {
     useReferencePicker.getState().open({
