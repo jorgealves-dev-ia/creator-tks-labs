@@ -34,6 +34,13 @@ export type RawFieldAnswer = {
  *
  * Token counts come from the provider's own usage report — never estimated — so
  * `real_cost_cents` can be computed from something true.
+ *
+ * `outputTokens` is everything the provider BILLS as output: the answer and the
+ * thinking that produced it. Anthropic reports the two as one number; Google
+ * reports the thinking apart, and the adapter adds it in — measured on
+ * 27/09/2026: a reading of 150 answer tokens came with 537 of thought, and a
+ * cost that counted only the first would have recorded 1 cent where the invoice
+ * said 3.
  */
 export type ExtractionResult = {
   fields: Record<string, unknown>;
@@ -47,8 +54,13 @@ export type ExtractionModel = {
 };
 
 /**
- * A provider able to read a photo or a block of text and answer the extraction
- * contract. One implementation today: AnthropicExtractionProvider.
+ * A provider able to read a photo or a block of text and answer a contract.
+ *
+ * Two consumers, and the registry keeps them apart (`registry.ts`): the
+ * character extraction, served by Anthropic alone, and — since the Frente 1 —
+ * the reading of a product photo, served by Anthropic and by Google. Same
+ * interface, because it is the same work: a reference in, a JSON object out,
+ * with the contract in the system prompt.
  */
 export type ExtractionProvider = {
   readonly slug: string;
@@ -67,6 +79,18 @@ export type ExtractionProvider = {
      * layer either way.
      */
     systemPrompt: string;
+    /**
+     * The shape of the answer, in JSON Schema — for the providers that take one.
+     *
+     * Optional, and `unknown`, for the reason `TextGenerationInput.schema` is:
+     * a schema's grammar is the PROVIDER's vocabulary. The character contract
+     * has none (it is too large for the feature; the prompt carries the shape);
+     * the product reading has a small one, which Google receives through its
+     * structured output and Anthropic ignores — its prompt already spells the
+     * three keys out. What makes the answer valid is the Zod above the layer,
+     * whichever road it travelled.
+     */
+    schema?: unknown;
   }): Promise<ExtractionResult>;
 };
 

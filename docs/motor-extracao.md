@@ -59,6 +59,7 @@ Duas coisas que nascem juntas, de propósito:
 | `capabilities` text[] | `{extraction}` agora; `{image_gen}`, `{video_gen}` depois — o mesmo catálogo serve tudo |
 | `extraction_sparks` integer nullable | preço em Sparks por extração (só para modelos com a capability) |
 | `is_default` boolean | pré-selecionado no seletor |
+| `is_product_reading_default` boolean | *(F1 da Frente 1, 21/11/2026)* o modelo em que a **leitura de produto** abre quando ninguém escolheu — separado de `is_default`, que é o padrão da ficha. No máximo um marcado, e só modelo ligado e de `extraction` (seção 7) |
 | `enabled` boolean | — |
 
 **Seed inicial:** Anthropic com Sonnet (padrão, melhor custo-benefício), Opus (mais caro/minucioso) e Haiku (econômico) — *strings oficiais dos modelos conferidas na documentação da Anthropic no momento da implementação*. OpenAI, Google e xAI entram como fornecedores com 1–2 modelos de visão cada, `enabled` porém sem chave (apagados no seletor). Preço inicial do Sonnet: **10 ⚡ por extração** — chute educado, calibrável com os dados reais do registro (seção 5).
@@ -111,6 +112,9 @@ Tabela **`extractions`** — o diário de bordo do motor (e fonte do futuro dash
 | `source_text` text nullable | o texto colado (fonte text) |
 | `summary` jsonb | o placar (observados/inferidos/vazios/preservados) |
 | `created_at` | — |
+| `subject` text | *(F1 da Frente 1)* **o que foi lido:** `character` (a ficha — o padrão, e todas as linhas anteriores) ou `product` (o card de um Input de Produto) |
+| `project_id`, `node_id` | *(F1)* só em `product`: o projeto e o card lidos — produto é card de canvas, não tem linha em `entities` para apontar |
+| `reading` jsonb | *(F1)* só em `product` que deu certo: o que a IA escreveu — `nome`, `descricao_pt`, `descricao_en` |
 
 Regras: débito no ledger **apenas no sucesso** (falha da API = ninguém paga); saldo insuficiente = bloqueio amigável antes da chamada ("você precisa de 10 ⚡ para esta análise"); RLS default-deny com leitura do próprio usuário.
 
@@ -139,3 +143,29 @@ Painel super admin (roadmap; as tabelas daqui já nascem prontas para ele); chav
 **Registrados para a conversa da geração canônica (a próxima):**
 - **Folha única vs. vistas separadas** — oferecer as duas formas de gerar as canônicas: por vista (um slot de cada vez, trocável individualmente) e folha única em grade (estilo character sheet do Magnific, uma geração só). Não são excludentes; o desenho fino é assunto de lá.
 - **Prévia do prompt compilado** — o compilador (character-sheet.md §6) nasce naquela conversa, e com ele o painel "Prompt compilado (prévia)" no editor: o JSON em inglês visível ao vivo. Visível sempre, editável nunca como texto no nível do DNA — edição de prompt acontece nos nodes de geração, preservando as listas fechadas.
+
+---
+
+## 7. A leitura de produto — o segundo consumidor *(F1 da Frente 1 · em produção desde 23/11/2026)*
+
+O motor ganhou um segundo assunto: além de ler a foto de uma **personagem** para preencher a ficha, ele lê a foto de um **produto** para preencher o card (Nome e Descrição). **É o mesmo catálogo, o mesmo diário (`extractions`) e a mesma regra de só-vazios — e é outro caminho em tudo o que decide dinheiro e escolha de modelo.** O plano, as medições e as decisões do dono estão em [`plano-produto-diz.md`](plano-produto-diz.md); a tela, em [`nodes-geracao.md`](nodes-geracao.md) §3.1.
+
+| | a ficha da personagem (seções 1–6) | a leitura de produto |
+|---|---|---|
+| o que escreve | campos de lista fechada, com estado e motivo | **texto livre**: `nome`, `descricao_pt`, `descricao_en` — sem dicionário, sem estados |
+| fonte | foto **ou** texto colado | **só foto** — a primeira do card, lida do Storage, com o tipo conferido nos bytes |
+| o contrato | o prompt de extração (4.2) | o **contrato de leitura v2**, embutido byte a byte (`lib/product-reading/contract.ts`; os md5 estão no plano). **Mudar o contrato é decisão do dono, com versão nova e leituras novas** |
+| quem cobra | `record_extraction` | **`record_product_reading`** — a irmã: grava a linha e debita na mesma transação, preço lido do catálogo, carteira travada, **falha grátis**; recusa com `EX001` (saldo), `EX003` (modelo), `EX004` (projeto), `EX005` (foto) |
+| o padrão do seletor | `is_default` — o Sonnet | **`is_product_reading_default`** — o Gemini 3.7 Flash, a 4 ⚡ (decisão do dono, 27/09/2026). **O Sonnet nunca é o padrão de produto**: a conferência `assert_product_reading_catalog()` levanta exceção se for |
+| os adaptadores | o registro de extração: só a Anthropic | **registro próprio** (`lib/providers/registry.ts`): Anthropic **e Google**. O Google lê produto e **não** lê personagem — na lista da ficha ele segue apagado |
+| só no vazio | por campo do DNA | por campo do card: Nome e Descrição (a tabela-verdade está em `lib/product-reading/fill.ts`) |
+
+**Três coisas que só a leitura de produto tem:**
+
+1. **O preço que o botão mostrou é o preço cobrado.** O navegador manda o preço que viu; se o catálogo mudou no meio, o servidor **recusa antes de chamar o provedor** (`price_changed`) e a tela mostra o número novo. O valor cobrado continua sendo o do catálogo — o que o navegador manda só serve para recusar.
+2. **A resposta perdida não vira «nada foi cobrado».** Se a resposta de uma leitura se perde no caminho, o card não sabe se houve cobrança: desliga o botão e pergunta ao servidor, de graça, pela leitura **daquele clique** (`summary.tentativa`).
+3. **O aviso de público.** Depois da leitura — e de qualquer texto digitado ou colado — uma função pura confere o Nome e a Descrição contra a lista fechada de público, gênero e tamanho, e o card destaca o que achou. O que ela achou na resposta do modelo fica gravado em `summary.publico`. É a **segunda rede** da regra 2 do contrato, que a F0 mediu falhando em 2 de 4 leituras.
+
+**O que o `summary` de uma leitura de produto guarda:** `contrato` (a versão), `tentativa` (o id do clique), `campos` e o placar (`preenchidos`, `preservados`), `publico` (os termos achados no nome e nas duas descrições) e `foto_reduzida`.
+
+**Modelo novo na lista de produto** = a linha no catálogo com `extraction` e `extraction_sparks` (por migration) **e** o adaptador registrado no registro de leitura de produto. Mudar o padrão é mudar a marca `is_product_reading_default` — e a função de conferência junto, porque ela guarda a decisão datada.

@@ -11,6 +11,7 @@ import type {
 import {
   extractionProviderStatus,
   imageProviderStatus,
+  productReadingProviderStatus,
   textProviderStatus,
   videoProviderStatus,
 } from "@/lib/providers/registry";
@@ -207,6 +208,64 @@ export async function loadCatalog(
           sizes: reader.sizes(model),
           durations: reader.durations(model),
           jobs: reader.jobs(model),
+        })),
+    }))
+    .filter((provider) => provider.models.length > 0);
+}
+
+/**
+ * The catalogue as the PRODUCT reading sees it — Frente 1, F1.
+ *
+ * The same rows the character extraction reads (`extraction` models, priced by
+ * `extraction_sparks`), with two answers of its own:
+ *
+ *   who can read    the product-reading registry — Anthropic and Google —, not
+ *                   the character one. Google is "ready" here and "no adapter"
+ *                   there, off the very same row.
+ *   the default     `is_product_reading_default`, never `is_default`. That one
+ *                   is the character sheet's — Claude Sonnet, at 20 ⚡ — and the
+ *                   owner's rule is that it is never the default for a product
+ *                   (answer 9.4): a default is what happens when nobody chooses.
+ *
+ * A function of its own, with its own select, rather than a fifth entry in the
+ * table above — and the reason is the order things reach production in. The
+ * select below names a column that exists only after the F1 migration. Sharing
+ * one select with the other four capabilities would mean that code deployed a
+ * minute before its migration answers "no models" to EVERY selector in the
+ * product: image, video, text. Here, the only thing a missing column can empty
+ * is the list that needs the column.
+ */
+export async function loadProductReadingCatalog(
+  supabase: SupabaseServerClient,
+): Promise<CatalogProvider[]> {
+  const { data } = await supabase
+    .from("ai_providers")
+    .select(
+      "slug, display_name, enabled, env_var_name, sort_order, ai_models (id, slug, display_name, extraction_sparks, is_product_reading_default, enabled, capabilities, sort_order)",
+    )
+    .eq("enabled", true)
+    .order("sort_order");
+
+  return (data ?? [])
+    .map((provider) => ({
+      slug: provider.slug,
+      displayName: provider.display_name,
+      status: productReadingProviderStatus(provider.slug, provider.env_var_name),
+      models: (provider.ai_models ?? [])
+        .filter((model) => model.enabled && model.capabilities.includes("extraction"))
+        // The same backstop as above: a model the charging function could not
+        // price is a model nobody may select.
+        .filter((model) => model.extraction_sparks !== null)
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((model) => ({
+          id: model.id,
+          slug: model.slug,
+          displayName: model.display_name,
+          sparks: model.extraction_sparks ?? 0,
+          isDefault: model.is_product_reading_default,
+          sizes: [],
+          durations: [],
+          jobs: [],
         })),
     }))
     .filter((provider) => provider.models.length > 0);

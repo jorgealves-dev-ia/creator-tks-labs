@@ -272,7 +272,7 @@ frente fecha com prova estrutural + validação de tela.
 | # | frente | tamanho | dinheiro de provedor? |
 |---|---|---|---|
 | 0 | **Este ROADMAP** | ✅ 16/09 | não — 0 ⚡ |
-| **1** | **O produto diz o que é** — o item 1 aberto no ESTADO: o nome e a descrição do Input de Produto viram palavra no prompt | um dia | na parte estrutural, não. ⚠️ **Ver** a fidelidade custa uma imagem (75 ⚡) |
+| **1** | **O produto diz o que é** — o nome e a descrição do Input de Produto viram palavra no prompt. **Em andamento** ([`plano-produto-diz.md`](plano-produto-diz.md)): **F0 ✅ · F1a ✅ · item 0 ✅ · F1 ✅ em 23/11** — o card lê a foto, «Ler a foto · N ⚡» — → **F2** (o texto do card chega ao prompt) → **F3** (a prova viva) | previsto «um dia» em 16/09; **virou um ciclo** — a F0 mostrou que a leitura pedia contrato medido, migration própria e o aviso de público | ⚠️ sim — cada leitura custa o preço do botão (4 ⚡ no padrão), e **ver** a fidelidade custa uma imagem (75 ⚡, a F3). **Gasto até 23/11: 16 ⚡ da carteira** (a metade do dono da F1); a F0 mediu 5 leituras pelo harness, fora da carteira |
 | **2** | **Modo Rápido — o primeiro template:** post estático com produto | um ciclo | ⚠️ sim — cada post é uma imagem paga |
 | **3** | **Formatos IG 4:5 e 1:1 + node de legenda e hashtags** | um ciclo | ⚠️ sim, se a legenda sair do Gemini (§1.4). **As proporções já existem** (§1.3); o que falta é o **pixel do canal** — `sharp` já está em casa — e o banco saber o pixel. A `cta_library` está pronta (§1.7) |
 | **4** | **Carrossel** — o texto por **template HTML, nunca pelo modelo** | um ciclo | ⚠️ sim nas imagens dos slides; o texto desenhado custa 0 ⚡ |

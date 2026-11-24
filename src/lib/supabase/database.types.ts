@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.18"
   }
   public: {
     Tables: {
@@ -135,6 +135,7 @@ export type Database = {
           id: string
           image_sparks: number | null
           is_default: boolean
+          is_product_reading_default: boolean
           provider_id: string
           slug: string
           sort_order: number
@@ -148,6 +149,7 @@ export type Database = {
           id?: string
           image_sparks?: number | null
           is_default?: boolean
+          is_product_reading_default?: boolean
           provider_id: string
           slug: string
           sort_order?: number
@@ -161,6 +163,7 @@ export type Database = {
           id?: string
           image_sparks?: number | null
           is_default?: boolean
+          is_product_reading_default?: boolean
           provider_id?: string
           slug?: string
           sort_order?: number
@@ -492,52 +495,64 @@ export type Database = {
       extractions: {
         Row: {
           created_at: string
-          entity_id: string
+          entity_id: string | null
           error_message: string | null
           id: string
           input_tokens: number | null
           model_id: string
+          node_id: string | null
           output_tokens: number | null
+          project_id: string | null
+          reading: Json | null
           real_cost_cents: number | null
           reference_asset_id: string | null
           source: Database["public"]["Enums"]["extraction_source"]
           source_text: string | null
           sparks_charged: number
           status: Database["public"]["Enums"]["extraction_status"]
+          subject: string
           summary: Json | null
           user_id: string
         }
         Insert: {
           created_at?: string
-          entity_id: string
+          entity_id?: string | null
           error_message?: string | null
           id?: string
           input_tokens?: number | null
           model_id: string
+          node_id?: string | null
           output_tokens?: number | null
+          project_id?: string | null
+          reading?: Json | null
           real_cost_cents?: number | null
           reference_asset_id?: string | null
           source: Database["public"]["Enums"]["extraction_source"]
           source_text?: string | null
           sparks_charged?: number
           status: Database["public"]["Enums"]["extraction_status"]
+          subject?: string
           summary?: Json | null
           user_id: string
         }
         Update: {
           created_at?: string
-          entity_id?: string
+          entity_id?: string | null
           error_message?: string | null
           id?: string
           input_tokens?: number | null
           model_id?: string
+          node_id?: string | null
           output_tokens?: number | null
+          project_id?: string | null
+          reading?: Json | null
           real_cost_cents?: number | null
           reference_asset_id?: string | null
           source?: Database["public"]["Enums"]["extraction_source"]
           source_text?: string | null
           sparks_charged?: number
           status?: Database["public"]["Enums"]["extraction_status"]
+          subject?: string
           summary?: Json | null
           user_id?: string
         }
@@ -554,6 +569,13 @@ export type Database = {
             columns: ["model_id"]
             isOneToOne: false
             referencedRelation: "ai_models"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extractions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {
@@ -1078,6 +1100,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assert_product_reading_catalog: { Args: never; Returns: undefined }
       attach_video_job: {
         Args: {
           p_generation_id: string
@@ -1192,18 +1215,22 @@ export type Database = {
         }
         Returns: {
           created_at: string
-          entity_id: string
+          entity_id: string | null
           error_message: string | null
           id: string
           input_tokens: number | null
           model_id: string
+          node_id: string | null
           output_tokens: number | null
+          project_id: string | null
+          reading: Json | null
           real_cost_cents: number | null
           reference_asset_id: string | null
           source: Database["public"]["Enums"]["extraction_source"]
           source_text: string | null
           sparks_charged: number
           status: Database["public"]["Enums"]["extraction_status"]
+          subject: string
           summary: Json | null
           user_id: string
         }
@@ -1312,6 +1339,48 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      record_product_reading: {
+        Args: {
+          p_error_message?: string
+          p_input_tokens?: number
+          p_model_id: string
+          p_node_id: string
+          p_output_tokens?: number
+          p_project_id: string
+          p_reading?: Json
+          p_real_cost_cents?: number
+          p_reference_asset_id: string
+          p_status: Database["public"]["Enums"]["extraction_status"]
+          p_summary?: Json
+        }
+        Returns: {
+          created_at: string
+          entity_id: string | null
+          error_message: string | null
+          id: string
+          input_tokens: number | null
+          model_id: string
+          node_id: string | null
+          output_tokens: number | null
+          project_id: string | null
+          reading: Json | null
+          real_cost_cents: number | null
+          reference_asset_id: string | null
+          source: Database["public"]["Enums"]["extraction_source"]
+          source_text: string | null
+          sparks_charged: number
+          status: Database["public"]["Enums"]["extraction_status"]
+          subject: string
+          summary: Json | null
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "extractions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       save_entity_version: {
         Args: { p_entity_id: string; p_label?: string }
         Returns: {
@@ -1413,12 +1482,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1442,11 +1511,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1467,11 +1536,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1492,11 +1561,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1509,11 +1578,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

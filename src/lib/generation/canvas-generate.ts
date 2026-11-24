@@ -27,6 +27,7 @@ import {
   resolveFormat,
 } from "@/lib/generation/presets";
 import { REFERENCE_KINDS } from "@/lib/generation/references";
+import { PRODUCT_DESCRIPTION_MAX } from "@/lib/product-reading/limits";
 import {
   buildCanvasPrompt,
   type CanvasPromptStructure,
@@ -95,7 +96,14 @@ const CHARGE_ERROR_CODES: Record<string, CanvasGenerationFailure> = {
 const referenceSchema = z.object({
   assetId: z.uuid(),
   kind: z.enum(REFERENCE_KINDS.map((kind) => kind.key) as [string, ...string[]]).nullable(),
-  instrucao: z.string().max(400),
+  /**
+   * What the card says about the image. On a product card this is the
+   * Descrição, and its ceiling is the card's own: it was 400 while the field was
+   * a one-line «Instrução», and a card may now hold a pasted marketplace page
+   * (Frente 1, F1 — 02/10/2026). The other cards still stop at 400 in their own
+   * fields; this is the guard against a malformed request, not the editor.
+   */
+  instrucao: z.string().max(PRODUCT_DESCRIPTION_MAX),
   origem: z.enum(["upload", "galeria", "resultado", "produto", "input"]),
   /**
    * The group this image belongs to, when it arrived with others that count as

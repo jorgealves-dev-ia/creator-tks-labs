@@ -5,6 +5,8 @@ import { ApiError, GoogleGenAI } from "@google/genai";
 import { readProviderKey } from "@/lib/providers/keys";
 import {
   ProviderError,
+  type ExtractionProvider,
+  type ExtractionResult,
   type ImageGenerationProvider,
   type ImageGenerationResult,
   type TextGenerationProvider,
@@ -262,6 +264,141 @@ export const googleTextProvider: TextGenerationProvider = {
 };
 
 /**
+ * The sentence that travels with the photo. The contract itself is the system
+ * prompt; this only says which kind of input arrived.
+ *
+ * It is, word for word, the sentence the Anthropic adapter sends with a photo
+ * (`PHOTO_INSTRUCTION`, in anthropic.ts) — and that is not a coincidence to
+ * tidy away: the F0 of the Frente 1 measured the two providers with the SAME
+ * turn request, and a reading that differs from the measured one by a sentence
+ * is a reading nobody measured. md5 `6cd53a1fe702a2efae2a284c9209cbef`, in the
+ * plan (docs/plano-produto-diz.md) and checked by the F1 proofs on both files.
+ */
+const PHOTO_INSTRUCTION =
+  "Analise a foto acima e preencha o formulário conforme as regras do sistema.";
+
+/**
+ * The READING adapter — a product photo becomes a JSON object, by the contract
+ * that arrives as the system prompt. Frente 1 · F1.
+ *
+ * Same house, same key, same error translation, and **the exact shape of the
+ * call the F0 made** on 27/09/2026 (round 5: two real readings, with this model,
+ * the photo before the sentence, and this `response_format`). It was not deduced
+ * from the documentation — the precedent is the text adapter right above.
+ *
+ * It implements `ExtractionProvider` and still **does not read characters**:
+ * what each provider reads is decided by the registry (`registry.ts`), where
+ * Google sits only in the product-reading map. The character contract, with its
+ * closed lists, has never run on a Gemini — and it charges Sparks (the owner's
+ * answer 9.3).
+ *
+ * Photo only. A product reading reads the first photo of the card; pasted text
+ * goes through no model at all — the person pastes it straight into the field.
+ *
+ * **One attempt, no retry**, for the image generator's reason: the SDK cannot
+ * know whether the first one was billed on their side. Said to the call itself
+ * (`NO_INTERACTION_RETRIES`) — see that constant for why the client-wide
+ * `NO_RETRIES` is not enough here.
+ */
+export const googleProductReadingProvider: ExtractionProvider = {
+  slug: PROVIDER_SLUG,
+
+  async extract({ model, input, systemPrompt, schema }): Promise<ExtractionResult> {
+    const apiKey = readProviderKey(API_KEY_ENV_VAR);
+
+    if (!apiKey) {
+      throw new ProviderError("not_configured", `${API_KEY_ENV_VAR} is not set on the server`);
+    }
+
+    if (input.kind !== "photo") {
+      throw new ProviderError("provider", "this adapter reads a photo, and was given text");
+    }
+
+    const ai = new GoogleGenAI({
+      apiKey,
+      httpOptions: { timeout: REQUEST_TIMEOUT_MS, retryOptions: NO_RETRIES },
+    });
+
+    let interaction;
+
+    try {
+      interaction = await ai.interactions.create(
+        {
+          model: model.slug,
+          system_instruction: systemPrompt,
+          // The photo before the sentence: the model reads what it is looking at
+          // before it reads what to do with it — the image generator's ordering.
+          input: [
+            { type: "image" as const, mime_type: input.mimeType, data: input.base64 },
+            { type: "text" as const, text: PHOTO_INSTRUCTION },
+          ],
+          response_format: {
+            type: "text" as const,
+            mime_type: "application/json",
+            schema,
+          },
+        },
+        NO_INTERACTION_RETRIES,
+      );
+    } catch (error) {
+      throw toProviderError(error, "read this photo");
+    }
+
+    const usage = {
+      inputTokens: interaction.usage?.total_input_tokens ?? 0,
+      // Thinking is billed as output, and Google reports it APART. Measured in
+      // the F0: 150 answer tokens came with 537 of thought — counting only the
+      // first would record 1 cent where the invoice says 3.
+      outputTokens:
+        (interaction.usage?.total_output_tokens ?? 0) +
+        (interaction.usage?.total_thought_tokens ?? 0),
+    };
+
+    const text = interaction.output_text;
+
+    // A policy refusal arrives as a successful, empty call — the same shape the
+    // two adapters above handle.
+    if (!text || text.trim() === "") {
+      const reported = (interaction.errors ?? []).map((entry) => JSON.stringify(entry)).join("; ");
+
+      throw new ProviderError(
+        interaction.status === "failed" && reported !== "" ? "provider" : "refused",
+        "the provider returned no text",
+        `status=${interaction.status}${reported ? `, errors=${reported}` : ""}`,
+      );
+    }
+
+    // From the first `{` to the last `}`: the structured output returns a clean
+    // object, and reading it this way costs nothing when it is already clean —
+    // the Anthropic adapter's tolerance, so the two answers are read alike.
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+
+    let parsed: unknown = null;
+
+    if (start !== -1 && end > start) {
+      try {
+        parsed = JSON.parse(text.slice(start, end + 1));
+      } catch {
+        parsed = null;
+      }
+    }
+
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new ProviderError(
+        "invalid_answer",
+        "the provider did not return a JSON object",
+        `tamanho=${text.length} (trecho: ${JSON.stringify(text.slice(0, 120))})`,
+      );
+    }
+
+    // Returned as it came. Whether this is a reading is decided by the Zod above
+    // the layer (lib/product-reading/contract.ts).
+    return { fields: parsed as Record<string, unknown>, usage };
+  },
+};
+
+/**
  * Turns an SDK error into one of our four kinds, keeping Google's own
  * explanation alongside ours.
  *
@@ -269,8 +406,12 @@ export const googleTextProvider: TextGenerationProvider = {
  * almost always is — a key that is missing, wrong, revoked, or attached to a
  * project without billing, which is its own common case for image models since
  * none of them has a free tier.
+ *
+ * `what` names the work that was refused, for the one sentence that mentions
+ * it. It defaults to drawing — what this file did when the sentence was written
+ * — so the image and text adapters record exactly what they always recorded.
  */
-function toProviderError(error: unknown): ProviderError {
+function toProviderError(error: unknown, what = "draw this"): ProviderError {
   // Verbatim, because a message we write ourselves can only repeat what we
   // already assumed. This is the response body, never the request, so it cannot
   // contain the key.
@@ -282,7 +423,7 @@ function toProviderError(error: unknown): ProviderError {
     }
 
     if (isRefusal(detail)) {
-      return new ProviderError("refused", "the provider declined to draw this", detail);
+      return new ProviderError("refused", `the provider declined to ${what}`, detail);
     }
 
     return new ProviderError("provider", `the provider returned ${error.status}`, detail);
@@ -305,7 +446,7 @@ function toProviderError(error: unknown): ProviderError {
   // is what makes the difference visible. Decision 7 of the architecture calls a
   // refusal an *expected* error; an expected error has to be recognisable.
   if (isRefusal(detail)) {
-    return new ProviderError("refused", "the provider declined to draw this", detail);
+    return new ProviderError("refused", `the provider declined to ${what}`, detail);
   }
 
   return new ProviderError("provider", "the provider could not be reached", detail);

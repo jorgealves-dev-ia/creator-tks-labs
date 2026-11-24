@@ -218,3 +218,34 @@ export function textRealCostCents(
 
   return Math.ceil(usd * BRL_CENTS_PER_USD);
 }
+
+// ---------------------------------------------------------------------------
+// Reading a product photo — Frente 1, F1
+// ---------------------------------------------------------------------------
+
+/**
+ * What one reading of a product photo really cost us, in BRL cents — for
+ * whichever model read it.
+ *
+ * The product list has models of two providers, and their prices live in two
+ * tables of this file: the Claude ones at the top, at a single rate; the Gemini
+ * one right above, with a rate that changes on a date. This asks the first and
+ * then the second, so the caller names a model and gets a number, and neither
+ * table is copied.
+ *
+ * `usage.outputTokens` is everything billed as output — the Google adapter adds
+ * the thinking in before it gets here (see `ExtractionResult`).
+ *
+ * `at` is a parameter for the reason `textRealCostCents` has one: the dated rate
+ * can be proved without waiting for January.
+ *
+ * Returns null for a model with no price on file, and the caller records null
+ * rather than inventing a figure.
+ */
+export function readingRealCostCents(
+  modelSlug: string,
+  usage: { inputTokens: number; outputTokens: number },
+  at: Date = new Date(),
+): number | null {
+  return realCostCents(modelSlug, usage) ?? textRealCostCents(modelSlug, usage, at);
+}

@@ -6,7 +6,11 @@ import {
 } from "@/lib/providers/anthropic";
 import type { ProviderStatus } from "@/lib/ai/catalog-types";
 import { falVideoProvider } from "@/lib/providers/fal";
-import { googleImageProvider, googleTextProvider } from "@/lib/providers/google";
+import {
+  googleImageProvider,
+  googleProductReadingProvider,
+  googleTextProvider,
+} from "@/lib/providers/google";
 import { isProviderConfigured } from "@/lib/providers/keys";
 import type {
   ExtractionProvider,
@@ -41,6 +45,47 @@ const TRANSLATION_PROVIDERS: Record<string, TranslationProvider> = {
 
 export function findExtractionProvider(slug: string): ExtractionProvider | null {
   return EXTRACTION_PROVIDERS[slug] ?? null;
+}
+
+/**
+ * Who can read a PRODUCT photo — a map of its own, beside the character one.
+ *
+ * The two answer the same question of the same catalogue rows — the capability
+ * is `extraction` for both, the price is `extraction_sparks` for both — and
+ * differ in exactly one thing: *who can read this*. Keyed by provider like every
+ * map in this file, which is the reason there are two of them: with one map,
+ * switching Google on to read products would have switched it on to read
+ * CHARACTERS as well — the wizard and the DNA tab, with the large closed-list
+ * contract that has never run on a Gemini, charging Sparks for it. Nobody asked
+ * for that (the owner's answer 9.3, docs/plano-produto-diz.md §4.4).
+ *
+ * So Anthropic is in both maps, with the same adapter object — its photo
+ * instruction is generic, and the contract travels in the system prompt —, and
+ * Google is in this one only.
+ */
+const PRODUCT_READING_PROVIDERS: Record<string, ExtractionProvider> = {
+  [anthropicExtractionProvider.slug]: anthropicExtractionProvider,
+  [googleProductReadingProvider.slug]: googleProductReadingProvider,
+};
+
+export function findProductReadingProvider(slug: string): ExtractionProvider | null {
+  return PRODUCT_READING_PROVIDERS[slug] ?? null;
+}
+
+/** Whether a product-reading adapter exists at all — the second half of "usable". */
+export function hasProductReadingAdapter(slug: string): boolean {
+  return slug in PRODUCT_READING_PROVIDERS;
+}
+
+/**
+ * Why a provider is or is not usable to read a product photo. The same two-part
+ * answer as `extractionProviderStatus`, from the other map — a provider can be
+ * ready to read a product and not a character, and Google is exactly that.
+ */
+export function productReadingProviderStatus(slug: string, envVarName: string): ProviderStatus {
+  if (!hasProductReadingAdapter(slug)) return "no_adapter";
+
+  return isProviderConfigured(envVarName) ? "ready" : "missing_key";
 }
 
 /**

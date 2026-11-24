@@ -15,14 +15,12 @@
 > seção F1a). **Deixou uma dívida: a limpeza no caminho de falha do envio** — o arquivo que sobe e não é
 > registrado fica órfão no Storage. **✅ Paga em 01/10** (fim da seção F1a).
 >
-> **🟡 F1 ABERTA desde 02/10** — a lista do aviso foi revisada pelo dono (**v2**, no item 9), e a F1 está
-> **escrita por inteiro e provada estruturalmente, a 0 ⚡** (*O que a F1 tem — 02/10*, no fim da seção F1).
-> **Não está commitada**, de propósito: espera **(1)** o dono aplicar a migration, **(2)** a prova de tela, com o
-> navegador, e **(3)** a metade paga dele — **até 40 ⚡**, com o R1 escrito antes. **Dois pontos nasceram do retorno
-> do dono de 02/10:** a lista do aviso virou **v3** (feita e provada), e **o conserto do Google entrou em produção
-> à parte** (`19dc765`). **✅ Decidido em 03/10: quem cobra a leitura de produto é
-> `record_product_reading`** (a saída A) — a migration segue intacta, e o invariante do ledger ganhou lista fechada e
-> prova ([`decisoes.md`](decisoes.md), 03/10). **A lista do aviso é a v5.**
+> **✅ F1 FECHADA em 23/11/2026** — o card de Produto lê a foto: Nome · Fotos · Descrição · seletor ·
+> «Ler a foto · N ⚡» · o aviso de público (**lista v5**, item 9). Quem cobra é **`record_product_reading`**
+> (decisão do dono, 03/10); a migration foi **aplicada em 21/11** pelo `npm run db:push` e travada em produção
+> (23 de 23); a prova de tela passou a 0 ⚡ em 21/11; e **a metade do dono veio em 23/11 — 4 leituras, 16 ⚡,
+> conferidas no banco** (*A metade do dono — feita em 23/11*, no fim da seção F1). O item 0 e o conserto do
+> Google foram para produção à parte (`8e4b456` e `19dc765`). **Próxima fase: a F2, a 0 ⚡.**
 >
 > **Custo:** 0 ⚡ nas partes estruturais. **Pior caso R1 do percurso inteiro, registrado pelo dono
 > em 26/09: 87 ⚡ de preço — 79 ⚡ da carteira** (uma leitura pelo botão + uma imagem, saldo
@@ -31,6 +29,7 @@
 > (+8): **99 ⚡ de preço; a carteira continua 79.** Custo real da F0 inteira: **11 centavos**, 0 Spark.*
 > **Em 02/10 o dono trocou a metade da F1** — de uma leitura (4 ⚡) para uma prova de **até 40 ⚡**: o pior caso
 > da carteira passa a **115 ⚡** (40 + 75), saldo **3.190 → 3.075** no teto — no §7.
+> **Gasto real até 23/11: 16 ⚡ da carteira** — saldo **3.190 → 3.174**, igual à soma do ledger. Falta a F3: 75 ⚡.
 >
 > **Onde fica no mapa:** frente 1 do [`ROADMAP.md`](ROADMAP.md) §4 — a primeira das cinco até
 > o primeiro post publicado pelo sistema.
@@ -279,7 +278,7 @@ mas não em silêncio.)*
 | 1ª | **F0** | o que o compilador envia hoje; o que Haiku e Gemini leem da foto da blusa — **e o padrão da lista de produto** | 0 ⚡ + ⚠️ **20 ⚡ fora do produto** (5 leituras) | ✅ **fechada em 27/09** — (a) byte a byte; (b) o lado a lado, 11 centavos reais na F0 inteira; **o padrão é o 3.7 Flash**, e o aviso de público entra na F1 (decisão do dono) |
 | — | **F1a** | o envio que lê os bytes — e o colar/arrastar imagem no canvas pelo mesmo caminho | 0 ⚡ | ✅ **fechada em 27/09** — 37 provas estruturais + a prova ao vivo, com o Ctrl+V real; dois defeitos achados ao vivo, consertados · **a dívida — a limpeza no caminho de falha — ✅ paga em 01/10** (fim da seção F1a) |
 | — | **item 0** *(lote de 02/10)* | Pose, Character Sheet e Produto ganham o conserto do Input de Imagem: a foto inteira, e a prévia local pelo seletor | 0 ⚡ | ✅ **provado ao vivo em 21/11** — nos três cards a foto entra na hora (`blob:`), troca para o Storage sem piscar e tem 0 px cortados — e **commitado à parte**, sem a F1 (o card de Produto vai na versão de 02/10). → [`decisoes.md`](decisoes.md), 02/10 · evidência `item0-f1-tela-2111\numeros-prova-de-tela-2111.md` |
-| 2ª | **F1** | o card, o botão, o seletor e a leitura gravada — **com migration** | ⚠️ **até 40 ⚡**, a metade do dono (era 4 ⚡ até 02/10) | 🟡 **aberta desde 02/10** — escrita por inteiro e provada a 0 ⚡ (87 + 50 + 23 + 16 provas); **não commitada**: espera a migration aplicada, a prova de tela e a metade do dono |
+| 2ª | **F1** | o card, o botão, o seletor e a leitura gravada — **com migration** | ⚠️ **até 40 ⚡**, a metade do dono (era 4 ⚡ até 02/10) — **saíram 16 ⚡** | ✅ **fechada em 23/11** — provada a 0 ⚡ (87 + 50 + 23 + 16 provas); migration aplicada e travada em produção (21/11); a tela a 0 ⚡ (21/11); e **a metade do dono: 3 leituras pelo 3.7 Flash + 1 releitura pelo Haiku, 16 ⚡**, saldo 3.190 → 3.174 = a soma do ledger |
 | 3ª | **F2** | o compilador cola a descrição | 0 ⚡ | ⬜ |
 | 4ª | **F3** | a prova viva: a blusa aparece | ⚠️ **75 ⚡** | ⬜ |
 
@@ -1112,7 +1111,7 @@ estados *lendo* e *depois* se veem aqui, na tela do dono.
 > card já lido serve, ou o texto, é o dono, antes da F3 — a conferência 3 da F3 continua exigindo a descrição
 > no card `63989469`, venha ela de onde vier.)*
 
-#### O que a F1 tem — 02/10/2026 · 🟡 aberta, nada commitado
+#### O que a F1 tem — escrita em 02/10/2026 · ✅ fechada em 23/11/2026
 
 **Escrita por inteiro e provada a 0 ⚡** — nenhum pedido saiu da máquina, nenhuma chave foi lida. O que cada
 escolha quer dizer, e por quê, está em [`decisoes.md`](decisoes.md), 02/10/2026 (três entradas: o aviso, a F1, e o
@@ -1131,7 +1130,17 @@ achado da retentativa do Google).
 | — | **vermelho → verde do portão** — sete mutantes, um por trava | ✅ | idem, seção I |
 | — | **vermelho → verde do «não cobra em falha»** — a função, o CHECK e a validação da ação | ✅ | idem, seção J |
 
-**O que falta, na ordem:**
+**O desfecho dos cinco passos abaixo — todos feitos:**
+
+| passo | quando | o que aconteceu |
+|---|---|---|
+| 1 · a migration e as travas | ✅ 21/11 | aplicada **pelo Code**, por `npm run db:push` (decisão do dono no mesmo dia), com o ok dele para as 3 linhas do catálogo que ela reescreve; `f1-leitura-de-produto.sql` em produção: **`TOTAL 23 · OK 23 · FALHA 0 · nao exercitado 0`**, e nada ficou gravado |
+| 2 · os tipos e o modelo de dados | ✅ 21/11 e 24/11 | `database.types.ts` regerado do banco (saíram os 9 blocos); `arquitetura.md` §4 atualizado no fechamento; `lint`, `typecheck` e `build` passam |
+| 3 · a tela, a 0 ⚡ | ✅ 21/11 | o item 0 ao vivo (commit próprio, `8e4b456`) e a F1.6, com o servidor sem chaves |
+| 4 · a metade do dono | ✅ 23/11 | **16 ⚡** — a seção logo abaixo |
+| 5 · a leitura do banco e o fechamento | ✅ 24/11 | as quatro linhas, os quatro lançamentos e o saldo conferidos; as especificações no mesmo commit do código |
+
+**O que faltava em 02/10, na ordem** *(mantido como foi escrito)*:
 
 1. **Dono:** aplicar a migration `20261002121933_product_readings.sql` pelo Session pooler; e rodar
    `supabase/travas/f1-leitura-de-produto.sql` no SQL Editor — a última linha esperada é
@@ -1151,6 +1160,45 @@ achado da retentativa do Google).
    a marca em `ai_models`, `record_product_reading`), o glossário do [`CLAUDE.md`](../CLAUDE.md) (o Produto
    deixa de ter «uma instrução» e passa a ter «uma descrição») e a linha da frente 1 no
    [`ROADMAP.md`](ROADMAP.md) §4.
+
+#### A metade do dono — feita em 23/11/2026 · 16 ⚡
+
+**R1, escrito antes:** 4 ⚡ por clique, previsto 16, teto 40. **Saíram 16.** O dono clicou no navegador dele
+(perfil «Jorge Alves - DevIA», `localhost:5599`, servidor com as chaves); o Claude conferiu pelo banco e pelo log
+do servidor, sem navegador.
+
+| # | modelo | a foto (rótulo do arquivo) | o que a leitura escreveu no Nome | campos | cobrado · custo real | tempo | o aviso |
+|---|---|---|---|---|---|---|---|
+| 1 | Gemini 3.7 Flash | `baby-dool-personagem` | Pijama Curto Feminino Mickey Cropped e Short | 2 preenchidos | 4 ⚡ · 3 ¢ | 17,4 s | **«Feminino»** no Nome e **«feminino»** na Descrição (e «women's» no inglês) |
+| 2 | Gemini 3.7 Flash | `vestido-feminino-midi-rodado-evangelico` | Vestido midi canelado marrom com botões | 2 preenchidos | 4 ⚡ · 3 ¢ | 20,1 s | nada |
+| 3 | Gemini 3.7 Flash | `perola-colar-e-brinco-ear-cuff-ouro-18K` | Conjunto Colar e Brincos Ear Cuff de Pérolas | 2 preenchidos | 4 ⚡ · 3 ¢ | 15,8 s | nada |
+| 4 | Claude Haiku | a mesma foto e o mesmo card, com a Descrição apagada | *(leu «Conjunto de joias com pérolas»; o Nome do card ficou o da leitura 3)* | 1 preenchido · 1 preservado | 4 ⚡ · 2 ¢ | 4,2 s | nada |
+
+**No banco:** 4 linhas em `extractions` (`subject = product`, `succeeded`, `sparks_charged = 4`, com a foto, o card
+e o texto); **um lançamento de −4 por leitura**, cada um com `extraction_id`; saldo **3.190 → 3.174 = a soma do
+ledger**; 110 → 114 lançamentos; 0 falhas, 0 leituras sem débito, 0 débitos sem leitura; 719 gerações, como antes.
+**No log do servidor:** 4 chamadas de leitura, nenhuma linha de erro.
+
+**O que a prova mostrou além do dinheiro:**
+
+- **A invariante do rótulo, ao vivo:** «baby doll», «evangélico», «feminino» (no rótulo do vestido) e «ouro 18K»
+  estavam nos nomes dos arquivos e **não** apareceram em leitura nenhuma.
+- **O aviso acendeu onde havia termo, e só ali:** 1 de 4 leituras, com os três termos; zero nas outras —
+  inclusive com «de tamanho médio» e «de diferentes tamanhos» no texto do Haiku (é o tamanho da pérola: gatilho
+  sem valor de roupa depois não acende).
+- **A regra 2 do contrato segue «reduz, não elimina»:** o Flash escreveu o gênero em 1 de 3 leituras.
+
+**O que ela NÃO exercitou ao vivo** — está provado sem rede, e as provas foram repetidas em 24/11 (leitura **87 de
+87**; aviso v5 **7 de 7**): a exceção «Baby Doll» (a foto era um baby doll, mas o modelo não escreveu a frase); o
+clique no × do aviso (o dono não clicou — o card segue com «Feminino»); e as recusas (sem saldo, preço mudou,
+resposta perdida).
+
+**Para o dono, sem pressa:** o Haiku afirmou material («típico de pérolas cultivadas», onde o Flash, da mesma
+foto, disse «sintéticas») e se contradisse entre as línguas («fechamento tipo argola» × «post-and-back closure»);
+e o Flash levou de 16 a 20 s por leitura, contra 4 s do Haiku.
+
+**Evidência** (`scratchpad\evidencias\produto-diz-f1\`): `metade-do-dono-2311.md` ·
+`f1-leitura-2311-fechamento.md` · `aviso-de-publico-v5-2311-fechamento.md`.
 
 **Pontos que a F1 deixa para o dono decidir** — todos no diário de 02/10, com a medida de cada um: os
 **vizinhos** da lista v2 — **✅ decididos: a v3 está feita e provada** (item 9); **o preço da regra do hífen
@@ -1296,9 +1344,9 @@ previsto na F2.7; um lançamento de −75; saldo **3.186 → 3.111**.
 | **segunda** leitura por 3.7 Flash — o lado a lado, decidido em 26/09 | F0 | Claude, com o R1 escrito antes | 4 ⚡ | **não** — **feita na rodada 5: 2 centavos reais** |
 | **terceira** leitura por Haiku (a 2ª no contrato v2) — o lado a lado | F0 | Claude, com o R1 escrito antes | 4 ⚡ | **não** — **feita na rodada 5: 2 centavos reais** |
 | ~~leitura pelo botão — o 3.7 Flash, o padrão~~ *(a metade de 26/09; trocada pelo dono em 02/10)* | F1 | ~~dono~~ | ~~4 ⚡~~ | — |
-| **a prova do dono, pelo botão** — 3 leituras no 3.7 Flash + 1 releitura pelo Haiku: **16 ⚡ previstos · 32 ⚡ com uma repetição por clique · teto 40 ⚡** *(02/10)* | F1 | **dono** | **até 40 ⚡** | **sim** |
+| **a prova do dono, pelo botão** — 3 leituras no 3.7 Flash + 1 releitura pelo Haiku: **16 ⚡ previstos · 32 ⚡ com uma repetição por clique · teto 40 ⚡** *(02/10)* | F1 | **dono** | **até 40 ⚡** | **sim** — **feita em 23/11: 16 ⚡**, 11 centavos reais; saldo 3.190 → 3.174 |
 | ↻ da cena 2 | F3 | **dono** | 75 ⚡ | **sim** |
-| **pior caso** | | | **135 ⚡ de preço** *(20 da F0 + 40 + 75; eram 99 com a metade de 4 ⚡)* | **115 ⚡ da carteira** — saldo **3.190 → 3.075** no teto. *A F3 usa um card já lido na F1 ou um texto colado (dono, 02/10): nenhuma leitura extra.* |
+| **pior caso** | | | **135 ⚡ de preço** *(20 da F0 + 40 + 75; eram 99 com a metade de 4 ⚡)* | **115 ⚡ da carteira** — saldo **3.190 → 3.075** no teto. *A F3 usa um card já lido na F1 ou um texto colado (dono, 02/10): nenhuma leitura extra.* **Depois da F1 (23/11): saíram 16 ⚡ dos 40; resta a F3 — saldo 3.174 → 3.099 no teto.** |
 
 *O custo real da F0 inteira, somado: **11 centavos** — 2 + 2 (rodadas 3 e 4) + 3 + 2 + 2 (rodada 5) —, e
 **0 Spark**: saldo 3.190, conferido no banco em 27/09.*

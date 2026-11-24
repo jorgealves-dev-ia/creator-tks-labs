@@ -7595,6 +7595,69 @@ conferência depois que o dono aplicar:
 A migration não grava em nenhuma das três tabelas nem na carteira: **os quatro números têm de ser os mesmos
 depois dela**, e as migrations, 40.
 
+### 23/11/2026 — ✅ A F1 fecha: a metade do dono, 16 ⚡ — e o aviso de público visto pela primeira vez por quem o pediu
+
+**O que aconteceu.** O dono fez a prova paga da F1 no navegador dele: três fotos do catálogo, três leituras pelo
+Gemini 3.7 Flash e uma releitura pelo Haiku, com a Descrição apagada. O R1 dizia 4 ⚡ por clique, 16 previstos, teto
+40; **saíram 16**. A conferência foi **pelo banco, não pela tela** — e bateu em tudo:
+
+| o quê | antes | depois |
+|---|---|---|
+| saldo da carteira = a soma do ledger | **3.190 ⚡** | **3.174 ⚡** |
+| linhas de `ledger_transactions` | 110 | **114** |
+| linhas de `extractions` | 8 | **12** — 4 de produto |
+| linhas de `generations` | 719 | 719 |
+
+Um lançamento de −4 por leitura, cada um com `extraction_id`; nenhuma falha; nenhuma leitura sem débito e nenhum
+débito sem leitura; quatro chamadas no log do servidor, nenhuma linha de erro. Custo real: **11 centavos**
+(3 + 3 + 3 + 2).
+
+**O que só a prova ao vivo podia dizer — e disse.**
+
+- **O rótulo não vaza.** Os arquivos se chamavam `baby-dool-personagem`, `vestido-feminino-midi-rodado-evangelico`
+  e `perola-colar-e-brinco-ear-cuff-ouro-18K`. Nenhuma leitura escreveu «baby doll», «evangélico» nem «ouro 18K», e
+  o vestido — o único com «feminino» **no nome do arquivo** — saiu sem gênero nenhum. A invariante de 27/09 foi
+  vista com fotos de catálogo, não com o arquivo de teste.
+- **O aviso acende onde há termo, e só ali.** Na leitura do pijama o Flash escreveu «Feminino» no nome,
+  «feminino» na descrição e «women's» no inglês; o card destacou os dois que mostra. Nas outras três, nada —
+  inclusive no texto do Haiku, que fala em «tamanho médio» e «diferentes tamanhos» **da pérola**.
+- **A regra 2 do contrato continua «reduz, não elimina»:** 1 de 3 no Flash. Na F0 tinham sido 2 de 4, entre os dois
+  modelos.
+
+**A pergunta do dono, e a resposta.** Ele viu o quadro «Público, gênero ou tamanho no texto» no card do pijama e
+disse que **não lembrava para que aquilo foi implementado**. A resposta fica aqui, porque a pergunta volta: é a
+decisão dele de 27/09. A F0 mediu que a IA que lê a foto escreve **para quem** a peça é mesmo quando a foto não
+mostra — «infantil» numa blusa de adulto —, e essa palavra segue no texto para o gerador de imagem, que então
+desenha outra peça. A regra no pedido de leitura reduz e não elimina; o aviso é a **segunda rede**: uma lista
+fechada (a v5, revisada por ele em 02 e 03/10), sem chamada nova, 0 ⚡, que **destaca e não apaga**. Quem decide é a
+pessoa: um clique tira, nenhum clique deixa como está. *No pijama, «feminino» pode perfeitamente ser verdade — o
+aviso não julga, só mostra.*
+
+📌 **O que a pergunta ensina.** A frase do aviso diz a consequência — *«essas palavras mudam a peça que a IA
+desenha»* —, e mesmo assim quem o pediu não o reconheceu dois meses depois. **A frase não foi mexida**: é decisão
+de produto. Fica como ponto para o dono — se o quadro precisa dizer mais, e se **gênero** deve continuar na lista
+ao lado de faixa etária e tamanho.
+
+**O que a prova NÃO exercitou — dito para não parecer que exercitou.** A exceção «Baby Doll» (a foto era um baby
+doll, mas o modelo não escreveu a frase); o clique no × do aviso (o dono não clicou, e o card segue com
+«Feminino»); e as recusas — sem saldo, preço mudou, resposta perdida. Os três estão provados sem rede, e as provas
+foram repetidas no fechamento, em 24/11: a leitura, **87 de 87**; o aviso v5, **7 de 7**.
+
+**Dois achados sobre o texto lido, para o dono.** O Haiku, da mesma foto, **afirmou material** — «típico de pérolas
+cultivadas», onde o Flash escreveu «sintéticas» — e **se contradisse entre as línguas** («fechamento tipo argola»
+em português, «post-and-back closure» em inglês): reforça o Flash como padrão (27/09). E **o Flash é lento**: de
+16 a 20 s por leitura, contra 4 s do Haiku.
+
+**O fechamento.** `typecheck`, `lint` e `build` passam, e `git grep "SAI ANTES DO COMMIT" -- src/ supabase/` volta
+vazio. As especificações entram **no mesmo commit do código** (regra 6), porque só agora descrevem o que está em
+produção: [`nodes-geracao.md`](nodes-geracao.md) §3.1 (a anatomia do card de Produto), [`motor-extracao.md`](motor-extracao.md)
+§7 (a leitura de produto como segundo consumidor), [`arquitetura.md`](arquitetura.md) §4 (as colunas de
+`extractions`, a marca em `ai_models`, `record_product_reading`), o glossário e o invariante 5 do
+[`CLAUDE.md`](../CLAUDE.md), a linha da frente 1 no [`ROADMAP.md`](ROADMAP.md) e o
+[plano](plano-produto-diz.md).
+
+**Evidência:** `scratchpad\evidencias\produto-diz-f1\metade-do-dono-2311.md`.
+
 ## Segurança e navegador
 
 ### 27/09/2026 — 🔒 A regra 7 de Segurança deixa de ser frase: a sonda confere o GitHub

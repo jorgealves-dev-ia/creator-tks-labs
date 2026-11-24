@@ -890,8 +890,23 @@ export const t = {
       full: "Um produto guarda até 5 fotos.",
       /** A guarda na origem: o bloco conectado é quem não tem mais vaga. */
       blockFull: "O bloco conectado não tem vaga para mais uma foto.",
-      instructionLabel: "Instrução",
-      instructionPlaceholder: "a modelo veste esta peça exatamente como mostrada",
+      /** As fotos ficam como estão enquanto uma leitura delas está a caminho. */
+      photosLocked: "Espere a leitura terminar para mexer nas fotos.",
+      /**
+       * Era «Instrução» até 02/10/2026 (Frente 1, resposta 9.1 do dono): um campo
+       * só, maior. O texto dos cards antigos continua onde estava, sob o nome novo.
+       */
+      descriptionLabel: "Descrição",
+      descriptionPlaceholder:
+        "O que o produto é: peça, cor, material, detalhes. Escreva, cole ou use «Ler a foto».",
+      /** «312 / 2.000» — o teto é o único filtro, e o contador mostra onde se está. */
+      descriptionCount: (n: number, max: number) =>
+        `${n.toLocaleString("pt-BR")} / ${max.toLocaleString("pt-BR")}`,
+      /** Colar além do teto corta — e o corte é DITO: nunca truncar em silêncio. */
+      descriptionCut: (sobraram: number) =>
+        sobraram === 1
+          ? "O texto colado não coube inteiro: 1 caractere ficou de fora."
+          : `O texto colado não coube inteiro: ${sobraram.toLocaleString("pt-BR")} caracteres ficaram de fora.`,
       /** "ocupa 3 referências" — o custo do fio, dito antes de ele existir. */
       occupies: "Ocupa",
       referenceSingular: "referência no bloco",
@@ -899,6 +914,110 @@ export const t = {
       emptyHint: "Adicione as fotos para poder conectar este produto.",
       outputHandle: "Liga a um bloco de geração",
       remove: "Tirar este produto do canvas (as fotos ficam na galeria)",
+
+      /**
+       * «Ler a foto · N ⚡» — Frente 1, F1.
+       *
+       * Um portão que gasta: cada estado do botão tem frase própria, dita ANTES
+       * do clique, e cada desfecho diz o que aconteceu com o dinheiro. A única
+       * frase que não afirma nada sobre cobrança é a da resposta perdida — porque
+       * ali ninguém sabe, e a tela não chuta.
+       */
+      reading: {
+        modelLabel: "Modelo de leitura",
+        /**
+         * O preço mora NO botão: é o número que a régua R1 manda comparar antes
+         * do clique — *se o botão não disser o esperado, o clique não acontece*.
+         * Sem modelo não há preço, e sem preço o botão não inventa um.
+         */
+        button: (preco: number | null) =>
+          preco === null ? "Ler a foto" : `Ler a foto · ${sparks(preco)} ⚡`,
+        buttonReading: "Lendo a foto…",
+        cost: (preco: number, saldo: number | null) =>
+          saldo === null
+            ? `Custará ${sparks(preco)} ⚡`
+            : `Custará ${sparks(preco)} ⚡ · Saldo: ${sparks(saldo)} ⚡`,
+        /** O que o clique vai escrever — só no que está em branco (invariante 11). */
+        willFillBoth: "Preenche o Nome e a Descrição.",
+        willFillDescription: "Preenche a Descrição. O Nome fica como está.",
+        willFillName: "Preenche o Nome. A Descrição fica como está.",
+        /** Com mais de uma foto: o preço é por leitura, e a leitura é de uma foto. */
+        firstPhoto: "A leitura lê só a primeira foto.",
+        /** Por que o botão está desligado — uma frase por motivo, no lugar do clique. */
+        offNoPhoto: "Adicione uma foto para a leitura ter o que ler.",
+        offNothingBlank:
+          "Nada em branco para a leitura preencher — apague o que quiser que ela escreva.",
+        offReading: "Um clique, uma leitura. Leva alguns segundos.",
+        /** A recusa diz QUANTO falta: um "sem saldo" sem número faz a pessoa subtrair. */
+        offNoBalance: (faltam: number) => `Faltam ${sparks(faltam)} ⚡ para esta leitura.`,
+        offLost: "Confira a leitura anterior antes de ler de novo.",
+        catalogLoading: "Carregando os modelos de leitura…",
+        catalogFailed: "Não deu para carregar os modelos de leitura.",
+        catalogRetry: "Tentar de novo",
+        catalogNone: "Nenhum modelo de leitura está disponível agora.",
+        /** O placar — depois: o cobrado, o saldo e o que a leitura escreveu. */
+        done: (cobrado: number, saldo: number | null) =>
+          saldo === null
+            ? `Leitura feita · cobrado ${sparks(cobrado)} ⚡`
+            : `Leitura feita · cobrado ${sparks(cobrado)} ⚡ · Saldo: ${sparks(saldo)} ⚡`,
+        tally: (preenchidos: number, preservados: number) => {
+          const filled = preenchidos === 1 ? "1 preenchido" : `${preenchidos} preenchidos`;
+
+          if (preservados === 0) return filled;
+
+          return `${filled} · ${preservados === 1 ? "1 preservado" : `${preservados} preservados`}`;
+        },
+        /** A leitura chegou e os dois campos já tinham texto: paga, e nada escrito. */
+        nothingWritten:
+          "Os dois campos já tinham texto quando a leitura chegou — nada foi alterado.",
+        /** As recusas e as falhas. Todas terminam em `notCharged`, e todas são verdade. */
+        failures: {
+          invalid: "A leitura não pôde ser feita neste card. Recarregue a página e tente de novo.",
+          nothing_to_fill: "Nada em branco para a leitura preencher.",
+          not_configured: "Este modelo não está disponível agora. Escolha outro.",
+          unreadable: "Não deu para abrir esta foto. A leitura aceita JPG, PNG e WebP.",
+          refused: "O modelo se recusou a ler esta foto. Tente outro modelo.",
+          invalid_answer:
+            "O modelo respondeu fora do formato. Tente de novo ou escolha outro modelo.",
+          error: "A leitura falhou. Tente de novo.",
+        },
+        failurePriceChanged: (preco: number | null) =>
+          preco === null
+            ? "O preço desta leitura mudou. Confira o botão antes de clicar de novo."
+            : `O preço desta leitura mudou para ${sparks(preco)} ⚡. Confira o botão antes de clicar de novo.`,
+        failureNoBalance: (preco: number | null, saldo: number | null) =>
+          preco === null || saldo === null
+            ? "Saldo insuficiente para esta leitura."
+            : `Saldo insuficiente: a leitura custa ${sparks(preco)} ⚡ e a carteira tem ${sparks(saldo)} ⚡.`,
+        notCharged: "Nada foi cobrado.",
+        /**
+         * A resposta perdida. Nenhuma destas frases diz "nada foi cobrado" — só a
+         * última, e ela só aparece depois de o servidor responder que a leitura
+         * não existe, com o clique velho o bastante para não poder mais existir.
+         */
+        lostFirst:
+          "A resposta desta leitura se perdeu no caminho. Ela pode ter sido feita e cobrada — confira antes de ler de novo.",
+        lostAgain:
+          "Ainda não há leitura gravada deste clique. Ela pode estar terminando — confira de novo em instantes.",
+        lostCheck: "Conferir · 0 ⚡",
+        lostChecking: "Conferindo…",
+        neverMade: "Nenhuma leitura deste clique foi gravada, e nada foi cobrado. Pode ler de novo.",
+      },
+
+      /**
+       * O aviso de público — decisão do dono, 27/09/2026; lista v2, 02/10/2026.
+       *
+       * Não acusa: quem digitou «infantil» pode ter razão. Diz a consequência —
+       * a palavra muda a peça que a IA desenha — e deixa a pessoa decidir. Nunca
+       * remoção silenciosa: o texto só muda no clique.
+       */
+      audience: {
+        title: "Público, gênero ou tamanho no texto",
+        hint: "Essas palavras mudam a peça que a IA desenha. Mantenha só o que a foto mostra — um clique tira.",
+        inName: "No Nome",
+        inDescription: "Na Descrição",
+        removeHint: (termo: string) => `Tirar «${termo}» do texto`,
+      },
     },
     pose: {
       title: "Input de Pose/Ângulo",
