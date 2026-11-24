@@ -50,9 +50,14 @@ segredo vazado. Todas as outras estão no `CLAUDE.md`.
    de ambiente em terminal, log, commit, resposta de API ou arquivo. O que
    viaja para a tela é o booleano *"configurado"*, calculado no servidor. A
    `SUPABASE_SERVICE_ROLE_KEY` ignora RLS e é exclusiva de código de servidor.
-2. **Migration: você escreve o arquivo, o Jorge aplica.** Toda mudança de
-   schema é um arquivo novo em `supabase/migrations/`. **Nenhum agente roda
-   `db push`.** Depois de aplicada, `src/lib/supabase/database.types.ts` é
+2. **Schema tem uma porta só: `npm run db:push`, com o ritual do
+   `CLAUDE.md`.** Toda mudança de schema é um arquivo novo em
+   `supabase/migrations/`. **Nenhum agente roda `supabase db push` direto, nem
+   muda schema por outro caminho** — nem pelo MCP. **Dado** pode ser escrito
+   pelo MCP do Supabase *(liberado em 21/11/2026)*, dizendo antes ao Jorge o
+   que é; o que apaga ou reescreve dado existente — por migration ou por SQL
+   avulso — pede o ok dele antes *(a aplicação de migration era só dele até
+   21/11/2026)*. Depois de aplicada, `src/lib/supabase/database.types.ts` é
    **gerado do banco**, nunca escrito à mão.
 3. **Provedor de IA só do servidor.** Nenhuma chave de modelo chega ao browser,
    e nenhum código de produto chama API de modelo direto: tudo pela interface

@@ -38,8 +38,10 @@ npm run typecheck      # next typegen && tsc --noEmit
 npm run build          # NUNCA com o dev no ar: os dois escrevem no mesmo .next/
 ```
 
-Migrations são criadas com `supabase migration new <nome>` e **aplicadas à mão pelo
-dono** — ver [`CLAUDE.md`](CLAUDE.md).
+Migrations são criadas com `supabase migration new <nome>` e aplicadas por
+`npm run db:push` — **o ensaio primeiro, e só as versões nomeadas** —, com a connection
+string do Session pooler em `SUPABASE_DB_URL`, no `.env.local`. O ritual está no
+[`CLAUDE.md`](CLAUDE.md).
 
 ---
 

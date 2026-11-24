@@ -279,7 +279,7 @@ frente fecha com prova estrutural + validação de tela.
 | **5** | **Módulo Publicação** — com o ponto das URLs públicas e o segredo novo (§3) | um ciclo, o maior | **não gasta Spark** — mas publicar é **público e irreversível**. ❓ A régua da regra 8 pergunta *"isto pode gastar?"*, e esta é a primeira frente em que a resposta é **não** e o gesto **ainda assim não tem volta**. **Pergunta para o dono quando a frente abrir:** a primeira publicação real é metade dele? *(E a confirmar: se a Meta exige revisão do app para publicar — um prazo que não é nosso.)* |
 | 6 | **MCP** | um ciclo | ⚠️ sim — o agente dispara geração |
 | 7 | **Voz** | um ciclo | ⚠️ sim — capacidade nova; o esboço e a Fase 3 do [`produto.md`](produto.md) citam a ElevenLabs |
-| 8 | **Catálogo aberto** | um ciclo | ⚠️ sim — *"modelo novo = linha no catálogo + adaptador"* ([`produto.md`](produto.md) §7.1): cada adapter só se prova gerando no fornecedor novo |
+| 8 | **Catálogo aberto + o painel de modelos** | um ciclo | ⚠️ sim — *"modelo novo = linha no catálogo + adaptador"* ([`produto.md`](produto.md) §7.1): cada adapter só se prova gerando no fornecedor novo. **Pedido do dono, 21/11:** uma tela onde ele escolhe o fornecedor e o modelo de **cada tarefa** (Roteiro, leitura de produto, imagem…), OpenAI inclusive — **nenhum fornecedor é regra da casa**. O banco já guarda a escolha (o padrão é uma marca numa linha do catálogo); faltam a tela, os adaptadores (OpenAI, xAI) e tirar do código a tarifa real do texto (`src/lib/ai/pricing.ts`). → [`decisoes.md`](decisoes.md), 21/11/2026. *A posição na fila não foi rediscutida.* |
 | 9 | **Modo Take** | um ciclo | ⚠️ sim — é vídeo |
 | 10 | **Passe de UI/UX** | um ciclo | não |
 

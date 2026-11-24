@@ -383,7 +383,7 @@ A tela está especificada em [`tela-character-sheet.md`](./tela-character-sheet.
 
 ### Regra de mudança de schema
 
-**Toda alteração de schema é um arquivo novo em `supabase/migrations/`** (criado com `supabase migration new <nome>`), aplicado com `supabase db push`. Nunca pelo painel do Supabase. Assim toda escrita fica versionada, revisável e reversível no git.
+**Toda alteração de schema é um arquivo novo em `supabase/migrations/`** (criado com `supabase migration new <nome>`), aplicado pelo **`npm run db:push`** *(desde 21/11/2026 — o ritual está no [`CLAUDE.md`](../CLAUDE.md), seção «Comandos»)*. Nunca pelo painel do Supabase, **nem pelo MCP** — o MCP escreve dado, não schema. Assim toda mudança de schema fica versionada, revisável e reversível no git.
 
 Depois de aplicar, **regerar** `src/lib/supabase/database.types.ts` a partir do banco real — não escrever esse arquivo à mão.
 
@@ -420,13 +420,14 @@ As 28 migrations existentes, em ordem de dependência:
 20260815195510_asset_lineage.sql               linhagem do quadro derivado em assets
 ```
 
-> **Nota de ambiente.** O `supabase link` está com bug nesta máquina, então a connection string vai explícita na linha de comando. O Jorge aplica manualmente:
+> **Nota de ambiente** *(reescrita em 21/11/2026)*. O `supabase link` está com bug nesta máquina, e a *Direct connection* é IPv6 e falha nesta rede — por isso a connection string do **Session pooler (IPv4, porta 5432)** vai explícita. Ela mora no `.env.local`, na variável `SUPABASE_DB_URL`, escrita pelo Jorge, e quem aplica é o Claude Code, pelo comando da casa:
 >
 > ```bash
-> npx supabase db push --db-url "<connection string do Session pooler>"
+> npm run db:push                               # o ensaio: lista o que o banco aplicaria
+> npm run db:push -- --aplicar <versão> [...]   # aplica, e só as versões nomeadas
 > ```
 >
-> Use a string do **Session pooler (IPv4)** do painel. A *Direct connection* é IPv6 e falha nesta rede — é o erro mais provável se o push não conectar.
+> Até 21/11/2026 era o Jorge, à mão (`npx supabase db push --db-url "…"`). O ritual inteiro, e o porquê da troca, estão no [`CLAUDE.md`](../CLAUDE.md) e em [`decisoes.md`](decisoes.md), 21/11/2026.
 
 ---
 
@@ -465,7 +466,7 @@ supabase/
 docs/                     # esta documentação
 .claude/
   settings.json           # guardrails de permissão do Claude Code (commitado)
-.mcp.json                 # MCPs Supabase (read-only) e Vercel — OAuth, sem segredos (commitado)
+.mcp.json                 # MCPs Supabase (escrita de dado liberada em 21/11/2026; schema só por migration) e Vercel — OAuth, sem segredos (commitado)
 .env.example              # placeholders (commitado)
 .env.local                # segredos reais (gitignored, editado apenas pelo Jorge)
 ```

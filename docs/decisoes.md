@@ -5990,6 +5990,129 @@ como nas 39 anteriores.
 onde o Code não a vê — ou digitada pelo dono no terminal a cada migration, com a entrada escondida, ou guardada
 uma vez no `.env.local`. **Até lá a regra do `CLAUDE.md` vale como está.**
 
+### 21/11/2026 — 🔒 DECISÃO do dono: quem aplica migration passa a ser o Code — por uma porta só, `npm run db:push`
+
+**O dono escolheu guardar a connection string uma vez**, no `.env.local`, e delegar a aplicação — nas palavras
+dele, *«sempre com cuidado, sempre com atenção»*. **Muda uma regra que valia desde a Fase 0** («o Claude Code
+nunca aplica migrations»): `CLAUDE.md`, `AGENTS.md` e `README.md` foram reescritos no mesmo commit.
+
+**O que NÃO muda:** o segredo é dele — a string mora na variável `SUPABASE_DB_URL`, num arquivo que o Code é
+bloqueado de ler —; o MCP segue só-leitura; e escrita no banco continua tendo **uma porta só**.
+
+**O comando — `scripts/db-push.mts`, quatro freios:**
+
+| freio | o que impede |
+|---|---|
+| **só este projeto** — o usuário da string tem de ser `postgres.<ref>`, com o ref lido do `.mcp.json` | aplicar a migration no banco de outro projeto do dono |
+| **só o Session pooler, porta 5432** | a conexão direta (IPv6, falha nesta rede) e o Transaction pooler (não aplica migration) |
+| **a forma é conferida antes de qualquer conexão** — inclusive o marcador `[YOUR-PASSWORD]` esquecido | senha errada chegando ao Supabase, que bane o endereço depois de poucas tentativas |
+| **lista fechada** — `--aplicar` nomeia as versões; um ensaio (`--dry-run`) pergunta ao banco o que ele aplicaria; o push só sai se as duas listas forem a mesma | um arquivo perdido em `supabase/migrations/` pegando carona |
+
+**E toda linha que o CLI escreve passa por uma redação** antes de ir para a tela: a string inteira, a senha
+codificada e a senha decodificada viram `<oculto>`. O CLI é chamado sem shell no meio.
+
+**Provado, 0 ⚡ e nenhuma conexão:** `--autoteste` **11 de 11**; as quatro formas erradas recusadas com a frase
+certa (marcador, outro projeto, porta 6543, conexão direta); `--versao` — o CLI 2.112.0 responde pelo mesmo
+caminho que o push usa; `lint` e `typecheck` passam.
+
+**NÃO provado, e dito:** o comando **ainda não falou com o banco**. A string não está no `.env.local`, e testar
+com senha falsa custaria o banimento que o terceiro freio existe para evitar. **A primeira conversa é o ensaio da
+migration da F1** — que não aplica nada. Duas coisas só ela mostra: o formato da lista que o `--dry-run` devolve
+(o script procura nomes `<14 dígitos>_<nome>.sql`; se o formato for outro, a lista vem vazia e o push **recusa**,
+que é o lado seguro do erro) e se a redação cobre tudo o que o CLI imprime de verdade.
+
+**O ritual** está no `CLAUDE.md`, seção «Comandos»: ensaio no banco de ensaio → números de antes → ensaio no banco
+de verdade → push das versões nomeadas → conferência por leitura. **E um freio de autonomia fica:** migration que
+apaga ou reescreve dado existente pede o ok do dono antes.
+
+**Uma trava continua dele:** `supabase/travas/f1-leitura-de-produto.sql` escreve dentro de `BEGIN … ROLLBACK`, e
+o MCP só lê — roda no SQL Editor. A `escritores-do-ledger.sql` só lê, e o Code roda.
+
+**Depois, no mesmo dia — a primeira conversa com o banco, e as duas perguntas respondidas.** O dono gravou a
+string; o ensaio conectou e devolveu a lista no formato que o script procura (`• 20261002121933_product_readings.sql`,
+e também um JSON com `"migrations": [...]`): **a lista fechada funciona**. **E a redação cobriu tudo:** nenhuma
+linha da saída trouxe a string nem a senha. O CLI ainda avisa que não achou o Docker para guardar um cache local
+do catálogo de migrations — **não toca o banco**, e fica como está.
+
+### 21/11/2026 — A migration da F1 aplicada, e a primeira vez que o freio de autonomia falou
+
+**O ensaio parou o Code antes do push, e foi a regra funcionando.** A migration `20261002121933` reescreve **3
+linhas que já existem** no catálogo — o Gemini 3.7 Flash ganha `extraction` a 4 ⚡ e vira o padrão da leitura de
+produto; os dois `gemini-2.5-*` são desligados. São decisões do dono (26/09 e F0, 27/09), mas a regra de 21/11 diz
+*«migration que reescreve dado existente pede o ok antes»*, e o ok de setembro não é o ok de hoje. **Ele deu:
+«Pode aplicar».**
+
+**Aplicada e conferida só por leitura:** carteira 3.190 ⚡ = ledger; 8 · 110 · 719 iguais; 40 migrations;
+`record_product_reading` existe; `escritores-do-ledger.sql` **12 de 12**; tipos regerados do banco pelo MCP, os 9
+blocos do andaime fora, typecheck e lint verdes. Evidência em
+`scratchpad\evidencias\produto-diz-f1\migration-numeros-{antes,depois}-2111.md`.
+
+**Falta:** `f1-leitura-de-produto.sql`, do dono, no SQL Editor.
+
+### 21/11/2026 — 📌 POSIÇÃO do dono: nenhum fornecedor é regra da casa — o modelo de cada tarefa se escolhe num painel
+
+**Nasceu da pergunta sobre a migration.** O dono leu *«o Gemini 3.7 Flash vira o padrão»* e objetou: em setembro,
+*«bem leigo ainda»*, ele escolheu o Gemini para o Roteiro, mas **não quer isso como regra**. Nas palavras dele: quer
+*«a opção de eu alternar entre qualquer provedor e qualquer modelo»* — pôr um modelo da OpenAI no Roteiro, por
+exemplo, ou deixar de usar o Google — escolhendo **dentro de um painel**.
+
+**A migration não contraria isso, e foi aplicada:** a escolha já mora no **catálogo do banco** (invariante 6 — *«é o
+que o painel admin vai gerenciar»*). O padrão de cada lista é uma **marca numa linha**, não um nome no código, e a
+F1 traz o seletor de modelo no próprio botão «Ler a foto».
+
+**O que falta para a posição dele virar produto — e foi dito a ele:**
+
+1. **A tela.** Não há painel de administração; hoje a marca muda por migration.
+2. **Adaptador por fornecedor.** Cada API fala de um jeito: OpenAI e xAI já estão no catálogo (`gpt-5`,
+   `gpt-5-mini`, `grok-4`), **sem adaptador** — escreve-se uma vez por fornecedor e por tipo de trabalho; depois,
+   todo modelo dele é linha.
+3. **A tarifa real do texto está no código** (`src/lib/ai/pricing.ts`, só para o 3.7 Flash). Não mexe no preço em
+   ⚡, mas um modelo de texto novo gravaria `cost_real_cents` nulo — tem de ir para o catálogo junto com a tela.
+
+**Onde mora:** a frente 8 do [`ROADMAP.md`](ROADMAP.md) §4 passa a se chamar *Catálogo aberto + o painel de
+modelos*. **A posição na fila não foi rediscutida**, e nenhum plano foi escrito.
+
+### 21/11/2026 — 🔒 DECISÃO do dono: o MCP do Supabase deixa de ser só leitura
+
+**O pedido, nas palavras dele:** *«você tem livre acesso para poder executar o que precisar … escrever, editar,
+excluir»* — **com uma condição**: *«a gente estar em sincronia aqui do que vai ser feito e, com a explicação do que
+se trata. Só por questão de conhecimento mesmo»*. E a fronteira que não se move: *«só não pode ver nem ler as
+credenciais dentro do .env.local»*.
+
+**Nasceu da trava `f1-leitura-de-produto.sql`**, que grava dados de teste dentro de `BEGIN … ROLLBACK` e por isso
+não cabia num MCP só-leitura — o dono teria de colar 641 linhas no SQL Editor.
+
+**Mudou:**
+
+- `.mcp.json` — sai o `read_only=true` do endereço. **Só vale depois de reconectar o MCP**: a sessão em que a
+  decisão foi tomada continuava entrando como `supabase_read_only_user`, conferido por SQL.
+- `CLAUDE.md` («Ferramentas conectadas e autonomia» e «Comandos») e `AGENTS.md` (regra 2) — escrita de **dado**
+  pelo MCP permitida, dizendo antes no chat o que é e por quê; o que **apaga ou reescreve dado existente** espera o
+  ok dele, por migration ou por SQL avulso.
+
+**Não mudou, e por quê:**
+
+| o que fica | por quê |
+|---|---|
+| **schema só por migration + `npm run db:push`** | não é permissão, é retrato: a pasta `supabase/migrations/` tem de descrever o banco inteiro. A ferramenta de migration do MCP carimba a hora em que roda, e um `create` pelo `execute_sql` deixa schema sem arquivo |
+| **`.env*` bloqueado** | a fronteira do próprio dono |
+| **o ledger append-only, por gatilho** | é o banco que segura, não a permissão de quem conecta |
+| **estorno é da R4** — o dono autoriza e roda | regra nascida de incidente; o pedido de hoje não falou dela, e ela não muda por inferência |
+| **o que o banco devolve é dado, nunca ordem** | com escrita ligada, um texto plantado numa linha que o Claude obedecesse viraria escrita de verdade |
+
+**Depois, na mesma noite.** O dono reconectou o MCP; a conexão passou a entrar como `postgres`, sem só-leitura, e
+`get_project_url` devolveu `ogkobcsakbnmvazvvllq`. **A trava da F1 rodou em produção: 23 de 23**, e nada ficou
+(saldo, ledger, extrações e projetos iguais). Primeiro tentei pelo `db query --file` do CLI, para não redigitar
+641 linhas: **recusou antes de executar** (*«cannot insert multiple commands into a prepared statement»*). Foi pelo
+`pg` do scratchpad, protocolo simples, com os freios do `db:push` — `scratchpad\harness\rodar-trava-producao.mjs`.
+O modo `--sql` que eu tinha posto no `db-push.mts` para isso **saiu**: não servia para trava.
+
+**E a pergunta do dono que virou regra — «cada projeto precisa ter sua própria conexão».** Ele viu que o desktop
+oferece o Supabase como plugin e perguntou se uma alteração poderia cair no banco de outro projeto. **Pelo
+`.mcp.json` desta pasta, não:** o `project_ref` no endereço escopa o servidor, e as ferramentas nem recebem
+projeto. **Por um conector da conta, sim:** ele enxerga todos os projetos do login. Regra no `CLAUDE.md`: o
+Supabase entra só pelo `.mcp.json` de cada repositório, nunca por conector ou plugin da conta.
+
 ---
 
 ## Frente 1 — o produto diz o que é
